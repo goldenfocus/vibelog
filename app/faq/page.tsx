@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { Navigation } from "@/components/Navigation";
 import { ChevronDown, Mail, Send } from "lucide-react";
 import { useI18n } from "@/components/providers/I18nProvider";
+import emailjs from '@emailjs/browser';
 
 interface FAQItem {
   question: string;
@@ -13,6 +14,11 @@ interface FAQItem {
 export default function FAQ() {
   const { t } = useI18n();
   const [openItems, setOpenItems] = useState<Set<number>>(new Set());
+
+  // Initialize EmailJS
+  React.useEffect(() => {
+    emailjs.init(process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY!);
+  }, []);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -102,12 +108,24 @@ export default function FAQ() {
     setIsSubmitting(true);
     
     try {
-      // Simulate form submission - replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const templateParams = {
+        from_name: formData.name,
+        from_email: formData.email,
+        message: formData.message,
+        to_name: 'VibeLog Support',
+      };
+
+      await emailjs.send(
+        process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID!,
+        process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID!,
+        templateParams
+      );
+
       setSubmitted(true);
       setFormData({ name: '', email: '', message: '' });
     } catch (error) {
-      console.error('Error submitting form:', error);
+      console.error('Error sending email:', error);
+      alert('Failed to send message. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
