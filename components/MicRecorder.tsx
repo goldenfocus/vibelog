@@ -1,8 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Mic, Circle, Copy, Share, Save, Check, Sparkles, Image, Search, FileText, Volume2, Brain, Zap } from "lucide-react";
 import { useI18n } from "@/components/providers/I18nProvider";
+
+// Extend Window interface for webkitAudioContext
+declare global {
+  interface Window {
+    webkitAudioContext: typeof AudioContext;
+  }
+}
 
 type RecordingState = "idle" | "recording" | "processing" | "complete";
 
@@ -21,35 +28,77 @@ export default function MicRecorder() {
   const [blogContent, setBlogContent] = useState("");
   const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>([]);
   const [toast, setToast] = useState<{message: string; visible: boolean}>({message: "", visible: false});
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   
-  // Enhanced fluid bars
-  const bars = 32;
+  // Audio recording refs
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
+  const recordingTimer = useRef<number | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  
+  // Enhanced fluid bars with real audio data
+  const bars = 20;
   const raf = useRef<number | null>(null);
-  const levelsRef = useRef<number[]>(Array.from({ length: bars }, () => 0.2));
+  const levelsRef = useRef<number[]>(Array.from({ length: bars }, () => 0.1));
   const [, force] = useState(0);
   const transcriptInterval = useRef<number | null>(null);
 
-  // Fluid bars animation
+  // Real audio visualization
   useEffect(() => {
-    if (recordingState === "recording") {
-      const loop = (t: number) => {
+    if (recordingState === "recording" && analyserRef.current) {
+      const analyser = analyserRef.current;
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      
+      const loop = () => {
+        if (recordingState !== "recording") return;
+        
+        analyser.getByteFrequencyData(dataArray);
+        
+        // Map frequency data to our bars
         const arr = levelsRef.current;
-        for (let i = 0; i < arr.length; i++) {
-          const base = 0.5 + 0.4 * Math.sin(t / 400 + i * 0.3);
-          const noise = (Math.random() - 0.5) * 0.15;
-          const target = Math.max(0.1, Math.min(1, base + noise));
-          arr[i] += (target - arr[i]) * 0.25;
+        const step = Math.floor(bufferLength / bars);
+        
+        for (let i = 0; i < bars; i++) {
+          const start = i * step;
+          const end = start + step;
+          let sum = 0;
+          
+          for (let j = start; j < end && j < bufferLength; j++) {
+            sum += dataArray[j];
+          }
+          
+          const average = sum / step;
+          // Super sensitive normalization - amplify quiet sounds
+          let normalized = (average / 255) * 3; // 3x amplification
+          normalized = Math.pow(normalized, 0.5); // Square root for better sensitivity curve
+          normalized = Math.max(0.15, Math.min(1, normalized)); // Higher minimum for always-visible movement
+          
+          // Smooth the transition
+          arr[i] += (normalized - arr[i]) * 0.4;
         }
+        
         force((x) => x + 1);
         raf.current = requestAnimationFrame(loop);
       };
+      
       raf.current = requestAnimationFrame(loop);
-    } else {
+    } else if (recordingState !== "recording") {
       if (raf.current) {
         cancelAnimationFrame(raf.current);
         raf.current = null;
       }
+      // Fade bars to minimum when not recording
+      const arr = levelsRef.current;
+      for (let i = 0; i < arr.length; i++) {
+        arr[i] = 0.15;
+      }
+      force((x) => x + 1);
     }
+    
     return () => {
       if (raf.current) cancelAnimationFrame(raf.current);
     };
@@ -88,16 +137,100 @@ export default function MicRecorder() {
     };
   }, [recordingState]);
 
-  const handleStartRecording = () => {
-    setRecordingState("recording");
-    setTranscription("");
-    setBlogContent("");
-    setProcessingSteps([]);
+  // Request microphone permission and start recording
+  const handleStartRecording = async () => {
+    try {
+      // Request microphone permission
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          sampleRate: 44100
+        } 
+      });
+      
+      streamRef.current = stream;
+      setHasPermission(true);
+      
+      // Set up audio analysis for visualization
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const analyser = audioContext.createAnalyser();
+      const source = audioContext.createMediaStreamSource(stream);
+      
+      analyser.fftSize = 512;
+      analyser.smoothingTimeConstant = 0.7;
+      analyser.minDecibels = -90;
+      analyser.maxDecibels = -10;
+      source.connect(analyser);
+      
+      audioContextRef.current = audioContext;
+      analyserRef.current = analyser;
+      
+      // Create MediaRecorder
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4'
+      });
+      
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+      
+      // Handle recorded data
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+      
+      // Start recording
+      mediaRecorder.start(100); // Collect data every 100ms
+      setRecordingState("recording");
+      setTranscription("");
+      setBlogContent("");
+      setProcessingSteps([]);
+      setRecordingTime(0);
+      
+      // Start recording timer
+      recordingTimer.current = window.setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+      
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      setHasPermission(false);
+      showToast('Microphone access denied. Please allow microphone access to record.');
+    }
   };
 
   const handleStopRecording = () => {
+    // Stop the MediaRecorder
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+    }
+    
+    // Stop the microphone stream
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    
+    // Clean up audio context
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+      analyserRef.current = null;
+    }
+    
+    // Clear the recording timer
+    if (recordingTimer.current) {
+      clearInterval(recordingTimer.current);
+      recordingTimer.current = null;
+    }
+    
     setRecordingState("processing");
     setTranscription(liveTranscript);
+    
+    // In a real app, you would send audioChunksRef.current to your transcription service
+    // For now, we'll continue with the demo simulation
     
     // Define processing steps
     const steps: ProcessingStep[] = [
@@ -131,11 +264,34 @@ export default function MicRecorder() {
   };
 
   const handleReset = () => {
+    // Clean up any ongoing recording
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+    }
+    
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+      analyserRef.current = null;
+    }
+    
+    if (recordingTimer.current) {
+      clearInterval(recordingTimer.current);
+      recordingTimer.current = null;
+    }
+    
     setRecordingState("idle");
     setTranscription("");
     setLiveTranscript("");
     setBlogContent("");
     setProcessingSteps([]);
+    setRecordingTime(0);
+    audioChunksRef.current = [];
   };
 
   const showToast = (message: string) => {
@@ -202,6 +358,60 @@ export default function MicRecorder() {
     }
   };
 
+  // Format time as MM:SS
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Free plan: 5 minutes (300 seconds)
+  const getTimeLimit = () => {
+    // In a real app, this would be based on user's subscription
+    return 300; // 5 minutes for free plan
+  };
+
+  const isNearTimeLimit = () => {
+    const limit = getTimeLimit();
+    return recordingTime >= limit - 30; // Warning 30 seconds before limit
+  };
+
+  const hasReachedTimeLimit = () => {
+    return recordingTime >= getTimeLimit();
+  };
+
+  // Auto-stop when time limit is reached
+  useEffect(() => {
+    if (recordingState === "recording" && hasReachedTimeLimit()) {
+      handleStopRecording();
+      showToast('Recording stopped - Free plan limit reached (5 minutes)');
+    }
+  }, [recordingTime, recordingState]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.stop();
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
+      if (recordingTimer.current) {
+        clearInterval(recordingTimer.current);
+      }
+      if (transcriptInterval.current) {
+        clearInterval(transcriptInterval.current);
+      }
+      if (raf.current) {
+        cancelAnimationFrame(raf.current);
+      }
+    };
+  }, []);
+
   return (
     <div className="w-full">
       <div className="flex flex-col items-center mb-12">
@@ -222,26 +432,53 @@ export default function MicRecorder() {
           {getMicButtonContent()}
         </button>
         
-        <p className="text-muted-foreground mt-6 text-lg">
-          {getStatusText()}
-        </p>
+        <div className="text-center mt-6">
+          <p className="text-muted-foreground text-lg mb-2">
+            {getStatusText()}
+          </p>
+          {recordingState === "recording" && (
+            <div className="flex flex-col items-center space-y-2">
+              <div className={`text-2xl font-mono font-bold transition-colors ${
+                isNearTimeLimit() ? 'text-red-500' : 'text-foreground'
+              }`}>
+                {formatTime(recordingTime)}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Free plan: {formatTime(getTimeLimit())} max
+                {isNearTimeLimit() && !hasReachedTimeLimit() && (
+                  <span className="text-red-500 ml-2">⚠️ {Math.floor((getTimeLimit() - recordingTime))}s remaining</span>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Fluid bars visualization */}
+      {/* Real-time audio visualization */}
       {recordingState === "recording" && (
-        <div className="flex items-end justify-center gap-[2px] h-24 mb-8 bg-background/50 backdrop-blur-sm rounded-xl p-4">
-          {levelsRef.current.map((lvl, i) => (
-            <div
-              key={i}
-              style={{
-                height: `${lvl * 100}%`,
-                width: "4px",
-                borderRadius: "2px",
-                background: "linear-gradient(to top, #0ea5e9, #22d3ee, #60a5fa)",
-                boxShadow: "0 0 6px rgba(34,211,238,0.6)",
-              }}
-            />
-          ))}
+        <div className="flex items-center justify-center gap-1.5 h-24 mb-8 px-12 py-6 bg-card/20 backdrop-blur-sm rounded-3xl border border-border/10">
+          {levelsRef.current.map((lvl, i) => {
+            // Create a more organic, wave-like pattern
+            const heightPercent = Math.max(8, lvl * 100);
+            const delay = i * 30; // Slight delay for wave effect
+            
+            return (
+              <div
+                key={i}
+                className="transition-all duration-100 ease-out"
+                style={{
+                  height: `${heightPercent}%`,
+                  width: "5px", // Bigger bars!
+                  backgroundColor: `hsl(${190 + i * 1.5}, 80%, ${55 + lvl * 25}%)`,
+                  borderRadius: "2.5px",
+                  boxShadow: `0 0 ${lvl * 12}px hsl(${190 + i * 1.5}, 80%, ${55 + lvl * 25}%)`,
+                  opacity: 0.8 + (lvl * 0.2),
+                  transform: `scaleY(${0.4 + lvl * 0.6}) scaleX(${0.8 + lvl * 0.2})`,
+                  filter: `blur(${(1 - lvl) * 0.3}px)`,
+                }}
+              />
+            );
+          })}
         </div>
       )}
 
