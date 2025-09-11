@@ -1,0 +1,230 @@
+{
+  "navigation": {
+    "about": "Über uns",
+    "faq": "FAQ", 
+    "pricing": "Preise",
+    "community": "Community",
+    "people": "Personen",
+    "signUp": "Anmelden"
+  },
+  "hero": {
+    "title": {
+      "part1": "Vibe →",
+      "part2": "Überall Teilen"
+    },
+    "subtitle": "Erstelle und veröffentliche Inhalte in Sekunden."
+  },
+  "recorder": {
+    "idle": "Vibelogging starten",
+    "recording": "Sprich natürlich… klicke erneut wenn du fertig bist",
+    "processing": "Poliere deinen Vibelog…",
+    "done": "Dein Vibelog ist fertig!",
+    "processingHeader": "Vibelogging deines Inhalts...",
+    "originalTranscription": "Original Transkription",
+    "polishedVibelog": "Dein polierter Vibelog"
+  },
+  "processingSteps": {
+    "transcribe": "Sprache zu Text konvertieren",
+    "clean": "Füllwörter und Rauschen entfernen", 
+    "structure": "Inhaltsstruktur analysieren",
+    "seo": "Für SEO optimieren",
+    "format": "Rich-Formatierung erstellen",
+    "generate": "Überschrift und Tags generieren",
+    "image": "Cover-Bild erstellen"
+  },
+  "actions": {
+    "copy": "Kopieren",
+    "save": "Speichern",
+    "share": "Teilen",
+    "recordNew": "Neuen Inhalt Aufnehmen"
+  },
+  "features": {
+    "input": {
+      "title": "Eingabe",
+      "description": "Einfügen, hochladen oder aufnehmen"
+    },
+    "aiMagic": {
+      "title": "KI-Magie", 
+      "description": "KI bereinigt und formatiert"
+    },
+    "share": {
+      "title": "Teilen",
+      "description": "Überall sofort veröffentlichen"
+    }
+  },
+  "toast": {
+    "copied": "✨ In die Zwischenablage kopiert!",
+    "copyFailed": "❌ Kopieren fehlgeschlagen",
+    "copiedForSharing": "📋 Zum Teilen kopiert!",
+    "signInToSave": "🔒 Melde dich an, um deine Vibelogs zu speichern!"
+  },
+  "share": {
+    "title": "Mein Vibelog",
+    "text": "Ich habe gerade mit @VibeLog vibelogged — Sprich deinen Vibe."
+  },
+  "demo": {
+    "transcriptionSample": "Heute möchte ich einige Gedanken über die Zukunft der Sprachtechnologie und wie sie die Art, wie wir Inhalte erstellen, verändert, teilen. Sprechen ist unsere natürlichste Form der Kommunikation und ich glaube, wir bewegen uns auf eine Welt zu, in der deine Stimme zu deinem Stift wird.",
+    "blogContent": "# Die Zukunft der Sprachtechnologie: Transformation der Inhaltserstellung\n\nSprachtechnologie revolutioniert, wie wir Inhalte erstellen und teilen. Während wir uns in Richtung einer stärker vernetzten digitalen Welt bewegen, stellt die Fähigkeit, gesprochene Worte in polierten, veröffentlichungsreifen Inhalt zu verwandeln, einen fundamentalen Wandel in der Inhaltserstellung dar.\n\n## Die Natürliche Evolution der Kommunikation\n\nSprechen ist unsere natürlichste Form der Kommunikation. Wenn wir die Reibung des Tippens und Formatierens entfernen, können wir uns rein auf unsere Ideen konzentrieren und die Technologie den Rest übernehmen lassen. Diese Befreiung ermöglicht es Erstellern:\n\n- **Ideen natürlicher auszudrücken** ohne die Einschränkungen einer Tastatur\n- **Inspiration in Echtzeit zu erfassen** wo auch immer sie sind\n- **Die Barriere zwischen Gedanke und Veröffentlichung zu reduzieren**\n\n## Warum Stimme in der Inhaltserstellung Zählt\n\nDie Auswirkungen für Ersteller, Autoren und Content-Marketing-Spezialisten sind tiefgreifend. Wir bewegen uns auf eine Welt zu, in der deine Stimme zu deinem Stift wird und ermöglicht:\n\n### Schnellere Inhaltsproduktion\nSprache-zu-Text-Technologie kann Gedanken mit der Geschwindigkeit des Sprechens erfassen, was typischerweise 3-4 mal schneller ist als Tippen.\n\n### Verbesserte Zugänglichkeit\nSprachschnittstellen machen die Inhaltserstellung zugänglich für Nutzer mit Mobilitätsherausforderungen oder solche, die auditive Interaktion bevorzugen.\n\n### Erhöhte Authentizität\nDurch Sprache erstellter Inhalt behält oft einen konversationelleren, authentischeren Ton bei, der besser mit Zielgruppen resoniert.\n\n## Die Technologie Hinter der Magie\n\nModerne Sprachtechnologie kombiniert mehrere hochmoderne Technologien:\n\n- **Fortgeschrittene Spracherkennung** angetrieben von neuronalen Netzwerken\n- **Natürliche Sprachverarbeitung** für Kontextverständnis\n- **KI-gesteuerte Inhaltsoptimierung** für SEO und Lesbarkeit\n- **Automatisierte Formatierung und Strukturierung** für professionelle Präsentation\n\n## Blick in die Zukunft\n\nWährend sich Sprachtechnologie weiterentwickelt, können wir noch ausgefeiltere Funktionen wie Echtzeit-Faktenüberprüfung, automatische Zitatgenerierung und mehrsprachige Inhaltserstellung erwarten. Die Zukunft der Inhaltserstellung ist nicht nur digital—sie ist konversationell.\n\n*Bereit, sprachgestützte Inhaltserstellung auszuprobieren? Beginne heute damit, deine Ideen durch Sprechen zum Leben zu erwecken.*"
+  },
+  "meta": {
+    "title": "VibeLog - Von Sprache zu Blog in Sekunden",
+    "description": "Verwandle deine Stimme sofort in polierte Blog-Posts. Sprich deinen Vibe, KI macht den Rest. Überall mit einem Tap veröffentlichen."
+  },
+  "pages": {
+    "faq": {
+      "title": "Häufig Gestellte Fragen",
+      "subtitle": "Alles, was Sie über die Umwandlung Ihrer Stimme in Inhalte wissen müssen.",
+      "questions": {
+        "howItWorks": {
+          "question": "Wie funktioniert vibelog.io?",
+          "answer": "Nehmen Sie Ihre Stimme auf, wir transkribieren und verwandeln sie in polierten, teilbaren Inhalt."
+        },
+        "freePlan": {
+          "question": "Gibt es einen kostenlosen Plan?",
+          "answer": "Ja, der Casual Blogger Plan ermöglicht es Ihnen, kostenlos mit den Kernfunktionen zu beginnen."
+        },
+        "multiplePlatforms": {
+          "question": "Kann ich auf mehreren Plattformen veröffentlichen?",
+          "answer": "Ja, Sie können Inhalte je nach Ihrem Plan auf mehrere Plattformen exportieren oder veröffentlichen."
+        }
+      },
+      "support": {
+        "title": "Haben Sie noch Fragen?",
+        "description": "Finden Sie nicht die Antwort, die Sie suchen? Unser Team ist hier, um zu helfen.",
+        "button": "Support Kontaktieren"
+      }
+    },
+    "pricing": {
+      "title": "Wählen Sie Ihren Plan",
+      "subtitle": "Verwandeln Sie Ihre Stimme in polierten Inhalt. Beginnen Sie kostenlos, upgraden Sie wenn Sie bereit sind.",
+      "billing": {
+        "monthly": "Monatlich",
+        "yearly": "Jährlich",
+        "yearlyDiscount": "2 Monate kostenlos"
+      },
+      "plans": {
+        "casual": {
+          "name": "Gelegenheitsblogger",
+          "description": "Perfekt für den Einstieg",
+          "price": "Kostenlos",
+          "cta": "Kostenlos Beginnen",
+          "features": [
+            "Unbegrenzte Sprachaufnahmen",
+            "Basis-Transkription und Formatierung",
+            "Bis zu 5 Minuten pro Aufnahme",
+            "vibelog.io Wasserzeichen",
+            "Kopieren und Teilen Funktion",
+            "Mobile Responsive",
+            "Community Support"
+          ]
+        },
+        "influencer": {
+          "name": "Influencer",
+          "description": "Für ernsthafte Content-Ersteller",
+          "price": "$19",
+          "yearlyPrice": "$15",
+          "cta": "Kostenlose Testversion Starten",
+          "popular": "Am Beliebtesten",
+          "features": [
+            "Alles in Gelegenheitsblogger",
+            "Keine Wasserzeichen",
+            "Bis zu 30 Minuten pro Aufnahme",
+            "Prioritäre KI-Verarbeitung",
+            "Social Media Integrationen",
+            "Auto-Veröffentlichung auf Plattformen",
+            "Erweiterte Formatierungsoptionen",
+            "Benutzerdefinierte Blog-Vorlagen",
+            "Analytics Dashboard",
+            "E-Mail Support"
+          ]
+        },
+        "agency": {
+          "name": "Marketing Agentur",
+          "description": "Für Teams und Unternehmen",
+          "price": "$99",
+          "yearlyPrice": "$79",
+          "cta": "Vertrieb Kontaktieren",
+          "features": [
+            "Alles in Influencer",
+            "Unbegrenzte Aufnahmezeit",
+            "Multi-User Team-Zugang",
+            "Brand-Anpassung",
+            "Custom Domain Support",
+            "White-Label Optionen",
+            "Erweiterte Analytics",
+            "Inhaltsplanung",
+            "API-Zugang",
+            "Prioritärer Telefon-Support",
+            "Dedizierter Account Manager"
+          ]
+        }
+      },
+      "perMonth": "/Monat",
+      "cta": {
+        "title": "Beginnen Sie heute mit der Erstellung großartiger Inhalte",
+        "subtitle": "Schließen Sie sich Tausenden von Erstellern an, die die Kraft von sprachbasierten Inhalten entdeckt haben.",
+        "startTrial": "Kostenlose Testversion Starten",
+        "viewDemo": "Demo Ansehen"
+      }
+    },
+    "about": {
+      "title": "Über vibelog.io",
+      "founderVideo": {
+        "placeholder": "Gründer Video Platzhalter",
+        "subtitle": "Rohe und authentische Geschichte"
+      },
+      "problem": {
+        "title": "Das Problem",
+        "paragraphs": [
+          "Ich hatte schon immer Ideen — manchmal brillante. Ich schrieb sie in Journal-Apps, streute sie über Google Keep, Apple Notes, Raycast Notes oder kritzelte sie auf Papier. Manchmal nahm ich sie als Sprachnotizen auf. Aber sie endeten alle gleich: vergessen.",
+          "Sie mit der Welt zu teilen schien immer überwältigend. Jede Plattform verlangt ein anderes Format — Twitter will Hooks und Threads, Telegram will Stories, LinkedIn will polierte Artikel, SEO will Blogs… Allein daran zu denken ließ mich aufgeben, bevor ich anfing.",
+          "Ich scherzte: Vielleicht wird jemand, wenn ich sterbe, all meine Notizen durchgehen und sie veröffentlichen. Aber warum so lange warten?"
+        ]
+      },
+      "spark": {
+        "title": "Der Funke",
+        "paragraphs": [
+          "Eines Tages dachte ich: Was wäre, wenn es mühelos wäre?",
+          "Einfach auf Aufnahme drücken, deine Gedanken sprechen und die KI den Rest machen lassen — die Nachricht polieren, die \"ähs\" und \"ahs\" entfernen, für jede Plattform anpassen und sogar in mehrere Sprachen übersetzen. Dann überall automatisch veröffentlichen, sofort.",
+          "Es schien zu schön, um wahr zu sein. Aber dann erkannte ich: Mit der heutigen KI kann ich das wirklich bauen. Nicht mit einem riesigen Team, sondern mit Vibe Coding — Bootstrapping mit KI-Tools wie Lovable und Claude."
+        ]
+      },
+      "solution": {
+        "title": "Die Lösung",
+        "paragraphs": [
+          "So wurde vibelog.io geboren. Ein Ort, wo Ihre Stimme sofort zu Inhalt wird — Blog-Artikel, Social Threads, Bildunterschriften, Newsletter, alles was Sie brauchen.",
+          "Für immer kostenlos, wenn Sie nur spielen wollen. Bezahlte Pläne, wenn Sie es ernst meinen mit Einfluss, Marketing oder Wachstum — faire Preise, denn gesparte Zeit ist unbezahlbar."
+        ]
+      },
+      "mission": {
+        "title": "Die Mission",
+        "paragraphs": [
+          "Ich will nicht, dass Ideen in vergessenen Notizen sterben. Ich will eine Welt, in der jeder seine Stimme mühelos gehört werden lassen kann."
+        ],
+        "tagline": "Sprich deinen Vibe → teile überall."
+      },
+      "founder": {
+        "name": "Yan",
+        "role": "Gründer",
+        "handle": "@yanlovez"
+      }
+    },
+    "community": {
+      "title": "Community",
+      "subtitle": "Schließen Sie sich Erstellern an, die mit sprachbasierten Workflows bauen.",
+      "announcements": {
+        "title": "Ankündigungen",
+        "description": "Neueste Updates und Release Notes."
+      },
+      "showcase": {
+        "title": "Showcase",
+        "description": "Sehen Sie, was die Community erstellt."
+      }
+    },
+    "people": {
+      "title": "Personen",
+      "subtitle": "Entdecken Sie Ersteller und ihre neuesten sprachbasierten Posts.",
+      "creatorBio": "Biographie und aktuelle Aktivitäten."
+    }
+  }
+}

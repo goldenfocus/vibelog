@@ -1,26 +1,227 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* vibelog.io Design System - Voice-to-Blog Platform 
+Dark-first minimalist Apple-inspired design with electric blue accent
+All colors MUST be HSL.
+*/
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    /* Dark theme (default) - Apple-inspired minimalism */
+    --background: 0 0% 6%;
+    --foreground: 0 0% 98%;
+
+    --card: 0 0% 8%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 98%;
+
+    /* Metallic electric blue accent - premium neon-like feel */
+    --primary: 217 92% 65%;
+    --primary-foreground: 0 0% 6%;
+
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 90%;
+
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 60%;
+
+    --accent: 217 92% 65%;
+    --accent-foreground: 0 0% 6%;
+
+    --destructive: 0 84% 50%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 20%;
+    --input: 0 0% 12%;
+    --ring: 217 100% 60%;
+
+    --radius: 1rem;
+
+    /* vibelog specific design tokens - metallic premium feel */
+    --electric-blue: 217 92% 65%;
+    --electric-blue-glow: 217 85% 75%;
+    --electric-metallic: 217 88% 70%;
+    --surface-elevated: 0 0% 10%;
+    --surface-subtle: 0 0% 4%;
+    
+    /* Premium gradients with metallic depth */
+    --gradient-electric: linear-gradient(135deg, hsl(217 92% 65%), hsl(217 85% 75%), hsl(217 88% 70%));
+    --gradient-metallic: linear-gradient(145deg, hsl(217 92% 65%) 0%, hsl(217 88% 70%) 50%, hsl(217 85% 75%) 100%);
+    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 8%), hsl(0 0% 6%));
+    --gradient-glow: radial-gradient(circle at center, hsl(217 92% 65% / 0.3), hsl(217 85% 75% / 0.1), transparent 70%);
+    
+    /* Enhanced shadows with metallic glow */
+    --shadow-electric: 0 0 60px hsl(217 92% 65% / 0.4), 0 0 30px hsl(217 85% 75% / 0.2);
+    --shadow-elevated: 0 8px 32px hsl(0 0% 0% / 0.4);
+    --shadow-subtle: 0 2px 8px hsl(0 0% 0% / 0.2);
+    
+    /* Animation transitions */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    --transition-electric: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .light {
+    /* Light theme alternative - clean and minimal */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 6%;
+
+    --card: 0 0% 98%;
+    --card-foreground: 0 0% 6%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 6%;
+
+    --primary: 217 100% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 6%;
+
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 40%;
+
+    --accent: 217 100% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 50%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 90%;
+    --input: 0 0% 96%;
+    --ring: 217 100% 60%;
+
+    /* Override vibelog tokens for light theme */
+    --surface-elevated: 0 0% 98%;
+    --surface-subtle: 0 0% 100%;
+    --shadow-elevated: 0 8px 32px hsl(0 0% 0% / 0.1);
+    --shadow-subtle: 0 2px 8px hsl(0 0% 0% / 0.05);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    /* Default theme variables are defined on :root; no need to apply `dark` */
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  }
+  
+  /* Custom scrollbar for dark theme */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--surface-subtle));
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted));
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary));
+  }
+}
+
+@layer components {
+  /* Simple mic pulse animation */
+  .mic {
+    animation: simple-pulse 2s ease-in-out infinite;
+  }
+
+  .mic.is-recording {
+    animation: recording-pulse 1s ease-in-out infinite;
+  }
+
+  .mic .icon {
+    width: 75%;
+    height: 75%;
+  }
+  
+  /* Waveform animation */
+  .waveform-bar {
+    animation: waveform-bounce 0.8s ease-in-out infinite alternate;
+  }
+  
+  /* Typing animation for transcription */
+  .typing-cursor::after {
+    content: '|';
+    animation: blink 1s infinite;
+  }
+  
+  /* Electric glow effect */
+  .electric-glow {
+    box-shadow: var(--shadow-electric);
+  }
+  
+  /* Glass morphism effect */
+  .glass-card {
+    background: hsl(var(--surface-elevated) / 0.8);
+    backdrop-filter: blur(20px);
+    border: 1px solid hsl(var(--border) / 0.2);
+  }
+}
+
+@layer utilities {
+  .transition-electric {
+    transition: var(--transition-electric);
+  }
+  
+  .transition-smooth {
+    transition: var(--transition-smooth);
+  }
+  
+  .transition-bounce {
+    transition: var(--transition-bounce);
+  }
+}
+
+/* Custom keyframes */
+@keyframes simple-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 hsl(217 92% 65% / 0.3); }
+  50% { transform: scale(1.05); box-shadow: 0 0 20px 5px hsl(217 92% 65% / 0.6); }
+}
+
+@keyframes recording-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 10px hsl(0 84% 50% / 0.6); }
+  50% { transform: scale(1.03); box-shadow: 0 0 20px hsl(0 84% 50% / 0.8); }
+}
+
+@keyframes waveform-bounce {
+  from { transform: scaleY(0.3); }
+  to { transform: scaleY(1); }
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
 }

@@ -1,0 +1,230 @@
+{
+  "navigation": {
+    "about": "À propos",
+    "faq": "FAQ", 
+    "pricing": "Tarifs",
+    "community": "Communauté",
+    "people": "Personnes",
+    "signUp": "S'inscrire"
+  },
+  "hero": {
+    "title": {
+      "part1": "Vibe →",
+      "part2": "Partage Partout"
+    },
+    "subtitle": "Créez et publiez du contenu en quelques secondes."
+  },
+  "recorder": {
+    "idle": "Commencer le vibelogging",
+    "recording": "Parlez naturellement… cliquez à nouveau quand vous avez terminé",
+    "processing": "Polissage de votre vibelog…",
+    "done": "Votre vibelog est prêt !",
+    "processingHeader": "Vibelogging de votre contenu...",
+    "originalTranscription": "Transcription Originale",
+    "polishedVibelog": "Votre vibelog poli"
+  },
+  "processingSteps": {
+    "transcribe": "Conversion de la parole en texte",
+    "clean": "Suppression des mots de remplissage et du bruit", 
+    "structure": "Analyse de la structure du contenu",
+    "seo": "Optimisation pour le SEO",
+    "format": "Création du formatage riche",
+    "generate": "Génération du titre et des tags",
+    "image": "Création de l'image de couverture"
+  },
+  "actions": {
+    "copy": "Copier",
+    "save": "Sauvegarder",
+    "share": "Partager",
+    "recordNew": "Enregistrer Nouveau Contenu"
+  },
+  "features": {
+    "input": {
+      "title": "Entrée",
+      "description": "Collez, téléchargez ou enregistrez"
+    },
+    "aiMagic": {
+      "title": "Magie IA", 
+      "description": "L'IA nettoie et formate"
+    },
+    "share": {
+      "title": "Partager",
+      "description": "Publiez partout instantanément"
+    }
+  },
+  "toast": {
+    "copied": "✨ Copié dans le presse-papier !",
+    "copyFailed": "❌ Échec de la copie",
+    "copiedForSharing": "📋 Copié pour partage !",
+    "signInToSave": "🔒 Connectez-vous pour sauvegarder vos vibelogs !"
+  },
+  "share": {
+    "title": "Mon vibelog",
+    "text": "Je viens de faire du vibelogging avec @VibeLog — Exprimez votre vibe."
+  },
+  "demo": {
+    "transcriptionSample": "Aujourd'hui, je veux partager quelques réflexions sur l'avenir de la technologie vocale et comment elle transforme notre façon de créer du contenu. Parler est notre forme de communication la plus naturelle et je crois que nous nous dirigeons vers un monde où votre voix devient votre plume.",
+    "blogContent": "# L'Avenir de la Technologie Vocale : Transformer la Création de Contenu\n\nLa technologie vocale révolutionne notre façon de créer et partager du contenu. Alors que nous évoluons vers un monde numérique plus connecté, la capacité de transformer des mots parlés en contenu poli et publiable représente un changement fondamental dans la création de contenu.\n\n## L'Évolution Naturelle de la Communication\n\nParler est notre forme de communication la plus naturelle. Quand nous supprimons la friction de la frappe et du formatage, nous pouvons nous concentrer purement sur nos idées et laisser la technologie s'occuper du reste. Cette libération permet aux créateurs de :\n\n- **Exprimer des idées plus naturellement** sans les contraintes d'un clavier\n- **Capturer l'inspiration en temps réel** où qu'ils soient\n- **Réduire la barrière entre pensée et publication**\n\n## Pourquoi la Voix Compte dans la Création de Contenu\n\nLes implications pour les créateurs, écrivains et spécialistes du marketing de contenu sont profondes. Nous nous dirigeons vers un monde où votre voix devient votre plume, permettant :\n\n### Production de Contenu Plus Rapide\nLa technologie voix-à-texte peut capturer les pensées à la vitesse de la parole, qui est typiquement 3-4 fois plus rapide que la frappe.\n\n### Accessibilité Améliorée\nLes interfaces vocales rendent la création de contenu accessible aux utilisateurs avec des défis de mobilité ou ceux qui préfèrent l'interaction auditive.\n\n### Authenticité Renforcée\nLe contenu créé par la voix conserve souvent un ton plus conversationnel et authentique qui résonne mieux avec les audiences.\n\n## La Technologie Derrière la Magie\n\nLa technologie vocale moderne combine plusieurs technologies de pointe :\n\n- **Reconnaissance vocale avancée** alimentée par des réseaux de neurones\n- **Traitement du langage naturel** pour la compréhension du contexte\n- **Optimisation de contenu pilotée par IA** pour le SEO et la lisibilité\n- **Formatage et structuration automatisés** pour une présentation professionnelle\n\n## Regard vers l'Avenir\n\nAlors que la technologie vocale continue d'évoluer, nous pouvons nous attendre à des fonctionnalités encore plus sophistiquées comme la vérification des faits en temps réel, la génération automatique de citations et la création de contenu multilingue. L'avenir de la création de contenu n'est pas seulement numérique—il est conversationnel.\n\n*Prêt à essayer la création de contenu alimentée par la voix ? Commencez à donner vie à vos idées en les parlant dès aujourd'hui.*"
+  },
+  "meta": {
+    "title": "VibeLog - De la Voix au Blog en Quelques Secondes",
+    "description": "Transformez votre voix en articles polis instantanément. Exprimez votre vibe, l'IA fait le reste. Publiez partout en un clic."
+  },
+  "pages": {
+    "faq": {
+      "title": "Questions Fréquemment Posées",
+      "subtitle": "Tout ce que vous devez savoir sur la transformation de votre voix en contenu.",
+      "questions": {
+        "howItWorks": {
+          "question": "Comment fonctionne vibelog.io ?",
+          "answer": "Enregistrez votre voix, nous transcrivons et la transformons en contenu poli prêt à partager."
+        },
+        "freePlan": {
+          "question": "Y a-t-il un plan gratuit ?",
+          "answer": "Oui, le plan Casual Blogger vous permet de commencer gratuitement avec les fonctionnalités principales."
+        },
+        "multiplePlatforms": {
+          "question": "Puis-je publier sur plusieurs plateformes ?",
+          "answer": "Oui, vous pouvez exporter ou publier du contenu sur plusieurs plateformes selon votre plan."
+        }
+      },
+      "support": {
+        "title": "Vous avez encore des questions ?",
+        "description": "Vous ne trouvez pas la réponse que vous cherchez ? Notre équipe est là pour vous aider.",
+        "button": "Contacter le Support"
+      }
+    },
+    "pricing": {
+      "title": "Choisissez Votre Plan",
+      "subtitle": "Transformez votre voix en contenu poli. Commencez gratuitement, mettez à niveau quand vous êtes prêt.",
+      "billing": {
+        "monthly": "Mensuel",
+        "yearly": "Annuel",
+        "yearlyDiscount": "2 mois gratuits"
+      },
+      "plans": {
+        "casual": {
+          "name": "Blogueur Occasionnel",
+          "description": "Parfait pour commencer",
+          "price": "Gratuit",
+          "cta": "Commencer Gratuitement",
+          "features": [
+            "Enregistrements vocaux illimités",
+            "Transcription et formatage de base",
+            "Jusqu'à 5 minutes par enregistrement",
+            "Filigrane vibelog.io",
+            "Fonctionnalité copier et partager",
+            "Responsive mobile",
+            "Support communautaire"
+          ]
+        },
+        "influencer": {
+          "name": "Influenceur",
+          "description": "Pour les créateurs de contenu sérieux",
+          "price": "$19",
+          "yearlyPrice": "$15",
+          "cta": "Commencer l'Essai Gratuit",
+          "popular": "Le Plus Populaire",
+          "features": [
+            "Tout dans Blogueur Occasionnel",
+            "Pas de filigranes",
+            "Jusqu'à 30 minutes par enregistrement",
+            "Traitement IA prioritaire",
+            "Intégrations réseaux sociaux",
+            "Auto-publication sur plateformes",
+            "Options de formatage avancées",
+            "Modèles de blog personnalisés",
+            "Tableau de bord analytique",
+            "Support par email"
+          ]
+        },
+        "agency": {
+          "name": "Agence Marketing",
+          "description": "Pour équipes et entreprises",
+          "price": "$99",
+          "yearlyPrice": "$79",
+          "cta": "Contacter les Ventes",
+          "features": [
+            "Tout dans Influenceur",
+            "Temps d'enregistrement illimité",
+            "Accès multi-utilisateurs équipe",
+            "Personnalisation de marque",
+            "Support domaine personnalisé",
+            "Options marque blanche",
+            "Analytiques avancées",
+            "Planification de contenu",
+            "Accès API",
+            "Support téléphonique prioritaire",
+            "Gestionnaire de compte dédié"
+          ]
+        }
+      },
+      "perMonth": "/mois",
+      "cta": {
+        "title": "Commencez à créer du contenu incroyable aujourd'hui",
+        "subtitle": "Rejoignez des milliers de créateurs qui ont découvert le pouvoir du contenu basé sur la voix.",
+        "startTrial": "Commencer l'Essai Gratuit",
+        "viewDemo": "Voir la Démo"
+      }
+    },
+    "about": {
+      "title": "À propos de vibelog.io",
+      "founderVideo": {
+        "placeholder": "Vidéo du Fondateur Placeholder",
+        "subtitle": "Histoire brute et authentique"
+      },
+      "problem": {
+        "title": "Le Problème",
+        "paragraphs": [
+          "J'ai toujours eu des idées — parfois brillantes. Je les notais dans des apps de journal, les éparpillais dans Google Keep, Apple Notes, Raycast Notes, ou les griffonnais sur papier. Parfois je les enregistrais comme notes vocales. Mais elles finissaient toutes pareil : oubliées.",
+          "Les partager avec le monde semblait toujours écrasant. Chaque plateforme demande un format différent — Twitter veut des accroches et des fils, Telegram veut des histoires, LinkedIn veut des articles polis, le SEO veut des blogs… Juste y penser me faisait abandonner avant de commencer.",
+          "Je plaisantais : peut-être que quand je mourrai, quelqu'un fouillera toutes mes notes et les publiera. Mais pourquoi attendre jusque-là ?"
+        ]
+      },
+      "spark": {
+        "title": "L'Étincelle",
+        "paragraphs": [
+          "Un jour j'ai pensé : et si c'était sans effort ?",
+          "Juste appuyer sur enregistrer, dire vos pensées, et laisser l'IA faire le reste — polir le message, supprimer les \"euh\" et \"ah\", l'adapter pour chaque plateforme, et même le traduire en plusieurs langues. Puis auto-publier partout, instantanément.",
+          "Ça semblait trop beau pour être vrai. Mais puis j'ai réalisé : avec l'IA d'aujourd'hui, je peux vraiment construire ça. Pas avec une équipe énorme, mais avec du vibe coding — bootstrapper avec des outils IA comme Lovable et Claude."
+        ]
+      },
+      "solution": {
+        "title": "La Solution",
+        "paragraphs": [
+          "C'est comme ça que vibelog.io est né. Un endroit où votre voix devient instantanément du contenu — articles de blog, fils sociaux, légendes, newsletters, tout ce dont vous avez besoin.",
+          "Gratuit pour toujours si vous voulez juste jouer. Plans payants si vous êtes sérieux sur l'influence, le marketing ou la croissance — prix justes, parce que le temps économisé n'a pas de prix."
+        ]
+      },
+      "mission": {
+        "title": "La Mission",
+        "paragraphs": [
+          "Je ne veux pas que les idées meurent dans des notes oubliées. Je veux un monde où la voix de chacun peut être entendue, sans effort."
+        ],
+        "tagline": "Exprimez votre vibe → partagez partout."
+      },
+      "founder": {
+        "name": "Yan",
+        "role": "Fondateur",
+        "handle": "@yanlovez"
+      }
+    },
+    "community": {
+      "title": "Communauté",
+      "subtitle": "Rejoignez les créateurs construisant avec des workflows basés sur la voix.",
+      "announcements": {
+        "title": "Annonces",
+        "description": "Dernières mises à jour et notes de version."
+      },
+      "showcase": {
+        "title": "Vitrine",
+        "description": "Voyez ce que la communauté crée."
+      }
+    },
+    "people": {
+      "title": "Personnes",
+      "subtitle": "Découvrez les créateurs et leurs derniers posts basés sur la voix.",
+      "creatorBio": "Bio et activité récente."
+    }
+  }
+}

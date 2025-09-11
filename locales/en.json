@@ -1,0 +1,230 @@
+{
+  "navigation": {
+    "about": "About",
+    "faq": "FAQ", 
+    "pricing": "Pricing",
+    "community": "Community",
+    "people": "People",
+    "signUp": "Sign Up"
+  },
+  "hero": {
+    "title": {
+      "part1": "Vibe →",
+      "part2": "Share Everywhere"
+    },
+    "subtitle": "Create and publish content in seconds."
+  },
+  "recorder": {
+    "idle": "Start vibelogging",
+    "recording": "Speak naturally… click again when done",
+    "processing": "Polishing your vibelog…",
+    "done": "Your vibelog is ready!",
+    "processingHeader": "Vibelogging your content...",
+    "originalTranscription": "Original Transcription",
+    "polishedVibelog": "Your polished vibelog"
+  },
+  "processingSteps": {
+    "transcribe": "Converting speech to text",
+    "clean": "Removing filler words & noise", 
+    "structure": "Analyzing content structure",
+    "seo": "Optimizing for SEO",
+    "format": "Creating rich formatting",
+    "generate": "Generating headline & tags",
+    "image": "Creating cover image"
+  },
+  "actions": {
+    "copy": "Copy",
+    "save": "Save",
+    "share": "Share",
+    "recordNew": "Record New Content"
+  },
+  "features": {
+    "input": {
+      "title": "Input",
+      "description": "Paste, upload, or record"
+    },
+    "aiMagic": {
+      "title": "AI Magic", 
+      "description": "AI cleans and formats"
+    },
+    "share": {
+      "title": "Share",
+      "description": "Publish anywhere instantly"
+    }
+  },
+  "toast": {
+    "copied": "✨ Copied to clipboard!",
+    "copyFailed": "❌ Failed to copy",
+    "copiedForSharing": "📋 Copied for sharing!",
+    "signInToSave": "🔒 Sign in to save your vibelogs!"
+  },
+  "share": {
+    "title": "My vibelog",
+    "text": "I just vibelogged with @VibeLog — Speak your vibe."
+  },
+  "demo": {
+    "transcriptionSample": "Today I want to share some thoughts about the future of voice technology and how it's changing the way we create content. Speaking is our most natural form of communication and I believe we're moving toward a world where your voice becomes your pen.",
+    "blogContent": "# The Future of Voice Technology: Transforming Content Creation\n\nVoice technology is revolutionizing how we create and share content. As we move toward a more connected digital world, the ability to transform spoken words into polished, publishable content represents a fundamental shift in content creation.\n\n## The Natural Evolution of Communication\n\nSpeaking is our most natural form of communication. When we remove the friction of typing and formatting, we can focus purely on our ideas and let technology handle the rest. This liberation allows creators to:\n\n- **Express ideas more naturally** without the constraints of a keyboard\n- **Capture inspiration in real-time** wherever they are\n- **Reduce the barrier between thought and publication**\n\n## Why Voice Matters in Content Creation\n\nThe implications for creators, writers, and content marketers are profound. We're moving toward a world where your voice becomes your pen, enabling:\n\n### Faster Content Production\nVoice-to-text technology can capture thoughts at the speed of speech, which is typically 3-4 times faster than typing.\n\n### Improved Accessibility\nVoice interfaces make content creation accessible to users with mobility challenges or those who prefer auditory interaction.\n\n### Enhanced Authenticity\nContent created through voice often retains a more conversational, authentic tone that resonates better with audiences.\n\n## The Technology Behind the Magic\n\nModern voice technology combines several cutting-edge technologies:\n\n- **Advanced speech recognition** powered by neural networks\n- **Natural language processing** for context understanding\n- **AI-driven content optimization** for SEO and readability\n- **Automated formatting and structuring** for professional presentation\n\n## Looking Forward\n\nAs voice technology continues to evolve, we can expect even more sophisticated features like real-time fact-checking, automatic citation generation, and multi-language content creation. The future of content creation is not just digital—it's conversational.\n\n*Ready to try voice-powered content creation? Start speaking your ideas into existence today.*"
+  },
+  "meta": {
+    "title": "VibeLog - Voice to Blog in Seconds",
+    "description": "Turn your voice into polished blog posts instantly. Speak your vibe, AI handles the rest. Publish everywhere in one tap."
+  },
+  "pages": {
+    "faq": {
+      "title": "Frequently Asked Questions",
+      "subtitle": "Everything you need to know about transforming your voice into content.",
+      "questions": {
+        "howItWorks": {
+          "question": "How does vibelog.io work?",
+          "answer": "Record your voice, we transcribe and transform it into polished content ready to share."
+        },
+        "freePlan": {
+          "question": "Is there a free plan?",
+          "answer": "Yes, the Casual Blogger plan lets you start for free with core features."
+        },
+        "multiplePlatforms": {
+          "question": "Can I publish to multiple platforms?",
+          "answer": "Yes, you can export or publish content to multiple platforms depending on your plan."
+        }
+      },
+      "support": {
+        "title": "Still have questions?",
+        "description": "Can't find the answer you're looking for? Our team is here to help.",
+        "button": "Contact Support"
+      }
+    },
+    "pricing": {
+      "title": "Choose Your Plan",
+      "subtitle": "Transform your voice into polished content. Start free, upgrade when you're ready.",
+      "billing": {
+        "monthly": "Monthly",
+        "yearly": "Yearly",
+        "yearlyDiscount": "2 months free"
+      },
+      "plans": {
+        "casual": {
+          "name": "Casual Blogger",
+          "description": "Perfect for getting started",
+          "price": "Free",
+          "cta": "Start for Free",
+          "features": [
+            "Unlimited voice recordings",
+            "Basic transcription & formatting",
+            "Up to 5 minutes per recording",
+            "vibelog.io watermark",
+            "Copy & share functionality",
+            "Mobile responsive",
+            "Community support"
+          ]
+        },
+        "influencer": {
+          "name": "Influencer",
+          "description": "For serious content creators",
+          "price": "$19",
+          "yearlyPrice": "$15",
+          "cta": "Start Free Trial",
+          "popular": "Most Popular",
+          "features": [
+            "Everything in Casual Blogger",
+            "No watermarks",
+            "Up to 30 minutes per recording",
+            "Priority AI processing",
+            "Social media integrations",
+            "Auto-publish to platforms",
+            "Advanced formatting options",
+            "Custom blog templates",
+            "Analytics dashboard",
+            "Email support"
+          ]
+        },
+        "agency": {
+          "name": "Marketing Agency",
+          "description": "For teams and businesses",
+          "price": "$99",
+          "yearlyPrice": "$79",
+          "cta": "Contact Sales",
+          "features": [
+            "Everything in Influencer",
+            "Unlimited recording time",
+            "Multi-user team access",
+            "Brand customization",
+            "Custom domain support",
+            "White-label options",
+            "Advanced analytics",
+            "Content scheduling",
+            "API access",
+            "Priority phone support",
+            "Dedicated account manager"
+          ]
+        }
+      },
+      "perMonth": "/month",
+      "cta": {
+        "title": "Start creating amazing content today",
+        "subtitle": "Join thousands of creators who've discovered the power of voice-first content.",
+        "startTrial": "Start Free Trial",
+        "viewDemo": "View Demo"
+      }
+    },
+    "about": {
+      "title": "About vibelog.io",
+      "founderVideo": {
+        "placeholder": "Founder Video Placeholder",
+        "subtitle": "Raw, authentic story"
+      },
+      "problem": {
+        "title": "The Problem",
+        "paragraphs": [
+          "I've always had ideas — sometimes brilliant ones. I'd jot them in journaling apps, scatter them across Google Keep, Apple Notes, Raycast Notes, or scribble them on paper. Sometimes I'd record them as voice notes. But they all ended up the same way: forgotten.",
+          "Sharing them with the world always felt overwhelming. Every platform demands a different format — Twitter needs hooks and threads, Telegram wants stories, LinkedIn wants polished articles, SEO needs blogs… Just thinking about it made me quit before starting.",
+          "I used to joke: maybe when I die, someone will dig through all my notes and publish them. But why wait until then?"
+        ]
+      },
+      "spark": {
+        "title": "The Spark",
+        "paragraphs": [
+          "One day I thought: what if it was effortless?",
+          "Just hit record, speak your thoughts, and let AI do the rest — polish the message, remove the \"ums\" and \"ahs,\" adapt it for every platform, and even translate it into multiple languages. Then auto-publish everywhere, instantly.",
+          "It sounded too good to be true. But then I realized: with today's AI, I can actually build this. Not with a huge team, but with vibe coding — bootstrapping with AI tools like Lovable and Claude."
+        ]
+      },
+      "solution": {
+        "title": "The Solution",
+        "paragraphs": [
+          "That's how vibelog.io was born. A place where your voice instantly becomes content — blog posts, social threads, captions, newsletters, whatever you need.",
+          "Free forever if you just want to play. Paid plans if you're serious about influence, marketing, or growth — priced fairly, because time saved is priceless."
+        ]
+      },
+      "mission": {
+        "title": "The Mission",
+        "paragraphs": [
+          "I don't want ideas to die in forgotten notes. I want a world where everyone's voice can be heard, effortlessly."
+        ],
+        "tagline": "Speak your vibe → share everywhere."
+      },
+      "founder": {
+        "name": "Yan",
+        "role": "Founder",
+        "handle": "@yanlovez"
+      }
+    },
+    "community": {
+      "title": "Community",
+      "subtitle": "Join creators building with voice-first workflows.",
+      "announcements": {
+        "title": "Announcements",
+        "description": "Latest updates and release notes."
+      },
+      "showcase": {
+        "title": "Showcase",
+        "description": "See what the community is creating."
+      }
+    },
+    "people": {
+      "title": "People",
+      "subtitle": "Discover creators and their latest voice-first posts.",
+      "creatorBio": "Bio and recent activity."
+    }
+  }
+}
