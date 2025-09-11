@@ -70,6 +70,48 @@
     "title": "VibeLog - Từ Giọng Nói Đến Blog Trong Vài Giây",
     "description": "Biến giọng nói của bạn thành các bài đăng hoàn thiện ngay lập tức. Nói vibe của bạn, AI làm phần còn lại. Xuất bản mọi nơi chỉ với một chạm."
   },
+  "components": {
+    "micRecorder": {
+      "symphony": {
+        "capture": "🎵 Thu âm sóng âm thanh",
+        "transcribe": "✨ Tạo bản ghi",
+        "clean": "🔧 Loại bỏ âm lưu loát",
+        "expand": "🧠 Mở rộng ý tưởng",
+        "structure": "📝 Cấu trúc nội dung",
+        "format": "🎨 Thêm định dạng phong phú",
+        "optimize": "🚀 Tối ưu cho tương tác",
+        "social": "📱 Tạo xem trước mạng xã hội",
+        "seo": "🔍 Tạo metadata SEO",
+        "rss": "📡 Xây dựng RSS feed",
+        "html": "⚡ Tạo phép màu HTML",
+        "polish": "✨ Hoàn thiện cuối cùng",
+        "captureTitle": "CHỤP",
+        "captureDesc": "Phân tích mẫu giọng nói và trích xuất dữ liệu âm thanh thuần túy",
+        "transcribeTitle": "CHUYỂN ĐỔI",
+        "transcribeDesc": "Chuyển đổi giọng nói thành văn bản với mạng nơ-ron tiên tiến",
+        "cleanTitle": "LÀM SẠCH",
+        "cleanDesc": "Loại bỏ từ lấp đầy và đánh bóng lời nói tự nhiên của bạn",
+        "expandTitle": "MỞ RỘNG",
+        "expandDesc": "Làm phong phú ý tưởng với bối cảnh và cái nhìn sâu sắc hơn",
+        "structureTitle": "CẤU TRÚC",
+        "structureDesc": "Tổ chức suy nghĩ thành dòng chảy tường thuật hấp dẫn",
+        "formatTitle": "ĐỊNH DẠNG",
+        "formatDesc": "Tạo tiêu đề, tiêu đề phụ và đoạn văn hoàn hảo",
+        "optimizeTitle": "TỐI ƯU",
+        "optimizeDesc": "Tinh chỉnh giọng điệu, nhịp độ và yếu tố tương tác",
+        "socialTitle": "MẠNG XÃ HỘI",
+        "socialDesc": "Thêm khả năng chia sẻ và yếu tố tiềm năng viral",
+        "seoTitle": "SEO",
+        "seoDesc": "Tích hợp từ khóa để có khả năng khám phá tối đa",
+        "rssTitle": "RSS",
+        "rssDesc": "Chuẩn bị nguồn cấp dữ liệu cho các kênh phân phối liền mạch",
+        "htmlTitle": "HTML",
+        "htmlDesc": "Tạo markup sạch để xuất bản web",
+        "polishTitle": "HOÀN THIỆN",
+        "polishDesc": "Kiểm tra chất lượng cuối cùng và hoàn thiện"
+      }
+    }
+  },
   "pages": {
     "faq": {
       "title": "Câu Hỏi Thường Gặp",

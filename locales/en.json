@@ -34,6 +34,7 @@
   },
   "actions": {
     "copy": "Copy",
+    "edit": "Edit",
     "save": "Save",
     "share": "Share",
     "recordNew": "Record New Content"
@@ -69,6 +70,50 @@
   "meta": {
     "title": "VibeLog - Voice to Blog in Seconds",
     "description": "Turn your voice into polished blog posts instantly. Speak your vibe, AI handles the rest. Publish everywhere in one tap."
+  },
+  "components": {
+    "micRecorder": {
+      "symphony": {
+        "capture": "🎵 Capturing audio waves",
+        "transcribe": "✨ Generating transcript",
+        "clean": "🔧 Removing ums & ahs",
+        "expand": "🧠 Expanding thoughts",
+        "structure": "📝 Structuring content",
+        "format": "🎨 Adding rich formatting",
+        "optimize": "🚀 Optimizing for engagement",
+        "social": "📱 Creating social previews",
+        "seo": "🔍 Generating SEO metadata",
+        "rss": "📡 Building RSS feed",
+        "html": "⚡ Crafting HTML magic",
+        "polish": "✨ Final polish",
+        "captureTitle": "CAPTURE",
+        "captureDesc": "Analyzing your voice patterns and extracting pure audio data",
+        "transcribeTitle": "TRANSCRIBE", 
+        "transcribeDesc": "Converting speech to text with advanced neural networks",
+        "cleanTitle": "CLEAN",
+        "cleanDesc": "Removing filler words and polishing your natural speech",
+        "expandTitle": "EXPAND",
+        "expandDesc": "Enriching ideas with context and deeper insights",
+        "structureTitle": "STRUCTURE",
+        "structureDesc": "Organizing thoughts into compelling narrative flow",
+        "formatTitle": "FORMAT",
+        "formatDesc": "Crafting headlines, subheadings, and perfect paragraphs",
+        "optimizeTitle": "OPTIMIZE",
+        "optimizeDesc": "Fine-tuning tone, pacing, and engagement factors",
+        "socialTitle": "SOCIAL",
+        "socialDesc": "Adding shareability and viral potential elements",
+        "seoTitle": "SEO",
+        "seoDesc": "Integrating keywords for maximum discoverability",
+        "rssTitle": "RSS",
+        "rssDesc": "Preparing feeds for seamless distribution channels",
+        "htmlTitle": "HTML",
+        "htmlDesc": "Generating clean markup for web publishing",
+        "polishTitle": "POLISH",
+        "polishDesc": "Final quality checks and perfection touches"
+      },
+      "unlockMessage": "to unlock your full vibelog and share everywhere!",
+      "createdBy": "Created by"
+    }
   },
   "pages": {
     "faq": {

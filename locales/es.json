@@ -34,6 +34,7 @@
   },
   "actions": {
     "copy": "Copiar",
+    "edit": "Editar",
     "save": "Guardar",
     "share": "Compartir",
     "recordNew": "Grabar Nuevo Contenido"
@@ -69,6 +70,48 @@
   "meta": {
     "title": "VibeLog - De Voz a Blog en Segundos",
     "description": "Convierte tu voz en posts pulidos al instante. Habla tu vibe, la IA hace el resto. Publica en todas partes con un toque."
+  },
+  "components": {
+    "micRecorder": {
+      "symphony": {
+        "capture": "🎵 Capturando ondas de audio",
+        "transcribe": "✨ Generando transcripción",
+        "clean": "🔧 Eliminando ums y ahs",
+        "expand": "🧠 Expandiendo pensamientos",
+        "structure": "📝 Estructurando contenido",
+        "format": "🎨 Agregando formato rico",
+        "optimize": "🚀 Optimizando para engagement",
+        "social": "📱 Creando previews sociales",
+        "seo": "🔍 Generando metadata SEO",
+        "rss": "📡 Construyendo feed RSS",
+        "html": "⚡ Creando magia HTML",
+        "polish": "✨ Pulido final",
+        "captureTitle": "CAPTURA",
+        "captureDesc": "Analizando patrones de voz y extrayendo datos de audio puros",
+        "transcribeTitle": "TRANSCRIPCIÓN",
+        "transcribeDesc": "Convirtiendo habla a texto con redes neuronales avanzadas",
+        "cleanTitle": "LIMPIEZA",
+        "cleanDesc": "Eliminando muletillas y puliendo tu habla natural",
+        "expandTitle": "EXPANSIÓN",
+        "expandDesc": "Enriqueciendo ideas con contexto y perspectivas más profundas",
+        "structureTitle": "ESTRUCTURA",
+        "structureDesc": "Organizando pensamientos en flujo narrativo convincente",
+        "formatTitle": "FORMATO",
+        "formatDesc": "Creando titulares, subtítulos y párrafos perfectos",
+        "optimizeTitle": "OPTIMIZACIÓN",
+        "optimizeDesc": "Ajustando tono, ritmo y factores de engagement",
+        "socialTitle": "SOCIAL",
+        "socialDesc": "Agregando elementos de compartibilidad y potencial viral",
+        "seoTitle": "SEO",
+        "seoDesc": "Integrando palabras clave para máxima descubribilidad",
+        "rssTitle": "RSS",
+        "rssDesc": "Preparando feeds para canales de distribución fluida",
+        "htmlTitle": "HTML",
+        "htmlDesc": "Generando marcado limpio para publicación web",
+        "polishTitle": "PULIDO",
+        "polishDesc": "Verificaciones de calidad final y toques de perfección"
+      }
+    }
   },
   "pages": {
     "faq": {

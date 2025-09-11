@@ -70,6 +70,48 @@
     "title": "VibeLog - Von Sprache zu Blog in Sekunden",
     "description": "Verwandle deine Stimme sofort in polierte Blog-Posts. Sprich deinen Vibe, KI macht den Rest. Überall mit einem Tap veröffentlichen."
   },
+  "components": {
+    "micRecorder": {
+      "symphony": {
+        "capture": "🎵 Audiowellen erfassen",
+        "transcribe": "✨ Transkription generieren",
+        "clean": "🔧 Ähs und Öhs entfernen",
+        "expand": "🧠 Gedanken erweitern",
+        "structure": "📝 Inhalt strukturieren",
+        "format": "🎨 Rich-Formatierung hinzufügen",
+        "optimize": "🚀 Für Engagement optimieren",
+        "social": "📱 Social-Previews erstellen",
+        "seo": "🔍 SEO-Metadaten generieren",
+        "rss": "📡 RSS-Feed aufbauen",
+        "html": "⚡ HTML-Magie schaffen",
+        "polish": "✨ Finaler Schliff",
+        "captureTitle": "ERFASSUNG",
+        "captureDesc": "Analysiere deine Sprachmuster und extrahiere reine Audiodaten",
+        "transcribeTitle": "TRANSKRIPTION",
+        "transcribeDesc": "Konvertiere Sprache zu Text mit fortschrittlichen neuronalen Netzwerken",
+        "cleanTitle": "BEREINIGUNG",
+        "cleanDesc": "Entferne Füllwörter und poliere deine natürliche Sprache",
+        "expandTitle": "ERWEITERN",
+        "expandDesc": "Bereichere Ideen mit Kontext und tieferen Einsichten",
+        "structureTitle": "STRUKTURIEREN",
+        "structureDesc": "Organisiere Gedanken zu fesselndem Narrativ-Fluss",
+        "formatTitle": "FORMATIEREN",
+        "formatDesc": "Erstelle Überschriften, Unterüberschriften und perfekte Absätze",
+        "optimizeTitle": "OPTIMIEREN",
+        "optimizeDesc": "Feinabstimmung von Ton, Tempo und Engagement-Faktoren",
+        "socialTitle": "SOCIAL",
+        "socialDesc": "Füge Teilbarkeit und virale Potenzial-Elemente hinzu",
+        "seoTitle": "SEO",
+        "seoDesc": "Integriere Keywords für maximale Auffindbarkeit",
+        "rssTitle": "RSS",
+        "rssDesc": "Bereite Feeds für nahtlose Vertriebskanäle vor",
+        "htmlTitle": "HTML",
+        "htmlDesc": "Generiere sauberes Markup für Web-Publishing",
+        "polishTitle": "POLIEREN",
+        "polishDesc": "Finale Qualitätsprüfungen und Perfektion"
+      }
+    }
+  },
   "pages": {
     "faq": {
       "title": "Häufig Gestellte Fragen",

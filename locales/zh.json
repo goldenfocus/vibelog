@@ -70,6 +70,48 @@
     "title": "VibeLog - 几秒钟从语音到博客",
     "description": "立即将您的声音转换为精美的博客文章。说出您的 vibe，AI 处理其余部分。一键发布到任何地方。"
   },
+  "components": {
+    "micRecorder": {
+      "symphony": {
+        "capture": "🎵 捕获音频波形",
+        "transcribe": "✨ 生成转录",
+        "clean": "🔧 移除嗯和啊",
+        "expand": "🧠 扩展思路",
+        "structure": "📝 构建内容结构",
+        "format": "🎨 添加丰富格式",
+        "optimize": "🚀 优化参与度",
+        "social": "📱 创建社交预览",
+        "seo": "🔍 生成SEO元数据",
+        "rss": "📡 构建RSS源",
+        "html": "⚡ 创造HTML魔法",
+        "polish": "✨ 最终润色",
+        "captureTitle": "捕获",
+        "captureDesc": "分析您的语音模式并提取纯音频数据",
+        "transcribeTitle": "转录",
+        "transcribeDesc": "使用先进的神经网络将语音转换为文本",
+        "cleanTitle": "清理",
+        "cleanDesc": "移除填充词并润色您的自然语音",
+        "expandTitle": "扩展",
+        "expandDesc": "用上下文和更深入的洞察丰富想法",
+        "structureTitle": "结构化",
+        "structureDesc": "将思想组织成引人入胜的叙述流程",
+        "formatTitle": "格式化",
+        "formatDesc": "制作标题、副标题和完美段落",
+        "optimizeTitle": "优化",
+        "optimizeDesc": "微调语调、节奏和参与因子",
+        "socialTitle": "社交",
+        "socialDesc": "添加可分享性和病毒式传播潜力元素",
+        "seoTitle": "SEO",
+        "seoDesc": "集成关键词以实现最大可发现性",
+        "rssTitle": "RSS",
+        "rssDesc": "为无缝分发渠道准备订阅源",
+        "htmlTitle": "HTML",
+        "htmlDesc": "生成用于网络发布的干净标记",
+        "polishTitle": "润色",
+        "polishDesc": "最终质量检查和完美化处理"
+      }
+    }
+  },
   "pages": {
     "faq": {
       "title": "常见问题",

@@ -34,6 +34,7 @@
   },
   "actions": {
     "copy": "Copier",
+    "edit": "Éditer",
     "save": "Sauvegarder",
     "share": "Partager",
     "recordNew": "Enregistrer Nouveau Contenu"
@@ -69,6 +70,50 @@
   "meta": {
     "title": "VibeLog - De la Voix au Blog en Quelques Secondes",
     "description": "Transformez votre voix en articles polis instantanément. Exprimez votre vibe, l'IA fait le reste. Publiez partout en un clic."
+  },
+  "components": {
+    "micRecorder": {
+      "symphony": {
+        "capture": "🎵 Capture des ondes audio",
+        "transcribe": "✨ Génération de transcription",
+        "clean": "🔧 Suppression des euh et ah",
+        "expand": "🧠 Expansion des pensées",
+        "structure": "📝 Structuration du contenu",
+        "format": "🎨 Ajout du formatage riche",
+        "optimize": "🚀 Optimisation pour l'engagement",
+        "social": "📱 Création d'aperçus sociaux",
+        "seo": "🔍 Génération de métadonnées SEO",
+        "rss": "📡 Construction du flux RSS",
+        "html": "⚡ Création de magie HTML",
+        "polish": "✨ Polissage final",
+        "captureTitle": "CAPTURE",
+        "captureDesc": "Analyse de vos patterns vocaux et extraction de données audio pures",
+        "transcribeTitle": "TRANSCRIPTION", 
+        "transcribeDesc": "Conversion de la parole en texte avec des réseaux neuronaux avancés",
+        "cleanTitle": "NETTOYAGE",
+        "cleanDesc": "Suppression des mots de remplissage et polissage de votre discours naturel",
+        "expandTitle": "EXPANSION",
+        "expandDesc": "Enrichissement des idées avec contexte et insights plus profonds",
+        "structureTitle": "STRUCTURE",
+        "structureDesc": "Organisation des pensées en flux narratif captivant",
+        "formatTitle": "FORMAT",
+        "formatDesc": "Création de titres, sous-titres et paragraphes parfaits",
+        "optimizeTitle": "OPTIMISATION",
+        "optimizeDesc": "Ajustement du ton, rythme et facteurs d'engagement",
+        "socialTitle": "SOCIAL",
+        "socialDesc": "Ajout d'éléments de partageabilité et potentiel viral",
+        "seoTitle": "SEO",
+        "seoDesc": "Intégration de mots-clés pour une découvrabilité maximale",
+        "rssTitle": "RSS",
+        "rssDesc": "Préparation des flux pour canaux de distribution fluides",
+        "htmlTitle": "HTML",
+        "htmlDesc": "Génération de balisage propre pour publication web",
+        "polishTitle": "POLISSAGE",
+        "polishDesc": "Vérifications de qualité finale et touches de perfection"
+      },
+      "unlockMessage": "pour débloquer votre vibelog complet et partager partout !",
+      "createdBy": "Créé par"
+    }
   },
   "pages": {
     "faq": {
