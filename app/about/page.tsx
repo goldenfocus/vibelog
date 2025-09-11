@@ -2,9 +2,32 @@
 
 import { Navigation } from "@/components/Navigation";
 import { useI18n } from "@/components/providers/I18nProvider";
+import { Heart, MessageCircle, Share, User } from "lucide-react";
 
 export default function About() {
   const { t } = useI18n();
+
+  const handleShare = async () => {
+    const shareData = {
+      title: 'vibelog.io - About Yang',
+      text: 'Check out the story behind vibelog.io and how voice-first content creation is changing everything. Built with vibe coding! 🚀',
+      url: window.location.href
+    };
+
+    try {
+      if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+        await navigator.share(shareData);
+      } else {
+        // Fallback: copy to clipboard
+        await navigator.clipboard.writeText(`${shareData.title}\n${shareData.text}\n${shareData.url}`);
+        // You could add a toast notification here
+        console.log('Link copied to clipboard!');
+      }
+    } catch (error) {
+      console.error('Error sharing:', error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -122,19 +145,98 @@ export default function About() {
             <div className="h-px bg-border flex-1"></div>
           </div>
 
-          {/* Founder Section */}
-          <div className="text-center bg-gradient-subtle rounded-3xl p-12 border border-border/20">
-            <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
-              <span className="text-2xl">👤</span>
+          {/* Community Engagement Section */}
+          <div className="bg-gradient-subtle rounded-3xl p-8 border border-border/20 mb-16">
+            {/* Profile Section */}
+            <div className="text-center mb-8">
+              <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                <User className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-xl font-bold mb-1">Yang</h3>
+              <p className="text-muted-foreground mb-2">Founder</p>
+              <a 
+                href="/vibeyang" 
+                className="text-electric hover:text-electric-glow transition-colors"
+              >
+                @vibeyang
+              </a>
             </div>
-            <h3 className="text-2xl font-bold mb-2">{t('pages.about.founder.name')}</h3>
-            <p className="text-muted-foreground mb-4">{t('pages.about.founder.role')}</p>
-            <a 
-              href="/yanlovez" 
-              className="inline-flex items-center text-electric hover:text-electric-glow transition-colors"
-            >
-              {t('pages.about.founder.handle')}
-            </a>
+
+            {/* Engagement Stats */}
+            <div className="flex items-center justify-center space-x-8 mb-8">
+              <div className="flex items-center space-x-2 text-muted-foreground">
+                <Heart className="w-5 h-5" />
+                <span>247 likes</span>
+              </div>
+              <div className="flex items-center space-x-2 text-muted-foreground">
+                <MessageCircle className="w-5 h-5" />
+                <span>43 comments</span>
+              </div>
+              <button 
+                onClick={handleShare}
+                className="flex items-center space-x-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              >
+                <Share className="w-5 h-5" />
+                <span>Share</span>
+              </button>
+            </div>
+
+            {/* Community Comments */}
+            <div className="space-y-6">
+              <div className="flex items-start space-x-3">
+                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="text-sm font-semibold text-white">A</span>
+                </div>
+                <div>
+                  <div className="flex items-center space-x-2 mb-1">
+                    <span className="font-medium">@alexchen</span>
+                    <span className="text-sm text-muted-foreground">2h ago</span>
+                  </div>
+                  <p className="text-muted-foreground">This is exactly what I needed! No more scattered notes</p>
+                </div>
+              </div>
+
+              <div className="flex items-start space-x-3">
+                <div className="w-8 h-8 bg-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="text-sm font-semibold text-white">S</span>
+                </div>
+                <div>
+                  <div className="flex items-center space-x-2 mb-1">
+                    <span className="font-medium">@sarahmiller</span>
+                    <span className="text-sm text-muted-foreground">4h ago</span>
+                  </div>
+                  <p className="text-muted-foreground">The "vibe coding" approach is genius. Building with AI tools is the future.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start space-x-3">
+                <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="text-sm font-semibold text-white">M</span>
+                </div>
+                <div>
+                  <div className="flex items-center space-x-2 mb-1">
+                    <span className="font-medium">@mikejohnson</span>
+                    <span className="text-sm text-muted-foreground">6h ago</span>
+                  </div>
+                  <p className="text-muted-foreground">Love the personal story behind this. Excited to try it out!</p>
+                </div>
+              </div>
+
+              {/* Add Comment Input */}
+              <div className="flex items-center space-x-3 pt-4 border-t border-border/20">
+                <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
+                  <User className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    placeholder="Add a comment..."
+                    className="w-full bg-transparent text-muted-foreground placeholder-muted-foreground focus:outline-none"
+                    readOnly
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </main>

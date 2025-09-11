@@ -76,7 +76,7 @@ export default function Pricing() {
               </span>
               {isYearly && (
                 <span className="text-sm bg-electric/20 text-electric px-2 py-1 rounded-full">
-                  {t('pages.pricing.billing.yearlyDiscount')}
+                  Save ~30% with yearly
                 </span>
               )}
             </div>
@@ -107,10 +107,30 @@ export default function Pricing() {
                   
                   <div className="mb-6">
                     <span className="text-4xl font-bold">
-                      {isYearly ? plan.yearlyPrice : plan.price}
+                      {(() => {
+                        if (plan.price === t('pages.pricing.plans.casual.price')) {
+                          return plan.price; // Free plan
+                        } else if (plan.name === t('pages.pricing.plans.influencer.name')) {
+                          return isYearly ? '$9' : '$12';
+                        } else if (plan.name === t('pages.pricing.plans.agency.name')) {
+                          return isYearly ? '$60' : '$99';
+                        }
+                        return isYearly ? plan.yearlyPrice : plan.price;
+                      })()}
                     </span>
                     {plan.price !== t('pages.pricing.plans.casual.price') && (
-                      <span className="text-muted-foreground">{t('pages.pricing.perMonth')}</span>
+                      <span className="text-muted-foreground">
+                        {isYearly ? '/mo' : '/month'}
+                      </span>
+                    )}
+                    {isYearly && plan.price !== t('pages.pricing.plans.casual.price') && (
+                      <div className="text-sm text-muted-foreground mt-2">
+                        <div>billed yearly</div>
+                        <div className="mt-1">
+                          {plan.name === t('pages.pricing.plans.influencer.name') && '$99/year'}
+                          {plan.name === t('pages.pricing.plans.agency.name') && '$690/year'}
+                        </div>
+                      </div>
                     )}
                   </div>
                   

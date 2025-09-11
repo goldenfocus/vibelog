@@ -66,9 +66,9 @@ export const Navigation = () => {
               onLanguageChange={setLocale}
               compact={true}
             />
-            <Button variant="default" size="sm">
+            <button className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-electric hover:opacity-90 text-white font-semibold rounded-xl transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-electric/20 focus:scale-105">
               {t('navigation.signUp')}
-            </Button>
+            </button>
           </div>
 
           {/* Mobile menu button */}
@@ -131,9 +131,9 @@ export const Navigation = () => {
               />
             </div>
             
-            <Button variant="default" size="sm" className="w-full">
+            <button className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-electric hover:opacity-90 text-white font-semibold rounded-xl transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-electric/20 focus:scale-105">
               {t('navigation.signUp')}
-            </Button>
+            </button>
           </div>
         )}
       </div>

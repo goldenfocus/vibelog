@@ -100,7 +100,7 @@
       "billing": {
         "monthly": "月付",
         "yearly": "年付",
-        "yearlyDiscount": "免费 2 个月"
+        "yearlyDiscount": "年付节省30%"
       },
       "plans": {
         "casual": {
@@ -121,8 +121,8 @@
         "influencer": {
           "name": "影响者",
           "description": "为认真的内容创作者",
-          "price": "$19",
-          "yearlyPrice": "$15",
+          "price": "$12",
+          "yearlyPrice": "$99",
           "cta": "开始免费试用",
           "popular": "最受欢迎",
           "features": [
@@ -142,7 +142,7 @@
           "name": "营销机构",
           "description": "为团队和企业",
           "price": "$99",
-          "yearlyPrice": "$79",
+          "yearlyPrice": "$690",
           "cta": "联系销售",
           "features": [
             "影响者的所有功能",
@@ -204,9 +204,9 @@
         "tagline": "说出您的 vibe → 随处分享。"
       },
       "founder": {
-        "name": "Yan",
+        "name": "Yang",
         "role": "创始人",
-        "handle": "@yanlovez"
+        "handle": "@vibeyang"
       }
     },
     "community": {

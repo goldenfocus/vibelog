@@ -100,7 +100,7 @@
       "billing": {
         "monthly": "Mensuel",
         "yearly": "Annuel",
-        "yearlyDiscount": "2 mois gratuits"
+        "yearlyDiscount": "Économisez 30% annuel"
       },
       "plans": {
         "casual": {
@@ -121,8 +121,8 @@
         "influencer": {
           "name": "Influenceur",
           "description": "Pour les créateurs de contenu sérieux",
-          "price": "$19",
-          "yearlyPrice": "$15",
+          "price": "$12",
+          "yearlyPrice": "$99",
           "cta": "Commencer l'Essai Gratuit",
           "popular": "Le Plus Populaire",
           "features": [
@@ -142,7 +142,7 @@
           "name": "Agence Marketing",
           "description": "Pour équipes et entreprises",
           "price": "$99",
-          "yearlyPrice": "$79",
+          "yearlyPrice": "$690",
           "cta": "Contacter les Ventes",
           "features": [
             "Tout dans Influenceur",
@@ -204,9 +204,9 @@
         "tagline": "Exprimez votre vibe → partagez partout."
       },
       "founder": {
-        "name": "Yan",
+        "name": "Yang",
         "role": "Fondateur",
-        "handle": "@yanlovez"
+        "handle": "@vibeyang"
       }
     },
     "community": {

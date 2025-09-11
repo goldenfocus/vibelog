@@ -100,7 +100,7 @@
       "billing": {
         "monthly": "Hàng tháng",
         "yearly": "Hàng năm",
-        "yearlyDiscount": "2 tháng miễn phí"
+        "yearlyDiscount": "Tiết kiệm 30% hàng năm"
       },
       "plans": {
         "casual": {
@@ -121,8 +121,8 @@
         "influencer": {
           "name": "Influencer",
           "description": "Dành cho người tạo nội dung nghiêm túc",
-          "price": "$19",
-          "yearlyPrice": "$15",
+          "price": "$12",
+          "yearlyPrice": "$99",
           "cta": "Bắt Đầu Dùng Thử Miễn Phí",
           "popular": "Phổ Biến Nhất",
           "features": [
@@ -142,7 +142,7 @@
           "name": "Cơ Quan Marketing",
           "description": "Dành cho đội nhóm và doanh nghiệp",
           "price": "$99",
-          "yearlyPrice": "$79",
+          "yearlyPrice": "$690",
           "cta": "Liên Hệ Bán Hàng",
           "features": [
             "Mọi thứ trong Influencer",
@@ -204,9 +204,9 @@
         "tagline": "Nói vibe của bạn → chia sẻ mọi nơi."
       },
       "founder": {
-        "name": "Yan",
+        "name": "Yang",
         "role": "Người Sáng Lập",
-        "handle": "@yanlovez"
+        "handle": "@vibeyang"
       }
     },
     "community": {
