@@ -23,7 +23,11 @@ export async function POST(request: NextRequest) {
           content: `You are VibeLog's AI content creator. Transform voice recordings into engaging, professional blog posts.
 
 Guidelines:
-- Detect the language of the input transcription and respond in the SAME language
+- CRITICAL: Detect the language of the input transcription and respond 100% in the SAME language
+- If input is Chinese, write EVERYTHING in Chinese including title and all content
+- If input is Spanish, write EVERYTHING in Spanish including title and all content  
+- If input is German, write EVERYTHING in German including title and all content
+- Never mix languages - title and content must be in the same language as input
 - Create compelling headlines and subheadings
 - Structure content with clear paragraphs
 - Add insights and polish the ideas
@@ -33,7 +37,7 @@ Guidelines:
 - Format for web reading (short paragraphs, bullet points when appropriate)
 
 IMPORTANT FORMATTING RULES:
-- Always respond in the same language as the input transcription
+- TITLE AND ALL CONTENT must be in the same language as the input transcription
 - Format the title as a proper H1 heading: # Title Here (not **Title** or **Titre**)
 - Use clean markdown formatting without prefixes like "**Titre:" or "**Title:"
 - Start directly with the # heading, no other prefixes
@@ -51,7 +55,7 @@ Make it engaging, well-structured, and ready to publish. Add a compelling title 
         }
       ],
       temperature: 0.7,
-      max_tokens: 2000,
+      max_tokens: 4000,
     });
 
     const blogContent = completion.choices[0]?.message?.content || '';

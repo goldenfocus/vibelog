@@ -112,7 +112,20 @@
         "polishDesc": "Vérifications de qualité finale et touches de perfection"
       },
       "unlockMessage": "pour débloquer votre vibelog complet et partager partout !",
-      "createdBy": "Créé par"
+      "createdBy": "Créé par",
+      "yourRecording": "Votre Enregistrement",
+      "loginEditMessage": "Veuillez vous connecter pour éditer vos vibelogs. L'édition vous permet de perfectionner votre contenu avant de le partager avec le monde.",
+      "signInToEdit": "Se connecter pour éditer",
+      "maybeLater": "Peut-être plus tard",
+      "loginSaveMessage": "Veuillez vous connecter pour sauvegarder vos vibelogs. Votre contenu sauvegardé sera accessible sur tous vos appareils et prêt à partager à tout moment.",
+      "recordingBlockedByBrowser": "Enregistrement...\n(transcription en direct bloquée par le navigateur)",
+      "recordingUnavailable": "Enregistrement...\n(transcription en direct indisponible)",
+      "recordingNotSupported": "Enregistrement...\n(transcription en direct non supportée)",
+      "listening": "🎙️ À l'écoute...",
+      "speakLouder": "🤫 Parlez un peu plus fort...",
+      "loginRequired": "Connexion Requise",
+      "freePlanLimit": "Plan gratuit : {{timeLimit}} max",
+      "timeRemaining": "{{seconds}}s restantes"
     }
   },
   "pages": {

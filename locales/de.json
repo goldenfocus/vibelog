@@ -34,6 +34,7 @@
   },
   "actions": {
     "copy": "Kopieren",
+    "edit": "Bearbeiten",
     "save": "Speichern",
     "share": "Teilen",
     "recordNew": "Neuen Inhalt Aufnehmen"
@@ -109,7 +110,22 @@
         "htmlDesc": "Generiere sauberes Markup für Web-Publishing",
         "polishTitle": "POLIEREN",
         "polishDesc": "Finale Qualitätsprüfungen und Perfektion"
-      }
+      },
+      "unlockMessage": "um Ihren vollständigen Vibelog zu entsperren und überall zu teilen!",
+      "createdBy": "Erstellt von",
+      "yourRecording": "Ihre Aufnahme",
+      "loginEditMessage": "Bitte melden Sie sich an, um Ihre Vibelogs zu bearbeiten. Das Bearbeiten ermöglicht es Ihnen, Ihren Inhalt zu perfektionieren, bevor Sie ihn mit der Welt teilen.",
+      "signInToEdit": "Zum Bearbeiten anmelden",
+      "maybeLater": "Vielleicht später",
+      "loginSaveMessage": "Bitte melden Sie sich an, um Ihre Vibelogs zu speichern. Ihre gespeicherten Inhalte sind auf allen Geräten zugänglich und jederzeit bereit zum Teilen.",
+      "recordingBlockedByBrowser": "Aufnahme läuft...\n(Live-Transkription vom Browser blockiert)",
+      "recordingUnavailable": "Aufnahme läuft...\n(Live-Transkription nicht verfügbar)",
+      "recordingNotSupported": "Aufnahme läuft...\n(Live-Transkription nicht unterstützt)",
+      "listening": "🎙️ Höre zu...",
+      "speakLouder": "🤫 Sprechen Sie etwas lauter...",
+      "loginRequired": "Anmeldung Erforderlich",
+      "freePlanLimit": "Kostenloser Plan: {{timeLimit}} max",
+      "timeRemaining": "{{seconds}}s verbleibend"
     }
   },
   "pages": {

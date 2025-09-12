@@ -5,7 +5,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 interface I18nContextType {
   locale: string;
   setLocale: (locale: string) => void;
-  t: (key: string, fallback?: string) => string;
+  t: (key: string, variables?: Record<string, any>) => string;
   isLoading: boolean;
 }
 
@@ -78,9 +78,17 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('vibelog-locale', newLocale);
   };
 
-  const t = (key: string, fallback?: string): string => {
+  const t = (key: string, variables?: Record<string, any>): string => {
     const value = getNestedValue(translations, key);
-    return value || fallback || key;
+    const template = value || key;
+    
+    if (variables && typeof template === 'string') {
+      return template.replace(/\{\{(\w+)\}\}/g, (match, variableName) => {
+        return variables[variableName] !== undefined ? String(variables[variableName]) : match;
+      });
+    }
+    
+    return template;
   };
 
   const value: I18nContextType = {

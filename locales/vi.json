@@ -34,6 +34,7 @@
   },
   "actions": {
     "copy": "Sao chép",
+    "edit": "Chỉnh sửa",
     "save": "Lưu",
     "share": "Chia sẻ",
     "recordNew": "Ghi Nội Dung Mới"
@@ -109,7 +110,22 @@
         "htmlDesc": "Tạo markup sạch để xuất bản web",
         "polishTitle": "HOÀN THIỆN",
         "polishDesc": "Kiểm tra chất lượng cuối cùng và hoàn thiện"
-      }
+      },
+      "loginEditMessage": "Vui lòng đăng nhập để chỉnh sửa vibelogs của bạn. Chỉnh sửa cho phép bạn hoàn thiện nội dung trước khi chia sẻ với thế giới.",
+      "signInToEdit": "Đăng nhập để chỉnh sửa",
+      "maybeLater": "Để sau",
+      "loginSaveMessage": "Vui lòng đăng nhập để lưu vibelogs của bạn. Nội dung đã lưu sẽ có thể truy cập trên tất cả thiết bị và sẵn sàng chia sẻ bất cứ lúc nào.",
+      "recordingBlockedByBrowser": "Đang ghi âm...\n(phiên âm trực tiếp bị chặn bởi trình duyệt)",
+      "recordingUnavailable": "Đang ghi âm...\n(phiên âm trực tiếp không khả dụng)",
+      "recordingNotSupported": "Đang ghi âm...\n(phiên âm trực tiếp không được hỗ trợ)",
+      "listening": "🎙️ Đang nghe...",
+      "speakLouder": "🤫 Nói to hơn một chút...",
+      "loginRequired": "Yêu Cầu Đăng Nhập",
+      "unlockMessage": "để mở khóa vibelog đầy đủ và chia sẻ mọi nơi!",
+      "createdBy": "Tạo bởi",
+      "yourRecording": "Bản Ghi Của Bạn",
+      "freePlanLimit": "Gói miễn phí: tối đa {{timeLimit}}",
+      "timeRemaining": "còn {{seconds}}s"
     }
   },
   "pages": {

@@ -211,7 +211,7 @@ export default function MicRecorder() {
           
           recognition.onstart = () => {
             console.log('Speech recognition started');
-            setLiveTranscript('🎙️ Listening...');
+            setLiveTranscript(t('components.micRecorder.listening'));
           };
           
           recognition.onresult = (event) => {
@@ -239,12 +239,12 @@ export default function MicRecorder() {
             // Handle different error types - but DON'T retry for blocked cases
             if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
               isBlocked = true;
-              setLiveTranscript('Recording...\n(live transcript blocked by browser)');
+              setLiveTranscript(t('components.micRecorder.recordingBlockedByBrowser'));
             } else if (event.error === 'network') {
               isBlocked = true;
-              setLiveTranscript('Recording...\n(live transcript blocked by browser)');
+              setLiveTranscript(t('components.micRecorder.recordingBlockedByBrowser'));
             } else if (event.error === 'no-speech') {
-              setLiveTranscript('🤫 Speak a bit louder...');
+              setLiveTranscript(t('components.micRecorder.speakLouder'));
               // Only retry for no-speech, not for blocked cases
               if (!isBlocked) {
                 setTimeout(() => {
@@ -253,17 +253,17 @@ export default function MicRecorder() {
                       speechRecognitionRef.current.start();
                     } catch (e) {
                       console.log('Could not restart after no-speech:', e);
-                      setLiveTranscript('Recording...\n(live transcript unavailable)');
+                      setLiveTranscript(t('components.micRecorder.recordingUnavailable'));
                     }
                   }
                 }, 3000); // Only retry after longer pause for no-speech
               }
             } else if (event.error === 'aborted') {
               if (!isBlocked) {
-                setLiveTranscript('Recording...\n(live transcript unavailable)');
+                setLiveTranscript(t('components.micRecorder.recordingUnavailable'));
               }
             } else {
-              setLiveTranscript('Recording...\n(live transcript unavailable)');
+              setLiveTranscript(t('components.micRecorder.recordingUnavailable'));
             }
           };
           
@@ -271,7 +271,7 @@ export default function MicRecorder() {
             console.log('Speech recognition ended');
             // DON'T restart if blocked - just leave it in a stable state
             if (isBlocked) {
-              setLiveTranscript('Recording...\n(live transcript blocked by browser)');
+              setLiveTranscript(t('components.micRecorder.recordingBlockedByBrowser'));
               return;
             }
             
@@ -284,7 +284,7 @@ export default function MicRecorder() {
                   }
                 } catch (e) {
                   console.log('Could not restart recognition:', e);
-                  setLiveTranscript('Recording...\n(live transcript unavailable)');
+                  setLiveTranscript(t('components.micRecorder.recordingUnavailable'));
                 }
               }, 1000);
             }
@@ -299,7 +299,7 @@ export default function MicRecorder() {
       } else {
         // Fallback for browsers without Speech Recognition (like Brave in strict mode)
         console.log('Speech Recognition API not available');
-        setLiveTranscript('Recording...\n(live transcript not supported)');
+        setLiveTranscript(t('components.micRecorder.recordingNotSupported'));
       }
     } else {
       // Stop recognition when not recording
@@ -522,16 +522,44 @@ export default function MicRecorder() {
   };
 
   const createTeaserContent = (fullContent: string, transcription: string) => {
-    // For very short recordings (under 10 words), show full content
     const wordCount = transcription.split(/\s+/).filter(word => word.length > 0).length;
+    
+    // For very short recordings (under 10 words), show full content without signup
     if (wordCount < 10) {
       return { content: fullContent, isTeaser: false };
     }
     
-    // For longer content, show ~30% as teaser
+    // For short but meaningful content (10-30 words), show full content WITH signup prompt
+    if (wordCount < 30) {
+      return { content: fullContent, isTeaser: true };
+    }
+    
+    // For longer content, show ~600-700 characters as teaser (consistent across languages)
+    const targetTeaserLength = 650;
+    
+    if (fullContent.length <= targetTeaserLength) {
+      return { content: fullContent, isTeaser: true };
+    }
+    
+    // Find the best sentence break near the target length
     const sentences = fullContent.split(/[.!?]+/).filter(s => s.trim().length > 0);
-    const teaserSentences = Math.max(1, Math.ceil(sentences.length * 0.3));
-    const teaserContent = sentences.slice(0, teaserSentences).join('. ') + '.';
+    let teaserContent = '';
+    let currentLength = 0;
+    
+    for (let i = 0; i < sentences.length; i++) {
+      const nextSentence = sentences[i].trim() + '.';
+      if (currentLength + nextSentence.length <= targetTeaserLength + 100) { // Allow 100 char buffer
+        teaserContent += nextSentence + (i < sentences.length - 1 ? ' ' : '');
+        currentLength += nextSentence.length + 1;
+      } else {
+        break;
+      }
+    }
+    
+    // Ensure we have at least one sentence
+    if (!teaserContent) {
+      teaserContent = sentences[0].trim() + '.';
+    }
     
     return { 
       content: teaserContent,
@@ -1032,9 +1060,9 @@ export default function MicRecorder() {
                 {formatTime(recordingTime)}
               </div>
               <div className="text-sm text-muted-foreground">
-                Free plan: {formatTime(getTimeLimit())} max
+                {t('components.micRecorder.freePlanLimit', { timeLimit: formatTime(getTimeLimit()) })}
                 {isNearTimeLimit() && !hasReachedTimeLimit() && (
-                  <span className="text-red-500 ml-2">⚠️ {Math.floor((getTimeLimit() - recordingTime))}s remaining</span>
+                  <span className="text-red-500 ml-2">⚠️ {t('components.micRecorder.timeRemaining', { seconds: Math.floor((getTimeLimit() - recordingTime)) })}</span>
                 )}
               </div>
             </div>
@@ -1169,7 +1197,7 @@ export default function MicRecorder() {
         <div className="bg-card/50 backdrop-blur-sm rounded-2xl p-6 border border-border/30 mb-8">
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <Volume2 className="w-5 h-5" />
-            Your Recording
+            {t('components.micRecorder.yourRecording')}
           </h3>
           <div className="flex items-center gap-4">
             <button
@@ -1444,7 +1472,7 @@ export default function MicRecorder() {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-card/95 backdrop-blur-sm border border-border/50 rounded-2xl p-8 shadow-2xl max-w-md w-full">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-foreground">Login Required</h3>
+              <h3 className="text-xl font-bold text-foreground">{t('components.micRecorder.loginRequired')}</h3>
               <button
                 onClick={() => setShowLoginPopup(false)}
                 className="text-muted-foreground hover:text-foreground transition-colors"
@@ -1453,18 +1481,18 @@ export default function MicRecorder() {
               </button>
             </div>
             <p className="text-muted-foreground mb-6 leading-relaxed">
-              Please log in to edit your vibelogs. Editing allows you to perfect your content before sharing it with the world.
+              {t('components.micRecorder.loginEditMessage')}
             </p>
             <div className="flex flex-col gap-3">
               <button className="flex items-center justify-center gap-3 px-6 py-3 bg-gradient-electric hover:opacity-90 text-white font-semibold rounded-2xl transition-all duration-200">
                 <LogIn className="w-5 h-5" />
-                Sign In to Edit
+                {t('components.micRecorder.signInToEdit')}
               </button>
               <button
                 onClick={() => setShowLoginPopup(false)}
                 className="text-muted-foreground hover:text-foreground transition-colors text-center py-2"
               >
-                Maybe Later
+                {t('components.micRecorder.maybeLater')}
               </button>
             </div>
           </div>
@@ -1476,7 +1504,7 @@ export default function MicRecorder() {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-card/95 backdrop-blur-sm border border-border/50 rounded-2xl p-8 shadow-2xl max-w-md w-full">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-foreground">Login Required</h3>
+              <h3 className="text-xl font-bold text-foreground">{t('components.micRecorder.loginRequired')}</h3>
               <button
                 onClick={() => setShowSavePopup(false)}
                 className="text-muted-foreground hover:text-foreground transition-colors"
@@ -1485,7 +1513,7 @@ export default function MicRecorder() {
               </button>
             </div>
             <p className="text-muted-foreground mb-6 leading-relaxed">
-              Please log in to save your vibelogs. Your saved content will be accessible across all your devices and ready to share anytime.
+              {t('components.micRecorder.loginSaveMessage')}
             </p>
             <div className="flex flex-col gap-3">
               <button className="flex items-center justify-center gap-3 px-6 py-3 bg-gradient-electric hover:opacity-90 text-white font-semibold rounded-2xl transition-all duration-200">
@@ -1496,7 +1524,7 @@ export default function MicRecorder() {
                 onClick={() => setShowSavePopup(false)}
                 className="text-muted-foreground hover:text-foreground transition-colors text-center py-2"
               >
-                Maybe Later
+                {t('components.micRecorder.maybeLater')}
               </button>
             </div>
           </div>

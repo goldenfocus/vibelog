@@ -110,7 +110,22 @@
         "htmlDesc": "Generando marcado limpio para publicación web",
         "polishTitle": "PULIDO",
         "polishDesc": "Verificaciones de calidad final y toques de perfección"
-      }
+      },
+      "loginEditMessage": "Inicia sesión para editar tus vibelogs. La edición te permite perfeccionar tu contenido antes de compartirlo con el mundo.",
+      "signInToEdit": "Iniciar Sesión para Editar",
+      "maybeLater": "Tal vez más tarde",
+      "loginSaveMessage": "Inicia sesión para guardar tus vibelogs. Tu contenido guardado será accesible en todos tus dispositivos y listo para compartir en cualquier momento.",
+      "recordingBlockedByBrowser": "Grabando...\n(transcripción en vivo bloqueada por el navegador)",
+      "recordingUnavailable": "Grabando...\n(transcripción en vivo no disponible)",
+      "recordingNotSupported": "Grabando...\n(transcripción en vivo no compatible)",
+      "listening": "🎙️ Escuchando...",
+      "speakLouder": "🤫 Habla un poco más fuerte...",
+      "loginRequired": "Inicio de Sesión Requerido",
+      "unlockMessage": "para desbloquear tu vibelog completo y compartir en todas partes!",
+      "createdBy": "Creado por",
+      "yourRecording": "Tu Grabación",
+      "freePlanLimit": "Plan gratuito: {{timeLimit}} máx",
+      "timeRemaining": "{{seconds}}s restantes"
     }
   },
   "pages": {
