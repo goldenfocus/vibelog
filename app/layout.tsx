@@ -8,6 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryProvider } from "@/components/providers/ReactQueryProvider";
 import { I18nProvider } from "@/components/providers/I18nProvider";
+import { AuthProvider } from "@/components/providers/AuthProvider";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -84,13 +85,15 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <ReactQueryProvider>
-          <TooltipProvider>
-            <I18nProvider>
-              {children}
-              <Toaster />
-              <Sonner />
-            </I18nProvider>
-          </TooltipProvider>
+          <AuthProvider>
+            <TooltipProvider>
+              <I18nProvider>
+                {children}
+                <Toaster />
+                <Sonner />
+              </I18nProvider>
+            </TooltipProvider>
+          </AuthProvider>
         </ReactQueryProvider>
       </body>
     </html>

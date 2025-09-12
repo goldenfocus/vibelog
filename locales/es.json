@@ -284,5 +284,11 @@
       "subtitle": "Descubre creadores y sus últimos posts basados en voz.",
       "creatorBio": "Bio y actividad reciente."
     }
+  },
+  "auth": {
+    "signIn": "Iniciar Sesión",
+    "signInDescription": "Inicia sesión para guardar tus vibelogs y acceder a tu panel personal.",
+    "signInWith": "Iniciar sesión con {{provider}}",
+    "termsAgreement": "Al iniciar sesión, aceptas nuestros Términos de Servicio y Política de Privacidad."
   }
 }

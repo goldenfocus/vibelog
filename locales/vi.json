@@ -284,5 +284,11 @@
       "subtitle": "Khám phá các nhà sáng tạo và những bài đăng dựa trên giọng nói mới nhất của họ.",
       "creatorBio": "Tiểu sử và hoạt động gần đây."
     }
+  },
+  "auth": {
+    "signIn": "Đăng Nhập",
+    "signInDescription": "Đăng nhập để lưu các vibelog của bạn và truy cập bảng điều khiển cá nhân.",
+    "signInWith": "Đăng nhập với {{provider}}",
+    "termsAgreement": "Bằng cách đăng nhập, bạn đồng ý với Điều khoản Dịch vụ và Chính sách Bảo mật của chúng tôi."
   }
 }

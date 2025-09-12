@@ -284,5 +284,11 @@
       "subtitle": "Entdecken Sie Ersteller und ihre neuesten sprachbasierten Posts.",
       "creatorBio": "Biographie und aktuelle Aktivitäten."
     }
+  },
+  "auth": {
+    "signIn": "Anmelden",
+    "signInDescription": "Melden Sie sich an, um Ihre Vibelogs zu speichern und auf Ihr persönliches Dashboard zuzugreifen.",
+    "signInWith": "Anmelden mit {{provider}}",
+    "termsAgreement": "Durch die Anmeldung stimmen Sie unseren Nutzungsbedingungen und Datenschutzrichtlinien zu."
   }
 }

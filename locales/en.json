@@ -284,5 +284,11 @@
       "subtitle": "Discover creators and their latest voice-first posts.",
       "creatorBio": "Bio and recent activity."
     }
+  },
+  "auth": {
+    "signIn": "Sign In",
+    "signInDescription": "Sign in to save your vibelogs and access your personal dashboard.",
+    "signInWith": "Sign in with {{provider}}",
+    "termsAgreement": "By signing in, you agree to our Terms of Service and Privacy Policy."
   }
 }
