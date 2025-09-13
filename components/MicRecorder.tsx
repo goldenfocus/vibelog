@@ -6,6 +6,9 @@ import { useI18n } from "@/components/providers/I18nProvider";
 import Waveform from "@/components/mic/Waveform";
 import { AudioEngine } from "@/components/mic/AudioEngine";
 import Controls, { RecordingState } from "@/components/mic/Controls";
+import TranscriptionPanel from "@/components/mic/TranscriptionPanel";
+import PublishActions from "@/components/mic/PublishActions";
+import ProcessingAnimation from "@/components/mic/ProcessingAnimation";
 
 // Extend Window interface for webkitAudioContext and SpeechRecognition
 declare global {
@@ -16,15 +19,7 @@ declare global {
   }
 }
 
-type RecordingState = "idle" | "recording" | "processing" | "complete";
 
-interface ProcessingStep {
-  id: string;
-  label: string;
-  description?: string;
-  icon?: React.ReactNode;
-  completed: boolean;
-}
 
 export default function MicRecorder() {
   const { t } = useI18n();
@@ -35,8 +30,7 @@ export default function MicRecorder() {
   const [isTeaserContent, setIsTeaserContent] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState("");
-  const [showLoginPopup, setShowLoginPopup] = useState(false);
-  const [showSavePopup, setShowSavePopup] = useState(false);
+  const [isEditingTranscript, setIsEditingTranscript] = useState(false);
   // TODO: Replace with actual auth state
   const [isLoggedIn] = useState(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
@@ -49,8 +43,6 @@ export default function MicRecorder() {
   const playbackAnalyserRef = useRef<AnalyserNode | null>(null);
   const playbackContextRef = useRef<AudioContext | null>(null);
   const playbackRafRef = useRef<number | null>(null);
-  const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>([]);
-  const [visibleStepIndex, setVisibleStepIndex] = useState(0);
   const [toast, setToast] = useState<{message: string; visible: boolean}>({message: "", visible: false});
   const [recordingTime, setRecordingTime] = useState(0);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
@@ -505,87 +497,6 @@ export default function MicRecorder() {
     );
   };
 
-  const animateMagicalSequence = async (onTranscribeComplete: () => Promise<any>, onGenerateComplete: () => Promise<any>) => {
-    const steps = [
-      { id: "capture", title: t('components.micRecorder.symphony.captureTitle'), description: t('components.micRecorder.symphony.captureDesc') },
-      { id: "transcribe", title: t('components.micRecorder.symphony.transcribeTitle'), description: t('components.micRecorder.symphony.transcribeDesc') },
-      { id: "clean", title: t('components.micRecorder.symphony.cleanTitle'), description: t('components.micRecorder.symphony.cleanDesc') },
-      { id: "expand", title: t('components.micRecorder.symphony.expandTitle'), description: t('components.micRecorder.symphony.expandDesc') },
-      { id: "structure", title: t('components.micRecorder.symphony.structureTitle'), description: t('components.micRecorder.symphony.structureDesc') },
-      { id: "format", title: t('components.micRecorder.symphony.formatTitle'), description: t('components.micRecorder.symphony.formatDesc') },
-      { id: "optimize", title: t('components.micRecorder.symphony.optimizeTitle'), description: t('components.micRecorder.symphony.optimizeDesc') },
-      { id: "social", title: t('components.micRecorder.symphony.socialTitle'), description: t('components.micRecorder.symphony.socialDesc') },
-      { id: "seo", title: t('components.micRecorder.symphony.seoTitle'), description: t('components.micRecorder.symphony.seoDesc') },
-      { id: "rss", title: t('components.micRecorder.symphony.rssTitle'), description: t('components.micRecorder.symphony.rssDesc') },
-      { id: "html", title: t('components.micRecorder.symphony.htmlTitle'), description: t('components.micRecorder.symphony.htmlDesc') },
-      { id: "polish", title: t('components.micRecorder.symphony.polishTitle'), description: t('components.micRecorder.symphony.polishDesc') }
-    ];
-    
-    // Calculate timing based on recording duration (faster for short recordings)
-    const recordingDuration = recordingTime; // in seconds
-    const baseStepDuration = recordingDuration < 30 ? 800 : recordingDuration < 120 ? 1200 : 1800;
-    const STEP_DURATION = baseStepDuration;
-    
-    // Initialize processing steps with the new format
-    setProcessingSteps(steps.map(step => ({
-      id: step.id,
-      label: step.title,
-      description: step.description,
-      completed: false
-    })));
-    
-    // Create promises for API calls to ensure proper sequencing
-    let transcriptionPromise: Promise<any> | null = null;
-    let blogGenerationPromise: Promise<any> | null = null;
-    
-    // Start API calls at specific steps
-    const triggerAPICall = (stepId: string) => {
-      if (stepId === "transcribe" && !transcriptionPromise) {
-        console.log('🚀 Starting transcription API call...');
-        transcriptionPromise = onTranscribeComplete().then(() => {
-          console.log('✅ Transcription API call completed');
-        }).catch(error => {
-          console.error('❌ Transcription failed:', error);
-          throw error;
-        });
-      } else if (stepId === "format" && !blogGenerationPromise && transcriptionPromise) {
-        console.log('🚀 Starting blog generation API call...');
-        blogGenerationPromise = transcriptionPromise.then(() => onGenerateComplete()).then(() => {
-          console.log('✅ Blog generation API call completed');
-        }).catch(error => {
-          console.error('❌ Blog generation failed:', error);
-          throw error;
-        });
-      }
-    };
-    
-    // Star Wars crawl animation - each step flows upward and fades
-    for (let i = 0; i < steps.length; i++) {
-      await new Promise<void>(resolve => setTimeout(resolve, STEP_DURATION));
-      
-      // Mark current step as completed
-      setProcessingSteps(prev => prev.map(s => s.id === steps[i].id ? { ...s, completed: true } : s));
-      
-      // Trigger API calls at appropriate steps
-      triggerAPICall(steps[i].id);
-      
-      // Update visible window to show current processing step at the center
-      setVisibleStepIndex(Math.max(0, i - 1));
-    }
-    
-    // Ensure all API calls complete before finishing
-    if (blogGenerationPromise) {
-      await blogGenerationPromise;
-    } else if (transcriptionPromise) {
-      await transcriptionPromise;
-    }
-    
-    // Final smooth transition
-    await new Promise(resolve => setTimeout(resolve, STEP_DURATION / 2));
-    
-    // Set final visible state showing the last few completed steps
-    setVisibleStepIndex(Math.max(0, steps.length - 3));
-  };
 
   const handleCopy = async (content: string) => {
     try {
@@ -620,7 +531,7 @@ export default function MicRecorder() {
 
   const handleSave = () => {
     if (!isLoggedIn) {
-      setShowSavePopup(true);
+      // Login handling is now done by PublishActions
       return;
     }
     // TODO: Implement actual save functionality
@@ -629,11 +540,25 @@ export default function MicRecorder() {
 
   const handleEdit = () => {
     if (!isLoggedIn) {
-      setShowLoginPopup(true);
+      // Login handling is now done by PublishActions
       return;
     }
     setEditedContent(blogContent);
     setIsEditing(true);
+  };
+
+  const handleTranscriptEdit = () => {
+    if (!isLoggedIn) {
+      // Login handling is now done by TranscriptionPanel
+      return;
+    }
+    setIsEditingTranscript(true);
+  };
+
+  const handleTranscriptUpdate = (newTranscription: string) => {
+    setTranscription(newTranscription);
+    setIsEditingTranscript(false);
+    showToast('Transcript updated successfully!');
   };
 
   const handleSaveEdit = () => {
@@ -647,6 +572,82 @@ export default function MicRecorder() {
     setIsEditing(false);
   };
 
+  // Shared data for transcription and blog generation
+  const processingDataRef = useRef<{ transcriptionData: string; blogContentData: string }>({ transcriptionData: '', blogContentData: '' });
+
+  // AI processing functions for ProcessingAnimation
+  const doTranscription = async () => {
+    const audioFile = audioBlob;
+    if (!audioFile) {
+      console.error('No audio blob available for processing');
+      throw new Error('No audio blob available');
+    }
+
+    try {
+      console.log('🎙️ Starting real AI transcription...');
+      
+      const formData = new FormData();
+      formData.append('audio', audioFile, 'recording.webm');
+
+      const transcribeResponse = await fetch('/api/transcribe', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!transcribeResponse.ok) {
+        throw new Error('Transcription failed');
+      }
+
+      const { transcription } = await transcribeResponse.json();
+      console.log('✅ Transcription completed:', transcription.substring(0, 100) + '...');
+      processingDataRef.current.transcriptionData = transcription;
+      setTranscription(transcription);
+      return transcription;
+    } catch (error) {
+      console.error('Transcription error:', error);
+      throw error;
+    }
+  };
+
+  const doBlogGeneration = async () => {
+    try {
+      const transcriptionData = processingDataRef.current.transcriptionData;
+      if (!transcriptionData) {
+        console.error('No transcription data available for blog generation');
+        throw new Error('No transcription data available');
+      }
+      
+      console.log('🤖 Starting AI blog generation with transcription:', transcriptionData.substring(0, 50) + '...');
+      
+      const blogResponse = await fetch('/api/generate-blog', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ transcription: transcriptionData }),
+      });
+
+      if (!blogResponse.ok) {
+        const errorText = await blogResponse.text();
+        console.error('Blog generation failed with status:', blogResponse.status, 'Error:', errorText);
+        throw new Error(`Blog generation failed: ${blogResponse.status}`);
+      }
+
+      const { blogContent } = await blogResponse.json();
+      console.log('✅ Blog generation completed:', blogContent.substring(0, 100) + '...');
+      
+      // Apply teaser logic
+      const teaserResult = createTeaserContent(blogContent, transcriptionData);
+      processingDataRef.current.blogContentData = teaserResult.content;
+      setBlogContent(teaserResult.content);
+      setIsTeaserContent(teaserResult.isTeaser);
+      return teaserResult.content;
+    } catch (error) {
+      console.error('Blog generation error:', error);
+      throw error;
+    }
+  };
+
   const processAudioWithAI = async (blob?: Blob) => {
     const audioFile = blob || audioBlob;
     if (!audioFile) {
@@ -654,84 +655,12 @@ export default function MicRecorder() {
       return;
     }
 
-    let transcriptionData = '';
-    let blogContentData = '';
-
-    // Define the actual AI processing functions
-    const doTranscription = async () => {
-      try {
-        console.log('🎙️ Starting real AI transcription...');
-        
-        const formData = new FormData();
-        formData.append('audio', audioFile, 'recording.webm');
-
-        const transcribeResponse = await fetch('/api/transcribe', {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (!transcribeResponse.ok) {
-          throw new Error('Transcription failed');
-        }
-
-        const { transcription } = await transcribeResponse.json();
-        console.log('✅ Transcription completed:', transcription.substring(0, 100) + '...');
-        transcriptionData = transcription;
-        setTranscription(transcription);
-        return transcription; // Return the transcription data
-      } catch (error) {
-        console.error('Transcription error:', error);
-        throw error;
-      }
-    };
-
-    const doBlogGeneration = async () => {
-      try {
-        // Make sure we have transcription data before proceeding
-        if (!transcriptionData) {
-          console.error('No transcription data available for blog generation');
-          throw new Error('No transcription data available');
-        }
-        
-        console.log('🤖 Starting AI blog generation with transcription:', transcriptionData.substring(0, 50) + '...');
-        
-        const blogResponse = await fetch('/api/generate-blog', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ transcription: transcriptionData }),
-        });
-
-        if (!blogResponse.ok) {
-          const errorText = await blogResponse.text();
-          console.error('Blog generation failed with status:', blogResponse.status, 'Error:', errorText);
-          throw new Error(`Blog generation failed: ${blogResponse.status}`);
-        }
-
-        const { blogContent } = await blogResponse.json();
-        console.log('✅ Blog generation completed:', blogContent.substring(0, 100) + '...');
-        
-        // Apply teaser logic
-        const teaserResult = createTeaserContent(blogContent, transcriptionData);
-        blogContentData = teaserResult.content;
-        setBlogContent(teaserResult.content);
-        setIsTeaserContent(teaserResult.isTeaser);
-      } catch (error) {
-        console.error('Blog generation error:', error);
-        throw error;
-      }
-    };
+    // Reset processing data
+    processingDataRef.current = { transcriptionData: '', blogContentData: '' };
 
     try {
-      // Start the magical sequence animation
-      await animateMagicalSequence(doTranscription, doBlogGeneration);
-      
-      // Show results after magical sequence completes
-      setTimeout(() => {
-        setRecordingState("complete");
-      }, 300);
-
+      // The ProcessingAnimation component will handle the API calls and completion
+      // No additional logic needed here - animation component manages everything
     } catch (error) {
       console.error('AI processing error:', error);
       // Show error message instead of demo content
@@ -863,95 +792,30 @@ export default function MicRecorder() {
         />
       )}
 
-      {/* Live transcript */}
-      {recordingState === "recording" && liveTranscript && (
-        <div className="bg-card/50 backdrop-blur-sm rounded-2xl p-6 border border-border/30 mb-8">
-          <p className="text-lg leading-relaxed typing-cursor">
-            {liveTranscript}
-          </p>
-        </div>
-      )}
+      {/* Transcription Panel */}
+      <TranscriptionPanel
+        transcription={transcription}
+        liveTranscript={liveTranscript}
+        isRecording={recordingState === "recording"}
+        isComplete={recordingState === "complete"}
+        onCopy={handleCopy}
+        onEdit={handleTranscriptEdit}
+        onTranscriptUpdate={handleTranscriptUpdate}
+        isLoggedIn={isLoggedIn}
+      />
 
       {/* Magical Processing Symphony */}
-      {recordingState === "processing" && (
-        <div className="relative bg-gradient-to-br from-card/40 via-card/30 to-electric/5 backdrop-blur-xl rounded-3xl p-8 border border-electric/20 mb-8 overflow-hidden">
-          {/* Background particles effect */}
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute top-4 right-8 w-2 h-2 bg-electric rounded-full animate-pulse"></div>
-            <div className="absolute top-12 left-12 w-1 h-1 bg-electric/60 rounded-full animate-ping"></div>
-            <div className="absolute bottom-8 right-16 w-1.5 h-1.5 bg-electric/40 rounded-full animate-pulse delay-700"></div>
-          </div>
-          
-          <div className="relative z-10">
-            <div className="text-center mb-8">
-              <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-electric/10 backdrop-blur-sm rounded-2xl border border-electric/20">
-                <div className="w-6 h-6 border-2 border-electric border-t-transparent rounded-full animate-spin"></div>
-                <h3 className="text-xl font-bold bg-gradient-to-r from-foreground to-electric bg-clip-text text-transparent">
-                  ⚡ Vibelogging your content...
-                </h3>
-              </div>
-            </div>
-            
-            {/* Star Wars Crawl Effect */}
-            <div className="relative h-96 overflow-hidden bg-gradient-to-b from-background/0 via-background/50 to-background perspective-1000">
-              <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent z-10 pointer-events-none"></div>
-              
-              <div className="star-wars-crawl space-y-8 pt-32">
-                {processingSteps.map((step, index) => {
-                  const isCompleted = step.completed;
-                  const firstIncompleteIndex = processingSteps.findIndex(s => !s.completed);
-                  const isActive = !isCompleted && index === firstIncompleteIndex;
-                  const isPast = isCompleted;
-                  
-                  return (
-                    <div 
-                      key={step.id}
-                      className={`crawl-step transform transition-all duration-1000 ease-out ${
-                        isCompleted ? 'opacity-60' : isActive ? 'opacity-100 scale-110' : 'opacity-40'
-                      }`}
-                      style={{
-                        animationDelay: `${index * 0.2}s`
-                      }}
-                    >
-                      <div className="text-center mb-3">
-                        <h3 className={`text-3xl sm:text-4xl lg:text-5xl font-bold tracking-wider transition-all duration-700 ${
-                          isActive 
-                            ? 'text-electric animate-pulse bg-gradient-electric bg-clip-text text-transparent drop-shadow-[0_0_25px_rgba(97,144,255,0.8)] glow-text-active' 
-                            : isCompleted 
-                              ? 'text-electric bg-gradient-electric bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(97,144,255,0.6)] glow-text-completed' 
-                              : 'text-muted-foreground/60'
-                        }`}>
-                          {step.label}
-                          {isCompleted && <span className="ml-3 text-2xl animate-bounce">✓</span>}
-                        </h3>
-                      </div>
-                      
-                      <div className="max-w-lg mx-auto">
-                        <p className={`text-base sm:text-lg text-center leading-relaxed transition-all duration-700 font-medium ${
-                          isActive 
-                            ? 'text-foreground drop-shadow-[0_0_10px_rgba(255,255,255,0.3)] glow-text-secondary' 
-                            : isCompleted 
-                              ? 'text-muted-foreground/80' 
-                              : 'text-muted-foreground/50'
-                        }`}>
-                          {step.description}
-                        </p>
-                      </div>
-                      
-                      {/* Active step indicator */}
-                      {isActive && (
-                        <div className="flex justify-center mt-3">
-                          <div className="w-20 h-1 bg-gradient-to-r from-transparent via-electric to-transparent rounded-full animate-pulse"></div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <ProcessingAnimation
+        isVisible={recordingState === "processing"}
+        recordingTime={recordingTime}
+        onTranscribeComplete={doTranscription}
+        onGenerateComplete={doBlogGeneration}
+        onAnimationComplete={() => {
+          setTimeout(() => {
+            setRecordingState("complete");
+          }, 300);
+        }}
+      />
 
       {/* Custom Audio Player */}
       {audioBlob && recordingState === "complete" && (
@@ -1081,23 +945,7 @@ export default function MicRecorder() {
       {/* Results */}
       {(transcription || blogContent) && recordingState === "complete" && (
         <div className="space-y-8">
-          {transcription && (
-            <div className="bg-card rounded-2xl border border-border/20 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">{t('recorder.originalTranscription')}</h3>
-                <button
-                  onClick={() => handleCopy(transcription)}
-                  className="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-muted/50 hover:bg-muted rounded-lg transition-colors"
-                >
-                  <Copy className="w-4 h-4" />
-                  {t('actions.copy')}
-                </button>
-              </div>
-              <p className="text-muted-foreground leading-relaxed">
-                {transcription}
-              </p>
-            </div>
-          )}
+          {/* Transcription is now handled by TranscriptionPanel above */}
 
           {blogContent && (
             <div className="bg-card rounded-2xl border border-border/20 p-6">
@@ -1107,37 +955,16 @@ export default function MicRecorder() {
                   {t('recorder.polishedVibelog')}
                 </h3>
                 
-                {/* Action icons on their own line */}
-                <div className="flex justify-center gap-2 sm:gap-3">
-                  <button
-                    onClick={handleEdit}
-                    className="group flex flex-col items-center gap-2 p-3 sm:p-4 bg-muted/20 hover:bg-muted/30 border border-border/20 rounded-2xl transition-all duration-200 hover:scale-105 min-w-[70px] sm:min-w-[80px]"
-                  >
-                    <Edit className="w-5 h-5 sm:w-6 sm:h-6 text-foreground group-hover:text-electric transition-colors" />
-                    <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">{t('actions.edit')}</span>
-                  </button>
-                  <button
-                    onClick={() => handleCopy(blogContent)}
-                    className="group flex flex-col items-center gap-2 p-3 sm:p-4 bg-muted/20 hover:bg-muted/30 border border-border/20 rounded-2xl transition-all duration-200 hover:scale-105 min-w-[70px] sm:min-w-[80px]"
-                  >
-                    <Copy className="w-5 h-5 sm:w-6 sm:h-6 text-foreground group-hover:text-electric transition-colors" />
-                    <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">{t('actions.copy')}</span>
-                  </button>
-                  <button 
-                    onClick={handleSave}
-                    className="group flex flex-col items-center gap-2 p-3 sm:p-4 bg-muted/20 hover:bg-muted/30 border border-border/20 rounded-2xl transition-all duration-200 hover:scale-105 min-w-[70px] sm:min-w-[80px]"
-                  >
-                    <Save className="w-5 h-5 sm:w-6 sm:h-6 text-foreground group-hover:text-electric transition-colors" />
-                    <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">{t('actions.save')}</span>
-                  </button>
-                  <button 
-                    onClick={handleShare}
-                    className="group flex flex-col items-center gap-2 p-3 sm:p-4 bg-electric/20 hover:bg-electric/30 border border-electric/20 rounded-2xl transition-all duration-200 hover:scale-105 min-w-[70px] sm:min-w-[80px]"
-                  >
-                    <Share className="w-5 h-5 sm:w-6 sm:h-6 text-electric" />
-                    <span className="text-xs font-medium text-electric">{t('actions.share')}</span>
-                  </button>
-                </div>
+                {/* Publish Actions */}
+                <PublishActions
+                  content={blogContent}
+                  isLoggedIn={isLoggedIn}
+                  onCopy={() => handleCopy(blogContent)}
+                  onEdit={handleEdit}
+                  onSave={handleSave}
+                  onShare={handleShare}
+                  showSignature={false}
+                />
               </div>
               <div className="prose prose-lg max-w-none text-foreground [&>h1]:text-2xl [&>h2]:text-xl [&>h3]:text-lg [&>p]:text-muted-foreground [&>p]:leading-relaxed [&>ul]:text-muted-foreground [&>strong]:text-foreground [&_a]:text-electric [&_a]:underline [&_a:hover]:text-electric-glow [&_a]:transition-colors [&_a]:cursor-pointer">
                 {renderBlogContent(blogContent, isTeaserContent)}
@@ -1164,36 +991,15 @@ export default function MicRecorder() {
               
               {/* Bottom action buttons - same as top layout */}
               <div className="mt-8 border-t border-border/10 pt-6">
-                <div className="flex justify-center gap-2 sm:gap-3">
-                  <button
-                    onClick={handleEdit}
-                    className="group flex flex-col items-center gap-2 p-3 sm:p-4 bg-muted/20 hover:bg-muted/30 border border-border/20 rounded-2xl transition-all duration-200 hover:scale-105 min-w-[70px] sm:min-w-[80px]"
-                  >
-                    <Edit className="w-5 h-5 sm:w-6 sm:h-6 text-foreground group-hover:text-electric transition-colors" />
-                    <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">{t('actions.edit')}</span>
-                  </button>
-                  <button
-                    onClick={() => handleCopy(blogContent)}
-                    className="group flex flex-col items-center gap-2 p-3 sm:p-4 bg-muted/20 hover:bg-muted/30 border border-border/20 rounded-2xl transition-all duration-200 hover:scale-105 min-w-[70px] sm:min-w-[80px]"
-                  >
-                    <Copy className="w-5 h-5 sm:w-6 sm:h-6 text-foreground group-hover:text-electric transition-colors" />
-                    <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">{t('actions.copy')}</span>
-                  </button>
-                  <button 
-                    onClick={handleSave}
-                    className="group flex flex-col items-center gap-2 p-3 sm:p-4 bg-muted/20 hover:bg-muted/30 border border-border/20 rounded-2xl transition-all duration-200 hover:scale-105 min-w-[70px] sm:min-w-[80px]"
-                  >
-                    <Save className="w-5 h-5 sm:w-6 sm:h-6 text-foreground group-hover:text-electric transition-colors" />
-                    <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">{t('actions.save')}</span>
-                  </button>
-                  <button 
-                    onClick={handleShare}
-                    className="group flex flex-col items-center gap-2 p-3 sm:p-4 bg-electric/20 hover:bg-electric/30 border border-electric/20 rounded-2xl transition-all duration-200 hover:scale-105 min-w-[70px] sm:min-w-[80px]"
-                  >
-                    <Share className="w-5 h-5 sm:w-6 sm:h-6 text-electric" />
-                    <span className="text-xs font-medium text-electric">{t('actions.share')}</span>
-                  </button>
-                </div>
+                <PublishActions
+                  content={blogContent}
+                  isLoggedIn={isLoggedIn}
+                  onCopy={() => handleCopy(blogContent)}
+                  onEdit={handleEdit}
+                  onSave={handleSave}
+                  onShare={handleShare}
+                  showSignature={false}
+                />
               </div>
             </div>
           )}
@@ -1212,69 +1018,7 @@ export default function MicRecorder() {
         </div>
       )}
 
-      {/* Login Popup */}
-      {showLoginPopup && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-card/95 backdrop-blur-sm border border-border/50 rounded-2xl p-8 shadow-2xl max-w-md w-full">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-foreground">{t('components.micRecorder.loginRequired')}</h3>
-              <button
-                onClick={() => setShowLoginPopup(false)}
-                className="text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <p className="text-muted-foreground mb-6 leading-relaxed">
-              {t('components.micRecorder.loginEditMessage')}
-            </p>
-            <div className="flex flex-col gap-3">
-              <button className="flex items-center justify-center gap-3 px-6 py-3 bg-gradient-electric hover:opacity-90 text-white font-semibold rounded-2xl transition-all duration-200">
-                <LogIn className="w-5 h-5" />
-                {t('components.micRecorder.signInToEdit')}
-              </button>
-              <button
-                onClick={() => setShowLoginPopup(false)}
-                className="text-muted-foreground hover:text-foreground transition-colors text-center py-2"
-              >
-                {t('components.micRecorder.maybeLater')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Save Popup */}
-      {showSavePopup && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-card/95 backdrop-blur-sm border border-border/50 rounded-2xl p-8 shadow-2xl max-w-md w-full">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-foreground">{t('components.micRecorder.loginRequired')}</h3>
-              <button
-                onClick={() => setShowSavePopup(false)}
-                className="text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <p className="text-muted-foreground mb-6 leading-relaxed">
-              {t('components.micRecorder.loginSaveMessage')}
-            </p>
-            <div className="flex flex-col gap-3">
-              <button className="flex items-center justify-center gap-3 px-6 py-3 bg-gradient-electric hover:opacity-90 text-white font-semibold rounded-2xl transition-all duration-200">
-                <LogIn className="w-5 h-5" />
-                Sign In to Save
-              </button>
-              <button
-                onClick={() => setShowSavePopup(false)}
-                className="text-muted-foreground hover:text-foreground transition-colors text-center py-2"
-              >
-                {t('components.micRecorder.maybeLater')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Popups are now handled by PublishActions component */}
 
       {/* Edit Modal */}
       {isEditing && (
