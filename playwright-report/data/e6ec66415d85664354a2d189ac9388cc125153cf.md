@@ -1,0 +1,133 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - heading "MicRecorder Visual Lab" [level=1] [ref=e5]
+      - paragraph [ref=e6]: Visual testing laboratory for all MicRecorder states and variants
+      - generic [ref=e8]: 🧪 FOR VISUAL TESTING ONLY
+    - generic [ref=e9]:
+      - heading "Select State to Test:" [level=2] [ref=e10]
+      - generic [ref=e11]:
+        - button "Idle State Default state when no recording is happening data-testid=\"mic-idle\"" [ref=e12] [cursor=pointer]:
+          - heading "Idle State" [level=3] [ref=e13] [cursor=pointer]
+          - paragraph [ref=e14] [cursor=pointer]: Default state when no recording is happening
+          - generic [ref=e15] [cursor=pointer]: data-testid="mic-idle"
+        - button "Permission Request When microphone permission is being requested data-testid=\"mic-permission-request\"" [ref=e16] [cursor=pointer]:
+          - heading "Permission Request" [level=3] [ref=e17] [cursor=pointer]
+          - paragraph [ref=e18] [cursor=pointer]: When microphone permission is being requested
+          - generic [ref=e19] [cursor=pointer]: data-testid="mic-permission-request"
+        - button "Recording State Active recording with waveform visualization and live transcript data-testid=\"mic-recording\"" [ref=e20] [cursor=pointer]:
+          - heading "Recording State" [level=3] [ref=e21] [cursor=pointer]
+          - paragraph [ref=e22] [cursor=pointer]: Active recording with waveform visualization and live transcript
+          - generic [ref=e23] [cursor=pointer]: data-testid="mic-recording"
+        - button "Processing State AI processing with magical sequence animation data-testid=\"mic-processing\"" [ref=e24] [cursor=pointer]:
+          - heading "Processing State" [level=3] [ref=e25] [cursor=pointer]
+          - paragraph [ref=e26] [cursor=pointer]: AI processing with magical sequence animation
+          - generic [ref=e27] [cursor=pointer]: data-testid="mic-processing"
+        - button "Complete State Final state with transcription, blog content, and actions data-testid=\"mic-complete\"" [ref=e28] [cursor=pointer]:
+          - heading "Complete State" [level=3] [ref=e29] [cursor=pointer]
+          - paragraph [ref=e30] [cursor=pointer]: Final state with transcription, blog content, and actions
+          - generic [ref=e31] [cursor=pointer]: data-testid="mic-complete"
+        - button "Error State Error handling and retry options data-testid=\"mic-error\"" [ref=e32] [cursor=pointer]:
+          - heading "Error State" [level=3] [ref=e33] [cursor=pointer]
+          - paragraph [ref=e34] [cursor=pointer]: Error handling and retry options
+          - generic [ref=e35] [cursor=pointer]: data-testid="mic-error"
+    - generic [ref=e36]:
+      - heading "All States (Automated Visual Testing)" [level=2] [ref=e37]
+      - generic [ref=e38]:
+        - generic [ref=e39]:
+          - heading "I Idle State" [level=3] [ref=e40]:
+            - generic [ref=e41]: I
+            - text: Idle State
+          - paragraph [ref=e42]: Default state when no recording is happening
+        - generic [ref=e46]:
+          - button [ref=e47] [cursor=pointer]:
+            - img [ref=e48] [cursor=pointer]
+          - paragraph [ref=e52]: Start vibelogging
+      - generic [ref=e53]:
+        - generic [ref=e54]:
+          - heading "P Permission Request" [level=3] [ref=e55]:
+            - generic [ref=e56]: P
+            - text: Permission Request
+          - paragraph [ref=e57]: When microphone permission is being requested
+        - generic [ref=e61]:
+          - button [ref=e62] [cursor=pointer]:
+            - img [ref=e63] [cursor=pointer]
+          - paragraph [ref=e67]: Start vibelogging
+      - generic [ref=e68]:
+        - generic [ref=e69]:
+          - heading "R Recording State" [level=3] [ref=e70]:
+            - generic [ref=e71]: R
+            - text: Recording State
+          - paragraph [ref=e72]: Active recording with waveform visualization and live transcript
+        - generic [ref=e76]:
+          - button [ref=e77] [cursor=pointer]:
+            - img [ref=e78] [cursor=pointer]
+          - paragraph [ref=e82]: Start vibelogging
+      - generic [ref=e83]:
+        - generic [ref=e84]:
+          - heading "P Processing State" [level=3] [ref=e85]:
+            - generic [ref=e86]: P
+            - text: Processing State
+          - paragraph [ref=e87]: AI processing with magical sequence animation
+        - generic [ref=e91]:
+          - button [ref=e92] [cursor=pointer]:
+            - img [ref=e93] [cursor=pointer]
+          - paragraph [ref=e97]: Start vibelogging
+      - generic [ref=e98]:
+        - generic [ref=e99]:
+          - heading "C Complete State" [level=3] [ref=e100]:
+            - generic [ref=e101]: C
+            - text: Complete State
+          - paragraph [ref=e102]: Final state with transcription, blog content, and actions
+        - generic [ref=e106]:
+          - button [ref=e107] [cursor=pointer]:
+            - img [ref=e108] [cursor=pointer]
+          - paragraph [ref=e112]: Start vibelogging
+      - generic [ref=e113]:
+        - generic [ref=e114]:
+          - heading "E Error State" [level=3] [ref=e115]:
+            - generic [ref=e116]: E
+            - text: Error State
+          - paragraph [ref=e117]: Error handling and retry options
+        - generic [ref=e121]:
+          - button [ref=e122] [cursor=pointer]:
+            - img [ref=e123] [cursor=pointer]
+          - paragraph [ref=e127]: Start vibelogging
+    - generic [ref=e128]:
+      - heading "URL Testing Parameters:" [level=3] [ref=e129]
+      - generic [ref=e130]:
+        - generic [ref=e131]:
+          - generic [ref=e132]: /mic-lab?state=
+          - generic [ref=e133]: idle
+          - generic [ref=e134]: → Idle State
+        - generic [ref=e135]:
+          - generic [ref=e136]: /mic-lab?state=
+          - generic [ref=e137]: permission-request
+          - generic [ref=e138]: → Permission Request
+        - generic [ref=e139]:
+          - generic [ref=e140]: /mic-lab?state=
+          - generic [ref=e141]: recording
+          - generic [ref=e142]: → Recording State
+        - generic [ref=e143]:
+          - generic [ref=e144]: /mic-lab?state=
+          - generic [ref=e145]: processing
+          - generic [ref=e146]: → Processing State
+        - generic [ref=e147]:
+          - generic [ref=e148]: /mic-lab?state=
+          - generic [ref=e149]: complete
+          - generic [ref=e150]: → Complete State
+        - generic [ref=e151]:
+          - generic [ref=e152]: /mic-lab?state=
+          - generic [ref=e153]: error
+          - generic [ref=e154]: → Error State
+    - generic [ref=e155]:
+      - heading "📊 Deterministic Test Data" [level=4] [ref=e156]
+      - paragraph [ref=e157]: All mock data is deterministic for consistent visual snapshots. Waveform animations and live transcripts use fixed patterns to ensure reproducible testing.
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e163] [cursor=pointer]:
+    - img [ref=e164] [cursor=pointer]
+  - alert [ref=e167]
+```
