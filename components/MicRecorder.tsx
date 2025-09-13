@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Mic, Circle, Copy, Share, Save, Check, Sparkles, Image, Search, FileText, Volume2, Brain, Zap, Play, Pause, Edit, X, LogIn } from "lucide-react";
 import { useI18n } from "@/components/providers/I18nProvider";
 import Waveform from "@/components/mic/Waveform";
+import { AudioEngine } from "@/components/mic/AudioEngine";
 
 // Extend Window interface for webkitAudioContext and SpeechRecognition
 declare global {
@@ -54,83 +55,44 @@ export default function MicRecorder() {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   
   // Audio recording refs
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-  const streamRef = useRef<MediaStream | null>(null);
-  const recordingTimer = useRef<number | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
+  const audioEngineRef = useRef<AudioEngine | null>(null);
   const speechRecognitionRef = useRef<any>(null);
+  const recordingTimer = useRef<number | null>(null);
   
   // Enhanced fluid bars with real audio data
   const bars = 15;
-  const raf = useRef<number | null>(null);
   const levelsRef = useRef<number[]>(Array.from({ length: bars }, () => 0.1));
   const [, force] = useState(0);
 
-  // Real audio visualization
+  // Initialize AudioEngine
   useEffect(() => {
-    if (recordingState === "recording" && analyserRef.current) {
-      const analyser = analyserRef.current;
-      const bufferLength = analyser.frequencyBinCount;
-      const dataArray = new Uint8Array(bufferLength);
-      
-      const loop = () => {
-        if (recordingState !== "recording") return;
-        
-        analyser.getByteFrequencyData(dataArray);
-        
-        // Map frequency data to our bars with better distribution
-        const arr = levelsRef.current;
-        
-        for (let i = 0; i < bars; i++) {
-          // Logarithmic mapping for better frequency distribution
-          const minFreq = 0;
-          const maxFreq = bufferLength * 0.7; // Focus on lower-mid frequencies where voice lives
-          const freq = minFreq + (maxFreq - minFreq) * Math.pow(i / (bars - 1), 1.5);
-          
-          const start = Math.floor(freq);
-          const end = Math.min(start + Math.floor(bufferLength / bars) + 1, bufferLength);
-          let sum = 0;
-          let count = 0;
-          
-          for (let j = start; j < end && j < bufferLength; j++) {
-            sum += dataArray[j];
-            count++;
-          }
-          
-          const average = count > 0 ? sum / count : 0;
-          // Super sensitive normalization - amplify quiet sounds  
-          let normalized = (average / 255) * 3; // 3x amplification for better dynamic range
-          normalized = Math.pow(normalized, 0.5); // Square root for better sensitivity curve
-          normalized = Math.max(0.15, Math.min(1, normalized)); // Higher minimum for always-visible movement
-          
-          // Smooth the transition
-          arr[i] += (normalized - arr[i]) * 0.4;
-        }
-        
+    audioEngineRef.current = new AudioEngine({
+      onPermissionChange: setHasPermission,
+      onLevelsUpdate: (levels) => {
+        levelsRef.current = levels;
         force((x) => x + 1);
-        raf.current = requestAnimationFrame(loop);
-      };
-      
-      raf.current = requestAnimationFrame(loop);
-    } else if (recordingState !== "recording") {
-      if (raf.current) {
-        cancelAnimationFrame(raf.current);
-        raf.current = null;
+      },
+      onDataAvailable: (blob, duration) => {
+        console.log('Audio data available:', blob.size, 'duration:', duration);
+        setDuration(duration);
+        setAudioBlob(blob);
+        
+        // Start AI processing
+        setTimeout(() => {
+          processAudioWithAI(blob);
+        }, 100);
+      },
+      onError: (error) => {
+        showToast(error);
       }
-      // Fade bars to minimum when not recording
-      const arr = levelsRef.current;
-      for (let i = 0; i < arr.length; i++) {
-        arr[i] = 0.15;
-      }
-      force((x) => x + 1);
-    }
-    
+    });
+
     return () => {
-      if (raf.current) cancelAnimationFrame(raf.current);
+      audioEngineRef.current?.cleanup();
     };
-  }, [recordingState]);
+  }, []);
+
+  // Audio visualization is now handled by AudioEngine via callbacks
 
   // Playback audio visualization
   useEffect(() => {
@@ -331,81 +293,14 @@ export default function MicRecorder() {
 
   // Request microphone permission and start recording
   const handleStartRecording = async () => {
-    try {
-      // Request microphone permission
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          sampleRate: 44100
-        } 
-      });
-      
-      streamRef.current = stream;
-      setHasPermission(true);
-      
-      // Set up audio analysis for visualization
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const analyser = audioContext.createAnalyser();
-      const source = audioContext.createMediaStreamSource(stream);
-      
-      analyser.fftSize = 512;
-      analyser.smoothingTimeConstant = 0.7;
-      analyser.minDecibels = -90;
-      analyser.maxDecibels = -10;
-      source.connect(analyser);
-      
-      audioContextRef.current = audioContext;
-      analyserRef.current = analyser;
-      
-      // Create MediaRecorder
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4'
-      });
-      
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-      
-      // Handle recorded data
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-      
-      // Capture recording time in closure - this will be the actual duration
-      let actualRecordingTime = 0;
-      const startTime = Date.now();
-      
-      // Handle recording stop
-      mediaRecorder.onstop = () => {
-        // Calculate actual recording time based on real elapsed time
-        actualRecordingTime = Math.round((Date.now() - startTime) / 1000);
-        
-        const blob = new Blob(audioChunksRef.current, { 
-          type: mediaRecorder.mimeType 
-        });
-        console.log('Recording stopped, blob size:', blob.size, 'actual recording time:', actualRecordingTime);
-        
-        // Set duration immediately using actual time
-        console.log('Setting duration immediately to:', actualRecordingTime);
-        setDuration(actualRecordingTime);
-        
-        // Set the blob and trigger AI processing
-        setAudioBlob(blob);
-        
-        // Start AI processing now that we have the blob
-        setTimeout(() => {
-          processAudioWithAI(blob);
-        }, 100);
-      };
-      
-      // Start recording
-      mediaRecorder.start(100); // Collect data every 100ms
+    if (!audioEngineRef.current) return;
+    
+    const success = await audioEngineRef.current.startRecording();
+    if (success) {
       setRecordingState("recording");
       setTranscription("");
       setBlogContent("");
-    setIsTeaserContent(false);
+      setIsTeaserContent(false);
       setProcessingSteps([]);
       setRecordingTime(0);
       
@@ -413,39 +308,14 @@ export default function MicRecorder() {
       recordingTimer.current = window.setInterval(() => {
         setRecordingTime(prev => prev + 1);
       }, 1000);
-      
-    } catch (error) {
-      console.error('Error starting recording:', error);
-      setHasPermission(false);
-      showToast('Microphone access denied. Please allow microphone access to record.');
     }
   };
 
   const handleStopRecording = () => {
-    // Store recording time BEFORE doing anything else
-    const finalRecordingTime = recordingTime;
-    console.log('Stopping recording, current recordingTime state:', recordingTime);
+    if (!audioEngineRef.current) return;
     
-    // Also manually store it for the blob creation
-    const recordedSeconds = finalRecordingTime;
-    
-    // Stop the MediaRecorder
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-      mediaRecorderRef.current.stop();
-    }
-    
-    // Stop the microphone stream
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-    
-    // Clean up audio context
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
-      audioContextRef.current = null;
-      analyserRef.current = null;
-    }
+    // Stop the AudioEngine
+    audioEngineRef.current.stopRecording();
     
     // Clear the recording timer
     if (recordingTimer.current) {
@@ -476,19 +346,8 @@ export default function MicRecorder() {
 
   const handleReset = () => {
     // Clean up any ongoing recording
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-      mediaRecorderRef.current.stop();
-    }
-    
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-    
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
-      audioContextRef.current = null;
-      analyserRef.current = null;
+    if (audioEngineRef.current) {
+      audioEngineRef.current.cleanup();
     }
     
     if (recordingTimer.current) {
@@ -514,7 +373,6 @@ export default function MicRecorder() {
     setIsPlaying(false);
     setCurrentTime(0);
     setDuration(0);
-    audioChunksRef.current = [];
   };
 
   const showToast = (message: string) => {
