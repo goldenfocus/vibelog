@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Mic, Circle, Copy, Share, Save, Check, Sparkles, Image, Search, FileText, Volume2, Brain, Zap, Play, Pause, Edit, X, LogIn } from "lucide-react";
 import { useI18n } from "@/components/providers/I18nProvider";
+import Waveform from "@/components/mic/Waveform";
 
 // Extend Window interface for webkitAudioContext and SpeechRecognition
 declare global {
@@ -1072,34 +1073,11 @@ export default function MicRecorder() {
 
       {/* Real-time audio visualization */}
       {recordingState === "recording" && (
-        <div className="flex items-center justify-center gap-1 sm:gap-1.5 h-24 sm:h-32 mb-8 px-6 sm:px-12 py-4 sm:py-6 bg-card/20 backdrop-blur-sm rounded-2xl sm:rounded-3xl border border-border/10">
-          {levelsRef.current.map((lvl, i) => {
-            // Natural equalizer - each bar responds to its own frequency range
-            const heightPercent = Math.max(8, lvl * 100);
-            const delay = i * 30; // Slight delay for wave effect
-            
-            return (
-              <div
-                key={i}
-                className="transition-all duration-100 ease-out"
-                style={{
-                  height: `${heightPercent}%`,
-                  width: window.innerWidth < 640 ? "6px" : "9px", // Smaller bars on mobile
-                  backgroundColor: `hsl(${190 + i * 1.5}, 80%, ${55 + lvl * 25}%)`,
-                  // Turn white/metallic when maxed (last 3 bars)
-                  ...(lvl > 0.95 && i >= bars - 3 ? {
-                    backgroundColor: `hsl(0, 0%, ${85 + lvl * 15}%)`,
-                  } : {}),
-                  borderRadius: "2.5px",
-                  boxShadow: `0 0 ${lvl * (window.innerWidth < 640 ? 8 : 12)}px ${(lvl > 0.95 && i >= bars - 3) ? `hsl(0, 0%, ${85 + lvl * 15}%)` : `hsl(${190 + i * 1.5}, 80%, ${55 + lvl * 25}%)`}`,
-                  opacity: 0.8 + (lvl * 0.2),
-                  transform: `scaleY(${0.4 + lvl * 0.6}) scaleX(${0.8 + lvl * 0.2})`,
-                  filter: `blur(${(1 - lvl) * 0.3}px)`,
-                }}
-              />
-            );
-          })}
-        </div>
+        <Waveform 
+          levels={levelsRef.current}
+          isActive={recordingState === "recording"}
+          variant="recording"
+        />
       )}
 
       {/* Live transcript */}
@@ -1232,27 +1210,11 @@ export default function MicRecorder() {
           
           {/* Playback Equalizer */}
           {isPlaying && (
-            <div className="flex items-center justify-center gap-1.5 h-16 mt-6 px-8 py-4 bg-card/10 backdrop-blur-sm rounded-2xl border border-border/5">
-              {playbackLevels.map((lvl, i) => {
-                const heightPercent = Math.max(6, lvl * 100);
-                
-                return (
-                  <div
-                    key={i}
-                    className="transition-all duration-100 ease-out"
-                    style={{
-                      height: `${heightPercent}%`,
-                      width: "6px",
-                      backgroundColor: `hsl(${200 + i * 2}, 70%, ${60 + lvl * 20}%)`,
-                      borderRadius: "3px",
-                      boxShadow: `0 0 ${lvl * 8}px hsl(${200 + i * 2}, 70%, ${60 + lvl * 20}%)`,
-                      opacity: 0.7 + (lvl * 0.3),
-                      transform: `scaleY(${0.5 + lvl * 0.5})`,
-                    }}
-                  />
-                );
-              })}
-            </div>
+            <Waveform 
+              levels={playbackLevels}
+              isActive={isPlaying}
+              variant="playback"
+            />
           )}
           
           <audio 
