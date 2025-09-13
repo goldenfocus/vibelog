@@ -5,6 +5,7 @@ import { Mic, Circle, Copy, Share, Save, Check, Sparkles, Image, Search, FileTex
 import { useI18n } from "@/components/providers/I18nProvider";
 import Waveform from "@/components/mic/Waveform";
 import { AudioEngine } from "@/components/mic/AudioEngine";
+import Controls, { RecordingState } from "@/components/mic/Controls";
 
 // Extend Window interface for webkitAudioContext and SpeechRecognition
 declare global {
@@ -784,53 +785,9 @@ export default function MicRecorder() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const getMicButtonContent = () => {
-    switch (recordingState) {
-      case "idle":
-        return <Mic className="w-24 h-24" />;
-      case "recording":
-        return <Circle className="w-24 h-24 text-red-500 fill-current animate-pulse" />;
-      case "processing":
-        return <div className="w-24 h-24 border-8 border-current border-t-transparent rounded-full animate-spin" />;
-      case "complete":
-        return <Mic className="w-24 h-24" />;
-    }
-  };
-
-  const getStatusText = () => {
-    switch (recordingState) {
-      case "idle":
-        return t('recorder.idle');
-      case "recording":
-        return t('recorder.recording');
-      case "processing":
-        return t('recorder.processing');
-      case "complete":
-        return t('recorder.done');
-    }
-  };
-
-  // Format time as MM:SS
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  // Free plan: 5 minutes (300 seconds)
-  const getTimeLimit = () => {
-    // In a real app, this would be based on user's subscription
-    return 300; // 5 minutes for free plan
-  };
-
-  const isNearTimeLimit = () => {
-    const limit = getTimeLimit();
-    return recordingTime >= limit - 30; // Warning 30 seconds before limit
-  };
-
-  const hasReachedTimeLimit = () => {
-    return recordingTime >= getTimeLimit();
-  };
+  // Control functions now handled by Controls.tsx component
+  const getTimeLimit = () => 300; // 5 minutes for free plan
+  const hasReachedTimeLimit = () => recordingTime >= getTimeLimit();
 
   // Auto-stop when time limit is reached
   useEffect(() => {
@@ -889,45 +846,13 @@ export default function MicRecorder() {
 
   return (
     <div className="w-full">
-      <div className="flex flex-col items-center mb-12">
-        <button
-          onClick={recordingState === "recording" ? handleStopRecording : recordingState === "complete" ? handleReset : handleStartRecording}
-          disabled={recordingState === "processing"}
-          className={[
-            "mic",
-            recordingState === "recording" ? "is-recording" : "",
-            "w-40 h-40 sm:w-48 sm:h-48 rounded-full",
-            "bg-gradient-electric text-primary-foreground",
-            "transition-electric flex items-center justify-center",
-            "hover:shadow-[0_20px_40px_rgba(97,144,255,0.3)]",
-            "disabled:opacity-70 disabled:cursor-not-allowed",
-            recordingState === "complete" ? "!bg-secondary !text-secondary-foreground shadow-elevated" : ""
-          ].join(" ")}
-        >
-          {getMicButtonContent()}
-        </button>
-        
-        <div className="text-center mt-6">
-          <p className="text-muted-foreground text-lg mb-2">
-            {getStatusText()}
-          </p>
-          {recordingState === "recording" && (
-            <div className="flex flex-col items-center space-y-2">
-              <div className={`text-2xl font-mono font-bold transition-colors ${
-                isNearTimeLimit() ? 'text-red-500' : 'text-foreground'
-              }`}>
-                {formatTime(recordingTime)}
-              </div>
-              <div className="text-sm text-muted-foreground">
-                {t('components.micRecorder.freePlanLimit', { timeLimit: formatTime(getTimeLimit()) })}
-                {isNearTimeLimit() && !hasReachedTimeLimit() && (
-                  <span className="text-red-500 ml-2">⚠️ {t('components.micRecorder.timeRemaining', { seconds: Math.floor((getTimeLimit() - recordingTime)) })}</span>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+      <Controls
+        recordingState={recordingState}
+        recordingTime={recordingTime}
+        onStartRecording={handleStartRecording}
+        onStopRecording={handleStopRecording}
+        onReset={handleReset}
+      />
 
       {/* Real-time audio visualization */}
       {recordingState === "recording" && (
