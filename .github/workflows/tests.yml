@@ -1,9 +1,17 @@
 name: Tests
+
 on:
   pull_request:
     types: [opened, synchronize, reopened, labeled]
   push:
     branches: [main]
+
+permissions:
+  contents: read
+  actions: read
+  checks: read
+  pull-requests: write
+  issues: write
 
 jobs:
   tests:
