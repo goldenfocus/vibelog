@@ -23,46 +23,67 @@ export function useVibelogAPI(
   });
 
   const createTeaserContent = (fullContent: string, transcription: string): TeaserResult => {
-    const wordCount = transcription.split(/\s+/).filter(word => word.length > 0).length;
-    
-    // For very short recordings (under 10 words), show full content without signup
-    if (wordCount < 10) {
-      return { content: fullContent, isTeaser: false };
+    // Always create a teaser for non-logged users to encourage signup
+    // Target: Show approximately 3 paragraphs or ~3-4 sentences maximum
+
+    // Split content into paragraphs first
+    const paragraphs = fullContent.split('\n\n').filter(p => p.trim().length > 0);
+
+    // If we have 3 or fewer short paragraphs, show them all
+    if (paragraphs.length <= 3 && fullContent.length <= 800) {
+      return { content: fullContent, isTeaser: true, fullContent };
     }
-    
-    // For short but meaningful content (10-30 words), show full content WITH signup prompt
-    if (wordCount < 30) {
-      return { content: fullContent, isTeaser: true };
-    }
-    
-    // For longer content, show ~600-700 characters as teaser (consistent across languages)
-    const targetTeaserLength = 650;
-    
-    if (fullContent.length <= targetTeaserLength) {
-      return { content: fullContent, isTeaser: true };
-    }
-    
-    // Find the best sentence break near the target length
-    const sentences = fullContent.split(/[.!?]+/).filter(s => s.trim().length > 0);
+
+    // For longer content, create a meaningful teaser
     let teaserContent = '';
-    let currentLength = 0;
-    
-    for (let i = 0; i < sentences.length; i++) {
-      const nextSentence = sentences[i].trim() + '.';
-      if (currentLength + nextSentence.length <= targetTeaserLength + 100) { // Allow 100 char buffer
-        teaserContent += nextSentence + (i < sentences.length - 1 ? ' ' : '');
-        currentLength += nextSentence.length + 1;
-      } else {
+    let paragraphCount = 0;
+
+    // Try to include up to 3 paragraphs or until we hit a reasonable length limit
+    for (const paragraph of paragraphs) {
+      if (paragraphCount >= 3) break;
+
+      const potentialContent = teaserContent + (teaserContent ? '\n\n' : '') + paragraph;
+
+      // Stop if adding this paragraph would make it too long (aim for ~600-800 chars)
+      if (potentialContent.length > 800 && paragraphCount > 0) {
         break;
       }
+
+      teaserContent = potentialContent;
+      paragraphCount++;
+
+      // If we've got a good amount of content (600+ chars), stop here
+      if (teaserContent.length >= 600) break;
     }
-    
-    // Ensure we have at least one sentence
+
+    // Fallback: if paragraph-based approach didn't work well, use sentence-based
+    if (!teaserContent || teaserContent.length < 300) {
+      const sentences = fullContent.split(/[.!?]+/).filter(s => s.trim().length > 0);
+      teaserContent = '';
+      let sentenceCount = 0;
+      const maxSentences = 4; // Aim for 3-4 sentences max
+
+      for (let i = 0; i < sentences.length && sentenceCount < maxSentences; i++) {
+        const sentence = sentences[i].trim() + '.';
+        const potentialContent = teaserContent + (teaserContent ? ' ' : '') + sentence;
+
+        // Stop if this would make it too long and we already have some content
+        if (potentialContent.length > 800 && teaserContent.length > 300) {
+          break;
+        }
+
+        teaserContent = potentialContent;
+        sentenceCount++;
+      }
+    }
+
+    // Ensure we have at least some content
     if (!teaserContent) {
-      teaserContent = sentences[0].trim() + '.';
+      const firstSentence = fullContent.split(/[.!?]+/)[0];
+      teaserContent = firstSentence ? firstSentence.trim() + '.' : fullContent.slice(0, 400) + '...';
     }
-    
-    return { 
+
+    return {
       content: teaserContent,
       isTeaser: true,
       fullContent
