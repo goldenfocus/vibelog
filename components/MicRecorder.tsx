@@ -70,9 +70,9 @@ export default function MicRecorder() {
         setDuration(duration);
         setAudioBlob(blob);
         
-        // Start AI processing
+        // Start processing animation now that audio blob is available
         setTimeout(() => {
-          processAudioWithAI(blob);
+          setRecordingState("processing");
         }, 100);
       },
       onError: (error) => {
@@ -294,7 +294,6 @@ export default function MicRecorder() {
       setTranscription("");
       setBlogContent("");
       setIsTeaserContent(false);
-      setProcessingSteps([]);
       setRecordingTime(0);
       
       // Start recording timer
@@ -316,25 +315,7 @@ export default function MicRecorder() {
       recordingTimer.current = null;
     }
     
-    setRecordingState("processing");
-    
-    // Define magical processing steps
-    const steps: ProcessingStep[] = [
-      { id: "capture", label: t('components.micRecorder.symphony.capture'), icon: <Volume2 className="w-4 h-4" />, completed: false },
-      { id: "transcribe", label: t('components.micRecorder.symphony.transcribe'), icon: <FileText className="w-4 h-4" />, completed: false },
-      { id: "clean", label: t('components.micRecorder.symphony.clean'), icon: <Zap className="w-4 h-4" />, completed: false },
-      { id: "expand", label: t('components.micRecorder.symphony.expand'), icon: <Brain className="w-4 h-4" />, completed: false },
-      { id: "structure", label: t('components.micRecorder.symphony.structure'), icon: <Search className="w-4 h-4" />, completed: false },
-      { id: "format", label: t('components.micRecorder.symphony.format'), icon: <Sparkles className="w-4 h-4" />, completed: false },
-      { id: "optimize", label: t('components.micRecorder.symphony.optimize'), icon: <Zap className="w-4 h-4" />, completed: false },
-      { id: "social", label: t('components.micRecorder.symphony.social'), icon: <Share className="w-4 h-4" />, completed: false },
-      { id: "seo", label: t('components.micRecorder.symphony.seo'), icon: <Search className="w-4 h-4" />, completed: false },
-      { id: "rss", label: t('components.micRecorder.symphony.rss'), icon: <Volume2 className="w-4 h-4" />, completed: false },
-      { id: "html", label: t('components.micRecorder.symphony.html'), icon: <Zap className="w-4 h-4" />, completed: false },
-      { id: "polish", label: t('components.micRecorder.symphony.polish'), icon: <Sparkles className="w-4 h-4" />, completed: false },
-    ];
-    
-    setProcessingSteps(steps);
+    // Processing state will be set when audio blob becomes available in onDataAvailable
   };
 
   const handleReset = () => {
@@ -358,7 +339,6 @@ export default function MicRecorder() {
     setLiveTranscript("");
     setBlogContent("");
     setIsTeaserContent(false);
-    setProcessingSteps([]);
     setVisibleStepIndex(0);
     setRecordingTime(0);
     setAudioBlob(null);
@@ -648,26 +628,6 @@ export default function MicRecorder() {
     }
   };
 
-  const processAudioWithAI = async (blob?: Blob) => {
-    const audioFile = blob || audioBlob;
-    if (!audioFile) {
-      console.error('No audio blob available for processing');
-      return;
-    }
-
-    // Reset processing data
-    processingDataRef.current = { transcriptionData: '', blogContentData: '' };
-
-    try {
-      // The ProcessingAnimation component will handle the API calls and completion
-      // No additional logic needed here - animation component manages everything
-    } catch (error) {
-      console.error('AI processing error:', error);
-      // Show error message instead of demo content
-      setRecordingState("complete");
-      showToast('AI processing failed - please try recording again');
-    }
-  };
 
   const handlePlayPause = async () => {
     if (!audioRef.current) return;
@@ -752,23 +712,21 @@ export default function MicRecorder() {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-        mediaRecorderRef.current.stop();
+      // Clean up AudioEngine
+      if (audioEngineRef.current) {
+        audioEngineRef.current.cleanup();
       }
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-      }
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-      }
+      // Clean up recording timer
       if (recordingTimer.current) {
         clearInterval(recordingTimer.current);
       }
+      // Clean up speech recognition
       if (speechRecognitionRef.current) {
         speechRecognitionRef.current.stop();
       }
-      if (raf.current) {
-        cancelAnimationFrame(raf.current);
+      // Clean up animation frame
+      if (playbackRafRef.current) {
+        cancelAnimationFrame(playbackRafRef.current);
       }
     };
   }, []);

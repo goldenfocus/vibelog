@@ -57,6 +57,8 @@ export default function ProcessingAnimation({
     const recordingDuration = recordingTime; // in seconds
     const baseStepDuration = recordingDuration < 30 ? 800 : recordingDuration < 120 ? 1200 : 1800;
     const STEP_DURATION = baseStepDuration;
+
+    try {
     
     // Initialize processing steps with the new format
     setProcessingSteps(steps.map(step => ({
@@ -123,6 +125,12 @@ export default function ProcessingAnimation({
     
     // Notify parent that animation is complete
     onAnimationComplete?.();
+    } catch (error) {
+      console.error('❌ Processing animation failed:', error);
+      setIsAnimating(false);
+      // Still notify parent to prevent getting stuck
+      onAnimationComplete?.();
+    }
   }, [recordingTime, onTranscribeComplete, onGenerateComplete, onAnimationComplete, createSteps]);
 
   useEffect(() => {

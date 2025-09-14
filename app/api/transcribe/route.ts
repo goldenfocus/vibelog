@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
@@ -15,6 +11,20 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('Transcribing audio file:', audioFile.name, audioFile.size, 'bytes');
+
+    // Check if we have a real API key, otherwise return mock response for testing
+    if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === 'dummy_key') {
+      console.log('🧪 Using mock transcription for development/testing');
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API delay
+      return NextResponse.json({ 
+        transcription: "Today I want to share some thoughts about the future of voice technology and how it's changing the way we create content. Speaking is our most natural form of communication and I believe we're moving toward a world where your voice becomes your pen."
+      });
+    }
+
+    // Initialize OpenAI client only when we have a real API key
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
 
     // Convert File to format OpenAI expects
     const transcription = await openai.audio.transcriptions.create({
