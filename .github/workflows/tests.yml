@@ -48,12 +48,6 @@ jobs:
             **/*.png
             **/*.zip
 
-            await github.rest.issues.createComment({
-              owner: context.repo.owner, repo: context.repo.repo,
-              issue_number: context.payload.pull_request.number,
-              body
-            });
-
       # Enforce 'approved-diff' label when snapshots changed
       - name: Enforce snapshot approval label
         if: github.event_name == 'pull_request'
