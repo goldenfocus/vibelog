@@ -342,6 +342,7 @@ export default function MicRecorder() {
     setLiveTranscript("");
     setBlogContent("");
     setIsTeaserContent(false);
+    setVisibleStepIndex(0);
     setRecordingTime(0);
     setAudioBlob(null);
     setAudioUrl(null);

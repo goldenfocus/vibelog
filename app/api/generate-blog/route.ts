@@ -77,6 +77,58 @@ As voice technology continues to evolve, we can expect even more sophisticated f
       timeout: 60_000,
     });
 
+    // Check if we have a real API key, otherwise return mock response for testing
+    if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === 'dummy_key') {
+      console.log('🧪 Using mock blog generation for development/testing');
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API delay
+      return NextResponse.json({ 
+        blogContent: `# The Future of Voice Technology: Transforming Content Creation
+
+Voice technology is revolutionizing how we create and share content. As we move toward a more connected digital world, the ability to transform spoken words into polished, publishable content represents a fundamental shift in content creation.
+
+## The Natural Evolution of Communication
+
+Speaking is our most natural form of communication. When we remove the friction of typing and formatting, we can focus purely on our ideas and let technology handle the rest. This liberation allows creators to:
+
+- **Express ideas more naturally** without the constraints of a keyboard
+- **Capture inspiration in real-time** wherever they are
+- **Reduce the barrier between thought and publication**
+
+## Why Voice Matters in Content Creation
+
+The implications for creators, writers, and content marketers are profound. We're moving toward a world where your voice becomes your pen, enabling:
+
+### Faster Content Production
+Voice-to-text technology can capture thoughts at the speed of speech, which is typically 3-4 times faster than typing.
+
+### Improved Accessibility
+Voice interfaces make content creation accessible to users with mobility challenges or those who prefer auditory interaction.
+
+### Enhanced Authenticity
+Content created through voice often retains a more conversational, authentic tone that resonates better with audiences.
+
+## The Technology Behind the Magic
+
+Modern voice technology combines several cutting-edge technologies:
+
+- **Advanced speech recognition** powered by neural networks
+- **Natural language processing** for context understanding
+- **AI-driven content optimization** for SEO and readability
+- **Automated formatting and structuring** for professional presentation
+
+## Looking Forward
+
+As voice technology continues to evolve, we can expect even more sophisticated features like real-time fact-checking, automatic citation generation, and multi-language content creation. The future of content creation is not just digital—it's conversational.
+
+*Ready to try voice-powered content creation? Start speaking your ideas into existence today.*`
+      });
+    }
+
+    // Initialize OpenAI client only when we have a real API key
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+
     const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
       messages: [
