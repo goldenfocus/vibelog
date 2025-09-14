@@ -146,10 +146,6 @@ export default function MicRecorder() {
     }
   };
 
-  const handleSave = () => {
-    if (!isLoggedIn) return;
-    showToast('Vibelog saved successfully!');
-  };
 
   // Edit functions
   const handleEdit = () => {
@@ -299,8 +295,12 @@ export default function MicRecorder() {
                   isLoggedIn={isLoggedIn}
                   onCopy={() => handleCopy(blogContent)}
                   onEdit={handleEdit}
-                  onSave={handleSave}
                   onShare={handleShare}
+                  onUpgradePrompt={(message, benefits) => setUpgradePrompt({
+                    visible: true,
+                    message,
+                    benefits
+                  })}
                   showSignature={false}
                 />
               </div>
@@ -341,8 +341,12 @@ export default function MicRecorder() {
                     isLoggedIn={isLoggedIn}
                     onCopy={() => handleCopy(blogContent)}
                     onEdit={handleEdit}
-                    onSave={handleSave}
                     onShare={handleShare}
+                    onUpgradePrompt={(message, benefits) => setUpgradePrompt({
+                      visible: true,
+                      message,
+                      benefits
+                    })}
                     showSignature={false}
                   />
                 </div>
