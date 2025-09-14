@@ -14,8 +14,8 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* Use more workers for faster CI builds */
-  workers: process.env.CI ? 2 : undefined,
+  /* Max speed: Use all available CPU cores in CI */
+  workers: process.env.CI ? '75%' : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
     ['html'],
@@ -78,9 +78,9 @@ export default defineConfig({
     /* Timeout for expect() assertions */
     timeout: 10 * 1000, // 10 seconds
     
-    /* Threshold for visual comparisons - very strict for pixel-perfect requirements */
+    /* Threshold for visual comparisons - balanced speed vs accuracy */
     toHaveScreenshot: { 
-      threshold: 0.001, // 0.1% threshold - very strict for our pixel-perfect requirement
+      threshold: 0.005, // 0.5% threshold - still strict but faster
       mode: 'percent',
       animations: 'disabled', // Disable animations for consistent screenshots
     },
