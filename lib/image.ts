@@ -92,7 +92,7 @@ export async function watermarkAndResize(params: {
   const xmp = buildXmp({ title: params.title, description: params.description, keywords: params.keywords ?? [] })
   const out = await base
     .composite([{ input: svg, gravity: 'southeast' }])
-    .withMetadata({ xmp })
+    .withMetadata({ xmp } as any)
     .jpeg({ quality: 88 })
     .toBuffer({ resolveWithObject: true })
 
