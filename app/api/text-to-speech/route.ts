@@ -10,21 +10,21 @@ export async function POST(request: NextRequest) {
     const { data: auth } = await supa.auth.getUser();
     const userId = auth?.user?.id;
 
-    // Limits: logged-in 5 per hour; anonymous 2 per day
+    // Limits: logged-in 10000 per hour; anonymous 10000 per day
     const isDev = process.env.NODE_ENV !== 'production';
-    const baseOpts = userId ? { limit: 5, window: '1 h' as const } : { limit: 2, window: '24 h' as const };
-    const opts = isDev ? { limit: 100, window: '15 m' as const } : baseOpts;
+    const baseOpts = userId ? { limit: 10000, window: '1 h' as const } : { limit: 10000, window: '24 h' as const };
+    const opts = isDev ? { limit: 10000, window: '15 m' as const } : baseOpts;
     const rl = await rateLimit(request, 'text-to-speech', opts, userId || undefined);
 
     if (!rl.success) {
       if (!userId) {
         return NextResponse.json({
           error: 'Daily limit reached',
-          message: 'You\'ve used your 2 free text-to-speech generations today. Sign in with Google to get 5 per hour!',
+          message: 'You\'ve used your 10000 free text-to-speech generations today. Sign in with Google to get 10000 per hour!',
           upgrade: {
             action: 'Sign in with Google',
             benefits: [
-              '5 requests per hour (vs 2 per day)',
+              '10000 requests per hour (vs 10000 per day)',
               'Higher quality voice synthesis',
               'Multiple voice options',
               'Faster processing priority'
