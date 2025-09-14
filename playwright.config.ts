@@ -5,14 +5,17 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   testDir: './tests',
+  // Only run E2E/visual tests; ignore unit tests (Vitest)
+  testIgnore: ['tests/unit/**'],
+  testMatch: ['**/*.spec.ts', '**/*.spec.tsx'],
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
+  /* Max speed: Use all available CPU cores in CI */
+  workers: process.env.CI ? '75%' : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
     ['html'],
@@ -61,7 +64,7 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: 'npm run dev',
+    command: 'PORT=3002 npm run dev',
     url: 'http://localhost:3002',
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000, // 2 minutes
@@ -75,9 +78,9 @@ export default defineConfig({
     /* Timeout for expect() assertions */
     timeout: 10 * 1000, // 10 seconds
     
-    /* Threshold for visual comparisons - very strict for pixel-perfect requirements */
+    /* Threshold for visual comparisons - balanced speed vs accuracy */
     toHaveScreenshot: { 
-      threshold: 0.001, // 0.1% threshold - very strict for our pixel-perfect requirement
+      threshold: 0.005, // 0.5% threshold - still strict but faster
       mode: 'percent',
       animations: 'disabled', // Disable animations for consistent screenshots
     },

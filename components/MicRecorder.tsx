@@ -9,6 +9,9 @@ import Controls, { RecordingState } from "@/components/mic/Controls";
 import TranscriptionPanel from "@/components/mic/TranscriptionPanel";
 import PublishActions from "@/components/mic/PublishActions";
 import ProcessingAnimation from "@/components/mic/ProcessingAnimation";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeSanitize from "rehype-sanitize";
 
 // Extend Window interface for webkitAudioContext and SpeechRecognition
 declare global {
@@ -66,7 +69,7 @@ export default function MicRecorder() {
         force((x) => x + 1);
       },
       onDataAvailable: (blob, duration) => {
-        console.log('Audio data available:', blob.size, 'duration:', duration);
+        // Audio data available
         setDuration(duration);
         setAudioBlob(blob);
         
@@ -166,7 +169,7 @@ export default function MicRecorder() {
           let isBlocked = false; // Track if browser blocked the feature
           
           recognition.onstart = () => {
-            console.log('Speech recognition started');
+            // Speech recognition started
             setLiveTranscript(t('components.micRecorder.listening'));
           };
           
@@ -190,7 +193,7 @@ export default function MicRecorder() {
           };
           
           recognition.onerror = (event) => {
-            console.log('Speech recognition error:', event.error, event);
+            // Speech recognition error
             
             // Handle different error types - but DON'T retry for blocked cases
             if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
@@ -208,7 +211,7 @@ export default function MicRecorder() {
                     try {
                       speechRecognitionRef.current.start();
                     } catch (e) {
-                      console.log('Could not restart after no-speech:', e);
+                      // Could not restart after no-speech
                       setLiveTranscript(t('components.micRecorder.recordingUnavailable'));
                     }
                   }
@@ -224,7 +227,7 @@ export default function MicRecorder() {
           };
           
           recognition.onend = () => {
-            console.log('Speech recognition ended');
+            // Speech recognition ended
             // DON'T restart if blocked - just leave it in a stable state
             if (isBlocked) {
               setLiveTranscript(t('components.micRecorder.recordingBlockedByBrowser'));
@@ -239,7 +242,7 @@ export default function MicRecorder() {
                     speechRecognitionRef.current.start();
                   }
                 } catch (e) {
-                  console.log('Could not restart recognition:', e);
+                  // Could not restart recognition
                   setLiveTranscript(t('components.micRecorder.recordingUnavailable'));
                 }
               }, 1000);
@@ -249,12 +252,12 @@ export default function MicRecorder() {
           speechRecognitionRef.current = recognition;
           recognition.start();
         } catch (error) {
-          console.log('Speech recognition initialization error:', error);
+          // Speech recognition initialization error
           setLiveTranscript('Recording...\n(live transcript unavailable)');
         }
       } else {
         // Fallback for browsers without Speech Recognition (like Brave in strict mode)
-        console.log('Speech Recognition API not available');
+        // Speech Recognition API not available
         setLiveTranscript(t('components.micRecorder.recordingNotSupported'));
       }
     } else {
@@ -263,7 +266,7 @@ export default function MicRecorder() {
         try {
           speechRecognitionRef.current.stop();
         } catch (e) {
-          console.log('Error stopping recognition:', e);
+          // Error stopping recognition
         }
         speechRecognitionRef.current = null;
       }
@@ -277,7 +280,7 @@ export default function MicRecorder() {
         try {
           speechRecognitionRef.current.stop();
         } catch (e) {
-          console.log('Cleanup recognition error:', e);
+          // Cleanup recognition error
         }
         speechRecognitionRef.current = null;
       }
@@ -306,8 +309,8 @@ export default function MicRecorder() {
   const handleStopRecording = () => {
     if (!audioEngineRef.current) return;
     
-    // Stop the AudioEngine
-    audioEngineRef.current.stopRecording();
+    // Stop the AudioEngine and release microphone (removes browser recording indicator)
+    audioEngineRef.current.stopRecordingAndRelease();
     
     // Clear the recording timer
     if (recordingTimer.current) {
@@ -401,61 +404,41 @@ export default function MicRecorder() {
   };
 
   const renderBlogContent = (content: string, isTeaser: boolean = false) => {
-    // Parse title and content
-    let title = '';
-    let subtitle = '';
-    let bodyContent = content;
-    
-    // Check for "Title: " pattern and extract it
-    const titleMatch = content.match(/^(?:Title:\s*)?(.+?)(?:\n\n(.+?))?(?:\n\n([\s\S]*?))?$/);
-    if (titleMatch) {
-      const fullTitle = titleMatch[1] || '';
-      const possibleSubtitle = titleMatch[2] || '';
-      const remainingContent = titleMatch[3] || '';
-      
-      // Split long titles into title + subtitle
-      if (fullTitle.length > 50) {
-        const colonIndex = fullTitle.indexOf(':');
-        if (colonIndex > 0 && colonIndex < fullTitle.length - 10) {
-          title = fullTitle.substring(0, colonIndex);
-          subtitle = fullTitle.substring(colonIndex + 1).trim();
-        } else {
-          // Split at natural break point
-          const words = fullTitle.split(' ');
-          const midPoint = Math.ceil(words.length / 2);
-          title = words.slice(0, midPoint).join(' ');
-          subtitle = words.slice(midPoint).join(' ');
-        }
-      } else {
-        title = fullTitle;
-        subtitle = possibleSubtitle;
-      }
-      
-      bodyContent = remainingContent || subtitle || '';
-      if (bodyContent === subtitle) subtitle = '';
-    }
-    
     return (
       <div>
-        {/* Title */}
-        {title && (
-          <div className="mb-6">
-            <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-electric bg-clip-text text-transparent mb-2 leading-tight">
-              {title}
-            </h1>
-            {subtitle && (
-              <h2 className="text-xl sm:text-2xl text-muted-foreground font-medium leading-relaxed">
-                {subtitle}
-              </h2>
-            )}
-          </div>
-        )}
-        
-        {/* Body content */}
-        <div className="whitespace-pre-wrap">
-          <div dangerouslySetInnerHTML={{ __html: bodyContent.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
-        </div>
-        
+        {/* Render sanitized markdown content with custom styles */}
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          rehypePlugins={[rehypeSanitize]}
+          components={{
+            h1: ({ node, ...props }) => (
+              <h1
+                className="text-3xl sm:text-4xl font-bold bg-gradient-electric bg-clip-text text-transparent mb-4 leading-tight"
+                {...props}
+              />
+            ),
+            h2: ({ node, ...props }) => (
+              <h2 className="text-xl sm:text-2xl text-foreground font-semibold mt-6 mb-3" {...props} />
+            ),
+            p: ({ node, ...props }) => (
+              <p className="text-muted-foreground leading-relaxed mb-4" {...props} />
+            ),
+            ul: ({ node, ...props }) => (
+              <ul className="list-disc pl-6 space-y-2 mb-4" {...props} />
+            ),
+            ol: ({ node, ...props }) => (
+              <ol className="list-decimal pl-6 space-y-2 mb-4" {...props} />
+            ),
+            li: ({ node, ...props }) => <li className="leading-relaxed" {...props} />,
+            strong: ({ node, ...props }) => <strong className="font-semibold text-foreground" {...props} />,
+            a: ({ node, ...props }) => (
+              <a className="text-electric underline hover:text-electric/80" target="_blank" rel="noopener noreferrer" {...props} />
+            ),
+          }}
+        >
+          {content}
+        </ReactMarkdown>
+
         {/* Teaser CTA if applicable */}
         {isTeaser && (
           <div className="mt-6 p-4 bg-gradient-to-r from-electric/5 to-transparent border border-electric/20 rounded-xl">
@@ -463,7 +446,7 @@ export default function MicRecorder() {
               <span className="text-xl">🔒</span>
               <span className="font-semibold">
                 <button 
-                  onClick={() => window.open('/pricing', '_blank')}
+                  onClick={() => window.open('/pricing', '_blank', 'noopener,noreferrer')}
                   className="underline hover:text-electric-glow transition-colors cursor-pointer"
                 >
                   {t('navigation.signUp')}
@@ -564,7 +547,7 @@ export default function MicRecorder() {
     }
 
     try {
-      console.log('🎙️ Starting real AI transcription...');
+      // Starting AI transcription
       
       const formData = new FormData();
       formData.append('audio', audioFile, 'recording.webm');
@@ -575,11 +558,13 @@ export default function MicRecorder() {
       });
 
       if (!transcribeResponse.ok) {
-        throw new Error('Transcription failed');
+        const errorText = await transcribeResponse.text();
+        console.error(`Transcription failed with status ${transcribeResponse.status}:`, errorText);
+        throw new Error(`Transcription failed: ${transcribeResponse.status} - ${errorText}`);
       }
 
       const { transcription } = await transcribeResponse.json();
-      console.log('✅ Transcription completed:', transcription.substring(0, 100) + '...');
+      // Transcription completed
       processingDataRef.current.transcriptionData = transcription;
       setTranscription(transcription);
       return transcription;
@@ -597,7 +582,7 @@ export default function MicRecorder() {
         throw new Error('No transcription data available');
       }
       
-      console.log('🤖 Starting AI blog generation with transcription:', transcriptionData.substring(0, 50) + '...');
+      // Starting AI blog generation
       
       const blogResponse = await fetch('/api/generate-blog', {
         method: 'POST',
@@ -614,7 +599,7 @@ export default function MicRecorder() {
       }
 
       const { blogContent } = await blogResponse.json();
-      console.log('✅ Blog generation completed:', blogContent.substring(0, 100) + '...');
+      // Blog generation completed
       
       // Apply teaser logic
       const teaserResult = createTeaserContent(blogContent, transcriptionData);
@@ -645,9 +630,7 @@ export default function MicRecorder() {
   };
 
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
-    console.log('Seeking clicked, duration:', duration);
     if (!audioRef.current || !duration || isNaN(duration) || duration <= 0) {
-      console.log('Cannot seek: missing audio or duration');
       return;
     }
     
@@ -655,15 +638,10 @@ export default function MicRecorder() {
     const clickX = e.clientX - rect.left;
     const seekTime = (clickX / rect.width) * duration;
     
-    console.log('Seek calculation:', { clickX, width: rect.width, seekTime, duration });
-    
     // Ensure seekTime is valid and finite
     if (isFinite(seekTime) && seekTime >= 0 && seekTime <= duration) {
-      console.log('Setting currentTime to:', seekTime);
       audioRef.current.currentTime = seekTime;
       setCurrentTime(seekTime);
-    } else {
-      console.log('Invalid seek time:', seekTime);
     }
   };
 
@@ -690,14 +668,12 @@ export default function MicRecorder() {
   useEffect(() => {
     if (audioBlob) {
       const url = URL.createObjectURL(audioBlob);
-      console.log('Created audio URL:', url);
       setAudioUrl(url);
       
       // Force load metadata to get real duration
       setTimeout(() => {
         if (audioRef.current) {
           audioRef.current.load(); // Force reload
-          console.log('Forced audio reload');
         }
       }, 100);
       
@@ -827,34 +803,28 @@ export default function MicRecorder() {
             src={audioUrl || undefined}
             preload="metadata"
             onLoadedMetadata={() => {
-              console.log('Audio metadata loaded, duration:', audioRef.current?.duration);
+              // Audio metadata loaded
               const dur = audioRef.current?.duration;
               if (audioRef.current && dur && !isNaN(dur) && isFinite(dur) && dur > 0 && dur !== Infinity) {
-                console.log('Setting duration:', dur);
+                // Setting duration
                 setDuration(dur);
               }
             }}
             onCanPlay={() => {
-              console.log('Audio can play, duration:', audioRef.current?.duration);
               const dur = audioRef.current?.duration;
               if (audioRef.current && dur && !isNaN(dur) && isFinite(dur) && dur > 0 && dur !== Infinity) {
-                console.log('Setting duration from canPlay:', dur);
                 setDuration(dur);
               }
             }}
             onDurationChange={() => {
-              console.log('Duration changed:', audioRef.current?.duration);
               const dur = audioRef.current?.duration;
               if (audioRef.current && dur && !isNaN(dur) && isFinite(dur) && dur > 0 && dur !== Infinity) {
-                console.log('Setting duration from durationChange:', dur);
                 setDuration(dur);
               }
             }}
             onLoadedData={() => {
-              console.log('Audio data loaded, duration:', audioRef.current?.duration);
               const dur = audioRef.current?.duration;
               if (audioRef.current && dur && !isNaN(dur) && isFinite(dur) && dur > 0 && dur !== Infinity) {
-                console.log('Setting duration from loadedData:', dur);
                 setDuration(dur);
               }
             }}
@@ -881,7 +851,7 @@ export default function MicRecorder() {
                   playbackContextRef.current = audioContext;
                   playbackAnalyserRef.current = analyser;
                   
-                  console.log('Playback analyser created');
+                  // Playback analyser created
                 } catch (error) {
                   console.error('Error creating playback analyser:', error);
                 }
