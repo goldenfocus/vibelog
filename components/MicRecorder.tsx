@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import Head from "next/head";
 import { Sparkles } from "lucide-react";
 import { useI18n } from "@/components/providers/I18nProvider";
 
@@ -22,7 +23,7 @@ import { useAudioPlayback } from "@/hooks/useAudioPlayback";
 import { useVibelogAPI } from "@/hooks/useVibelogAPI";
 
 // Types
-import { ToastState, UpgradePromptState, TeaserResult } from "@/types/micRecorder";
+import { ToastState, UpgradePromptState, TeaserResult, CoverImage } from "@/types/micRecorder";
 
 export default function MicRecorder() {
   const { t } = useI18n();
@@ -35,6 +36,8 @@ export default function MicRecorder() {
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState("");
   const [isEditingTranscript, setIsEditingTranscript] = useState(false);
+  const [coverImage, setCoverImage] = useState<CoverImage | null>(null);
+  const [isCoverGenerating, setIsCoverGenerating] = useState(false);
   const [isLoggedIn] = useState(false); // TODO: Replace with actual auth state
   const [recordingTime, setRecordingTime] = useState(0);
   const [toast, setToast] = useState<ToastState>({message: "", visible: false});
@@ -176,6 +179,19 @@ export default function MicRecorder() {
     setIsEditing(false);
   };
 
+  // Extract first H1 as title and return rest of markdown as body
+  const splitTitleFromMarkdown = (md: string): { title: string | null; body: string } => {
+    const lines = md.split(/\r?\n/);
+    let title: string | null = null;
+    let start = 0;
+    for (let i = 0; i < lines.length; i++) {
+      const l = lines[i].trim();
+      if (l.startsWith('# ')) { title = l.replace(/^#\s+/, '').trim(); start = i + 1; break; }
+    }
+    const body = lines.slice(start).join('\n');
+    return { title, body };
+  };
+
   // AI processing functions for ProcessingAnimation
   const doTranscription = async (): Promise<string> => {
     if (!audioEngine.audioBlob) {
@@ -196,6 +212,17 @@ export default function MicRecorder() {
     const teaserResult: TeaserResult = await vibelogAPI.processBlogGeneration(transcriptionData);
     setBlogContent(teaserResult.content);
     setIsTeaserContent(teaserResult.isTeaser);
+
+    // Kick off cover generation in the background
+    try {
+      setIsCoverGenerating(true);
+      const result = await vibelogAPI.processCoverImage({ blogContent: teaserResult.content });
+      setCoverImage(result);
+    } catch (e) {
+      console.error('Cover generation failed', e);
+    } finally {
+      setIsCoverGenerating(false);
+    }
     return teaserResult.content;
   };
 
@@ -306,12 +333,33 @@ export default function MicRecorder() {
                 />
               </div>
 
-              {/* Content Section */}
+              {/* Cover Image + Content Section */}
               <div className="p-8">
-                <BlogContentRenderer
-                  content={blogContent}
-                  isTeaser={isTeaserContent}
-                />
+                {(function(){
+                  const { title, body } = splitTitleFromMarkdown(blogContent);
+                  return (
+                    <>
+                      {title && (
+                        <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-electric bg-clip-text text-transparent mb-4 leading-tight">
+                          {title}
+                        </h1>
+                      )}
+                      {coverImage && (
+                        <div className="mb-6">
+                          <img
+                            src={coverImage.url}
+                            alt={coverImage.alt}
+                            width={coverImage.width}
+                            height={coverImage.height}
+                            className="w-full h-auto rounded-2xl border border-border/10 shadow-md"
+                            loading="eager"
+                          />
+                        </div>
+                      )}
+                      <BlogContentRenderer content={body || blogContent} isTeaser={isTeaserContent} />
+                    </>
+                  );
+                })()}
               </div>
 
               {/* Footer Section */}

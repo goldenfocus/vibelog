@@ -10,6 +10,7 @@ import {
 export interface UseVibelogAPIReturn {
   processTranscription: (audioBlob: Blob) => Promise<string>;
   processBlogGeneration: (transcription: string) => Promise<TeaserResult>;
+  processCoverImage: (args: { blogContent: string; username?: string; tags?: string[] }) => Promise<{ url: string; alt: string; width: number; height: number }>;
   processingData: React.MutableRefObject<ProcessingData>;
 }
 
@@ -201,9 +202,52 @@ export function useVibelogAPI(
     }
   };
 
+  // Extract title and summary from markdown (simple heuristics)
+  function parseMarkdown(md: string): { title: string; summary?: string } {
+    const lines = md.split(/\r?\n/)
+    let title = 'Untitled'
+    let i = 0
+    for (; i < lines.length; i++) {
+      const l = lines[i].trim()
+      if (l.startsWith('# ')) { title = l.replace(/^#\s+/, '').trim(); i++; break }
+    }
+    let summary = ''
+    for (; i < lines.length; i++) {
+      const l = lines[i].trim()
+      if (!l) continue
+      if (l.startsWith('#')) break
+      summary = l.replace(/^>\s*/, '')
+      if (summary) break
+    }
+    return { title, summary }
+  }
+
+  const processCoverImage = async (args: { blogContent: string; username?: string; tags?: string[] }) => {
+    const { title, summary } = parseMarkdown(args.blogContent)
+    try {
+      const res = await fetch('/api/generate-cover', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, summary, username: args.username, tags: args.tags })
+      })
+      if (!res.ok) {
+        const text = await res.text().catch(() => '')
+        throw new Error(`Cover generation failed: ${res.status} ${text}`)
+      }
+      const data = await res.json()
+      processingDataRef.current = { ...processingDataRef.current, blogContentData: args.blogContent }
+      return { url: data.url as string, alt: data.alt as string, width: data.width as number, height: data.height as number }
+    } catch (e) {
+      console.error('Cover generation error:', e)
+      // fallback silently
+      return { url: '/og-image.png', alt: `${title} — cinematic cover image`, width: 1200, height: 630 }
+    }
+  }
+
   return {
     processTranscription,
     processBlogGeneration,
+    processCoverImage,
     processingData: processingDataRef,
   };
 }

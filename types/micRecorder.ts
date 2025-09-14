@@ -101,4 +101,12 @@ export interface MicRecorderHandlers {
 export interface AudioProcessingFunctions {
   doTranscription: () => Promise<string>;
   doBlogGeneration: () => Promise<string>;
+  doCoverGeneration?: () => Promise<CoverImage>;
+}
+
+export interface CoverImage {
+  url: string;
+  width: number;
+  height: number;
+  alt: string;
 }

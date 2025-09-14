@@ -180,13 +180,13 @@ export default function PublishActions({
           </span>
         </button>
         
-        <button 
+        <button
           onClick={onShare}
-          className="group flex flex-col items-center gap-2 p-3 sm:p-4 bg-electric/20 hover:bg-electric/30 border border-electric/20 rounded-2xl transition-all duration-200 hover:scale-105 min-w-[70px] sm:min-w-[80px]"
+          className="group flex flex-col items-center gap-2 p-3 sm:p-4 bg-muted/20 hover:bg-muted/30 border border-border/20 rounded-2xl transition-all duration-200 hover:scale-105 min-w-[70px] sm:min-w-[80px]"
           data-testid="share-button"
         >
-          <Share className="w-5 h-5 sm:w-6 sm:h-6 text-electric" />
-          <span className="text-xs font-medium text-electric">{t('actions.share')}</span>
+          <Share className="w-5 h-5 sm:w-6 sm:h-6 text-foreground group-hover:text-electric transition-colors" />
+          <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">{t('actions.share')}</span>
         </button>
       </div>
 
