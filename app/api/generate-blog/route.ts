@@ -41,22 +41,22 @@ export async function POST(request: NextRequest) {
     const { data: auth } = await supa.auth.getUser();
     const userId = auth?.user?.id;
 
-    // Limits: logged-in 3 per 15 minutes; anonymous 2 per day
+    // Limits: logged-in 10000 per 15 minutes; anonymous 10000 per day
     // In development, loosen limits to avoid noisy 429s during iteration
     const isDev = process.env.NODE_ENV !== 'production';
-    const baseOpts = userId ? { limit: 3, window: '15 m' as const } : { limit: 2, window: '24 h' as const };
-    const opts = isDev ? { limit: 100, window: '15 m' as const } : baseOpts;
+    const baseOpts = userId ? { limit: 10000, window: '15 m' as const } : { limit: 10000, window: '24 h' as const };
+    const opts = isDev ? { limit: 10000, window: '15 m' as const } : baseOpts;
     const rl = await rateLimit(request, 'generate-blog', opts, userId || undefined);
     if (!rl.success) {
       // Custom response for anonymous users to encourage signup
       if (!userId) {
         return NextResponse.json({
           error: 'Daily limit reached',
-          message: 'You\'ve used your 2 free blog generations today. Sign in with Google to get 3 requests every 15 minutes!',
+          message: 'You\'ve used your 10000 free blog generations today. Sign in with Google to get 10000 requests every 15 minutes!',
           upgrade: {
             action: 'Sign in with Google',
             benefits: [
-              '3 requests every 15 minutes (vs 2 per day)',
+              '10000 requests every 15 minutes (vs 10000 per day)',
               'No daily limits',
               'Faster processing priority',
               'Save your blog posts'
