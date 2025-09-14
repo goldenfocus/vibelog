@@ -41,6 +41,11 @@
     "**/*.tsx"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "tests",
+    "snapshots",
+    "playwright.config.ts",
+    "vitest.config.ts",
+    "test-setup.ts"
   ]
 }

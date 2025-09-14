@@ -36,7 +36,14 @@ async function loadTranslations(locale: SupportedLocale) {
 }
 
 function getNestedValue(obj: Record<string, unknown>, path: string): string | undefined {
-  return path.split('.').reduce((current, key) => current?.[key], obj);
+  const value = path.split('.').reduce<unknown>((acc, key) => {
+    if (acc && typeof acc === 'object' && key in (acc as Record<string, unknown>)) {
+      return (acc as Record<string, unknown>)[key];
+    }
+    return undefined;
+  }, obj);
+
+  return typeof value === 'string' ? value : undefined;
 }
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {

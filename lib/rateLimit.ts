@@ -33,9 +33,8 @@ function parseWindowToMs(window: `${number} ${WindowUnit}`): number {
 }
 
 function getIP(req: NextRequest): string {
-  const ip = req.ip
-  if (ip) return ip
-  const fwd = req.headers.get('x-forwarded-for')
+  // NextRequest in Next 15 doesn't expose req.ip; use headers
+  const fwd = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip')
   if (!fwd) return 'unknown'
   // First IP in the list
   return fwd.split(',')[0].trim() || 'unknown'

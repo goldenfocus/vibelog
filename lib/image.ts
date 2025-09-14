@@ -43,7 +43,7 @@ export function buildAltText(title: string, styleLabel: string, summary?: string
 export function buildXmp({ title, description, creator = 'VibeLog.io', keywords = [] as string[] }) {
   const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
   const kw = keywords.map(k => `<rdf:li>${esc(k)}</rdf:li>`).join('')
-  const xmp = `<?xpacket begin=\"﻿\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n` +
+  const xmp = `<?xpacket begin=\"\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n` +
   `<x:xmpmeta xmlns:x=\"adobe:ns:meta/\">\n` +
   ` <rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\">\n` +
   `  <rdf:Description rdf:about=\"\">\n` +
@@ -92,7 +92,7 @@ export async function watermarkAndResize(params: {
   const xmp = buildXmp({ title: params.title, description: params.description, keywords: params.keywords ?? [] })
   const out = await base
     .composite([{ input: svg, gravity: 'southeast' }])
-    .withMetadata({ xmp })
+    .withMetadata()
     .jpeg({ quality: 88 })
     .toBuffer({ resolveWithObject: true })
 

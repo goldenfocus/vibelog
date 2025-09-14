@@ -122,6 +122,54 @@ export default function MicRecorder() {
   const handleCopy = async (content: string) => {
     try {
       const contentWithSignature = content + '\n\n---\nCreated by @vibeyang\nhttps://vibelog.io/vibeyang';
+
+      // Try to copy with cover image if available
+      if (coverImage && navigator.clipboard && 'write' in navigator.clipboard) {
+        try {
+          const imageResponse = await fetch(coverImage.url);
+          const imageBlob = await imageResponse.blob();
+
+          // Convert to PNG if it's JPEG, since Clipboard API has limited image format support
+          let clipboardBlob = imageBlob;
+          if (imageBlob.type === 'image/jpeg') {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            clipboardBlob = await new Promise((resolve, reject) => {
+              img.onload = () => {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx?.drawImage(img, 0, 0);
+                canvas.toBlob((blob) => {
+                  if (blob) {
+                    resolve(blob);
+                  } else {
+                    reject(new Error('Failed to convert image to PNG'));
+                  }
+                }, 'image/png');
+              };
+              img.onerror = reject;
+              img.src = URL.createObjectURL(imageBlob);
+            });
+          }
+
+          await navigator.clipboard.write([
+            new ClipboardItem({
+              'text/plain': new Blob([contentWithSignature], { type: 'text/plain' }),
+              [clipboardBlob.type]: clipboardBlob
+            })
+          ]);
+          showToast('✅ Copied text + cover image!');
+          return;
+        } catch (imageError) {
+          console.log('Failed to copy image, falling back to text only:', imageError);
+        }
+      }
+
+      // Fallback to text-only copy
       await navigator.clipboard.writeText(contentWithSignature);
       showToast(t('toast.copied'));
     } catch (err) {
@@ -132,11 +180,29 @@ export default function MicRecorder() {
   const handleShare = async () => {
     if (navigator.share) {
       try {
-        await navigator.share({
+        const shareData: ShareData = {
           title: t('share.title'),
-          text: blogContent,
+          text: blogContent + '\n\n---\nCreated by @vibeyang\nhttps://vibelog.io/vibeyang',
           url: window.location.href,
-        });
+        };
+
+        // Try to include cover image if available
+        if (coverImage && 'canShare' in navigator && navigator.canShare) {
+          try {
+            const imageResponse = await fetch(coverImage.url);
+            const imageBlob = await imageResponse.blob();
+            const imageFile = new File([imageBlob], 'vibelog-cover.jpg', { type: imageBlob.type });
+
+            if (navigator.canShare({ files: [imageFile] })) {
+              shareData.files = [imageFile];
+              showToast('📤 Sharing text + cover image...');
+            }
+          } catch (imageError) {
+            console.log('Failed to prepare image for sharing, sharing text only:', imageError);
+          }
+        }
+
+        await navigator.share(shareData);
       } catch (err) {
         if (err.name !== 'AbortError') {
           handleCopy(blogContent);
@@ -212,18 +278,22 @@ export default function MicRecorder() {
     const teaserResult: TeaserResult = await vibelogAPI.processBlogGeneration(transcriptionData);
     setBlogContent(teaserResult.content);
     setIsTeaserContent(teaserResult.isTeaser);
+    // Cover will be generated during the IMAGE step (gated)
+    return teaserResult.content;
+  };
 
-    // Kick off cover generation in the background
+  const doCoverGeneration = async () => {
     try {
       setIsCoverGenerating(true);
-      const result = await vibelogAPI.processCoverImage({ blogContent: teaserResult.content });
+      const result = await vibelogAPI.processCoverImage({ blogContent });
       setCoverImage(result);
+      return result;
     } catch (e) {
       console.error('Cover generation failed', e);
+      return null as any;
     } finally {
       setIsCoverGenerating(false);
     }
-    return teaserResult.content;
   };
 
   // Time limit management
@@ -285,6 +355,7 @@ export default function MicRecorder() {
         recordingTime={recordingTime}
         onTranscribeComplete={doTranscription}
         onGenerateComplete={doBlogGeneration}
+        onCoverComplete={doCoverGeneration}
         onAnimationComplete={() => {
           setTimeout(() => {
             setRecordingState("complete");

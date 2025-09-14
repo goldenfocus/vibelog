@@ -81,7 +81,6 @@ export default defineConfig({
     /* Threshold for visual comparisons - balanced speed vs accuracy */
     toHaveScreenshot: { 
       threshold: 0.005, // 0.5% threshold - still strict but faster
-      mode: 'percent',
       animations: 'disabled', // Disable animations for consistent screenshots
     },
   },

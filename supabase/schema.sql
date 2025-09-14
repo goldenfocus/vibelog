@@ -18,15 +18,28 @@ create table if not exists public.rate_limits (
 
 create index if not exists rate_limits_reset_at_idx on public.rate_limits (reset_at);
 
--- Optional RLS for rate limits if you want to protect the table
+-- RLS for rate limits - allow service role and anonymous access for rate limiting
 alter table public.rate_limits enable row level security;
+
+-- Service role can do everything
 do $$ begin
   if not exists (
     select 1 from pg_policies
-    where schemaname = 'public' and tablename = 'rate_limits' and policyname = 'server can manage rate limits'
+    where schemaname = 'public' and tablename = 'rate_limits' and policyname = 'service_role can manage rate limits'
   ) then
-    create policy "server can manage rate limits" on public.rate_limits
+    create policy "service_role can manage rate limits" on public.rate_limits
       for all to service_role using (true) with check (true);
+  end if;
+end $$;
+
+-- Allow anonymous and authenticated users to insert/update rate limit records
+do $$ begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'rate_limits' and policyname = 'allow rate limit operations'
+  ) then
+    create policy "allow rate limit operations" on public.rate_limits
+      for all using (true) with check (true);
   end if;
 end $$;
 
@@ -131,4 +144,7 @@ do $$ begin
       execute function public.set_updated_at();
   end if;
 end $$;
+
+-- Storage bucket setup for cover images
+insert into storage.buckets (id, name, public) values ('covers', 'covers', true) on conflict do nothing;
 

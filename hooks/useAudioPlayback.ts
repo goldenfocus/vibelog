@@ -18,6 +18,11 @@ export interface UseAudioPlaybackReturn {
   pause: () => void;
   seek: (time: number) => void;
   formatTime: (seconds: number) => string;
+  handleLoadedMetadata: () => void;
+  handleTimeUpdate: () => void;
+  handleEnded: () => void;
+  handlePlay: () => void;
+  handlePause: () => void;
 }
 
 export function useAudioPlayback(audioBlob: Blob | null): UseAudioPlaybackReturn {

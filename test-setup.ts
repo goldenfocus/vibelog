@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom'
+import { vi } from 'vitest'
 
 // Mock next-intl for testing
 vi.mock('@/components/providers/I18nProvider', () => ({

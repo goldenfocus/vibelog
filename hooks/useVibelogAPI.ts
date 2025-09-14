@@ -224,21 +224,24 @@ export function useVibelogAPI(
 
   const processCoverImage = async (args: { blogContent: string; username?: string; tags?: string[] }) => {
     const { title, summary } = parseMarkdown(args.blogContent)
+
     try {
       const res = await fetch('/api/generate-cover', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, summary, username: args.username, tags: args.tags })
       })
+
       if (!res.ok) {
         const text = await res.text().catch(() => '')
         throw new Error(`Cover generation failed: ${res.status} ${text}`)
       }
+
       const data = await res.json()
       processingDataRef.current = { ...processingDataRef.current, blogContentData: args.blogContent }
       return { url: data.url as string, alt: data.alt as string, width: data.width as number, height: data.height as number }
     } catch (e) {
-      console.error('Cover generation error:', e)
+      console.error('Cover generation error - falling back to default:', e)
       // fallback silently
       return { url: '/og-image.png', alt: `${title} — cinematic cover image`, width: 1200, height: 630 }
     }
