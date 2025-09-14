@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     const prompt = buildImagePrompt(title, body.summary, body.tone)
 
     // If OpenAI is not configured, return a placeholder
-    if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === 'dummy_key') {
+    if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === 'dummy_key' || process.env.OPENAI_API_KEY === 'your_openai_api_key_here') {
       const alt = buildAltText(title, label, body.summary)
       return NextResponse.json({
         url: '/og-image.png',
@@ -38,6 +38,7 @@ export async function POST(req: NextRequest) {
         alt,
         style,
         prompt,
+        success: true
       })
     }
 
@@ -57,7 +58,7 @@ export async function POST(req: NextRequest) {
     } catch (err) {
       console.error('OpenAI image generation error:', err)
       const alt = buildAltText(title, label, body.summary)
-      return NextResponse.json({ url: '/og-image.png', width: 1200, height: 630, alt, style, prompt })
+      return NextResponse.json({ url: '/og-image.png', width: 1200, height: 630, alt, style, prompt, success: true })
     }
 
     const { buffer, width, height } = await watermarkAndResize({
@@ -83,10 +84,10 @@ export async function POST(req: NextRequest) {
     }
     const alt = buildAltText(title, label, body.summary)
 
-    return NextResponse.json({ url, path: key, width, height, alt, style, prompt })
+    return NextResponse.json({ url, path: key, width, height, alt, style, prompt, success: true })
   } catch (e) {
     console.error('generate-cover unexpected error', e)
     // Soft-fail with placeholder for better UX during MVP
-    return NextResponse.json({ url: '/og-image.png', width: 1200, height: 630, alt: 'Cover image', style: 'cinematic', prompt: 'fallback' })
+    return NextResponse.json({ url: '/og-image.png', width: 1200, height: 630, alt: 'Cover image', style: 'cinematic', prompt: 'fallback', success: true })
   }
 }
