@@ -32,7 +32,7 @@ export function useBulletproofSave() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'warning' | 'error'>('idle');
   const saveAttemptRef = useRef(0);
-  const retryTimeoutRef = useRef<NodeJS.Timeout>();
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Monitoring and metrics tracking
   const trackSaveMetrics = useCallback((event: string, data?: any) => {

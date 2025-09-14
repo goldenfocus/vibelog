@@ -36,7 +36,7 @@ async function loadTranslations(locale: SupportedLocale) {
 }
 
 function getNestedValue(obj: Record<string, unknown>, path: string): string | undefined {
-  return path.split('.').reduce((current, key) => current?.[key], obj);
+  return path.split('.').reduce((current, key) => current?.[key], obj) as string | undefined;
 }
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {

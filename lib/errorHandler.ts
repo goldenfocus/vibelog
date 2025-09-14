@@ -96,7 +96,7 @@ export class ErrorHandler {
     }
 
     const userMessage = ERROR_MESSAGES[code] || ERROR_MESSAGES[ErrorCodes.UNKNOWN_ERROR];
-    const retryable = RETRYABLE_ERRORS.has(code);
+    const retryable = RETRYABLE_ERRORS.has(code as any);
 
     return {
       code,
