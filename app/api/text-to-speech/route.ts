@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
       return tooManyResponse(rl);
     }
 
-    const { text, voice = 'nova' } = await request.json();
+    const { text, voice = 'shimmer' } = await request.json();
 
     if (!text) {
       return NextResponse.json({ error: 'Text content is required' }, { status: 400 });

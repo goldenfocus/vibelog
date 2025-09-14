@@ -293,6 +293,7 @@ export default function MicRecorder() {
                 <PublishActions
                   content={blogContent}
                   isLoggedIn={isLoggedIn}
+                  isTeaserContent={isTeaserContent}
                   onCopy={() => handleCopy(blogContent)}
                   onEdit={handleEdit}
                   onShare={handleShare}
@@ -339,6 +340,7 @@ export default function MicRecorder() {
                   <PublishActions
                     content={blogContent}
                     isLoggedIn={isLoggedIn}
+                    isTeaserContent={isTeaserContent}
                     onCopy={() => handleCopy(blogContent)}
                     onEdit={handleEdit}
                     onShare={handleShare}

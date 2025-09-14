@@ -55,7 +55,7 @@ export function useTextToSpeech(onUpgradePrompt?: (message: string, benefits: st
     }
   };
 
-  const playText = async (text: string, voice = 'nova') => {
+  const playText = async (text: string, voice = 'shimmer') => {
     try {
       setIsLoading(true);
       setError(null);

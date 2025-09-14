@@ -8,6 +8,7 @@ import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 export interface PublishActionsProps {
   content: string;
   isLoggedIn?: boolean;
+  isTeaserContent?: boolean;
   onCopy: (content: string) => void;
   onEdit: () => void;
   onShare: () => void;
@@ -75,6 +76,7 @@ const LoginPopup: React.FC<LoginPopupProps> = ({ type, isOpen, onClose }) => {
 export default function PublishActions({
   content,
   isLoggedIn = false,
+  isTeaserContent = false,
   onCopy,
   onEdit,
   onShare,
@@ -100,7 +102,7 @@ export default function PublishActions({
       stop();
     } else {
       // Strip markdown and HTML for cleaner TTS
-      const cleanContent = content
+      let cleanContent = content
         .replace(/#{1,6}\s/g, '') // Remove markdown headers
         .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold formatting
         .replace(/\*(.*?)\*/g, '$1') // Remove italic formatting
@@ -109,7 +111,12 @@ export default function PublishActions({
         .replace(/\n\s*\n/g, '\n') // Remove extra line breaks
         .trim();
 
-      await playText(cleanContent, 'nova'); // Using nova voice (closest to "Juniper" feel)
+      // Add signup prompt for teaser content when user is not logged in
+      if (isTeaserContent && !isLoggedIn) {
+        cleanContent += '. To hear the complete article, sign in to your VibeLog account.';
+      }
+
+      await playText(cleanContent, 'shimmer'); // Using shimmer voice (closest to "Juniper" feel)
     }
   };
 
