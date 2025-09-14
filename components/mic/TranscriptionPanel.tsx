@@ -184,8 +184,8 @@ export default function TranscriptionPanel({
         </div>
       )}
 
-      {/* Empty state when no transcription */}
-      {!isRecording && !transcription && (
+      {/* Empty state when no transcription - only show after user has tried recording */}
+      {!isRecording && !transcription && isComplete && (
         <div 
           className="bg-card/30 rounded-2xl border border-border/10 p-8 text-center"
           data-testid="empty-transcript-panel"
@@ -193,7 +193,7 @@ export default function TranscriptionPanel({
           <div className="text-muted-foreground/60">
             <div className="text-4xl mb-3">📝</div>
             <p className="text-lg font-medium mb-2">No transcription yet</p>
-            <p className="text-sm">Start recording to see your transcript appear here</p>
+            <p className="text-sm">Try recording again or check your microphone</p>
           </div>
         </div>
       )}

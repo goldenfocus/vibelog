@@ -125,7 +125,8 @@
       "speakLouder": "🤫 Speak a bit louder...",
       "loginRequired": "Login Required",
       "freePlanLimit": "Free plan: {{timeLimit}} max",
-      "timeRemaining": "{{seconds}}s remaining"
+      "timeRemaining": "{{seconds}}s remaining",
+      "liveTranscript": "Live Transcript"
     }
   },
   "pages": {

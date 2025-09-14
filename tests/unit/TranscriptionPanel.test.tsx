@@ -49,16 +49,16 @@ describe('TranscriptionPanel', () => {
 
   describe('Empty State', () => {
     it('should render empty state when no transcription and not recording', () => {
-      render(<TranscriptionPanel {...defaultProps} />);
+      render(<TranscriptionPanel {...defaultProps} isComplete={true} />);
       
       const emptyPanel = screen.getByTestId('empty-transcript-panel');
       expect(emptyPanel).toBeInTheDocument();
       expect(screen.getByText('No transcription yet')).toBeInTheDocument();
-      expect(screen.getByText('Start recording to see your transcript appear here')).toBeInTheDocument();
+      expect(screen.getByText('Try recording again or check your microphone')).toBeInTheDocument();
     });
 
     it('should show correct empty state styling and icon', () => {
-      render(<TranscriptionPanel {...defaultProps} />);
+      render(<TranscriptionPanel {...defaultProps} isComplete={true} />);
       
       const emptyPanel = screen.getByTestId('empty-transcript-panel');
       expect(emptyPanel).toHaveClass('bg-card/30', 'rounded-2xl', 'border', 'border-border/10');
@@ -379,7 +379,7 @@ describe('TranscriptionPanel', () => {
       const props = {
         ...defaultProps,
         isRecording: false,
-        isComplete: false,
+        isComplete: true,
         liveTranscript: '',
         transcription: ''
       };
