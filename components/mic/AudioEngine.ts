@@ -76,10 +76,25 @@ export class AudioEngine {
     }
 
     try {
-      // Create MediaRecorder
-      const mediaRecorder = new MediaRecorder(this.streamRef!, {
-        mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4'
-      });
+      // Create MediaRecorder with OpenAI-compatible formats
+      let mimeType = 'audio/webm'; // Default
+      
+      // Try formats in order of preference for OpenAI Whisper
+      const preferredTypes = [
+        'audio/webm;codecs=opus',
+        'audio/webm', 
+        'audio/mp4',
+        'audio/wav'
+      ];
+      
+      for (const type of preferredTypes) {
+        if (MediaRecorder.isTypeSupported(type)) {
+          mimeType = type;
+          break;
+        }
+      }
+      
+      const mediaRecorder = new MediaRecorder(this.streamRef!, { mimeType });
       
       this.mediaRecorderRef = mediaRecorder;
       this.audioChunksRef = [];
@@ -134,6 +149,26 @@ export class AudioEngine {
     if (this.recordingTimer) {
       clearInterval(this.recordingTimer);
       this.recordingTimer = null;
+    }
+  }
+
+  /**
+   * Stop recording and fully release microphone (removes browser indicator)
+   */
+  stopRecordingAndRelease(): void {
+    this.stopRecording();
+    
+    // Stop MediaStream tracks to remove browser recording indicator
+    if (this.streamRef) {
+      this.streamRef.getTracks().forEach(track => track.stop());
+      this.streamRef = null;
+    }
+    
+    // Close AudioContext
+    if (this.audioContextRef) {
+      this.audioContextRef.close();
+      this.audioContextRef = null;
+      this.analyserRef = null;
     }
   }
 

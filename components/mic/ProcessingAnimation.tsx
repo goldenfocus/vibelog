@@ -70,50 +70,47 @@ export default function ProcessingAnimation({
     
     setIsAnimating(true);
     
-    // Create promises for API calls to ensure proper sequencing
+    // Start API calls immediately in parallel with animation
     let transcriptionPromise: Promise<any> | null = null;
     let blogGenerationPromise: Promise<any> | null = null;
     
-    // Start API calls at specific steps
-    const triggerAPICall = (stepId: string) => {
-      if (stepId === "transcribe" && !transcriptionPromise) {
-        console.log('🚀 Starting transcription API call...');
-        transcriptionPromise = onTranscribeComplete().then(() => {
-          console.log('✅ Transcription API call completed');
+    // Start transcription immediately
+    transcriptionPromise = onTranscribeComplete().then(() => {
+      return true;
+    }).catch(error => {
+      console.error('Transcription failed:', error);
+      return false;
+    });
+    
+    // Start blog generation after a short delay (chained after transcription)
+    blogGenerationPromise = transcriptionPromise.then(async (transcriptionSuccess) => {
+      if (transcriptionSuccess) {
+        const result = await onGenerateComplete().then(() => {
+          return true;
         }).catch(error => {
-          console.error('❌ Transcription failed:', error);
-          throw error;
+          console.error('Blog generation failed:', error);
+          return false;
         });
-      } else if (stepId === "format" && !blogGenerationPromise && transcriptionPromise) {
-        console.log('🚀 Starting blog generation API call...');
-        blogGenerationPromise = transcriptionPromise.then(() => onGenerateComplete()).then(() => {
-          console.log('✅ Blog generation API call completed');
-        }).catch(error => {
-          console.error('❌ Blog generation failed:', error);
-          throw error;
-        });
+        return result;
       }
-    };
+      return false;
+    });
     
     // Star Wars crawl animation - each step flows upward and fades
     for (let i = 0; i < steps.length; i++) {
-      await new Promise<void>(resolve => setTimeout(resolve, STEP_DURATION));
-      
       // Mark current step as completed
       setProcessingSteps(prev => prev.map(s => s.id === steps[i].id ? { ...s, completed: true } : s));
       
-      // Trigger API calls at appropriate steps
-      triggerAPICall(steps[i].id);
-      
       // Update visible window to show current processing step at the center
       setVisibleStepIndex(Math.max(0, i - 1));
+      
+      // Wait for step duration
+      await new Promise<void>(resolve => setTimeout(resolve, STEP_DURATION));
     }
     
-    // Ensure all API calls complete before finishing
+    // Wait for any remaining API calls to complete
     if (blogGenerationPromise) {
       await blogGenerationPromise;
-    } else if (transcriptionPromise) {
-      await transcriptionPromise;
     }
     
     // Final smooth transition
@@ -172,46 +169,45 @@ export default function ProcessingAnimation({
         </div>
         
         {/* Star Wars Crawl Effect */}
-        <div className="relative h-96 overflow-hidden bg-gradient-to-b from-background/0 via-background/50 to-background perspective-1000">
+        <div className="relative h-96 overflow-hidden bg-gradient-to-b from-background/0 via-background/50 to-background">
           <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent z-10 pointer-events-none"></div>
           
-          <div className="star-wars-crawl space-y-8 pt-32">
+          <div 
+            className="star-wars-crawl space-y-12 transition-transform duration-1000 ease-linear"
+            style={{
+              transform: `translateY(${-visibleStepIndex * 120}px)`,
+            }}
+          >
             {processingSteps.map((step, index) => {
               const isCompleted = step.completed;
-              const firstIncompleteIndex = processingSteps.findIndex(s => !s.completed);
-              const isActive = !isCompleted && index === firstIncompleteIndex;
-              const isPast = isCompleted;
+              const currentStepIndex = processingSteps.findIndex(s => !s.completed);
+              const isActive = index === currentStepIndex;
               
               return (
                 <div 
                   key={step.id}
-                  className={`crawl-step transform transition-all duration-1000 ease-out ${
-                    isCompleted ? 'opacity-60' : isActive ? 'opacity-100 scale-110' : 'opacity-40'
-                  }`}
-                  style={{
-                    animationDelay: `${index * 0.2}s`
-                  }}
+                  className="crawl-step transition-all duration-500 ease-out"
                 >
-                  <div className="text-center mb-3">
-                    <h3 className={`text-3xl sm:text-4xl lg:text-5xl font-bold tracking-wider transition-all duration-700 ${
+                  <div className="text-center mb-4">
+                    <h3 className={`text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black tracking-widest transition-all duration-500 ${
                       isActive 
-                        ? 'text-electric animate-pulse bg-gradient-electric bg-clip-text text-transparent drop-shadow-[0_0_25px_rgba(97,144,255,0.8)] glow-text-active' 
+                        ? 'text-white animate-pulse drop-shadow-[0_0_30px_rgba(255,255,255,0.9)] filter brightness-125 [text-shadow:0_0_20px_rgba(255,255,255,0.8),0_0_40px_rgba(255,255,255,0.6),0_0_60px_rgba(255,255,255,0.4)]' 
                         : isCompleted 
-                          ? 'text-electric bg-gradient-electric bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(97,144,255,0.6)] glow-text-completed' 
-                          : 'text-muted-foreground/60'
+                          ? 'text-slate-200 drop-shadow-[0_0_20px_rgba(255,255,255,0.6)] [text-shadow:0_0_15px_rgba(255,255,255,0.5),0_0_30px_rgba(255,255,255,0.3)]' 
+                          : 'text-slate-400/80 drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]'
                     }`}>
                       {step.label}
-                      {isCompleted && <span className="ml-3 text-2xl animate-bounce">✓</span>}
+                      {isCompleted && <span className="ml-4 text-3xl drop-shadow-[0_0_15px_rgba(0,255,0,0.8)] text-green-400">✓</span>}
                     </h3>
                   </div>
                   
                   <div className="max-w-lg mx-auto">
-                    <p className={`text-base sm:text-lg text-center leading-relaxed transition-all duration-700 font-medium ${
+                    <p className={`text-lg sm:text-xl text-center leading-relaxed transition-all duration-500 font-semibold ${
                       isActive 
-                        ? 'text-foreground drop-shadow-[0_0_10px_rgba(255,255,255,0.3)] glow-text-secondary' 
+                        ? 'text-slate-100 drop-shadow-[0_0_12px_rgba(255,255,255,0.4)] [text-shadow:0_0_8px_rgba(255,255,255,0.3)]' 
                         : isCompleted 
-                          ? 'text-muted-foreground/80' 
-                          : 'text-muted-foreground/50'
+                          ? 'text-slate-300 drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]' 
+                          : 'text-slate-500'
                     }`}>
                       {step.description}
                     </p>
@@ -219,8 +215,8 @@ export default function ProcessingAnimation({
                   
                   {/* Active step indicator */}
                   {isActive && (
-                    <div className="flex justify-center mt-3">
-                      <div className="w-20 h-1 bg-gradient-to-r from-transparent via-electric to-transparent rounded-full animate-pulse"></div>
+                    <div className="flex justify-center mt-6">
+                      <div className="w-32 h-1 bg-gradient-to-r from-transparent via-white to-transparent rounded-full animate-pulse drop-shadow-[0_0_15px_rgba(255,255,255,0.8)]"></div>
                     </div>
                   )}
                 </div>
