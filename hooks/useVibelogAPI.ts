@@ -1,10 +1,10 @@
 import { useRef } from "react";
-import { 
-  TranscriptionResponse, 
-  BlogGenerationResponse, 
-  TeaserResult, 
+import {
+  TranscriptionResponse,
+  BlogGenerationResponse,
+  TeaserResult,
   UpgradePromptState,
-  ProcessingData 
+  ProcessingData
 } from "@/types/micRecorder";
 
 export interface UseVibelogAPIReturn {
@@ -18,9 +18,9 @@ export function useVibelogAPI(
   onUpgradePrompt: (prompt: UpgradePromptState) => void
 ): UseVibelogAPIReturn {
   // Shared data for transcription and blog generation
-  const processingDataRef = useRef<ProcessingData>({ 
-    transcriptionData: '', 
-    blogContentData: '' 
+  const processingDataRef = useRef<ProcessingData>({
+    transcriptionData: '',
+    blogContentData: ''
   });
 
   const createTeaserContent = (fullContent: string, transcription: string): TeaserResult => {
@@ -90,6 +90,7 @@ export function useVibelogAPI(
       fullContent
     };
   };
+
 
   const handleAPIError = async (response: Response): Promise<never> => {
     if (response.status === 429) {
@@ -172,7 +173,7 @@ export function useVibelogAPI(
         console.error('No transcription data available for blog generation');
         throw new Error('No transcription data available');
       }
-      
+
       const blogResponse = await fetch('/api/generate-blog', {
         method: 'POST',
         headers: {
@@ -186,15 +187,16 @@ export function useVibelogAPI(
       }
 
       const { blogContent }: BlogGenerationResponse = await blogResponse.json();
-      
+
       if (!blogContent) {
         throw new Error('No blog content received from API');
       }
-      
+
       // Apply teaser logic
       const teaserResult = createTeaserContent(blogContent, transcriptionData);
-      processingDataRef.current.blogContentData = teaserResult.content;
-      
+      // Store the FULL content for cover generation, not the teaser
+      processingDataRef.current.blogContentData = blogContent;
+
       return teaserResult;
     } catch (error) {
       console.error('Blog generation error:', error);
@@ -202,47 +204,75 @@ export function useVibelogAPI(
     }
   };
 
-  // Extract title and summary from markdown (simple heuristics)
+  // Extract title and summary from markdown (improved heuristics)
   function parseMarkdown(md: string): { title: string; summary?: string } {
     const lines = md.split(/\r?\n/)
     let title = 'Untitled'
-    let i = 0
-    for (; i < lines.length; i++) {
-      const l = lines[i].trim()
-      if (l.startsWith('# ')) { title = l.replace(/^#\s+/, '').trim(); i++; break }
-    }
     let summary = ''
+    let i = 0
+
+    // Look for the first heading (# title)
     for (; i < lines.length; i++) {
       const l = lines[i].trim()
-      if (!l) continue
-      if (l.startsWith('#')) break
-      summary = l.replace(/^>\s*/, '')
-      if (summary) break
+      if (l.startsWith('# ')) {
+        title = l.replace(/^#\s+/, '').trim()
+        i++
+        break
+      }
     }
+
+    // Look for the first meaningful paragraph as summary
+    for (; i < lines.length; i++) {
+      const l = lines[i].trim()
+      if (!l) continue // Skip empty lines
+      if (l.startsWith('#')) break // Stop at next heading
+      if (l.startsWith('![')) continue // Skip image markdown
+      if (l.startsWith('---')) continue // Skip separators
+
+      // Clean the line and use it as summary
+      const cleanLine = l
+        .replace(/^\*+\s*/, '') // Remove bullet points
+        .replace(/^\d+\.\s*/, '') // Remove numbered lists
+        .replace(/^>\s*/, '') // Remove blockquotes
+        .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold formatting
+        .replace(/\*(.*?)\*/g, '$1') // Remove italic formatting
+        .replace(/`([^`]+)`/g, '$1') // Remove code formatting
+        .trim()
+
+      if (cleanLine && cleanLine.length > 10) { // Require meaningful length
+        summary = cleanLine
+        break
+      }
+    }
+
     return { title, summary }
   }
 
   const processCoverImage = async (args: { blogContent: string; username?: string; tags?: string[] }) => {
+
     const { title, summary } = parseMarkdown(args.blogContent)
 
     try {
+      const requestBody = { title, summary, username: args.username, tags: args.tags }
+
       const res = await fetch('/api/generate-cover', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, summary, username: args.username, tags: args.tags })
+        body: JSON.stringify(requestBody)
       })
 
       if (!res.ok) {
         const text = await res.text().catch(() => '')
+        console.error('Cover generation failed:', res.status, text)
         throw new Error(`Cover generation failed: ${res.status} ${text}`)
       }
 
       const data = await res.json()
       processingDataRef.current = { ...processingDataRef.current, blogContentData: args.blogContent }
+
       return { url: data.url as string, alt: data.alt as string, width: data.width as number, height: data.height as number }
     } catch (e) {
-      console.error('Cover generation error - falling back to default:', e)
-      // fallback silently
+      console.error('Cover generation error, using fallback:', e)
       return { url: '/og-image.png', alt: `${title} — cinematic cover image`, width: 1200, height: 630 }
     }
   }

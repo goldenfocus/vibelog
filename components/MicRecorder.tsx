@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import Head from "next/head";
-import { Sparkles } from "lucide-react";
 import { useI18n } from "@/components/providers/I18nProvider";
+import { useAuth } from "@/hooks/useAuth";
 
 // Components
 import Waveform from "@/components/mic/Waveform";
@@ -21,6 +20,7 @@ import { useAudioEngine } from "@/hooks/useAudioEngine";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { useAudioPlayback } from "@/hooks/useAudioPlayback";
 import { useVibelogAPI } from "@/hooks/useVibelogAPI";
+import { useBulletproofSave } from "@/hooks/useBulletproofSave";
 
 // Types
 import { ToastState, UpgradePromptState, TeaserResult, CoverImage } from "@/types/micRecorder";
@@ -32,13 +32,14 @@ export default function MicRecorder() {
   const [recordingState, setRecordingState] = useState<RecordingState>("idle");
   const [transcription, setTranscription] = useState("");
   const [blogContent, setBlogContent] = useState("");
+  const [fullBlogContent, setFullBlogContent] = useState("");
   const [isTeaserContent, setIsTeaserContent] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState("");
   const [isEditingTranscript, setIsEditingTranscript] = useState(false);
   const [coverImage, setCoverImage] = useState<CoverImage | null>(null);
   const [isCoverGenerating, setIsCoverGenerating] = useState(false);
-  const [isLoggedIn] = useState(false); // TODO: Replace with actual auth state
+  const { isLoggedIn, user } = useAuth();
   const [recordingTime, setRecordingTime] = useState(0);
   const [toast, setToast] = useState<ToastState>({message: "", visible: false});
   const [upgradePrompt, setUpgradePrompt] = useState<UpgradePromptState>({ 
@@ -63,6 +64,8 @@ export default function MicRecorder() {
   
   const vibelogAPI = useVibelogAPI(setUpgradePrompt);
 
+  const { saveVibelog, isSaving: isSavingToDB, saveStatus } = useBulletproofSave();
+
   // Utility functions
   const showToast = (message: string) => {
     setToast({message, visible: true});
@@ -76,6 +79,7 @@ export default function MicRecorder() {
       setRecordingState("recording");
       setTranscription("");
       setBlogContent("");
+      setFullBlogContent("");
       setIsTeaserContent(false);
       setRecordingTime(0);
 
@@ -113,6 +117,7 @@ export default function MicRecorder() {
     setRecordingState("idle");
     setTranscription("");
     setBlogContent("");
+    setFullBlogContent("");
     setIsTeaserContent(false);
     setVisibleStepIndex(0);
     setRecordingTime(0);
@@ -187,23 +192,48 @@ export default function MicRecorder() {
         };
 
         // Try to include cover image if available
-        if (coverImage && 'canShare' in navigator && navigator.canShare) {
+        if (coverImage) {
           try {
+            console.log('Attempting to include cover image in share:', coverImage.url);
             const imageResponse = await fetch(coverImage.url);
             const imageBlob = await imageResponse.blob();
-            const imageFile = new File([imageBlob], 'vibelog-cover.jpg', { type: imageBlob.type });
+            console.log('Image blob type:', imageBlob.type, 'size:', imageBlob.size);
 
-            if (navigator.canShare({ files: [imageFile] })) {
-              shareData.files = [imageFile];
-              showToast('📤 Sharing text + cover image...');
+            // Create file with proper MIME type
+            const mimeType = imageBlob.type || 'image/jpeg';
+            const fileName = mimeType === 'image/png' ? 'vibelog-cover.png' : 'vibelog-cover.jpg';
+            const imageFile = new File([imageBlob], fileName, { type: mimeType });
+
+            // Check if browser supports file sharing
+            if ('canShare' in navigator && navigator.canShare) {
+              const canShareFile = navigator.canShare({ files: [imageFile] });
+              console.log('Can share files:', canShareFile);
+
+              if (canShareFile) {
+                shareData.files = [imageFile];
+                console.log('Adding image file to share data');
+                showToast('📤 Sharing text + cover image...');
+              } else {
+                console.log('Browser cannot share this file type, sharing text only');
+                showToast('📤 Sharing text only (image not supported)...');
+              }
+            } else {
+              console.log('Browser does not support file sharing, sharing text only');
+              showToast('📤 Sharing text only...');
             }
           } catch (imageError) {
-            console.log('Failed to prepare image for sharing, sharing text only:', imageError);
+            console.log('Failed to prepare image for sharing:', imageError);
+            showToast('📤 Sharing text only (image fetch failed)...');
           }
+        } else {
+          console.log('No cover image available for sharing');
+          showToast('📤 Sharing text...');
         }
 
+        console.log('Final share data:', shareData);
         await navigator.share(shareData);
       } catch (err) {
+        console.log('Share error:', err);
         if (err.name !== 'AbortError') {
           handleCopy(blogContent);
           showToast(t('toast.copiedForSharing'));
@@ -274,18 +304,52 @@ export default function MicRecorder() {
     if (!transcriptionData) {
       throw new Error('No transcription data available');
     }
-    
+
     const teaserResult: TeaserResult = await vibelogAPI.processBlogGeneration(transcriptionData);
     setBlogContent(teaserResult.content);
+    setFullBlogContent(teaserResult.fullContent || teaserResult.content);
     setIsTeaserContent(teaserResult.isTeaser);
     // Cover will be generated during the IMAGE step (gated)
-    return teaserResult.content;
+    // CRITICAL: Return the FULL content so ProcessingAnimation can pass it to cover generation
+    return teaserResult.fullContent || teaserResult.content;
   };
 
-  const doCoverGeneration = async () => {
+  const doCoverGeneration = async (blogContent?: string) => {
     try {
       setIsCoverGenerating(true);
-      const result = await vibelogAPI.processCoverImage({ blogContent });
+
+      // Use provided content or fall back to stored data
+      let contentToUse = blogContent;
+
+      if (!contentToUse || contentToUse.length === 0) {
+
+        // Try processing data first
+        contentToUse = vibelogAPI.processingData.current.blogContentData;
+
+        // If that fails, try React state
+        if (!contentToUse || contentToUse.length === 0) {
+          contentToUse = fullBlogContent;
+        }
+
+        // If still no content, poll the processing data
+        let attempts = 0;
+        const maxAttempts = 30; // 3 seconds
+        while ((!contentToUse || contentToUse.length === 0) && attempts < maxAttempts) {
+
+
+          await new Promise(res => setTimeout(res, 100));
+          contentToUse = vibelogAPI.processingData.current.blogContentData || fullBlogContent;
+          attempts++;
+        }
+      }
+
+
+
+      if (!contentToUse || contentToUse.length === 0) {
+        throw new Error('No blog content available for cover generation');
+      }
+
+      const result = await vibelogAPI.processCoverImage({ blogContent: contentToUse });
       setCoverImage(result);
       return result;
     } catch (e) {
@@ -356,7 +420,61 @@ export default function MicRecorder() {
         onTranscribeComplete={doTranscription}
         onGenerateComplete={doBlogGeneration}
         onCoverComplete={doCoverGeneration}
-        onAnimationComplete={() => {
+        onAnimationComplete={async () => {
+          // Auto-save the vibelog
+
+          if (blogContent) {
+            try {
+              // Get the full content for comprehensive storage
+              const fullContent = vibelogAPI.processingData.current.blogContentData || blogContent;
+
+              const saveResult = await saveVibelog({
+                content: blogContent, // Teaser content for display
+                fullContent: fullContent, // Complete content for search/analysis
+                transcription: transcription || '',
+                coverImage: coverImage ? {
+                  url: coverImage.url,
+                  alt: coverImage.alt,
+                  width: coverImage.width,
+                  height: coverImage.height
+                } : undefined,
+                userId: user?.id,
+                isTeaser: isTeaserContent,
+                metadata: {
+                  recordingTime: recordingTime,
+                  processingSteps: ['transcribe', 'generate', 'format', 'cover'],
+                  clientVersion: '1.0.0',
+                  userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : undefined
+                }
+              });
+
+              // Handle different save outcomes with appropriate messages
+              if (saveResult.success) {
+                console.log('🎉 [MIC-RECORDER] Bulletproof save successful:', saveResult.vibelogId);
+
+                if (saveResult.warnings && saveResult.warnings.length > 0) {
+                  console.warn('⚠️ [MIC-RECORDER] Save warnings:', saveResult.warnings);
+                  showToast('⚠️ Saved with warnings - check console');
+                } else {
+                  showToast('✅ Vibelog saved successfully!');
+                }
+              } else {
+                // This should never happen with bulletproof save, but just in case
+                console.error('❌ [MIC-RECORDER] Unexpected save failure:', saveResult);
+                showToast('⚠️ Save issue - data preserved locally');
+              }
+
+            } catch (error) {
+              // This should also never happen with bulletproof save
+              console.error('💥 [MIC-RECORDER] Unexpected auto-save error:', error);
+              showToast('⚠️ Unexpected error - data preserved');
+            }
+          } else {
+            console.warn('⚠️ [MIC-RECORDER] No blog content to save');
+            showToast('⚠️ No content generated to save');
+          }
+
+          // Always continue to complete state regardless of save outcome
           setTimeout(() => {
             setRecordingState("complete");
           }, 300);
@@ -379,10 +497,7 @@ export default function MicRecorder() {
               {/* Header Section */}
               <div className="bg-gradient-to-r from-electric/5 to-transparent p-6 border-b border-border/10">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-semibold flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-yellow-500/10 flex items-center justify-center">
-                      <Sparkles className="w-4 h-4 text-yellow-500" />
-                    </div>
+                  <h3 className="text-xl font-semibold">
                     {t('recorder.polishedVibelog')}
                   </h3>
                 </div>
