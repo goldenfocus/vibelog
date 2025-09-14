@@ -116,3 +116,9 @@ psql "$SUPABASE_DB_URL" -f supabase/schema.sql
 ```
 
 Note: This app uses Supabase for auth and data access; Prisma has been removed.
+
+### Processing UI (Processing Timeline)
+
+- The processing UI is the Processing Timeline (single-step, adaptive pacing).
+- Env: `NEXT_PUBLIC_PROCESSING_UI=timeline` (default in this repo).
+- Test ids: `timeline-stream`, `timeline-step-<id>`, `processing-now-line`.

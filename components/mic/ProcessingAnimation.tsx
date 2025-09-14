@@ -58,9 +58,8 @@ export default function ProcessingAnimation({
   // Processing Timeline runner (behind flag)
   // Enable when NEXT_PUBLIC_PROCESSING_UI=timeline (keeps 'v2' for backward compat)
   // ----------------------
-  const isTimeline =
-    process.env.NEXT_PUBLIC_PROCESSING_UI === 'timeline' ||
-    process.env.NEXT_PUBLIC_PROCESSING_UI === 'v2';
+  // Processing Timeline is the default UI going forward
+  const isTimeline = true;
 
   const runV2 = useCallback(async () => {
     const steps = createSteps();
