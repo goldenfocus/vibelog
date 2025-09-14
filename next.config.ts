@@ -17,7 +17,7 @@ const nextConfig: NextConfig = {
       "base-uri 'self'",
       "frame-ancestors 'none'",
       // Allow inline styles from Next.js, consider hashing for stricter CSP later
-      "style-src 'self' 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       // Remove 'unsafe-eval' in production
       `script-src ${scriptSrc}`,
       "img-src 'self' data: blob: https:",

@@ -1,304 +1,81 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { Mic, Circle, Copy, Share, Save, Check, Sparkles, Image, Search, FileText, Volume2, Brain, Zap, Play, Pause, Edit, X, LogIn } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { useI18n } from "@/components/providers/I18nProvider";
+
+// Components
 import Waveform from "@/components/mic/Waveform";
-import { AudioEngine } from "@/components/mic/AudioEngine";
 import Controls, { RecordingState } from "@/components/mic/Controls";
 import TranscriptionPanel from "@/components/mic/TranscriptionPanel";
 import PublishActions from "@/components/mic/PublishActions";
 import ProcessingAnimation from "@/components/mic/ProcessingAnimation";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import rehypeSanitize from "rehype-sanitize";
+import UpgradePrompt from "@/components/UpgradePrompt";
+import BlogContentRenderer from "@/components/BlogContentRenderer";
+import BlogEditModal from "@/components/BlogEditModal";
+import AudioPlayer from "@/components/AudioPlayer";
 
-// Extend Window interface for webkitAudioContext and SpeechRecognition
-declare global {
-  interface Window {
-    webkitAudioContext: typeof AudioContext;
-    webkitSpeechRecognition: any;
-    SpeechRecognition: any;
-  }
-}
+// Custom Hooks
+import { useAudioEngine } from "@/hooks/useAudioEngine";
+import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
+import { useAudioPlayback } from "@/hooks/useAudioPlayback";
+import { useVibelogAPI } from "@/hooks/useVibelogAPI";
 
-
+// Types
+import { ToastState, UpgradePromptState, TeaserResult } from "@/types/micRecorder";
 
 export default function MicRecorder() {
   const { t } = useI18n();
+  
+  // State
   const [recordingState, setRecordingState] = useState<RecordingState>("idle");
   const [transcription, setTranscription] = useState("");
-  const [liveTranscript, setLiveTranscript] = useState("");
   const [blogContent, setBlogContent] = useState("");
   const [isTeaserContent, setIsTeaserContent] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState("");
   const [isEditingTranscript, setIsEditingTranscript] = useState(false);
-  // TODO: Replace with actual auth state
-  const [isLoggedIn] = useState(false);
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const [playbackLevels, setPlaybackLevels] = useState<number[]>(Array.from({ length: 15 }, () => 0.15));
-  const playbackAnalyserRef = useRef<AnalyserNode | null>(null);
-  const playbackContextRef = useRef<AudioContext | null>(null);
-  const playbackRafRef = useRef<number | null>(null);
-  const [toast, setToast] = useState<{message: string; visible: boolean}>({message: "", visible: false});
+  const [isLoggedIn] = useState(false); // TODO: Replace with actual auth state
   const [recordingTime, setRecordingTime] = useState(0);
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [toast, setToast] = useState<ToastState>({message: "", visible: false});
+  const [upgradePrompt, setUpgradePrompt] = useState<UpgradePromptState>({ 
+    visible: false, 
+    message: '', 
+    benefits: [] 
+  });
   
-  // Audio recording refs
-  const audioEngineRef = useRef<AudioEngine | null>(null);
-  const speechRecognitionRef = useRef<any>(null);
+  // Refs
   const recordingTimer = useRef<number | null>(null);
+  const [visibleStepIndex, setVisibleStepIndex] = useState(0);
+
+  // Custom Hooks
+  const audioEngine = useAudioEngine(
+    (error: string) => showToast(error),
+    () => setRecordingState("processing")
+  );
+
+  const speechRecognition = useSpeechRecognition(recordingState);
   
-  // Enhanced fluid bars with real audio data
-  const bars = 15;
-  const levelsRef = useRef<number[]>(Array.from({ length: bars }, () => 0.1));
-  const [, force] = useState(0);
+  const audioPlayback = useAudioPlayback(audioEngine.audioBlob);
+  
+  const vibelogAPI = useVibelogAPI(setUpgradePrompt);
 
-  // Initialize AudioEngine
-  useEffect(() => {
-    audioEngineRef.current = new AudioEngine({
-      onPermissionChange: setHasPermission,
-      onLevelsUpdate: (levels) => {
-        levelsRef.current = levels;
-        force((x) => x + 1);
-      },
-      onDataAvailable: (blob, duration) => {
-        // Audio data available
-        setDuration(duration);
-        setAudioBlob(blob);
-        
-        // Start processing animation now that audio blob is available
-        setTimeout(() => {
-          setRecordingState("processing");
-        }, 100);
-      },
-      onError: (error) => {
-        showToast(error);
-      }
-    });
+  // Utility functions
+  const showToast = (message: string) => {
+    setToast({message, visible: true});
+    setTimeout(() => setToast({message: "", visible: false}), 3000);
+  };
 
-    return () => {
-      audioEngineRef.current?.cleanup();
-    };
-  }, []);
-
-  // Audio visualization is now handled by AudioEngine via callbacks
-
-  // Playback audio visualization
-  useEffect(() => {
-    if (isPlaying && playbackAnalyserRef.current) {
-      const analyser = playbackAnalyserRef.current;
-      const bufferLength = analyser.frequencyBinCount;
-      const dataArray = new Uint8Array(bufferLength);
-      
-      const loop = () => {
-        if (!isPlaying) return;
-        
-        analyser.getByteFrequencyData(dataArray);
-        
-        // Map frequency data to playback bars (same logic as recording)
-        const newLevels = [...playbackLevels];
-        const bars = 15;
-        
-        for (let i = 0; i < bars; i++) {
-          const minFreq = 0;
-          const maxFreq = bufferLength * 0.7;
-          const freq = minFreq + (maxFreq - minFreq) * Math.pow(i / (bars - 1), 1.5);
-          
-          const start = Math.floor(freq);
-          const end = Math.min(start + Math.floor(bufferLength / bars) + 1, bufferLength);
-          let sum = 0;
-          let count = 0;
-          
-          for (let j = start; j < end && j < bufferLength; j++) {
-            sum += dataArray[j];
-            count++;
-          }
-          
-          const average = count > 0 ? sum / count : 0;
-          let normalized = (average / 255) * 2.5; // Slightly less aggressive for playback
-          normalized = Math.pow(normalized, 0.6);
-          normalized = Math.max(0.1, Math.min(1, normalized));
-          
-          // Smooth transition
-          newLevels[i] += (normalized - newLevels[i]) * 0.5;
-        }
-        
-        setPlaybackLevels(newLevels);
-        playbackRafRef.current = requestAnimationFrame(loop);
-      };
-      
-      playbackRafRef.current = requestAnimationFrame(loop);
-    } else if (!isPlaying) {
-      if (playbackRafRef.current) {
-        cancelAnimationFrame(playbackRafRef.current);
-        playbackRafRef.current = null;
-      }
-      // Fade to minimum when not playing
-      setPlaybackLevels(Array.from({ length: 15 }, () => 0.1));
-    }
-    
-    return () => {
-      if (playbackRafRef.current) {
-        cancelAnimationFrame(playbackRafRef.current);
-      }
-    };
-  }, [isPlaying]);
-
-  // Real-time speech recognition with better browser support
-  useEffect(() => {
-    if (recordingState === "recording") {
-      // Check for Speech Recognition API support
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      
-      if (SpeechRecognition) {
-        try {
-          const recognition = new SpeechRecognition();
-          recognition.continuous = true;
-          recognition.interimResults = true;
-          recognition.lang = 'en-US';
-          recognition.maxAlternatives = 1;
-          
-          let finalTranscript = '';
-          let isBlocked = false; // Track if browser blocked the feature
-          
-          recognition.onstart = () => {
-            // Speech recognition started
-            setLiveTranscript(t('components.micRecorder.listening'));
-          };
-          
-          recognition.onresult = (event) => {
-            let interimTranscript = '';
-            
-            for (let i = event.resultIndex; i < event.results.length; i++) {
-              const transcript = event.results[i][0].transcript;
-              if (event.results[i].isFinal) {
-                finalTranscript += transcript + ' ';
-              } else {
-                interimTranscript += transcript;
-              }
-            }
-            
-            // Combine final and interim results
-            const currentTranscript = (finalTranscript + interimTranscript).trim();
-            if (currentTranscript) {
-              setLiveTranscript(currentTranscript);
-            }
-          };
-          
-          recognition.onerror = (event) => {
-            // Speech recognition error
-            
-            // Handle different error types - but DON'T retry for blocked cases
-            if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-              isBlocked = true;
-              setLiveTranscript(t('components.micRecorder.recordingBlockedByBrowser'));
-            } else if (event.error === 'network') {
-              isBlocked = true;
-              setLiveTranscript(t('components.micRecorder.recordingBlockedByBrowser'));
-            } else if (event.error === 'no-speech') {
-              setLiveTranscript(t('components.micRecorder.speakLouder'));
-              // Only retry for no-speech, not for blocked cases
-              if (!isBlocked) {
-                setTimeout(() => {
-                  if (recordingState === "recording" && speechRecognitionRef.current && !isBlocked) {
-                    try {
-                      speechRecognitionRef.current.start();
-                    } catch (e) {
-                      // Could not restart after no-speech
-                      setLiveTranscript(t('components.micRecorder.recordingUnavailable'));
-                    }
-                  }
-                }, 3000); // Only retry after longer pause for no-speech
-              }
-            } else if (event.error === 'aborted') {
-              if (!isBlocked) {
-                setLiveTranscript(t('components.micRecorder.recordingUnavailable'));
-              }
-            } else {
-              setLiveTranscript(t('components.micRecorder.recordingUnavailable'));
-            }
-          };
-          
-          recognition.onend = () => {
-            // Speech recognition ended
-            // DON'T restart if blocked - just leave it in a stable state
-            if (isBlocked) {
-              setLiveTranscript(t('components.micRecorder.recordingBlockedByBrowser'));
-              return;
-            }
-            
-            // Only restart for normal end events, not blocked ones
-            if (recordingState === "recording" && speechRecognitionRef.current && !isBlocked) {
-              setTimeout(() => {
-                try {
-                  if (recordingState === "recording" && speechRecognitionRef.current && !isBlocked) {
-                    speechRecognitionRef.current.start();
-                  }
-                } catch (e) {
-                  // Could not restart recognition
-                  setLiveTranscript(t('components.micRecorder.recordingUnavailable'));
-                }
-              }, 1000);
-            }
-          };
-          
-          speechRecognitionRef.current = recognition;
-          recognition.start();
-        } catch (error) {
-          // Speech recognition initialization error
-          setLiveTranscript('Recording...\n(live transcript unavailable)');
-        }
-      } else {
-        // Fallback for browsers without Speech Recognition (like Brave in strict mode)
-        // Speech Recognition API not available
-        setLiveTranscript(t('components.micRecorder.recordingNotSupported'));
-      }
-    } else {
-      // Stop recognition when not recording
-      if (speechRecognitionRef.current) {
-        try {
-          speechRecognitionRef.current.stop();
-        } catch (e) {
-          // Error stopping recognition
-        }
-        speechRecognitionRef.current = null;
-      }
-      if (recordingState === "idle") {
-        setLiveTranscript('');
-      }
-    }
-    
-    return () => {
-      if (speechRecognitionRef.current) {
-        try {
-          speechRecognitionRef.current.stop();
-        } catch (e) {
-          // Cleanup recognition error
-        }
-        speechRecognitionRef.current = null;
-      }
-    };
-  }, [recordingState]);
-
-  // Request microphone permission and start recording
+  // Recording controls
   const handleStartRecording = async () => {
-    if (!audioEngineRef.current) return;
-    
-    const success = await audioEngineRef.current.startRecording();
+    const success = await audioEngine.startRecording();
     if (success) {
       setRecordingState("recording");
       setTranscription("");
       setBlogContent("");
       setIsTeaserContent(false);
       setRecordingTime(0);
-      
+
       // Start recording timer
       recordingTimer.current = window.setInterval(() => {
         setRecordingTime(prev => prev + 1);
@@ -307,163 +84,40 @@ export default function MicRecorder() {
   };
 
   const handleStopRecording = () => {
-    if (!audioEngineRef.current) return;
-    
-    // Stop the AudioEngine and release microphone (removes browser recording indicator)
-    audioEngineRef.current.stopRecordingAndRelease();
-    
+    audioEngine.stopRecording();
+
     // Clear the recording timer
     if (recordingTimer.current) {
       clearInterval(recordingTimer.current);
       recordingTimer.current = null;
     }
-    
-    // Processing state will be set when audio blob becomes available in onDataAvailable
   };
 
   const handleReset = () => {
-    // Clean up any ongoing recording
-    if (audioEngineRef.current) {
-      audioEngineRef.current.cleanup();
-    }
+    // Clean up audio engine
+    audioEngine.resetAudioEngine();
     
+    // Clean up timer
     if (recordingTimer.current) {
       clearInterval(recordingTimer.current);
       recordingTimer.current = null;
     }
     
-    if (speechRecognitionRef.current) {
-      speechRecognitionRef.current.stop();
-      speechRecognitionRef.current = null;
-    }
+    // Clean up speech recognition
+    speechRecognition.resetTranscript();
     
+    // Reset state
     setRecordingState("idle");
     setTranscription("");
-    setLiveTranscript("");
     setBlogContent("");
     setIsTeaserContent(false);
     setVisibleStepIndex(0);
     setRecordingTime(0);
-    setAudioBlob(null);
-    setAudioUrl(null);
-    setIsPlaying(false);
-    setCurrentTime(0);
-    setDuration(0);
   };
 
-  const showToast = (message: string) => {
-    setToast({message, visible: true});
-    setTimeout(() => setToast({message: "", visible: false}), 3000);
-  };
-
-  const createTeaserContent = (fullContent: string, transcription: string) => {
-    const wordCount = transcription.split(/\s+/).filter(word => word.length > 0).length;
-    
-    // For very short recordings (under 10 words), show full content without signup
-    if (wordCount < 10) {
-      return { content: fullContent, isTeaser: false };
-    }
-    
-    // For short but meaningful content (10-30 words), show full content WITH signup prompt
-    if (wordCount < 30) {
-      return { content: fullContent, isTeaser: true };
-    }
-    
-    // For longer content, show ~600-700 characters as teaser (consistent across languages)
-    const targetTeaserLength = 650;
-    
-    if (fullContent.length <= targetTeaserLength) {
-      return { content: fullContent, isTeaser: true };
-    }
-    
-    // Find the best sentence break near the target length
-    const sentences = fullContent.split(/[.!?]+/).filter(s => s.trim().length > 0);
-    let teaserContent = '';
-    let currentLength = 0;
-    
-    for (let i = 0; i < sentences.length; i++) {
-      const nextSentence = sentences[i].trim() + '.';
-      if (currentLength + nextSentence.length <= targetTeaserLength + 100) { // Allow 100 char buffer
-        teaserContent += nextSentence + (i < sentences.length - 1 ? ' ' : '');
-        currentLength += nextSentence.length + 1;
-      } else {
-        break;
-      }
-    }
-    
-    // Ensure we have at least one sentence
-    if (!teaserContent) {
-      teaserContent = sentences[0].trim() + '.';
-    }
-    
-    return { 
-      content: teaserContent,
-      isTeaser: true,
-      fullContent
-    };
-  };
-
-  const renderBlogContent = (content: string, isTeaser: boolean = false) => {
-    return (
-      <div>
-        {/* Render sanitized markdown content with custom styles */}
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
-          rehypePlugins={[rehypeSanitize]}
-          components={{
-            h1: ({ node, ...props }) => (
-              <h1
-                className="text-3xl sm:text-4xl font-bold bg-gradient-electric bg-clip-text text-transparent mb-4 leading-tight"
-                {...props}
-              />
-            ),
-            h2: ({ node, ...props }) => (
-              <h2 className="text-xl sm:text-2xl text-foreground font-semibold mt-6 mb-3" {...props} />
-            ),
-            p: ({ node, ...props }) => (
-              <p className="text-muted-foreground leading-relaxed mb-4" {...props} />
-            ),
-            ul: ({ node, ...props }) => (
-              <ul className="list-disc pl-6 space-y-2 mb-4" {...props} />
-            ),
-            ol: ({ node, ...props }) => (
-              <ol className="list-decimal pl-6 space-y-2 mb-4" {...props} />
-            ),
-            li: ({ node, ...props }) => <li className="leading-relaxed" {...props} />,
-            strong: ({ node, ...props }) => <strong className="font-semibold text-foreground" {...props} />,
-            a: ({ node, ...props }) => (
-              <a className="text-electric underline hover:text-electric/80" target="_blank" rel="noopener noreferrer" {...props} />
-            ),
-          }}
-        >
-          {content}
-        </ReactMarkdown>
-
-        {/* Teaser CTA if applicable */}
-        {isTeaser && (
-          <div className="mt-6 p-4 bg-gradient-to-r from-electric/5 to-transparent border border-electric/20 rounded-xl">
-            <div className="flex items-center gap-2 text-electric">
-              <span className="text-xl">🔒</span>
-              <span className="font-semibold">
-                <button 
-                  onClick={() => window.open('/pricing', '_blank', 'noopener,noreferrer')}
-                  className="underline hover:text-electric-glow transition-colors cursor-pointer"
-                >
-                  {t('navigation.signUp')}
-                </button>
-                {' '}{t('components.micRecorder.unlockMessage')}
-              </span>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-
+  // Content management
   const handleCopy = async (content: string) => {
     try {
-      // Add signature to the content
       const contentWithSignature = content + '\n\n---\nCreated by @vibeyang\nhttps://vibelog.io/vibeyang';
       await navigator.clipboard.writeText(contentWithSignature);
       showToast(t('toast.copied'));
@@ -493,28 +147,19 @@ export default function MicRecorder() {
   };
 
   const handleSave = () => {
-    if (!isLoggedIn) {
-      // Login handling is now done by PublishActions
-      return;
-    }
-    // TODO: Implement actual save functionality
+    if (!isLoggedIn) return;
     showToast('Vibelog saved successfully!');
   };
 
+  // Edit functions
   const handleEdit = () => {
-    if (!isLoggedIn) {
-      // Login handling is now done by PublishActions
-      return;
-    }
+    if (!isLoggedIn) return;
     setEditedContent(blogContent);
     setIsEditing(true);
   };
 
   const handleTranscriptEdit = () => {
-    if (!isLoggedIn) {
-      // Login handling is now done by TranscriptionPanel
-      return;
-    }
+    if (!isLoggedIn) return;
     setIsEditingTranscript(true);
   };
 
@@ -535,124 +180,30 @@ export default function MicRecorder() {
     setIsEditing(false);
   };
 
-  // Shared data for transcription and blog generation
-  const processingDataRef = useRef<{ transcriptionData: string; blogContentData: string }>({ transcriptionData: '', blogContentData: '' });
-
   // AI processing functions for ProcessingAnimation
-  const doTranscription = async () => {
-    const audioFile = audioBlob;
-    if (!audioFile) {
-      console.error('No audio blob available for processing');
+  const doTranscription = async (): Promise<string> => {
+    if (!audioEngine.audioBlob) {
       throw new Error('No audio blob available');
     }
-
-    try {
-      // Starting AI transcription
-      
-      const formData = new FormData();
-      formData.append('audio', audioFile, 'recording.webm');
-
-      const transcribeResponse = await fetch('/api/transcribe', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!transcribeResponse.ok) {
-        const errorText = await transcribeResponse.text();
-        console.error(`Transcription failed with status ${transcribeResponse.status}:`, errorText);
-        throw new Error(`Transcription failed: ${transcribeResponse.status} - ${errorText}`);
-      }
-
-      const { transcription } = await transcribeResponse.json();
-      // Transcription completed
-      processingDataRef.current.transcriptionData = transcription;
-      setTranscription(transcription);
-      return transcription;
-    } catch (error) {
-      console.error('Transcription error:', error);
-      throw error;
-    }
-  };
-
-  const doBlogGeneration = async () => {
-    try {
-      const transcriptionData = processingDataRef.current.transcriptionData;
-      if (!transcriptionData) {
-        console.error('No transcription data available for blog generation');
-        throw new Error('No transcription data available');
-      }
-      
-      // Starting AI blog generation
-      
-      const blogResponse = await fetch('/api/generate-blog', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ transcription: transcriptionData }),
-      });
-
-      if (!blogResponse.ok) {
-        const errorText = await blogResponse.text();
-        console.error('Blog generation failed with status:', blogResponse.status, 'Error:', errorText);
-        throw new Error(`Blog generation failed: ${blogResponse.status}`);
-      }
-
-      const { blogContent } = await blogResponse.json();
-      // Blog generation completed
-      
-      // Apply teaser logic
-      const teaserResult = createTeaserContent(blogContent, transcriptionData);
-      processingDataRef.current.blogContentData = teaserResult.content;
-      setBlogContent(teaserResult.content);
-      setIsTeaserContent(teaserResult.isTeaser);
-      return teaserResult.content;
-    } catch (error) {
-      console.error('Blog generation error:', error);
-      throw error;
-    }
-  };
-
-
-  const handlePlayPause = async () => {
-    if (!audioRef.current) return;
     
-    if (isPlaying) {
-      audioRef.current.pause();
-    } else {
-      try {
-        await audioRef.current.play();
-      } catch (error) {
-        console.error('Error playing audio:', error);
-        setIsPlaying(false);
-      }
-    }
+    const transcriptionResult = await vibelogAPI.processTranscription(audioEngine.audioBlob);
+    setTranscription(transcriptionResult);
+    return transcriptionResult;
   };
 
-  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!audioRef.current || !duration || isNaN(duration) || duration <= 0) {
-      return;
+  const doBlogGeneration = async (): Promise<string> => {
+    const transcriptionData = vibelogAPI.processingData.current.transcriptionData;
+    if (!transcriptionData) {
+      throw new Error('No transcription data available');
     }
     
-    const rect = e.currentTarget.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const seekTime = (clickX / rect.width) * duration;
-    
-    // Ensure seekTime is valid and finite
-    if (isFinite(seekTime) && seekTime >= 0 && seekTime <= duration) {
-      audioRef.current.currentTime = seekTime;
-      setCurrentTime(seekTime);
-    }
+    const teaserResult: TeaserResult = await vibelogAPI.processBlogGeneration(transcriptionData);
+    setBlogContent(teaserResult.content);
+    setIsTeaserContent(teaserResult.isTeaser);
+    return teaserResult.content;
   };
 
-  const formatAudioTime = (seconds: number) => {
-    if (!seconds || isNaN(seconds) || !isFinite(seconds) || seconds === Infinity) return "0:00";
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  // Control functions now handled by Controls.tsx component
+  // Time limit management
   const getTimeLimit = () => 300; // 5 minutes for free plan
   const hasReachedTimeLimit = () => recordingTime >= getTimeLimit();
 
@@ -664,51 +215,18 @@ export default function MicRecorder() {
     }
   }, [recordingTime, recordingState]);
 
-  // Create audio URL from blob
-  useEffect(() => {
-    if (audioBlob) {
-      const url = URL.createObjectURL(audioBlob);
-      setAudioUrl(url);
-      
-      // Force load metadata to get real duration
-      setTimeout(() => {
-        if (audioRef.current) {
-          audioRef.current.load(); // Force reload
-        }
-      }, 100);
-      
-      return () => {
-        URL.revokeObjectURL(url);
-      };
-    } else {
-      setAudioUrl(null);
-    }
-  }, [audioBlob]);
-
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      // Clean up AudioEngine
-      if (audioEngineRef.current) {
-        audioEngineRef.current.cleanup();
-      }
-      // Clean up recording timer
       if (recordingTimer.current) {
         clearInterval(recordingTimer.current);
-      }
-      // Clean up speech recognition
-      if (speechRecognitionRef.current) {
-        speechRecognitionRef.current.stop();
-      }
-      // Clean up animation frame
-      if (playbackRafRef.current) {
-        cancelAnimationFrame(playbackRafRef.current);
       }
     };
   }, []);
 
   return (
     <div className="w-full">
+      {/* Recording Controls */}
       <Controls
         recordingState={recordingState}
         recordingTime={recordingTime}
@@ -720,7 +238,7 @@ export default function MicRecorder() {
       {/* Real-time audio visualization */}
       {recordingState === "recording" && (
         <Waveform 
-          levels={levelsRef.current}
+          levels={audioEngine.audioLevels}
           isActive={recordingState === "recording"}
           variant="recording"
         />
@@ -729,7 +247,7 @@ export default function MicRecorder() {
       {/* Transcription Panel */}
       <TranscriptionPanel
         transcription={transcription}
-        liveTranscript={liveTranscript}
+        liveTranscript={speechRecognition.liveTranscript}
         isRecording={recordingState === "recording"}
         isComplete={recordingState === "complete"}
         onCopy={handleCopy}
@@ -738,7 +256,7 @@ export default function MicRecorder() {
         isLoggedIn={isLoggedIn}
       />
 
-      {/* Magical Processing Symphony */}
+      {/* Processing Animation */}
       <ProcessingAnimation
         isVisible={recordingState === "processing"}
         recordingTime={recordingTime}
@@ -751,130 +269,17 @@ export default function MicRecorder() {
         }}
       />
 
-      {/* Custom Audio Player */}
-      {audioBlob && recordingState === "complete" && (
-        <div className="bg-card/50 backdrop-blur-sm rounded-2xl p-6 border border-border/30 mb-8">
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <Volume2 className="w-5 h-5" />
-            {t('components.micRecorder.yourRecording')}
-          </h3>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={handlePlayPause}
-              className="flex items-center justify-center w-12 h-12 bg-gradient-electric text-white rounded-full hover:shadow-[0_10px_20px_rgba(97,144,255,0.3)] transition-all duration-200"
-            >
-              {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1" />}
-            </button>
-            
-            <div className="flex-1 flex items-center gap-3">
-              <span className="text-sm text-muted-foreground font-mono min-w-[40px]">
-                {formatAudioTime(currentTime)}
-              </span>
-              
-              <div 
-                onClick={handleSeek}
-                className="flex-1 h-2 bg-muted/30 rounded-full cursor-pointer group relative"
-              >
-                <div 
-                  className="h-full bg-gradient-electric rounded-full transition-all duration-75 relative"
-                  style={{ width: `${(duration && !isNaN(duration) && duration > 0) ? Math.max(0, Math.min(100, (currentTime / duration) * 100)) : 0}%` }}
-                >
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 bg-white border-2 border-electric rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-150 transform translate-x-2" />
-                </div>
-              </div>
-              
-              <span className="text-sm text-muted-foreground font-mono min-w-[40px] text-right">
-                {formatAudioTime(duration)}
-              </span>
-            </div>
-          </div>
-          
-          {/* Playback Equalizer */}
-          {isPlaying && (
-            <Waveform 
-              levels={playbackLevels}
-              isActive={isPlaying}
-              variant="playback"
-            />
-          )}
-          
-          <audio 
-            ref={audioRef}
-            src={audioUrl || undefined}
-            preload="metadata"
-            onLoadedMetadata={() => {
-              // Audio metadata loaded
-              const dur = audioRef.current?.duration;
-              if (audioRef.current && dur && !isNaN(dur) && isFinite(dur) && dur > 0 && dur !== Infinity) {
-                // Setting duration
-                setDuration(dur);
-              }
-            }}
-            onCanPlay={() => {
-              const dur = audioRef.current?.duration;
-              if (audioRef.current && dur && !isNaN(dur) && isFinite(dur) && dur > 0 && dur !== Infinity) {
-                setDuration(dur);
-              }
-            }}
-            onDurationChange={() => {
-              const dur = audioRef.current?.duration;
-              if (audioRef.current && dur && !isNaN(dur) && isFinite(dur) && dur > 0 && dur !== Infinity) {
-                setDuration(dur);
-              }
-            }}
-            onLoadedData={() => {
-              const dur = audioRef.current?.duration;
-              if (audioRef.current && dur && !isNaN(dur) && isFinite(dur) && dur > 0 && dur !== Infinity) {
-                setDuration(dur);
-              }
-            }}
-            onTimeUpdate={() => {
-              if (audioRef.current) {
-                setCurrentTime(audioRef.current.currentTime);
-              }
-            }}
-            onEnded={() => setIsPlaying(false)}
-            onPlay={() => {
-              setIsPlaying(true);
-              // Start playback visualization
-              if (!playbackAnalyserRef.current && audioRef.current) {
-                try {
-                  const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                  const source = audioContext.createMediaElementSource(audioRef.current);
-                  const analyser = audioContext.createAnalyser();
-                  
-                  analyser.fftSize = 512;
-                  analyser.smoothingTimeConstant = 0.8;
-                  source.connect(analyser);
-                  analyser.connect(audioContext.destination);
-                  
-                  playbackContextRef.current = audioContext;
-                  playbackAnalyserRef.current = analyser;
-                  
-                  // Playback analyser created
-                } catch (error) {
-                  console.error('Error creating playback analyser:', error);
-                }
-              }
-            }}
-            onPause={() => {
-              setIsPlaying(false);
-              if (playbackRafRef.current) {
-                cancelAnimationFrame(playbackRafRef.current);
-                playbackRafRef.current = null;
-              }
-            }}
-            onError={(e) => console.error('Audio error:', e)}
-            className="hidden"
-          />
-        </div>
+      {/* Audio Player */}
+      {audioEngine.audioBlob && recordingState === "complete" && (
+        <AudioPlayer
+          audioBlob={audioEngine.audioBlob}
+          playback={audioPlayback}
+        />
       )}
 
       {/* Results */}
       {(transcription || blogContent) && recordingState === "complete" && (
         <div className="space-y-8">
-          {/* Transcription is now handled by TranscriptionPanel above */}
-
           {blogContent && (
             <div className="bg-card rounded-2xl border border-border/20 p-6">
               <div className="mb-6">
@@ -894,8 +299,12 @@ export default function MicRecorder() {
                   showSignature={false}
                 />
               </div>
+              
               <div className="prose prose-lg max-w-none text-foreground [&>h1]:text-2xl [&>h2]:text-xl [&>h3]:text-lg [&>p]:text-muted-foreground [&>p]:leading-relaxed [&>ul]:text-muted-foreground [&>strong]:text-foreground [&_a]:text-electric [&_a]:underline [&_a:hover]:text-electric-glow [&_a]:transition-colors [&_a]:cursor-pointer">
-                {renderBlogContent(blogContent, isTeaserContent)}
+                <BlogContentRenderer 
+                  content={blogContent} 
+                  isTeaser={isTeaserContent} 
+                />
               </div>
               
               {/* Creator Attribution */}
@@ -917,7 +326,7 @@ export default function MicRecorder() {
                 </div>
               </div>
               
-              {/* Bottom action buttons - same as top layout */}
+              {/* Bottom action buttons */}
               <div className="mt-8 border-t border-border/10 pt-6">
                 <PublishActions
                   content={blogContent}
@@ -931,7 +340,6 @@ export default function MicRecorder() {
               </div>
             </div>
           )}
-
         </div>
       )}
 
@@ -946,42 +354,25 @@ export default function MicRecorder() {
         </div>
       )}
 
-      {/* Popups are now handled by PublishActions component */}
+      {/* Upgrade Prompt */}
+      <UpgradePrompt
+        isVisible={upgradePrompt.visible}
+        onClose={() => setUpgradePrompt({ visible: false, message: '', benefits: [] })}
+        message={upgradePrompt.message}
+        benefits={upgradePrompt.benefits}
+        resetTime={upgradePrompt.resetTime}
+      />
 
       {/* Edit Modal */}
-      {isEditing && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-card/95 backdrop-blur-sm border border-border/50 rounded-2xl p-6 shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-foreground">Edit Your Vibelog</h3>
-              <div className="flex gap-2">
-                <button
-                  onClick={handleSaveEdit}
-                  className="flex items-center gap-2 px-4 py-2 bg-gradient-electric hover:opacity-90 text-white font-semibold rounded-xl transition-all duration-200"
-                >
-                  <Check className="w-4 h-4" />
-                  Save
-                </button>
-                <button
-                  onClick={handleCancelEdit}
-                  className="text-muted-foreground hover:text-foreground transition-colors p-2"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-            <div className="flex-1 overflow-hidden">
-              <textarea
-                value={editedContent}
-                onChange={(e) => setEditedContent(e.target.value)}
-                className="w-full h-full resize-none bg-background/50 backdrop-blur-sm border border-border/30 rounded-xl p-4 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-electric/20 focus:border-electric transition-colors"
-                placeholder="Edit your vibelog content..."
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      <BlogEditModal
+        isVisible={isEditing}
+        editedContent={editedContent}
+        onContentChange={setEditedContent}
+        onSave={handleSaveEdit}
+        onCancel={handleCancelEdit}
+      />
 
+      {/* Styles - includes all original animations */}
       <style jsx>{`
         @keyframes toastSlideUp {
           from {
