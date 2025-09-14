@@ -1,19 +1,22 @@
-import { createBrowserClient } from '@supabase/ssr'
+import 'server-only'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-// Client-side Supabase client
-export const createClient = () =>
-  createBrowserClient(supabaseUrl, supabaseAnonKey)
+/**
+ * Server-only admin Supabase client using the service role key.
+ * Never import this from client components.
+ */
+export const createServerAdminClient = async () => {
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!serviceRoleKey) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY is required for admin operations')
+  }
 
-// Server-side Supabase client
-export const createServerSupabaseClient = async () => {
   const { cookies } = await import('next/headers')
   const cookieStore = cookies()
-  
-  return createServerClient(supabaseUrl, supabaseAnonKey, {
+
+  return createServerClient(supabaseUrl, serviceRoleKey, {
     cookies: {
       get(name: string) {
         return cookieStore.get(name)?.value
@@ -25,5 +28,10 @@ export const createServerSupabaseClient = async () => {
         cookieStore.delete({ name, ...options })
       },
     },
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
   })
 }
+

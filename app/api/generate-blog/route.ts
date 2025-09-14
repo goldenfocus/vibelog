@@ -1,8 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { rateLimit, tooManyResponse } from '@/lib/rateLimit';
+import { createServerSupabaseClient } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit per user if logged in; otherwise per IP
+    const supa = await createServerSupabaseClient();
+    const { data: auth } = await supa.auth.getUser();
+    const userId = auth?.user?.id;
+
+    // Limits: logged-in 3 per 15 minutes; anonymous 2 per day
+    const opts = userId ? { limit: 3, window: '15 m' as const } : { limit: 2, window: '24 h' as const };
+    const rl = await rateLimit(request, 'generate-blog', opts, userId || undefined);
+    if (!rl.success) {
+      // Custom response for anonymous users to encourage signup
+      if (!userId) {
+        return NextResponse.json({
+          error: 'Daily limit reached',
+          message: 'You\'ve used your 2 free blog generations today. Sign in with Google to get 3 requests every 15 minutes!',
+          upgrade: {
+            action: 'Sign in with Google',
+            benefits: [
+              '3 requests every 15 minutes (vs 2 per day)',
+              'No daily limits',
+              'Faster processing priority',
+              'Save your blog posts'
+            ]
+          },
+          ...rl
+        }, { 
+          status: 429,
+          headers: {
+            'Retry-After': String(Math.ceil(((rl.reset || 0) - Date.now()) / 1000))
+          }
+        });
+      }
+      return tooManyResponse(rl);
+    }
 
     const { transcription } = await request.json();
 
@@ -123,11 +158,6 @@ As voice technology continues to evolve, we can expect even more sophisticated f
 *Ready to try voice-powered content creation? Start speaking your ideas into existence today.*`
       });
     }
-
-    // Initialize OpenAI client only when we have a real API key
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',

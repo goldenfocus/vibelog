@@ -14,7 +14,10 @@ const I18nContext = createContext<I18nContextType | null>(null);
 // Translation cache
 const translationCache: Record<string, any> = {};
 
-async function loadTranslations(locale: string) {
+const SUPPORTED_LOCALES = ['en', 'es', 'fr', 'de', 'vi', 'zh'] as const;
+type SupportedLocale = typeof SUPPORTED_LOCALES[number];
+
+async function loadTranslations(locale: SupportedLocale) {
   if (translationCache[locale]) {
     return translationCache[locale];
   }
@@ -32,13 +35,13 @@ async function loadTranslations(locale: string) {
   }
 }
 
-function getNestedValue(obj: any, path: string): string | undefined {
+function getNestedValue(obj: Record<string, unknown>, path: string): string | undefined {
   return path.split('.').reduce((current, key) => current?.[key], obj);
 }
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocaleState] = useState('en');
-  const [translations, setTranslations] = useState<any>({});
+  const [locale, setLocaleState] = useState<SupportedLocale>('en');
+  const [translations, setTranslations] = useState<Record<string, unknown>>({});
   const [isLoading, setIsLoading] = useState(true);
 
   // Load translations when locale changes
@@ -61,21 +64,22 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   // Load saved locale from localStorage on mount
   useEffect(() => {
     const savedLocale = localStorage.getItem('vibelog-locale');
-    if (savedLocale) {
-      setLocaleState(savedLocale);
+    if (savedLocale && SUPPORTED_LOCALES.includes(savedLocale as SupportedLocale)) {
+      setLocaleState(savedLocale as SupportedLocale);
     } else {
       // Try to detect browser language
       const browserLang = navigator.language.split('-')[0];
-      const supportedLocales = ['en', 'es', 'fr', 'de', 'vi', 'zh'];
-      if (supportedLocales.includes(browserLang)) {
-        setLocaleState(browserLang);
+      if ((SUPPORTED_LOCALES as readonly string[]).includes(browserLang)) {
+        setLocaleState(browserLang as SupportedLocale);
       }
     }
   }, []);
 
   const setLocale = (newLocale: string) => {
-    setLocaleState(newLocale);
-    localStorage.setItem('vibelog-locale', newLocale);
+    if ((SUPPORTED_LOCALES as readonly string[]).includes(newLocale)) {
+      setLocaleState(newLocale as SupportedLocale);
+      localStorage.setItem('vibelog-locale', newLocale);
+    }
   };
 
   const t = (key: string, variables?: Record<string, any>): string => {
