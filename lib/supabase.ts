@@ -11,8 +11,8 @@ export const createClient = () =>
 // Server-side Supabase client
 export const createServerSupabaseClient = async () => {
   const { cookies } = await import('next/headers')
-  const cookieStore = cookies()
-  
+  const cookieStore = await cookies()
+
   return createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
       get(name: string) {

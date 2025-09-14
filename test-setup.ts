@@ -33,3 +33,32 @@ vi.mock('lucide-react', () => ({
   Mic: vi.fn(() => null),
   Circle: vi.fn(() => null),
 }))
+
+// Mock Supabase for testing
+vi.mock('@/lib/supabase', () => ({
+  createClient: vi.fn(() => ({
+    auth: {
+      getUser: vi.fn().mockResolvedValue({ data: { user: null }, error: null }),
+      signInWithOAuth: vi.fn().mockResolvedValue({ data: null, error: null }),
+      signOut: vi.fn().mockResolvedValue({ error: null }),
+    },
+  })),
+  createServerSupabaseClient: vi.fn().mockResolvedValue({
+    auth: {
+      getUser: vi.fn().mockResolvedValue({ data: { user: null }, error: null }),
+    },
+  }),
+}))
+
+vi.mock('@/lib/supabaseAdmin', () => ({
+  createServerAdminClient: vi.fn().mockResolvedValue({
+    from: vi.fn().mockReturnThis(),
+    select: vi.fn().mockReturnThis(),
+    insert: vi.fn().mockReturnThis(),
+    update: vi.fn().mockReturnThis(),
+    delete: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    single: vi.fn().mockResolvedValue({ data: null, error: null }),
+    maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+  }),
+}))

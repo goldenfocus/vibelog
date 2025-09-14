@@ -11,6 +11,15 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+    env:
+      # Supabase environment variables for CI
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://dummy.supabase.co' }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy-anon-key-for-ci-testing' }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || 'dummy-service-role-key-for-ci-testing' }}
+      # OpenAI API key for testing (optional, will use mock if not provided)
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || 'dummy_key' }}
+      # Set NODE_ENV to test for consistent behavior
+      NODE_ENV: test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

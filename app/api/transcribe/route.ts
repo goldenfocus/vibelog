@@ -11,7 +11,10 @@ export async function POST(request: NextRequest) {
     const userId = auth?.user?.id;
 
     // Limits: logged-in 3 per 15 minutes; anonymous 2 per day
-    const opts = userId ? { limit: 3, window: '15 m' as const } : { limit: 2, window: '24 h' as const };
+    // In development, loosen limits to avoid noisy 429s during iteration
+    const isDev = process.env.NODE_ENV !== 'production';
+    const baseOpts = userId ? { limit: 3, window: '15 m' as const } : { limit: 2, window: '24 h' as const };
+    const opts = isDev ? { limit: 100, window: '15 m' as const } : baseOpts;
     const rl = await rateLimit(request, 'transcribe', opts, userId || undefined);
     if (!rl.success) {
       // Custom response for anonymous users to encourage signup
@@ -44,6 +47,19 @@ export async function POST(request: NextRequest) {
 
     if (!audioFile) {
       return NextResponse.json({ error: 'No audio file provided' }, { status: 400 });
+    }
+
+    // Check for empty or too small files
+    if (audioFile.size === 0) {
+      return NextResponse.json({ error: 'Audio file is empty. Please try recording again.' }, { status: 400 });
+    }
+
+    // Check for minimum file size (1KB) to avoid corrupted recordings
+    const MIN_SIZE_BYTES = 1024; // 1KB minimum
+    if (audioFile.size < MIN_SIZE_BYTES) {
+      return NextResponse.json({
+        error: 'Audio file is too small or corrupted. Please try recording again with longer audio.'
+      }, { status: 400 });
     }
 
     // Basic validation: size and content type

@@ -32,6 +32,9 @@ export default function ProcessingAnimation({
   const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>([]);
   const [visibleStepIndex, setVisibleStepIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
+  
+  // Currently active step for a concise status line
+  const activeStep = processingSteps.find(s => !s.completed);
 
   const createSteps = useCallback(() => {
     return [
@@ -162,11 +165,20 @@ export default function ProcessingAnimation({
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-electric/10 backdrop-blur-sm rounded-2xl border border-electric/20">
             <div className="w-6 h-6 border-2 border-electric border-t-transparent rounded-full animate-spin"></div>
-            <h3 className="text-xl font-bold bg-gradient-to-r from-foreground to-electric bg-clip-text text-transparent">
-              ⚡ Vibelogging your content...
-            </h3>
+              <h3 className="text-xl font-bold bg-gradient-to-r from-foreground to-electric bg-clip-text text-transparent">
+                ⚡ Vibelogging your content...
+              </h3>
+            </div>
           </div>
-        </div>
+
+          {/* Codex-style status line: show what is happening now */}
+          <div className="mt-3 text-center text-xs sm:text-sm font-mono text-muted-foreground">
+            {activeStep ? (
+              <span data-testid="processing-now-line">Now: {activeStep.label}</span>
+            ) : (
+              <span data-testid="processing-now-line">Now: Finalizing…</span>
+            )}
+          </div>
         
         {/* Star Wars Crawl Effect */}
         <div className="relative h-96 overflow-hidden bg-gradient-to-b from-background/0 via-background/50 to-background">
@@ -197,7 +209,6 @@ export default function ProcessingAnimation({
                           : 'text-slate-400/80 drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]'
                     }`}>
                       {step.label}
-                      {isCompleted && <span className="ml-4 text-3xl drop-shadow-[0_0_15px_rgba(0,255,0,0.8)] text-green-400">✓</span>}
                     </h3>
                   </div>
                   

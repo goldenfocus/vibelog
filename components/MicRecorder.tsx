@@ -281,13 +281,18 @@ export default function MicRecorder() {
       {(transcription || blogContent) && recordingState === "complete" && (
         <div className="space-y-8">
           {blogContent && (
-            <div className="bg-card rounded-2xl border border-border/20 p-6">
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold flex items-center gap-2 mb-4">
-                  <Sparkles className="w-5 h-5 text-yellow-500" />
-                  {t('recorder.polishedVibelog')}
-                </h3>
-                
+            <div className="bg-card rounded-3xl border border-border/20 overflow-hidden shadow-lg">
+              {/* Header Section */}
+              <div className="bg-gradient-to-r from-electric/5 to-transparent p-6 border-b border-border/10">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-semibold flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-yellow-500/10 flex items-center justify-center">
+                      <Sparkles className="w-4 h-4 text-yellow-500" />
+                    </div>
+                    {t('recorder.polishedVibelog')}
+                  </h3>
+                </div>
+
                 {/* Publish Actions */}
                 <PublishActions
                   content={blogContent}
@@ -299,44 +304,48 @@ export default function MicRecorder() {
                   showSignature={false}
                 />
               </div>
-              
-              <div className="prose prose-lg max-w-none text-foreground [&>h1]:text-2xl [&>h2]:text-xl [&>h3]:text-lg [&>p]:text-muted-foreground [&>p]:leading-relaxed [&>ul]:text-muted-foreground [&>strong]:text-foreground [&_a]:text-electric [&_a]:underline [&_a:hover]:text-electric-glow [&_a]:transition-colors [&_a]:cursor-pointer">
-                <BlogContentRenderer 
-                  content={blogContent} 
-                  isTeaser={isTeaserContent} 
-                />
-              </div>
-              
-              {/* Creator Attribution */}
-              <div className="mt-6 pt-4 border-t border-border/5">
-                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                  <span>{t('components.micRecorder.createdBy')}</span>
-                  <button 
-                    onClick={() => window.open('https://vibelog.io/vibeyang', '_blank')}
-                    className="text-electric hover:text-electric-glow transition-colors font-medium"
-                  >
-                    @vibeyang
-                  </button>
-                  <button 
-                    onClick={() => window.open('https://vibelog.io/vibeyang', '_blank')}
-                    className="text-muted-foreground hover:text-electric transition-colors"
-                  >
-                    vibelog.io/vibeyang
-                  </button>
-                </div>
-              </div>
-              
-              {/* Bottom action buttons */}
-              <div className="mt-8 border-t border-border/10 pt-6">
-                <PublishActions
+
+              {/* Content Section */}
+              <div className="p-8">
+                <BlogContentRenderer
                   content={blogContent}
-                  isLoggedIn={isLoggedIn}
-                  onCopy={() => handleCopy(blogContent)}
-                  onEdit={handleEdit}
-                  onSave={handleSave}
-                  onShare={handleShare}
-                  showSignature={false}
+                  isTeaser={isTeaserContent}
                 />
+              </div>
+
+              {/* Footer Section */}
+              <div className="border-t border-border/10 bg-muted/5">
+                {/* Creator Attribution */}
+                <div className="p-6 text-center">
+                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                    <span>{t('components.micRecorder.createdBy')}</span>
+                    <button
+                      onClick={() => window.open('https://vibelog.io/vibeyang', '_blank')}
+                      className="text-electric hover:text-electric-glow transition-colors font-medium"
+                    >
+                      @vibeyang
+                    </button>
+                    <button
+                      onClick={() => window.open('https://vibelog.io/vibeyang', '_blank')}
+                      className="text-muted-foreground hover:text-electric transition-colors"
+                    >
+                      vibelog.io/vibeyang
+                    </button>
+                  </div>
+                </div>
+
+                {/* Bottom action buttons */}
+                <div className="p-6 pt-0">
+                  <PublishActions
+                    content={blogContent}
+                    isLoggedIn={isLoggedIn}
+                    onCopy={() => handleCopy(blogContent)}
+                    onEdit={handleEdit}
+                    onSave={handleSave}
+                    onShare={handleShare}
+                    showSignature={false}
+                  />
+                </div>
               </div>
             </div>
           )}
