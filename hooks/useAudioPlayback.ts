@@ -212,11 +212,5 @@ export function useAudioPlayback(audioBlob: Blob | null): UseAudioPlaybackReturn
     pause,
     seek,
     formatTime,
-    // Event handlers for the audio element
-    handleLoadedMetadata,
-    handleTimeUpdate,
-    handleEnded,
-    handlePlay,
-    handlePause,
   };
 }
