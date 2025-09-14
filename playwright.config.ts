@@ -79,9 +79,8 @@ export default defineConfig({
     timeout: 10 * 1000, // 10 seconds
     
     /* Threshold for visual comparisons - balanced speed vs accuracy */
-    toHaveScreenshot: { 
+    toHaveScreenshot: {
       threshold: 0.005, // 0.5% threshold - still strict but faster
-      mode: 'percent',
       animations: 'disabled', // Disable animations for consistent screenshots
     },
   },
