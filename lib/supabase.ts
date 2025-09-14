@@ -11,8 +11,8 @@ export const createClient = () =>
 // Server-side Supabase client
 export const createServerSupabaseClient = async () => {
   const { cookies } = await import('next/headers')
-  const cookieStore = cookies()
-  
+  const cookieStore = await cookies()
+
   return createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
       get(name: string) {
@@ -26,13 +26,4 @@ export const createServerSupabaseClient = async () => {
       },
     },
   })
-}
-
-// Admin client with service role key (server-side only)
-export const createAdminClient = () => {
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!serviceRoleKey) {
-    throw new Error('SUPABASE_SERVICE_ROLE_KEY is required for admin operations')
-  }
-  return createBrowserClient(supabaseUrl, serviceRoleKey)
 }

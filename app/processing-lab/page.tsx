@@ -154,14 +154,14 @@ export default function ProcessingLabPage() {
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold mb-4 bg-gradient-electric bg-clip-text text-transparent">
-            ProcessingAnimation Visual Lab
+            Processing Timeline Visual Lab
           </h1>
           <p className="text-muted-foreground text-lg">
-            Visual testing laboratory for Star Wars crawl animation effects and API integration
+            Visual testing laboratory for the Processing Timeline (single-step, adaptive pacing)
           </p>
           <div className="mt-4 text-sm text-muted-foreground">
             <span className="bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400 px-3 py-1 rounded-full">
-              🎬 STAR WARS CRAWL TESTING
+              ⏩ PROCESSING TIMELINE
             </span>
           </div>
         </div>
@@ -192,7 +192,7 @@ export default function ProcessingLabPage() {
 
         {/* All States Display - For Comprehensive Visual Testing */}
         <div className="space-y-12">
-          <h2 className="text-2xl font-bold text-center">All Animation States (Automated Visual Testing)</h2>
+          <h2 className="text-2xl font-bold text-center">All Timeline States (Automated Visual Testing)</h2>
           
           {PROCESSING_STATES.map((state) => (
             <div 
@@ -316,7 +316,7 @@ export default function ProcessingLabPage() {
           </h4>
           <p className="text-sm text-yellow-700 dark:text-yellow-300">
             All animation states, timing calculations, and API interactions are deterministic for consistent visual snapshots. 
-            Star Wars crawl effect, particle animations, and error handling are all reproducible for testing.
+            The Processing Timeline, particle animations, and error handling are reproducible for testing.
           </p>
         </div>
       </div>

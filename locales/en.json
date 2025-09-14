@@ -1,7 +1,7 @@
 {
   "navigation": {
     "about": "About",
-    "faq": "FAQ", 
+    "faq": "FAQ",
     "pricing": "Pricing",
     "community": "Community",
     "people": "People",
@@ -25,7 +25,7 @@
   },
   "processingSteps": {
     "transcribe": "Converting speech to text",
-    "clean": "Removing filler words & noise", 
+    "clean": "Removing filler words & noise",
     "structure": "Analyzing content structure",
     "seo": "Optimizing for SEO",
     "format": "Creating rich formatting",
@@ -45,7 +45,7 @@
       "description": "Paste, upload, or record"
     },
     "aiMagic": {
-      "title": "AI Magic", 
+      "title": "AI Magic",
       "description": "AI cleans and formats"
     },
     "share": {
@@ -88,7 +88,7 @@
         "polish": "✨ Final polish",
         "captureTitle": "CAPTURE",
         "captureDesc": "Analyzing your voice patterns and extracting pure audio data",
-        "transcribeTitle": "TRANSCRIBE", 
+        "transcribeTitle": "TRANSCRIBE",
         "transcribeDesc": "Converting speech to text with advanced neural networks",
         "cleanTitle": "CLEAN",
         "cleanDesc": "Removing filler words and polishing your natural speech",
@@ -109,7 +109,9 @@
         "htmlTitle": "HTML",
         "htmlDesc": "Generating clean markup for web publishing",
         "polishTitle": "POLISH",
-        "polishDesc": "Final quality checks and perfection touches"
+        "polishDesc": "Final quality checks and perfection touches",
+        "imageTitle": "IMAGE",
+        "imageDesc": "Creating cover image for sharing"
       },
       "unlockMessage": "to unlock your full vibelog and share everywhere!",
       "createdBy": "Created by",

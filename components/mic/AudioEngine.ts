@@ -24,6 +24,7 @@ export class AudioEngine {
   private isRecording = false;
   private recordingStartTime = 0;
   private levelsRef: number[] = Array.from({ length: 15 }, () => 0.1);
+  private isCleanedUp = false;
   
   constructor(private callbacks: AudioEngineCallbacks) {}
 
@@ -215,7 +216,9 @@ export class AudioEngine {
       }
       
       // Notify callback with current levels
-      this.callbacks.onLevelsUpdate?.([...this.levelsRef]);
+      if (!this.isCleanedUp) {
+        this.callbacks.onLevelsUpdate?.([...this.levelsRef]);
+      }
       this.rafRef = requestAnimationFrame(loop);
     };
     
@@ -232,16 +235,19 @@ export class AudioEngine {
     }
     
     // Fade bars to minimum when not recording
-    for (let i = 0; i < this.levelsRef.length; i++) {
-      this.levelsRef[i] = 0.15;
+    if (!this.isCleanedUp) {
+      for (let i = 0; i < this.levelsRef.length; i++) {
+        this.levelsRef[i] = 0.15;
+      }
+      this.callbacks.onLevelsUpdate?.([...this.levelsRef]);
     }
-    this.callbacks.onLevelsUpdate?.([...this.levelsRef]);
   }
 
   /**
    * Clean up all resources
    */
   cleanup(): void {
+    this.isCleanedUp = true;
     this.stopRecording();
     
     if (this.streamRef) {

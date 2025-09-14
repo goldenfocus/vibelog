@@ -1,16 +1,18 @@
 "use client";
 
 import React, { useState } from "react";
-import { Copy, Share, Save, Edit, X, LogIn } from "lucide-react";
+import { Copy, Share, Edit, X, LogIn, Play, Pause, Loader2 } from "lucide-react";
 import { useI18n } from "@/components/providers/I18nProvider";
+import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 
 export interface PublishActionsProps {
   content: string;
   isLoggedIn?: boolean;
+  isTeaserContent?: boolean;
   onCopy: (content: string) => void;
   onEdit: () => void;
-  onSave: () => void;
   onShare: () => void;
+  onUpgradePrompt?: (message: string, benefits: string[]) => void;
   showSignature?: boolean;
   className?: string;
 }
@@ -74,16 +76,18 @@ const LoginPopup: React.FC<LoginPopupProps> = ({ type, isOpen, onClose }) => {
 export default function PublishActions({
   content,
   isLoggedIn = false,
+  isTeaserContent = false,
   onCopy,
   onEdit,
-  onSave,
   onShare,
+  onUpgradePrompt,
   showSignature = false,
   className = ""
 }: PublishActionsProps) {
   const { t } = useI18n();
   const [showEditPopup, setShowEditPopup] = useState(false);
-  const [showSavePopup, setShowSavePopup] = useState(false);
+
+  const { isPlaying, isLoading, playText, stop, progress } = useTextToSpeech(onUpgradePrompt);
 
   const handleEditClick = () => {
     if (!isLoggedIn) {
@@ -93,12 +97,27 @@ export default function PublishActions({
     onEdit();
   };
 
-  const handleSaveClick = () => {
-    if (!isLoggedIn) {
-      setShowSavePopup(true);
-      return;
+  const handlePlayClick = async () => {
+    if (isPlaying) {
+      stop();
+    } else {
+      // Strip markdown and HTML for cleaner TTS
+      let cleanContent = content
+        .replace(/#{1,6}\s/g, '') // Remove markdown headers
+        .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold formatting
+        .replace(/\*(.*?)\*/g, '$1') // Remove italic formatting
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove links, keep text
+        .replace(/`([^`]+)`/g, '$1') // Remove code formatting
+        .replace(/\n\s*\n/g, '\n') // Remove extra line breaks
+        .trim();
+
+      // Add signup prompt for teaser content when user is not logged in
+      if (isTeaserContent && !isLoggedIn) {
+        cleanContent += '. To hear the complete article, sign in to your VibeLog account.';
+      }
+
+      await playText(cleanContent, 'shimmer'); // Using shimmer voice (closest to "Juniper" feel)
     }
-    onSave();
   };
 
   const handleCopyClick = () => {
@@ -110,7 +129,6 @@ export default function PublishActions({
   };
 
   const closeEditPopup = () => setShowEditPopup(false);
-  const closeSavePopup = () => setShowSavePopup(false);
 
   return (
     <>
@@ -133,36 +151,50 @@ export default function PublishActions({
           <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">{t('actions.copy')}</span>
         </button>
         
-        <button 
-          onClick={handleSaveClick}
-          className="group flex flex-col items-center gap-2 p-3 sm:p-4 bg-muted/20 hover:bg-muted/30 border border-border/20 rounded-2xl transition-all duration-200 hover:scale-105 min-w-[70px] sm:min-w-[80px]"
-          data-testid="save-button"
+        <button
+          onClick={handlePlayClick}
+          disabled={isLoading}
+          className="group relative flex flex-col items-center gap-2 p-3 sm:p-4 bg-muted/20 hover:bg-muted/30 border border-border/20 rounded-2xl transition-all duration-200 hover:scale-105 min-w-[70px] sm:min-w-[80px] overflow-hidden"
+          data-testid="play-button"
         >
-          <Save className="w-5 h-5 sm:w-6 sm:h-6 text-foreground group-hover:text-electric transition-colors" />
-          <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">{t('actions.save')}</span>
+          {/* Progress indicator */}
+          {isPlaying && (
+            <div
+              className="absolute bottom-0 left-0 h-1 bg-electric transition-all duration-100 ease-out"
+              style={{ width: `${progress}%` }}
+            />
+          )}
+
+          <div className="relative flex items-center justify-center">
+            {isLoading ? (
+              <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 text-foreground animate-spin" />
+            ) : isPlaying ? (
+              <Pause className="w-5 h-5 sm:w-6 sm:h-6 text-foreground group-hover:text-electric transition-colors" />
+            ) : (
+              <Play className="w-5 h-5 sm:w-6 sm:h-6 text-foreground group-hover:text-electric transition-colors" />
+            )}
+          </div>
+
+          <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">
+            {isPlaying ? 'Pause' : 'Listen'}
+          </span>
         </button>
         
-        <button 
+        <button
           onClick={onShare}
-          className="group flex flex-col items-center gap-2 p-3 sm:p-4 bg-electric/20 hover:bg-electric/30 border border-electric/20 rounded-2xl transition-all duration-200 hover:scale-105 min-w-[70px] sm:min-w-[80px]"
+          className="group flex flex-col items-center gap-2 p-3 sm:p-4 bg-muted/20 hover:bg-muted/30 border border-border/20 rounded-2xl transition-all duration-200 hover:scale-105 min-w-[70px] sm:min-w-[80px]"
           data-testid="share-button"
         >
-          <Share className="w-5 h-5 sm:w-6 sm:h-6 text-electric" />
-          <span className="text-xs font-medium text-electric">{t('actions.share')}</span>
+          <Share className="w-5 h-5 sm:w-6 sm:h-6 text-foreground group-hover:text-electric transition-colors" />
+          <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">{t('actions.share')}</span>
         </button>
       </div>
 
-      {/* Login Popups */}
+      {/* Login Popup */}
       <LoginPopup
         type="edit"
         isOpen={showEditPopup}
         onClose={closeEditPopup}
-      />
-      
-      <LoginPopup
-        type="save"
-        isOpen={showSavePopup}
-        onClose={closeSavePopup}
       />
     </>
   );

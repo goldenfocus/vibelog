@@ -22,6 +22,7 @@ export const metadata: Metadata = {
   authors: [{ name: "vibelog.io" }],
   creator: "vibelog.io",
   publisher: "vibelog.io",
+  manifest: "/manifest.json",
   formatDetection: {
     email: false,
     address: false,
@@ -53,6 +54,16 @@ export const metadata: Metadata = {
     images: ["/twitter-image.png"],
     creator: "@vibelog_io",
   },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon.png", type: "image/png" }
+    ],
+    apple: [
+      { url: "/apple-icon.png", sizes: "180x180", type: "image/png" }
+    ],
+    shortcut: ["/favicon.ico"],
+  },
   robots: {
     index: true,
     follow: true,
@@ -79,10 +90,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-      </head>
+      <head />
       <body className={inter.className}>
         <ReactQueryProvider>
           <AuthProvider>
