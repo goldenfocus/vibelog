@@ -74,45 +74,16 @@ export async function watermarkAndResize(params: {
 
   const base = sharp(params.image).resize(width, height, { fit: 'cover' })
 
-  // BULLETPROOF watermark: Create a simple PNG overlay using Sharp
-  const margin = Math.max(12, Math.round(height * 0.02))
-  const text = `vibelog.io/${username}`
-
-  // Create simple watermark using Sharp's built-in capabilities only
-  const watermarkPng = await sharp({
-    create: {
-      width: 120,
-      height: 25,
-      channels: 4,
-      background: { r: 0, g: 0, b: 0, alpha: 0.7 }
-    }
-  })
-  .png()
-  .toBuffer()
-
   const xmp = buildXmp({ title: params.title, description: params.description, keywords: params.keywords ?? [] })
 
-  try {
-    const out = await base
-      .composite([{
-        input: watermarkPng,
-        left: width - 120 - margin,
-        top: height - 25 - margin
-      }])
-      .withMetadata({ xmp } as any)
-      .jpeg({ quality: 88 })
-      .toBuffer({ resolveWithObject: true })
+  // TEMPORARILY SKIP WATERMARK - Just return clean image to prove system works
+  console.log('🧪 [WATERMARK] Skipping watermark to test image generation')
 
-    return { buffer: out.data, width, height }
-  } catch (error) {
-    console.error('Watermark processing failed:', error)
-    // Fallback: return image without watermark
-    const out = await base
-      .withMetadata({ xmp } as any)
-      .jpeg({ quality: 88 })
-      .toBuffer({ resolveWithObject: true })
+  const out = await base
+    .withMetadata({ xmp } as any)
+    .jpeg({ quality: 88 })
+    .toBuffer({ resolveWithObject: true })
 
-    return { buffer: out.data, width, height }
-  }
+  return { buffer: out.data, width, height }
 }
 
