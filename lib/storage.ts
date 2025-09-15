@@ -7,7 +7,7 @@ export interface Storage {
   publicUrl(path: string): string
 }
 
-const BUCKET = process.env.SUPABASE_STORAGE_BUCKET || 'covers'
+const BUCKET = process.env.SUPABASE_STORAGE_BUCKET || 'vibelog-covers'
 
 function publicUrl(path: string): string {
   // Use Supabase storage URL directly - it's fast, reliable, and globally distributed
