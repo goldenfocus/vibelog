@@ -186,12 +186,17 @@ Write entirely in English with an engaging title and clear structure.`
     const blogContent = postProcessContent(rawContent);
 
     if (process.env.NODE_ENV !== 'production') {
-      console.log('Blog generation completed:', blogContent.substring(0, 100) + '...');
+      console.log('🔍 [BLOG-GEN] Raw content length:', rawContent.length);
+      console.log('🔍 [BLOG-GEN] Processed content length:', blogContent.length);
+      console.log('🔍 [BLOG-GEN] Blog generation completed:', blogContent.substring(0, 100) + '...');
     }
 
-    return NextResponse.json({ 
-      blogContent,
-      success: true 
+    // Ensure we always return valid content
+    const finalContent = blogContent || 'Content generation failed';
+
+    return NextResponse.json({
+      blogContent: finalContent,
+      success: true
     });
 
   } catch (error) {
