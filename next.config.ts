@@ -16,6 +16,8 @@ const nextConfig: NextConfig = {
       "default-src 'self'",
       "base-uri 'self'",
       "frame-ancestors 'none'",
+      // Allow Vercel Live and development tools to embed frames
+      "frame-src 'self' https://vercel.live https://*.vercel.live",
       // Allow inline styles from Next.js, consider hashing for stricter CSP later
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       // Remove 'unsafe-eval' in production
