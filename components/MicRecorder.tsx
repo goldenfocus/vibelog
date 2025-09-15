@@ -422,14 +422,15 @@ export default function MicRecorder() {
         onCoverComplete={doCoverGeneration}
         onAnimationComplete={async () => {
           // Auto-save the vibelog
+          const contentToSave = blogContent || vibelogAPI.processingData.current.blogContentData;
 
-          if (blogContent) {
+          if (contentToSave) {
             try {
               // Get the full content for comprehensive storage
-              const fullContent = vibelogAPI.processingData.current.blogContentData || blogContent;
+              const fullContent = vibelogAPI.processingData.current.blogContentData || contentToSave;
 
               const saveResult = await saveVibelog({
-                content: blogContent, // Teaser content for display
+                content: contentToSave, // Use the actual content we found
                 fullContent: fullContent, // Complete content for search/analysis
                 transcription: transcription || '',
                 coverImage: coverImage ? {
@@ -471,6 +472,12 @@ export default function MicRecorder() {
             }
           } else {
             console.warn('⚠️ [MIC-RECORDER] No blog content to save');
+            console.warn('🔍 [MIC-RECORDER] Debug info:', {
+              blogContent: blogContent ? 'exists' : 'empty',
+              blogContentLength: blogContent?.length || 0,
+              processingData: vibelogAPI.processingData.current.blogContentData ? 'exists' : 'empty',
+              processingDataLength: vibelogAPI.processingData.current.blogContentData?.length || 0
+            });
             showToast('⚠️ No content generated to save');
           }
 
