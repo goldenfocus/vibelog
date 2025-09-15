@@ -11,7 +11,7 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     const isProd = process.env.NODE_ENV === 'production'
-    const scriptSrc = ["'self'", "'unsafe-inline'"].concat(isProd ? [] : ["'unsafe-eval'"]).join(' ')
+    const scriptSrc = ["'self'", "'unsafe-inline'", "https://vercel.live"].concat(isProd ? [] : ["'unsafe-eval'"]).join(' ')
     const csp = [
       "default-src 'self'",
       "base-uri 'self'",
@@ -23,7 +23,7 @@ const nextConfig: NextConfig = {
       "img-src 'self' data: blob: https:",
       "font-src 'self' data: https://fonts.googleapis.com https://fonts.gstatic.com",
       // API egress targets
-      "connect-src 'self' https://api.openai.com https://*.supabase.co https://*.supabase.in",
+      "connect-src 'self' https://api.openai.com https://*.supabase.co https://*.supabase.in https://vercel.live",
       "media-src 'self' data: blob:",
       "object-src 'none'",
       "form-action 'self'",
