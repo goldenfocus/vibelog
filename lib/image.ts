@@ -74,25 +74,20 @@ export async function watermarkAndResize(params: {
 
   const base = sharp(params.image).resize(width, height, { fit: 'cover' })
 
-  // Ultra-simple text watermark - no SVG, just Sharp text overlay
-  const fontSize = Math.round(height * 0.025)
-  const margin = Math.max(16, Math.round(height * 0.025))
-  const text = `vibelog.io/${username}`
+  // Simplified watermark SVG for better Sharp compatibility
+  const fontSize = Math.round(height * 0.028)
+  const margin = Math.max(12, Math.round(height * 0.02))
+  const text = `Created on vibelog.io/${username}`
 
-  // Create a simple text overlay using Sharp's built-in text() method
-  const textOptions = {
-    font: 'Arial',
-    fontSize: fontSize,
-    fontWeight: 'normal',
-    rgba: true,
-  }
-
-  // Create text as PNG buffer for Sharp to composite
-  const textSvg = Buffer.from(
-    `<svg width="400" height="50" xmlns="http://www.w3.org/2000/svg">
-      <text x="395" y="35" text-anchor="end" font-family="Arial, sans-serif"
-            font-size="${fontSize}" fill="rgba(255,255,255,0.8)"
-            stroke="rgba(0,0,0,0.3)" stroke-width="1">${text}</text>
+  // Simple, reliable watermark that Sharp can handle
+  const svg = Buffer.from(
+    `<svg xmlns='http://www.w3.org/2000/svg' width='${width}' height='${height}'>
+      <defs>
+        <filter id='shadow' x='-50%' y='-50%' width='200%' height='200%'>
+          <feDropShadow dx='0' dy='0' stdDeviation='2' flood-color='black' flood-opacity='0.6'/>
+        </filter>
+      </defs>
+      <text x='${width - margin}' y='${height - margin}' text-anchor='end' font-family='Arial, sans-serif' font-size='${fontSize}' fill='white' filter='url(#shadow)'>${text}</text>
     </svg>`
   )
 
@@ -100,11 +95,7 @@ export async function watermarkAndResize(params: {
 
   try {
     const out = await base
-      .composite([{
-        input: textSvg,
-        left: width - 400 - margin,
-        top: height - 50 - margin
-      }])
+      .composite([{ input: svg, gravity: 'southeast' }])
       .withMetadata({ xmp } as any)
       .jpeg({ quality: 88 })
       .toBuffer({ resolveWithObject: true })
