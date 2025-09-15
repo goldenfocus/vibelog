@@ -74,28 +74,31 @@ export async function watermarkAndResize(params: {
 
   const base = sharp(params.image).resize(width, height, { fit: 'cover' })
 
-  // Simplified watermark SVG for better Sharp compatibility
-  const fontSize = Math.round(height * 0.028)
+  // BULLETPROOF watermark: Create a simple PNG overlay using Sharp
   const margin = Math.max(12, Math.round(height * 0.02))
-  const text = `Created on vibelog.io/${username}`
+  const text = `vibelog.io/${username}`
 
-  // Simple, reliable watermark that Sharp can handle
-  const svg = Buffer.from(
-    `<svg xmlns='http://www.w3.org/2000/svg' width='${width}' height='${height}'>
-      <defs>
-        <filter id='shadow' x='-50%' y='-50%' width='200%' height='200%'>
-          <feDropShadow dx='0' dy='0' stdDeviation='2' flood-color='black' flood-opacity='0.6'/>
-        </filter>
-      </defs>
-      <text x='${width - margin}' y='${height - margin}' text-anchor='end' font-family='Arial, sans-serif' font-size='${fontSize}' fill='white' filter='url(#shadow)'>${text}</text>
-    </svg>`
-  )
+  // Create simple watermark using Sharp's built-in capabilities only
+  const watermarkPng = await sharp({
+    create: {
+      width: 120,
+      height: 25,
+      channels: 4,
+      background: { r: 0, g: 0, b: 0, alpha: 0.7 }
+    }
+  })
+  .png()
+  .toBuffer()
 
   const xmp = buildXmp({ title: params.title, description: params.description, keywords: params.keywords ?? [] })
 
   try {
     const out = await base
-      .composite([{ input: svg, gravity: 'southeast' }])
+      .composite([{
+        input: watermarkPng,
+        left: width - 120 - margin,
+        top: height - 25 - margin
+      }])
       .withMetadata({ xmp } as any)
       .jpeg({ quality: 88 })
       .toBuffer({ resolveWithObject: true })
