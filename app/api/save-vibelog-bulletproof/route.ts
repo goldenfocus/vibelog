@@ -169,49 +169,58 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       }, { status: 500 });
     }
 
-    // === STEP 4: USE GUARANTEED SAVE FUNCTION ===
-    console.log('💾 [VIBELOG-SAVE] Calling guaranteed save function...');
+    // === STEP 4: TRY DIRECT INSERT FIRST (SIMPLER) ===
+    console.log('💾 [VIBELOG-SAVE] Attempting direct insert...');
+    try {
+      const { data: directResult, error: directError } = await supabase
+        .from('vibelogs')
+        .insert([vibelogData])
+        .select('id')
+        .single();
 
-    const { data: saveResult, error: functionError } = await supabase
-      .rpc('save_vibelog_guaranteed', {
-        p_data: vibelogData
+      if (directError) {
+        throw directError;
+      }
+
+      console.log('✅ [VIBELOG-SAVE] Direct insert successful:', directResult.id);
+      return NextResponse.json({
+        success: true,
+        vibelogId: directResult.id,
+        message: 'Vibelog saved successfully',
+        warnings: warnings.length > 0 ? warnings : undefined
       });
 
-    if (functionError) {
-      console.error('❌ [VIBELOG-SAVE] Database function error:', functionError);
+    } catch (directInsertError) {
+      console.error('❌ [VIBELOG-SAVE] Direct insert failed:', directInsertError);
 
-      // === FALLBACK: DIRECT INSERT ===
-      console.log('🔄 [VIBELOG-SAVE] Attempting direct insert fallback...');
-      try {
-        const { data: directResult, error: directError } = await supabase
-          .from('vibelogs')
-          .insert([vibelogData])
-          .select('id')
-          .single();
+      // === FALLBACK: USE DATABASE FUNCTION ===
+      console.log('🔄 [VIBELOG-SAVE] Trying database function fallback...');
 
-        if (directError) {
-          throw directError;
-        }
-
-        console.log('✅ [VIBELOG-SAVE] Direct insert successful:', directResult.id);
-        return NextResponse.json({
-          success: true,
-          vibelogId: directResult.id,
-          message: 'Vibelog saved via direct insert fallback',
-          warnings: [...warnings, 'Used direct insert fallback']
+      const { data: saveResult, error: functionError } = await supabase
+        .rpc('save_vibelog_guaranteed', {
+          p_data: vibelogData
         });
 
-      } catch (directInsertError) {
-        console.error('❌ [VIBELOG-SAVE] Direct insert also failed:', directInsertError);
+      if (!functionError && saveResult?.success) {
+        console.log('✅ [VIBELOG-SAVE] Function fallback successful:', saveResult.id);
+        return NextResponse.json({
+          success: true,
+          vibelogId: saveResult.id,
+          message: saveResult.message || 'Vibelog saved via function fallback',
+          warnings: [...warnings, 'Used database function fallback']
+        });
+      }
+
+      console.error('❌ [VIBELOG-SAVE] Function fallback also failed:', functionError);
 
         // === FINAL FALLBACK: LOG TO FAILURES ===
         try {
           await supabase.from('vibelog_failures').insert([{
             attempted_data: vibelogData,
-            error_message: `Function error: ${functionError.message}, Direct error: ${directInsertError}`,
+            error_message: `Direct error: ${directInsertError}, Function error: ${functionError?.message || 'unknown'}`,
             error_details: {
-              function_error: functionError,
               direct_error: directInsertError,
+              function_error: functionError,
               timestamp: new Date().toISOString()
             }
           }]);
