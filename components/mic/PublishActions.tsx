@@ -130,7 +130,7 @@ export default function PublishActions({
     }
   };
 
-  const handleCopyClick = () => {
+  const handleCopyClick = async () => {
     let contentToCopy = content;
     if (showSignature) {
       if (isLoggedIn) {
@@ -141,7 +141,39 @@ export default function PublishActions({
         contentToCopy = content + '\n\n---\nCreated with vibelog.io';
       }
     }
-    onCopy(contentToCopy);
+
+    // Mobile-friendly copy implementation
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(contentToCopy);
+        onCopy(contentToCopy);
+      } else {
+        // Fallback for mobile browsers or non-HTTPS
+        const textArea = document.createElement('textarea');
+        textArea.value = contentToCopy;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+
+        try {
+          document.execCommand('copy');
+          onCopy(contentToCopy);
+        } catch (err) {
+          console.error('Fallback copy failed:', err);
+          // Show user-friendly error
+          alert('Copy failed. Please manually select and copy the text.');
+        } finally {
+          document.body.removeChild(textArea);
+        }
+      }
+    } catch (err) {
+      console.error('Copy failed:', err);
+      // Show user-friendly error
+      alert('Copy failed. Please manually select and copy the text.');
+    }
   };
 
   const closeEditPopup = () => setShowEditPopup(false);

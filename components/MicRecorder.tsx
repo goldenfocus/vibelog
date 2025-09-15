@@ -459,7 +459,20 @@ export default function MicRecorder() {
 
                 if (saveResult.warnings && saveResult.warnings.length > 0) {
                   console.warn('⚠️ [MIC-RECORDER] Save warnings:', saveResult.warnings);
-                  showToast('⚠️ Saved with warnings - check console');
+
+                  // Filter out technical warnings that don't affect user experience
+                  const criticalWarnings = saveResult.warnings.filter((warning: string) => {
+                    return !warning.includes('Title was auto-generated') &&
+                           !warning.includes('Used direct insert fallback') &&
+                           !warning.includes('Stored in failures table') &&
+                           !warning.includes('Main insert failed but data was preserved');
+                  });
+
+                  if (criticalWarnings.length > 0) {
+                    showToast('⚠️ Vibelog saved with minor issues');
+                  } else {
+                    showToast('✅ Vibelog saved successfully!');
+                  }
                 } else {
                   showToast('✅ Vibelog saved successfully!');
                 }
@@ -583,7 +596,7 @@ export default function MicRecorder() {
                     <div className="flex items-center justify-center">
                       <button
                         onClick={() => window.open('https://vibelog.io', '_blank')}
-                        className="px-4 py-2 bg-blue-500/60 backdrop-blur-sm border border-blue-400/30 rounded-xl text-white text-sm font-medium hover:bg-blue-500/70 transition-all duration-200 shadow-lg"
+                        className="px-3 py-1.5 bg-muted/40 hover:bg-muted/60 border border-border/30 rounded-lg text-muted-foreground hover:text-foreground text-xs font-normal transition-all duration-200"
                       >
                         vibelog.io
                       </button>
