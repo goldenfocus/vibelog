@@ -76,14 +76,40 @@ export async function watermarkAndResize(params: {
 
   const xmp = buildXmp({ title: params.title, description: params.description, keywords: params.keywords ?? [] })
 
-  // TEMPORARILY SKIP WATERMARK - Just return clean image to prove system works
-  console.log('🧪 [WATERMARK] Skipping watermark to test image generation')
+  // BULLETPROOF watermark: Simple text overlay using Sharp's built-in capabilities
+  const text = `vibelog.io/${username}`
+  const fontSize = Math.max(16, Math.round(height * 0.025))
+  const padding = Math.max(12, Math.round(height * 0.02))
 
-  const out = await base
-    .withMetadata({ xmp } as any)
-    .jpeg({ quality: 88 })
-    .toBuffer({ resolveWithObject: true })
+  try {
+    // Create simple text watermark using Sharp's text() method
+    const textBuffer = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${text.length * fontSize * 0.6}" height="${fontSize + 8}">
+      <rect width="100%" height="100%" fill="rgba(0,0,0,0.7)" rx="4"/>
+      <text x="8" y="${fontSize}" font-family="Arial, sans-serif" font-size="${fontSize}" fill="white" font-weight="500">${text}</text>
+    </svg>`)
 
-  return { buffer: out.data, width, height }
+    const out = await base
+      .composite([{
+        input: textBuffer,
+        left: width - (text.length * fontSize * 0.6) - padding,
+        top: height - (fontSize + 8) - padding
+      }])
+      .withMetadata({ xmp } as any)
+      .jpeg({ quality: 88 })
+      .toBuffer({ resolveWithObject: true })
+
+    console.log('✅ [WATERMARK] Applied simple text watermark successfully')
+    return { buffer: out.data, width, height }
+
+  } catch (error) {
+    console.error('❌ [WATERMARK] Failed to apply watermark:', error)
+    // Fallback: return clean image without watermark
+    const out = await base
+      .withMetadata({ xmp } as any)
+      .jpeg({ quality: 88 })
+      .toBuffer({ resolveWithObject: true })
+
+    return { buffer: out.data, width, height }
+  }
 }
 
