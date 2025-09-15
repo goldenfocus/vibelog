@@ -123,7 +123,7 @@ export default function PublishActions({
 
       // Add signup prompt for teaser content when user is not logged in
       if (isTeaserContent && !isLoggedIn) {
-        cleanContent += '. Sign in with Google to listen to the full vibelog and unlock unlimited content creation.';
+        cleanContent += '. Sign in to listen to the full vibelog and unlock unlimited content creation.';
       }
 
       await playText(cleanContent, 'shimmer'); // Using shimmer voice (closest to "Juniper" feel)
@@ -133,7 +133,13 @@ export default function PublishActions({
   const handleCopyClick = () => {
     let contentToCopy = content;
     if (showSignature) {
-      contentToCopy = content + '\n\n---\nCreated by @vibeyang\nhttps://vibelog.io/vibeyang';
+      if (isLoggedIn) {
+        // Logged in users get personal branding
+        contentToCopy = content + '\n\n---\nCreated by @vibeyang\nhttps://vibelog.io/vibeyang';
+      } else {
+        // Anonymous users get simple vibelog.io branding
+        contentToCopy = content + '\n\n---\nCreated with vibelog.io';
+      }
     }
     onCopy(contentToCopy);
   };
@@ -212,7 +218,7 @@ export default function PublishActions({
         <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-gradient-electric text-white px-6 py-3 rounded-2xl shadow-lg z-50 flex items-center gap-3 animate-in slide-in-from-bottom-2 duration-300">
           <LogIn className="w-5 h-5" />
           <span className="font-medium">
-            Sign in with Google to listen to full vibelogs
+            Sign in to listen to full vibelogs
           </span>
           <button
             onClick={() => setShowSignInPrompt(false)}

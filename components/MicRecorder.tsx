@@ -126,7 +126,9 @@ export default function MicRecorder() {
   // Content management
   const handleCopy = async (content: string) => {
     try {
-      const contentWithSignature = content + '\n\n---\nCreated by @vibeyang\nhttps://vibelog.io/vibeyang';
+      const contentWithSignature = isLoggedIn
+        ? content + '\n\n---\nCreated by @vibeyang\nhttps://vibelog.io/vibeyang'
+        : content + '\n\n---\nCreated with vibelog.io';
 
       // Try to copy with cover image if available
       if (coverImage && navigator.clipboard && 'write' in navigator.clipboard) {
@@ -187,7 +189,9 @@ export default function MicRecorder() {
       try {
         const shareData: ShareData = {
           title: t('share.title'),
-          text: blogContent + '\n\n---\nCreated by @vibeyang\nhttps://vibelog.io/vibeyang',
+          text: isLoggedIn
+            ? blogContent + '\n\n---\nCreated by @vibeyang\nhttps://vibelog.io/vibeyang'
+            : blogContent + '\n\n---\nCreated with vibelog.io',
           url: window.location.href,
         };
 
@@ -559,21 +563,32 @@ export default function MicRecorder() {
               <div className="border-t border-border/10 bg-muted/5">
                 {/* Creator Attribution */}
                 <div className="p-6 text-center">
-                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                    <span>{t('components.micRecorder.createdBy')}</span>
-                    <button
-                      onClick={() => window.open('https://vibelog.io/vibeyang', '_blank')}
-                      className="text-electric hover:text-electric-glow transition-colors font-medium"
-                    >
-                      @vibeyang
-                    </button>
-                    <button
-                      onClick={() => window.open('https://vibelog.io/vibeyang', '_blank')}
-                      className="text-muted-foreground hover:text-electric transition-colors"
-                    >
-                      vibelog.io/vibeyang
-                    </button>
-                  </div>
+                  {isLoggedIn ? (
+                    <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                      <span>{t('components.micRecorder.createdBy')}</span>
+                      <button
+                        onClick={() => window.open('https://vibelog.io/vibeyang', '_blank')}
+                        className="text-electric hover:text-electric-glow transition-colors font-medium"
+                      >
+                        @vibeyang
+                      </button>
+                      <button
+                        onClick={() => window.open('https://vibelog.io/vibeyang', '_blank')}
+                        className="text-muted-foreground hover:text-electric transition-colors"
+                      >
+                        vibelog.io/vibeyang
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center">
+                      <button
+                        onClick={() => window.open('https://vibelog.io', '_blank')}
+                        className="px-4 py-2 bg-blue-500/60 backdrop-blur-sm border border-blue-400/30 rounded-xl text-white text-sm font-medium hover:bg-blue-500/70 transition-all duration-200 shadow-lg"
+                      >
+                        vibelog.io
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Bottom action buttons */}
