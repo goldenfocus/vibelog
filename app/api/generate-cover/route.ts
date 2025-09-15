@@ -30,6 +30,9 @@ export async function POST(req: NextRequest) {
 
     // If OpenAI is not configured, return a placeholder
     if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === 'dummy_key' || process.env.OPENAI_API_KEY === 'your_openai_api_key_here') {
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('🖼️ [COVER-GEN] Using placeholder image (no OpenAI API key configured)')
+      }
       const alt = buildAltText(title, label, body.summary)
       return NextResponse.json({
         url: '/og-image.png',
