@@ -213,55 +213,36 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
       console.error('❌ [VIBELOG-SAVE] Function fallback also failed:', functionError);
 
-        // === FINAL FALLBACK: LOG TO FAILURES ===
-        try {
-          await supabase.from('vibelog_failures').insert([{
-            attempted_data: vibelogData,
-            error_message: `Direct error: ${directInsertError}, Function error: ${functionError?.message || 'unknown'}`,
-            error_details: {
-              direct_error: directInsertError,
-              function_error: functionError,
-              timestamp: new Date().toISOString()
-            }
-          }]);
+      // === FINAL FALLBACK: LOG TO FAILURES ===
+      try {
+        await supabase.from('vibelog_failures').insert([{
+          attempted_data: vibelogData,
+          error_message: `Direct error: ${directInsertError}, Function error: ${functionError?.message || 'unknown'}`,
+          error_details: {
+            direct_error: directInsertError,
+            function_error: functionError,
+            timestamp: new Date().toISOString()
+          }
+        }]);
 
-          console.log('⚠️ [VIBELOG-SAVE] Logged to failures table for manual recovery');
-          return NextResponse.json({
-            success: true, // Still return success because we captured the data
-            message: 'Vibelog captured for manual recovery',
-            warnings: [...warnings, 'Stored in failures table - will be recovered manually']
-          });
+        console.log('⚠️ [VIBELOG-SAVE] Logged to failures table for manual recovery');
+        return NextResponse.json({
+          success: true, // Still return success because we captured the data
+          message: 'Vibelog captured for manual recovery',
+          warnings: [...warnings, 'Stored in failures table - will be recovered manually']
+        });
 
-        } catch (failureLogError) {
-          console.error('💀 [VIBELOG-SAVE] CRITICAL: Even failure logging failed:', failureLogError);
+      } catch (failureLogError) {
+        console.error('💀 [VIBELOG-SAVE] CRITICAL: Even failure logging failed:', failureLogError);
 
-          // Absolutely last resort - return the data to client for potential retry
-          return NextResponse.json({
-            success: false,
-            message: 'Complete storage failure - please retry',
-            data: vibelogData, // Return data so client can potentially retry
-            error: 'All storage mechanisms failed'
-          }, { status: 500 });
-        }
+        // Absolutely last resort - return the data to client for potential retry
+        return NextResponse.json({
+          success: false,
+          message: 'Complete storage failure - please retry',
+          data: vibelogData, // Return data so client can potentially retry
+          error: 'All storage mechanisms failed'
+        }, { status: 500 });
       }
-    }
-
-    // === SUCCESS PATH ===
-    if (saveResult && saveResult.success) {
-      console.log('🎉 [VIBELOG-SAVE] Save completed successfully:', saveResult.id);
-      return NextResponse.json({
-        success: true,
-        vibelogId: saveResult.id,
-        message: saveResult.message || 'Vibelog saved successfully',
-        warnings: warnings.length > 0 ? warnings : undefined
-      });
-    } else {
-      console.log('⚠️ [VIBELOG-SAVE] Function indicated failure but data was captured:', saveResult);
-      return NextResponse.json({
-        success: true, // Data was captured even if main insert failed
-        message: saveResult?.message || 'Vibelog captured for recovery',
-        warnings: [...warnings, 'Main insert failed but data was preserved']
-      });
     }
 
   } catch (uncaughtError) {
