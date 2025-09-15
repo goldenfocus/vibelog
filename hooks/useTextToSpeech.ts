@@ -10,7 +10,7 @@ export interface UseTextToSpeechReturn {
   duration: number;
 }
 
-export function useTextToSpeech(onUpgradePrompt?: (message: string, benefits: string[]) => void): UseTextToSpeechReturn {
+export function useTextToSpeech(onUpgradePrompt?: (message: string, benefits: string[]) => void, onEnded?: () => void): UseTextToSpeechReturn {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,6 +47,9 @@ export function useTextToSpeech(onUpgradePrompt?: (message: string, benefits: st
     setIsPlaying(false);
     setProgress(100);
     setTimeout(() => setProgress(0), 500); // Reset progress after a brief delay
+    if (onEnded) {
+      onEnded();
+    }
   };
 
   const handleLoadedMetadata = () => {
