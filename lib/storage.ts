@@ -8,18 +8,14 @@ export interface Storage {
 }
 
 const BUCKET = process.env.SUPABASE_STORAGE_BUCKET || 'covers'
-const CDN_BASE_URL = (process.env.CDN_BASE_URL || '').replace(/\/$/, '') || ''
 
 function publicUrl(path: string): string {
-  if (!CDN_BASE_URL) {
-    // Fallback to Supabase storage URL when CDN_BASE_URL is not configured
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    if (supabaseUrl) {
-      return `${supabaseUrl}/storage/v1/object/public/${BUCKET}/${path}`
-    }
-    return `/${path}`
+  // Use Supabase storage URL directly - it's fast, reliable, and globally distributed
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  if (supabaseUrl) {
+    return `${supabaseUrl}/storage/v1/object/public/${BUCKET}/${path}`;
   }
-  return `${CDN_BASE_URL}/${path}`
+  return `/${path}`
 }
 
 function supabaseStorage(): Storage {
