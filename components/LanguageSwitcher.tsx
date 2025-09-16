@@ -71,23 +71,26 @@ export default function LanguageSwitcher({
         <span className="text-xl" role="img" aria-label={currentLang.name}>
           {currentLang.flag}
         </span>
+        <span className={`text-xs font-medium text-foreground uppercase ${compact ? 'text-xs' : 'text-sm'}`}>
+          {currentLang.code}
+        </span>
         {!compact && (
           <>
-            <span className="hidden sm:inline text-sm font-medium text-foreground">
+            <span className="hidden sm:inline text-sm font-medium text-muted-foreground">
               {currentLang.nativeName}
             </span>
-            <ChevronDown 
+            <ChevronDown
               className={`w-4 h-4 text-muted-foreground transition-transform ${
                 isOpen ? "rotate-180" : ""
-              }`} 
+              }`}
             />
           </>
         )}
         {compact && (
-          <ChevronDown 
+          <ChevronDown
             className={`w-3 h-3 text-muted-foreground transition-transform ${
               isOpen ? "rotate-180" : ""
-            }`} 
+            }`}
           />
         )}
       </button>
@@ -111,9 +114,14 @@ export default function LanguageSwitcher({
                 <span className="text-xl" role="img" aria-label={language.name}>
                   {language.flag}
                 </span>
-                <span className="font-medium">
-                  {language.nativeName}
-                </span>
+                <div className="flex flex-col">
+                  <span className="font-medium">
+                    {language.nativeName}
+                  </span>
+                  <span className="text-xs text-muted-foreground uppercase">
+                    {language.code}
+                  </span>
+                </div>
                 {language.code === currentLanguage && (
                   <div className="ml-auto w-2 h-2 bg-primary rounded-full" />
                 )}
