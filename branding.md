@@ -55,10 +55,17 @@ Clarity 10 • Warmth 7 • Playfulness 5 • Brevity 9 • Hype 4 • Authority
 **Done:** `Your vibelog is ready!`  
 **Primary publish CTA:** `Publish`  
 **Secondary:** `Edit` · `Share` · `Save draft`  
-**Share tooltip:** `Share your vibelog in one tap`  
-**Saved draft toast:** `Saved to drafts`  
-**Deleted toast (undo):** `Moved to trash — Undo`  
+**Share tooltip:** `Share your vibelog in one tap`
+**Saved draft toast:** `Saved to drafts`
+**Deleted toast (undo):** `Moved to trash — Undo`
 **Empty state:** `No vibelogs yet. Start vibelogging to see magic.`
+
+**Content Attribution (auto-appended):**
+```markdown
+---
+
+*Created with [VibeLog](https://vibelog.io) by [@username](https://vibelog.io/username)*
+```
 
 ---
 
@@ -93,9 +100,14 @@ Clarity 10 • Warmth 7 • Playfulness 5 • Brevity 9 • Hype 4 • Authority
 - `Priority processing`
 
 **Upgrade nudges:**
-- Banner: `Level up your vibelogs — Try Pro`  
-- Modal CTA: `Unlock Pro` / Secondary: `Maybe later`  
+- Banner: `Sign in to keep reading and vibelog more`
+- Modal CTA: `Continue` / Secondary: `Maybe later`
 - Success upsell (post-publish): `Go Pro to publish everywhere at once`
+
+**Attribution Strategy:**
+- Free users: Full attribution with VibeLog + creator links
+- Pro users: Creator attribution only (`*By [@username](https://vibelog.io/username)*`)
+- Enterprise: No attribution (clean export)
 
 **Trials & pricing:**
 - Start: `Start free trial`  
@@ -224,13 +236,16 @@ VibeLog turns your voice into a polished post in seconds. Speak naturally; we’
 ---
 
 ## 18) Review Checklist (PR / QA)
-- [ ] Uses “vibelog / vibelogging” correctly  
-- [ ] Sentence case in UI, Title Case in marketing  
-- [ ] Short, clear, one action per message  
-- [ ] Error has a fix step  
-- [ ] ≤1 emoji; none in errors  
-- [ ] Accessibility labels present  
-- [ ] No banned words/typos (“Viblog”)
+- [ ] Uses "vibelog / vibelogging" correctly
+- [ ] Sentence case in UI, Title Case in marketing
+- [ ] Short, clear, one action per message
+- [ ] Error has a fix step
+- [ ] ≤1 emoji; none in errors
+- [ ] Accessibility labels present
+- [ ] No banned words/typos ("Viblog")
+- [ ] Consistent with competitive positioning (no "better than" language)
+- [ ] Aligns with API error message patterns
+- [ ] Performance copy matches monitoring SLOs
 
 ---
 
@@ -239,7 +254,7 @@ VibeLog turns your voice into a polished post in seconds. Speak naturally; we’
 - Add a `copy/microcopy.ts` map with keys mirroring this guide (e.g., `recorder.idle`, `recorder.processing`).
 - Create a lint step to flag `Viblog|VibeLogging|VibLog` and suggest "VibeLog / vibelog / vibelogging".
 
-**See also**: `vision.md` for product roadmap, `engineering.md` for implementation standards
+**See also**: `vision.md` for product roadmap, `engineering.md` for implementation standards, `api.md` for error message patterns, `monitoring.md` for user experience metrics
 
 ---
 
@@ -258,8 +273,18 @@ VibeLog turns your voice into a polished post in seconds. Speak naturally; we’
     "share": "Share",
     "save": "Save draft"
   },
+  "audio": {
+    "play": "Play recording",
+    "pause": "Pause recording",
+    "seek": "Seek to position"
+  },
+  "attribution": {
+    "free": "*Created with [VibeLog](https://vibelog.io) by [@{username}](https://vibelog.io/{username})*",
+    "pro": "*By [@{username}](https://vibelog.io/{username})*",
+    "enterprise": ""
+  },
   "errors": {
     "micBlocked": "Microphone is blocked — Enable it in your browser settings",
-    "network": "Can’t reach VibeLog right now — Try again"
+    "network": "Can't reach VibeLog right now — Try again"
   }
 }

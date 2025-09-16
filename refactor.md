@@ -69,4 +69,4 @@ NEXT_PUBLIC_MIC_V2=true
 	•	Focus rings + tab order correct
 	•	Performance baseline preserved
 
-**See also**: `engineering.md` for testing standards, `api.md` for component patterns
+**See also**: `engineering.md` for testing standards, `api.md` for component patterns, `deployment.md` for feature flag usage, `monitoring.md` for visual regression tracking

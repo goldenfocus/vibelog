@@ -272,3 +272,7 @@ const validationGates = {
   }
 }
 ```
+
+---
+
+**See also**: `branding.md` for voice and positioning, `monitoring.md` for success metrics tracking, `api.md` for technical implementation

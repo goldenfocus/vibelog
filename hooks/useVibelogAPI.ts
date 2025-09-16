@@ -11,6 +11,7 @@ export interface UseVibelogAPIReturn {
   processTranscription: (audioBlob: Blob) => Promise<string>;
   processBlogGeneration: (transcription: string) => Promise<TeaserResult>;
   processCoverImage: (args: { blogContent: string; username?: string; tags?: string[] }) => Promise<{ url: string; alt: string; width: number; height: number }>;
+  uploadAudio: (audioBlob: Blob, sessionId: string, userId?: string) => Promise<{ url: string; duration: number }>;
   processingData: React.MutableRefObject<ProcessingData>;
 }
 
@@ -248,6 +249,63 @@ export function useVibelogAPI(
     return { title, summary }
   }
 
+  const uploadAudio = async (audioBlob: Blob, sessionId: string, userId?: string): Promise<{ url: string; duration: number }> => {
+    try {
+      const formData = new FormData()
+      formData.append('audio', audioBlob, 'recording.webm')
+      formData.append('sessionId', sessionId)
+      if (userId) formData.append('userId', userId)
+
+      console.log('🎵 [AUDIO-UPLOAD] Uploading original recording...')
+
+      const response = await fetch('/api/upload-audio', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (!response.ok) {
+        const text = await response.text().catch(() => '')
+        console.error('Audio upload failed:', response.status, text)
+        throw new Error(`Audio upload failed: ${response.status}`)
+      }
+
+      const data = await response.json()
+      console.log('✅ [AUDIO-UPLOAD] Upload successful:', data.url)
+
+      // Calculate duration from blob (approximate)
+      const duration = await getAudioDuration(audioBlob)
+
+      return {
+        url: data.url,
+        duration: duration || 0
+      }
+    } catch (error) {
+      console.error('Audio upload error:', error)
+      // Don't fail the whole process if audio upload fails
+      return { url: '', duration: 0 }
+    }
+  }
+
+  // Helper function to get audio duration
+  const getAudioDuration = (blob: Blob): Promise<number> => {
+    return new Promise((resolve) => {
+      const audio = new Audio()
+      const url = URL.createObjectURL(blob)
+
+      audio.addEventListener('loadedmetadata', () => {
+        URL.revokeObjectURL(url)
+        resolve(audio.duration)
+      })
+
+      audio.addEventListener('error', () => {
+        URL.revokeObjectURL(url)
+        resolve(0)
+      })
+
+      audio.src = url
+    })
+  }
+
   const processCoverImage = async (args: { blogContent: string; username?: string; tags?: string[] }) => {
 
     const { title, summary } = parseMarkdown(args.blogContent)
@@ -281,6 +339,7 @@ export function useVibelogAPI(
     processTranscription,
     processBlogGeneration,
     processCoverImage,
+    uploadAudio,
     processingData: processingDataRef,
   };
 }

@@ -122,12 +122,22 @@ export function useAudioPlayback(audioBlob: Blob | null): UseAudioPlaybackReturn
 
   const play = async () => {
     if (!audioRef.current) return;
-    
+
     try {
+      // For mobile Safari: ensure audio is loaded and ready
+      if (audioRef.current.readyState < 3) {
+        // Load the audio if not ready
+        audioRef.current.load();
+        await new Promise((resolve) => {
+          audioRef.current?.addEventListener('canplay', resolve, { once: true });
+        });
+      }
+
       await audioRef.current.play();
     } catch (error) {
       console.error('Error playing audio:', error);
       setIsPlaying(false);
+      throw error; // Re-throw so caller can handle
     }
   };
 

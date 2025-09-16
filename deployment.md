@@ -782,4 +782,4 @@ const businessContinuity = {
 
 ---
 
-**See also**: `monitoring.md` for observability setup, `engineering.md` for testing requirements, `api.md` for service patterns
+**See also**: `monitoring.md` for observability setup, `engineering.md` for testing requirements, `api.md` for service patterns, `commit.md` for git workflow

@@ -11,7 +11,7 @@ export interface Language {
 }
 
 export const LANGUAGES: Language[] = [
-  { code: "en", name: "English", nativeName: "English", flag: "🇺🇸" },
+  { code: "en", name: "English", nativeName: "English", flag: "🌐" },
   { code: "es", name: "Spanish", nativeName: "Español", flag: "🇪🇸" },
   { code: "fr", name: "French", nativeName: "Français", flag: "🇫🇷" },
   { code: "de", name: "German", nativeName: "Deutsch", flag: "🇩🇪" },
@@ -68,9 +68,15 @@ export default function LanguageSwitcher({
         aria-expanded={isOpen}
         aria-haspopup="listbox"
       >
-        <span className="text-xl" role="img" aria-label={currentLang.name}>
-          {currentLang.flag}
-        </span>
+        {compact ? (
+          <span className="text-sm font-semibold text-foreground">
+            {currentLang.code.toUpperCase()}
+          </span>
+        ) : (
+          <span className="text-xl" role="img" aria-label={currentLang.name}>
+            {currentLang.flag}
+          </span>
+        )}
         {!compact && (
           <>
             <span className="hidden sm:inline text-sm font-medium text-foreground">

@@ -39,6 +39,7 @@ export default function MicRecorder() {
   const [isEditingTranscript, setIsEditingTranscript] = useState(false);
   const [coverImage, setCoverImage] = useState<CoverImage | null>(null);
   const [isCoverGenerating, setIsCoverGenerating] = useState(false);
+  const [audioData, setAudioData] = useState<{ url: string; duration: number } | null>(null);
   const { isLoggedIn, user } = useAuth();
   const [recordingTime, setRecordingTime] = useState(0);
   const [toast, setToast] = useState<ToastState>({message: "", visible: false});
@@ -297,9 +298,22 @@ export default function MicRecorder() {
     if (!audioEngine.audioBlob) {
       throw new Error('No audio blob available');
     }
-    
+
+    // Process transcription first
     const transcriptionResult = await vibelogAPI.processTranscription(audioEngine.audioBlob);
     setTranscription(transcriptionResult);
+
+    // Upload audio file to storage (runs in parallel with further processing)
+    const sessionId = `session_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    vibelogAPI.uploadAudio(audioEngine.audioBlob, sessionId, user?.id)
+      .then(audioData => {
+        setAudioData(audioData);
+        console.log('🎵 Audio uploaded successfully:', audioData.url);
+      })
+      .catch(error => {
+        console.warn('⚠️ Audio upload failed (non-critical):', error);
+      });
+
     return transcriptionResult;
   };
 
@@ -442,6 +456,10 @@ export default function MicRecorder() {
                   alt: coverImage.alt,
                   width: coverImage.width,
                   height: coverImage.height
+                } : undefined,
+                audioData: audioData ? {
+                  url: audioData.url,
+                  duration: audioData.duration
                 } : undefined,
                 userId: user?.id,
                 isTeaser: isTeaserContent,
