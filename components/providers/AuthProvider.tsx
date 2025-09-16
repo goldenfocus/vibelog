@@ -101,8 +101,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`
         : `${window.location.origin}/auth/callback`
 
-      console.log('Starting OAuth sign in with provider:', provider)
-      console.log('Redirect URL will be:', redirectUrl)
+      console.log('=== OAUTH SIGN IN DEBUG ===')
+      console.log('Provider:', provider)
+      console.log('Environment SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL)
+      console.log('Window origin:', window.location.origin)
+      console.log('Final redirect URL:', redirectUrl)
+      console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
 
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
@@ -118,17 +122,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('OAuth response:', { data, error })
 
       if (error) {
-        console.error('Sign in error:', error)
+        console.error('Sign in error details:', {
+          message: error.message,
+          status: error.status,
+          details: error
+        })
         setError(`Sign in failed: ${error.message}`)
         setLoading(false)
         return
       }
 
       // If we get here without redirect, something's wrong
-      console.log('OAuth did not redirect - this might indicate a configuration issue')
+      console.log('OAuth response received but no redirect happened')
+      console.log('This might indicate a configuration issue')
 
     } catch (err) {
-      console.error('Sign in failed:', err)
+      console.error('Sign in exception:', err)
       setError('Sign in failed. Please try again.')
       setLoading(false)
     }
