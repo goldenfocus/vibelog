@@ -35,20 +35,20 @@ function SignInContent() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-600 via-pink-600 to-orange-500">
-      <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 w-full max-w-md border border-white/20">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-black">
+      <div className="bg-card/95 backdrop-blur-lg rounded-2xl p-8 w-full max-w-md border border-electric/20 shadow-2xl">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-white mb-2">
-            {t("auth.signIn")}
+          <h1 className="text-2xl font-bold text-foreground mb-2">
+            Continue with VibeLog
           </h1>
-          <p className="text-white/80">
-            {t("auth.signInDescription")}
+          <p className="text-muted-foreground">
+            Sign in or create your account to save vibelogs and access your dashboard
           </p>
         </div>
 
         {displayError && (
-          <div className="mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded-lg">
-            <p className="text-red-200 text-sm text-center">{displayError}</p>
+          <div className="mb-4 p-3 bg-destructive/20 border border-destructive/30 rounded-lg">
+            <p className="text-destructive text-sm text-center">{displayError}</p>
           </div>
         )}
 
@@ -56,7 +56,7 @@ function SignInContent() {
           <Button
             onClick={handleSignIn}
             disabled={loading}
-            className="w-full bg-white text-gray-900 hover:bg-gray-100 font-medium py-4 disabled:opacity-50 disabled:cursor-not-allowed relative"
+            className="w-full bg-electric hover:bg-electric-glow text-white font-medium py-4 disabled:opacity-50 disabled:cursor-not-allowed relative shadow-lg hover:shadow-electric/25 transition-all duration-200"
           >
             <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
               <path
@@ -78,18 +78,18 @@ function SignInContent() {
             </svg>
             {loading ? (
               <>
-                <div className="w-4 h-4 border-2 border-gray-900/30 border-t-gray-900 rounded-full animate-spin mr-2" />
-                Signing in...
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                Connecting...
               </>
             ) : (
-              t("auth.signInWith", { provider: "Google" })
+              "Continue with Google"
             )}
           </Button>
         </div>
 
         <div className="mt-6 text-center">
-          <p className="text-white/60 text-sm">
-            {t("auth.termsAgreement")}
+          <p className="text-muted-foreground text-sm">
+            By continuing, you agree to our Terms of Service and Privacy Policy
           </p>
         </div>
       </div>
@@ -99,8 +99,8 @@ function SignInContent() {
 
 export default function SignInPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-600 via-pink-600 to-orange-500">
-      <div className="text-white">Loading...</div>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-black">
+      <div className="text-electric">Loading...</div>
     </div>}>
       <SignInContent />
     </Suspense>
