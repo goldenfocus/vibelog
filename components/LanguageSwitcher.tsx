@@ -68,15 +68,9 @@ export default function LanguageSwitcher({
         aria-expanded={isOpen}
         aria-haspopup="listbox"
       >
-        {compact ? (
-          <span className="text-sm font-semibold text-foreground">
-            {currentLang.code.toUpperCase()}
-          </span>
-        ) : (
-          <span className="text-xl" role="img" aria-label={currentLang.name}>
-            {currentLang.flag}
-          </span>
-        )}
+        <span className="text-xl" role="img" aria-label={currentLang.name}>
+          {currentLang.flag}
+        </span>
         {!compact && (
           <>
             <span className="hidden sm:inline text-sm font-medium text-foreground">
