@@ -14,6 +14,10 @@ interface SaveVibelogRequest {
     width: number;
     height: number;
   };
+  audioData?: {
+    url: string;
+    duration: number;
+  };
   userId?: string;
   sessionId?: string;
   isTeaser?: boolean;
@@ -117,42 +121,38 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const readTime = calculateReadTime(wordCount);
     const sessionId = requestBody.sessionId || generateSessionId();
 
-    // Prepare comprehensive data object
+    // Prepare data object using only existing columns
     const vibelogData = {
       user_id: requestBody.userId || null,
       session_id: sessionId,
       title: title,
-      content: content,
-      full_content: fullContent,
+      content: fullContent, // Store full content in the main content field
       transcription: transcription,
       cover_image_url: requestBody.coverImage?.url || null,
       cover_image_alt: requestBody.coverImage?.alt || null,
       cover_image_width: requestBody.coverImage?.width || null,
       cover_image_height: requestBody.coverImage?.height || null,
+      audio_url: requestBody.audioData?.url || null,
+      audio_duration: requestBody.audioData?.duration ? Math.round(requestBody.audioData.duration) : null,
       language: 'en',
       word_count: wordCount,
       read_time: readTime,
       tags: ['auto-generated'],
-      is_teaser: requestBody.isTeaser || false,
       is_public: false,
       is_published: false,
-      processing_status: 'completed',
-      metadata: {
-        ...requestBody.metadata,
-        created_via: 'api',
-        user_agent: request.headers.get('user-agent'),
-        ip_address: request.headers.get('x-forwarded-for') || 'unknown',
-        timestamp: new Date().toISOString()
-      }
+      view_count: 0,
+      share_count: 0,
+      like_count: 0
     };
 
     console.log('✅ [VIBELOG-SAVE] Data normalized:', {
       title: vibelogData.title,
       contentLength: vibelogData.content.length,
-      fullContentLength: vibelogData.full_content.length,
       wordCount: vibelogData.word_count,
       hasTranscription: !!vibelogData.transcription,
       hasCoverImage: !!vibelogData.cover_image_url,
+      hasAudio: !!vibelogData.audio_url,
+      audioDuration: vibelogData.audio_duration,
       sessionId: vibelogData.session_id
     });
 
@@ -193,34 +193,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     } catch (directInsertError) {
       console.error('❌ [VIBELOG-SAVE] Direct insert failed:', directInsertError);
 
-      // === FALLBACK: USE DATABASE FUNCTION ===
-      console.log('🔄 [VIBELOG-SAVE] Trying database function fallback...');
-
-      const { data: saveResult, error: functionError } = await supabase
-        .rpc('save_vibelog_guaranteed', {
-          p_data: vibelogData
-        });
-
-      if (!functionError && saveResult?.success) {
-        console.log('✅ [VIBELOG-SAVE] Function fallback successful:', saveResult.id);
-        return NextResponse.json({
-          success: true,
-          vibelogId: saveResult.id,
-          message: saveResult.message || 'Vibelog saved via function fallback',
-          warnings: [...warnings, 'Used database function fallback']
-        });
-      }
-
-      console.error('❌ [VIBELOG-SAVE] Function fallback also failed:', functionError);
-
       // === FINAL FALLBACK: LOG TO FAILURES ===
       try {
         await supabase.from('vibelog_failures').insert([{
           attempted_data: vibelogData,
-          error_message: `Direct error: ${directInsertError}, Function error: ${functionError?.message || 'unknown'}`,
+          error_message: `Direct insert failed: ${directInsertError.message || directInsertError}`,
           error_details: {
             direct_error: directInsertError,
-            function_error: functionError,
             timestamp: new Date().toISOString()
           }
         }]);

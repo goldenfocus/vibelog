@@ -10,10 +10,10 @@ test.describe('MicRecorder Visual Regression Tests', () => {
     await page.goto('/mic-lab');
     
     // Wait for page to be fully loaded
-    await page.waitForLoadState('networkidle');
-    
-    // Wait for any initial animations to settle
-    await page.waitForTimeout(1000);
+    await page.waitForLoadState('domcontentloaded');
+
+    // Wait for critical elements instead of arbitrary timeout
+    await page.waitForSelector('[data-testid="mic-recorder"]', { timeout: 5000 });
   });
 
   // Test each MicRecorder state individually

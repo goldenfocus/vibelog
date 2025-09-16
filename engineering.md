@@ -171,7 +171,17 @@ Workflow:
 
 ⸻
 
-16) Culture
+16) Audio Playback UX Standards
+	•	Play/Pause states: play button (▶️) must switch to pause button (⏸️) when active
+	•	Progress indicator: audio scrubber must show current position dot/handle
+	•	Seeking controls: users must be able to click anywhere on progress bar to seek
+	•	Visual feedback: current time updates in real-time during playback
+	•	Button responsiveness: immediate visual state change on press (no lag)
+	•	Accessibility: proper ARIA labels for screen readers (aria-label="Play/Pause")
+
+⸻
+
+17) Culture
 	•	Ship small, daily.
 	•	Tests protect polish.
 	•	Boring tech + elite discipline.
@@ -181,5 +191,5 @@ Workflow:
 
 ✨ Golden Focus Inc rule: One codebase, many languages, daily shipping. Playwright + CI guard every pixel and behavior.
 
-**See also**: `api.md` for API standards, `monitoring.md` for observability, `deployment.md` for release process
+**See also**: `api.md` for API standards, `monitoring.md` for observability, `deployment.md` for release process, `branding.md` for copy guidelines, `refactor.md` for component extraction
 

@@ -566,4 +566,4 @@ const engineeringDashboard = {
 
 ---
 
-**See also**: `api.md` for API-specific monitoring patterns, `engineering.md` for testing integration
+**See also**: `api.md` for API-specific monitoring patterns, `engineering.md` for testing integration, `deployment.md` for incident response, `vision.md` for success metrics alignment

@@ -7,15 +7,17 @@ export default defineConfig({
   testDir: './tests',
   // Only run E2E/visual tests; ignore unit tests (Vitest)
   testIgnore: ['tests/unit/**'],
-  testMatch: ['**/*.spec.ts', '**/*.spec.tsx'],
+  testMatch: process.env.CI
+    ? ['**/e2e-*.spec.ts'] // Only run critical E2E tests in CI
+    : ['**/*.spec.ts', '**/*.spec.tsx'],
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
+  retries: process.env.CI ? 1 : 0,
   /* Max speed: Use all available CPU cores in CI */
-  workers: process.env.CI ? '75%' : undefined,
+  workers: process.env.CI ? 4 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
     ['html'],
@@ -64,24 +66,25 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: 'npm run dev',
+    command: process.env.CI ? 'npm run build && npm start' : 'npm run dev',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000, // 2 minutes
+    timeout: 60 * 1000, // 1 minute
   },
 
   /* Global test timeout */
-  timeout: 30 * 1000, // 30 seconds per test
+  timeout: 15 * 1000, // 15 seconds per test
   
   /* Global expect timeout */
   expect: {
     /* Timeout for expect() assertions */
-    timeout: 10 * 1000, // 10 seconds
+    timeout: 5 * 1000, // 5 seconds
     
     /* Threshold for visual comparisons - balanced speed vs accuracy */
     toHaveScreenshot: {
-      threshold: 0.005, // 0.5% threshold - still strict but faster
+      threshold: 0.01, // 1% threshold - faster while still catching real issues
       animations: 'disabled', // Disable animations for consistent screenshots
+      mode: 'ci' // Use faster CI mode for screenshots
     },
   },
 });

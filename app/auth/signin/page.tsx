@@ -3,10 +3,36 @@
 import { Button } from "@/components/ui/button"
 import { useI18n } from "@/components/providers/I18nProvider"
 import { useAuth } from "@/components/providers/AuthProvider"
+import { useSearchParams } from "next/navigation"
+import { useEffect, useState } from "react"
 
 export default function SignInPage() {
   const { t } = useI18n()
-  const { signIn, loading } = useAuth()
+  const { signIn, loading, error } = useAuth()
+  const searchParams = useSearchParams()
+  const [urlError, setUrlError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const errorParam = searchParams.get('error')
+    if (errorParam) {
+      setUrlError(decodeURIComponent(errorParam))
+    }
+
+    // Debug info
+    console.log('SignIn page loaded')
+    console.log('Current URL:', window.location.href)
+    console.log('Environment:', {
+      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+      hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    })
+  }, [searchParams])
+
+  const displayError = error || urlError
+
+  const handleSignIn = () => {
+    console.log('Sign in button clicked')
+    signIn('google')
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-600 via-pink-600 to-orange-500">
@@ -20,11 +46,17 @@ export default function SignInPage() {
           </p>
         </div>
 
+        {displayError && (
+          <div className="mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded-lg">
+            <p className="text-red-200 text-sm text-center">{displayError}</p>
+          </div>
+        )}
+
         <div className="space-y-4">
           <Button
-            onClick={() => signIn("google")}
+            onClick={handleSignIn}
             disabled={loading}
-            className="w-full bg-white text-gray-900 hover:bg-gray-100 font-medium py-4 disabled:opacity-50"
+            className="w-full bg-white text-gray-900 hover:bg-gray-100 font-medium py-4 disabled:opacity-50 disabled:cursor-not-allowed relative"
           >
             <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
               <path
@@ -44,7 +76,14 @@ export default function SignInPage() {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
             </svg>
-            {loading ? "Loading..." : t("auth.signInWith", { provider: "Google" })}
+            {loading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-gray-900/30 border-t-gray-900 rounded-full animate-spin mr-2" />
+                Signing in...
+              </>
+            ) : (
+              t("auth.signInWith", { provider: "Google" })
+            )}
           </Button>
         </div>
 

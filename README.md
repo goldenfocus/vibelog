@@ -115,12 +115,25 @@ pnpm db:studio        # Open Prisma Studio
 
 ## 📚 Documentation
 
-- **[Vision](./vision.md)** — Product roadmap and future plans
-- **[Engineering](./engineering.md)** — Development standards and testing
-- **[Branding](./branding.md)** — Copy, tone, and brand guidelines
-- **[API Design](./api.md)** — API patterns and error handling
-- **[Monitoring](./monitoring.md)** — Analytics and error tracking
-- **[Deployment](./deployment.md)** — Infrastructure and release process
+### Core Guides
+- **[Vision](./vision.md)** — Product roadmap, success metrics, and strategic direction
+- **[Engineering](./engineering.md)** — Development standards, testing, and code quality
+- **[Branding](./branding.md)** — Voice, tone, microcopy, and competitive positioning
+
+### Technical Implementation
+- **[API Design](./api.md)** — REST patterns, security, and error handling
+- **[Monitoring](./monitoring.md)** — SLOs, analytics, alerting, and observability
+- **[Deployment](./deployment.md)** — CI/CD, infrastructure, and disaster recovery
+
+### Workflow Guides
+- **[Refactor Guide](./refactor.md)** — Safe component refactoring with visual regression
+- **[Commit Guide](./commit.md)** — Git workflow and PR process
+
+### Quick Reference
+- **Copy Guidelines**: See `branding.md` sections 4-5 for microcopy patterns
+- **Error Messages**: See `api.md` error codes + `branding.md` section 5
+- **Performance Targets**: See `monitoring.md` SLOs + `engineering.md` section 1
+- **Testing Requirements**: See `engineering.md` section 3 + individual file "See also" sections
 
 ---
 
