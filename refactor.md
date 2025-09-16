@@ -68,3 +68,5 @@ NEXT_PUBLIC_MIC_V2=true
 	•	Toasts + error/retry intact
 	•	Focus rings + tab order correct
 	•	Performance baseline preserved
+
+**See also**: `engineering.md` for testing standards, `api.md` for component patterns

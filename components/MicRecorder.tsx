@@ -447,7 +447,7 @@ export default function MicRecorder() {
                 isTeaser: isTeaserContent,
                 metadata: {
                   recordingTime: recordingTime,
-                  processingSteps: ['transcribe', 'generate', 'format', 'cover'],
+                  processingSteps: ['transcribe', 'generate', 'format', 'image'],
                   clientVersion: '1.0.0',
                   userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : undefined
                 }
