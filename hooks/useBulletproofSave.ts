@@ -11,6 +11,10 @@ interface SaveVibelogData {
     width: number;
     height: number;
   };
+  audioData?: {
+    url: string;
+    duration: number;
+  };
   userId?: string;
   isTeaser?: boolean;
   metadata?: Record<string, any>;
@@ -195,6 +199,7 @@ export function useBulletproofSave() {
         fullContent: data.fullContent,
         transcription: data.transcription,
         coverImage: data.coverImage,
+        audioData: data.audioData,
         userId: data.userId,
         sessionId,
         isTeaser: data.isTeaser,

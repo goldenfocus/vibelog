@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button"
 import { useI18n } from "@/components/providers/I18nProvider"
 import { useAuth } from "@/components/providers/AuthProvider"
 import { useSearchParams } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 
-export default function SignInPage() {
+function SignInContent() {
   const { t } = useI18n()
   const { signIn, loading, error } = useAuth()
   const searchParams = useSearchParams()
@@ -94,5 +94,15 @@ export default function SignInPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-600 via-pink-600 to-orange-500">
+      <div className="text-white">Loading...</div>
+    </div>}>
+      <SignInContent />
+    </Suspense>
   )
 }
