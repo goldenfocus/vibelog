@@ -116,14 +116,46 @@ Workflow:
 
 ⸻
 
-10) Dependencies
+10) Security Practices
+	•	Input validation: all user inputs validated with Zod schemas.
+	•	Output sanitization: HTML sanitized with DOMPurify before display.
+	•	Authentication: JWT tokens with proper expiration and rotation.
+	•	Authorization: role-based access control, least privilege principle.
+	•	API security: rate limiting, CORS properly configured, no sensitive data in logs.
+	•	Secrets management: never commit secrets, use environment variables.
+	•	Dependencies: regular security audits, pin versions, monitor for vulnerabilities.
+	•	Content Security Policy: strict CSP headers to prevent XSS.
+	•	HTTPS everywhere: force SSL in production, secure cookie flags.
+
+⸻
+
+11) Error Handling & Observability
+	•	Error boundaries: every route + complex component wrapped
+	•	Structured logging: use structured format (JSON) with correlation IDs
+	•	Error tracking: Sentry/similar with user context, never log PII
+	•	Alerts: critical path failures trigger immediate notifications
+	•	Metrics: track Core Web Vitals, API response times, error rates
+	•	Dashboards: real-time health monitoring, deployment impact tracking
+
+⸻
+
+12) Data Architecture
+	•	State: prefer URL state > React state > global state
+	•	Caching: stale-while-revalidate pattern, optimistic updates
+	•	Offline: graceful degradation, queue failed requests
+	•	Validation: Zod schemas at boundaries (API, forms, env)
+	•	Migrations: versioned schemas, backward-compatible changes
+
+⸻
+
+13) Dependencies
 	•	Zero-dep where possible; pin versions.
 	•	Log new deps in /docs/decisions.md.
 	•	Monthly debt sweep.
 
 ⸻
 
-11) i18n, SEO, & Sitemaps
+14) i18n, SEO, & Sitemaps
 	•	Keys: arrays for paragraphs, strings for titles.
 	•	Canonical + hreflang for locales.
 	•	Auto-generate sitemap on deploy; submit to GSC.
@@ -131,7 +163,7 @@ Workflow:
 
 ⸻
 
-12) Release Flow
+15) Release Flow
 	•	Blue-green or flag rollouts.
 	•	301 for route changes.
 	•	Remove noindex at launch.
@@ -139,7 +171,7 @@ Workflow:
 
 ⸻
 
-13) Culture
+16) Culture
 	•	Ship small, daily.
 	•	Tests protect polish.
 	•	Boring tech + elite discipline.
@@ -148,4 +180,6 @@ Workflow:
 ⸻
 
 ✨ Golden Focus Inc rule: One codebase, many languages, daily shipping. Playwright + CI guard every pixel and behavior.
+
+**See also**: `api.md` for API standards, `monitoring.md` for observability, `deployment.md` for release process
 

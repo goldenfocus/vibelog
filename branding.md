@@ -194,13 +194,36 @@ VibeLog turns your voice into a polished post in seconds. Speak naturally; we’
 
 ---
 
-## 16) Brand Words & Avoid List
+## 16) Competitive Voice Positioning
+
+**vs Notion**: "Less setup, more speaking"
+**vs Loom**: "Text-first, not video-first"
+**vs Ghost**: "Voice-native, not keyboard-native"
+**vs Medium**: "Instant publish, not endless editing"
+**vs WordPress**: "Speak and ship, not configure and code"
+**vs Substack**: "Voice-to-everywhere, not email-only"
+
+**Differentiation Principles:**
+- Never say: "better than", "unlike others", "finally a tool that..."
+- Instead: focus on our unique value: voice-to-everywhere publishing
+- Lead with capability: "Speak your vibe. Publish everywhere."
+- Avoid feature comparisons; emphasize workflow transformation
+
+**Positioning Statements:**
+- "Built for voice-first creators"
+- "Turn any thought into content, instantly"
+- "Publishing at the speed of speech"
+- "Your voice, amplified across every platform"
+
+---
+
+## 17) Brand Words & Avoid List
 **Use:** vibe, flow, polish, ship, publish, clean, instant, human, warm, simple, futuristic  
 **Avoid:** synergy, leverage (as verb), robustly, groundbreaking, paradigm, lorem vibes
 
 ---
 
-## 17) Review Checklist (PR / QA)
+## 18) Review Checklist (PR / QA)
 - [ ] Uses “vibelog / vibelogging” correctly  
 - [ ] Sentence case in UI, Title Case in marketing  
 - [ ] Short, clear, one action per message  
@@ -211,14 +234,16 @@ VibeLog turns your voice into a polished post in seconds. Speak naturally; we’
 
 ---
 
-## 18) Implementation Notes (Cursor / repo)
-- Store this file as `branding.md` and reference it in Cursor via `@branding.md`.  
-- Add a `copy/microcopy.ts` map with keys mirroring this guide (e.g., `recorder.idle`, `recorder.processing`).  
-- Create a lint step to flag `Viblog|VibeLogging|VibLog` and suggest “VibeLog / vibelog / vibelogging”.
+## 19) Implementation Notes (Cursor / repo)
+- Store this file as `branding.md` and reference it in Cursor via `@branding.md`.
+- Add a `copy/microcopy.ts` map with keys mirroring this guide (e.g., `recorder.idle`, `recorder.processing`).
+- Create a lint step to flag `Viblog|VibeLogging|VibLog` and suggest "VibeLog / vibelog / vibelogging".
+
+**See also**: `vision.md` for product roadmap, `engineering.md` for implementation standards
 
 ---
 
-## 19) Sample Copy Map (JSON shape)
+## 20) Sample Copy Map (JSON shape)
 ```json
 {
   "recorder": {
