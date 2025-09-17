@@ -16,6 +16,16 @@ export const Navigation = () => {
 
   const isActive = (path: string) => pathname === path;
 
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      setIsMenuOpen(false);
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
+  };
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-sm border-b border-border/20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -28,32 +38,32 @@ export const Navigation = () => {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-6">
             <div className="flex space-x-6">
-              <Link 
-                href="/about" 
+              <Link
+                href="/about"
                 className={`hover:text-primary transition-colors ${isActive('/about') ? 'text-primary' : 'text-muted-foreground'}`}
               >
                 {t('navigation.about')}
               </Link>
-              <Link 
-                href="/faq" 
+              <Link
+                href="/faq"
                 className={`hover:text-primary transition-colors ${isActive('/faq') ? 'text-primary' : 'text-muted-foreground'}`}
               >
                 {t('navigation.faq')}
               </Link>
-              <Link 
-                href="/pricing" 
+              <Link
+                href="/pricing"
                 className={`hover:text-primary transition-colors ${isActive('/pricing') ? 'text-primary' : 'text-muted-foreground'}`}
               >
                 {t('navigation.pricing')}
               </Link>
-              <Link 
-                href="/community" 
+              <Link
+                href="/community"
                 className={`hover:text-primary transition-colors ${isActive('/community') ? 'text-primary' : 'text-muted-foreground'}`}
               >
                 {t('navigation.community')}
               </Link>
-              <Link 
-                href="/people" 
+              <Link
+                href="/people"
                 className={`hover:text-primary transition-colors ${isActive('/people') ? 'text-primary' : 'text-muted-foreground'}`}
               >
                 {t('navigation.people')}
@@ -184,33 +194,9 @@ export const Navigation = () => {
               {user ? (
                 <Button
                   variant="outline"
-                  className="w-full border-border/50 hover:bg-muted disabled:opacity-50"
+                  className="w-full border-border/50 hover:bg-muted"
+                  onClick={handleSignOut}
                   disabled={loading}
-                  onClick={async (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('🔄 Hamburger sign out clicked');
-
-                    // Prevent multiple clicks
-                    const button = e.currentTarget as HTMLButtonElement;
-                    button.disabled = true;
-
-                    try {
-                      console.log('🔄 Calling signOut function...');
-                      await signOut();
-                      console.log('✅ SignOut completed, closing menu...');
-                      setIsMenuOpen(false);
-                      console.log('🔄 Redirecting to home...');
-                      // Small delay to ensure state is updated
-                      setTimeout(() => {
-                        window.location.href = '/';
-                      }, 100);
-                    } catch (error) {
-                      console.error('❌ Sign out error:', error);
-                      setIsMenuOpen(false);
-                      button.disabled = false; // Re-enable on error
-                    }
-                  }}
                 >
                   <LogOut className="h-4 w-4 mr-2" />
                   {loading ? 'Signing out...' : t('auth.signOut')}
