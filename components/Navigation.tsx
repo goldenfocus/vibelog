@@ -187,12 +187,16 @@ export const Navigation = () => {
                     size="sm"
                     className="w-full border-border/50 hover:bg-muted"
                     onClick={async () => {
+                      console.log('🔄 Desktop sign out clicked');
                       try {
+                        console.log('🔄 Calling signOut function...');
                         await signOut();
+                        console.log('✅ SignOut completed, closing menu...');
                         setIsMenuOpen(false);
+                        console.log('🔄 Redirecting to home...');
                         window.location.href = '/';
                       } catch (error) {
-                        console.error('Sign out error:', error);
+                        console.error('❌ Sign out error:', error);
                         setIsMenuOpen(false);
                       }
                     }}
@@ -232,13 +236,17 @@ export const Navigation = () => {
                   variant="outline"
                   className="w-full border-border/50 hover:bg-muted"
                   onClick={async () => {
+                    console.log('🔄 Mobile sign out clicked');
                     try {
+                      console.log('🔄 Calling signOut function...');
                       await signOut();
+                      console.log('✅ SignOut completed, closing menu...');
                       setIsMenuOpen(false);
+                      console.log('🔄 Redirecting to home...');
                       // Redirect to home page after sign out
                       window.location.href = '/';
                     } catch (error) {
-                      console.error('Sign out error:', error);
+                      console.error('❌ Sign out error:', error);
                       setIsMenuOpen(false);
                     }
                   }}

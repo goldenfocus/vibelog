@@ -145,11 +145,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
+      console.log('🔄 AuthProvider signOut started')
       setError(null)
+      console.log('🔄 Calling supabase.auth.signOut()')
       await supabase.auth.signOut()
+      console.log('✅ Supabase signOut completed')
       setProfile(null)
+      console.log('✅ AuthProvider signOut completed successfully')
     } catch (err) {
-      console.error('Sign out error:', err)
+      console.error('❌ AuthProvider sign out error:', err)
       setError('Failed to sign out')
     }
   }
