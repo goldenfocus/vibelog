@@ -108,9 +108,8 @@ export const Navigation = () => {
 
         {/* Mobile Navigation / User Menu */}
         {isMenuOpen && (
-          <div className="md:hidden py-4 space-y-4">
-            {/* Show regular navigation links only on mobile when not logged in */}
-            {/* On desktop when logged in, this becomes the user menu */}
+          <div className={`py-4 space-y-4 ${user ? '' : 'md:hidden'}`}>
+            {/* Show regular navigation links only on mobile */}
             <div className="md:hidden space-y-4">
               <Link
                 href="/about"
@@ -149,58 +148,118 @@ export const Navigation = () => {
               </Link>
             </div>
 
-            {/* Language Switcher - always show in mobile/user menu */}
-            <div className="pt-2 border-t border-border/20">
-              <div className="flex justify-center">
-                <LanguageSwitcher
-                  currentLanguage={locale}
-                  onLanguageChange={setLocale}
-                  compact={false}
-                />
-              </div>
-            </div>
+            {/* Desktop User Menu - only when logged in */}
+            {user && (
+              <div className="hidden md:block space-y-4 bg-card/95 backdrop-blur-sm border border-border/50 rounded-xl shadow-lg p-4 absolute top-full right-4 w-64 z-50">
+                <div className="flex items-center space-x-3 pb-2 border-b border-border/20">
+                  <div className="w-8 h-8 bg-electric/20 rounded-full flex items-center justify-center">
+                    <User className="h-4 w-4 text-electric" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">{user.user_metadata?.full_name || 'Account'}</p>
+                    <p className="text-xs text-muted-foreground">{user.email}</p>
+                  </div>
+                </div>
 
-            {/* Auth Section */}
-            {user ? (
-              <div className="space-y-2 border-t border-border/20 pt-4">
-                {user.user_metadata?.full_name && (
+                <div className="space-y-2">
                   <Link
                     href="/dashboard"
-                    className="w-full flex items-center justify-center space-x-2 px-6 py-3 bg-accent rounded-xl font-medium"
+                    className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-accent transition-colors"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <User className="h-4 w-4" />
-                    <span>{user.user_metadata.full_name}</span>
+                    <span className="text-sm">Dashboard</span>
                   </Link>
-                )}
-                <Button
-                  variant="destructive"
-                  className="w-full"
-                  onClick={async () => {
-                    try {
-                      await signOut();
-                      setIsMenuOpen(false);
-                      // Redirect to home page after sign out
-                      window.location.href = '/';
-                    } catch (error) {
-                      console.error('Sign out error:', error);
-                      setIsMenuOpen(false);
-                    }
-                  }}
-                >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Sign Out
-                </Button>
-              </div>
-            ) : (
-              <div className="border-t border-border/20 pt-4">
-                <Link href="/auth/signin" onClick={() => setIsMenuOpen(false)}>
-                  <button className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-electric hover:opacity-90 text-white font-semibold rounded-xl transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-electric/20 focus:scale-105">
-                    {t('auth.signIn')}
-                  </button>
-                </Link>
+                </div>
+
+                <div className="pt-2 border-t border-border/20">
+                  <LanguageSwitcher
+                    currentLanguage={locale}
+                    onLanguageChange={setLocale}
+                    compact={false}
+                  />
+                </div>
+
+                <div className="pt-2 border-t border-border/20">
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="w-full"
+                    onClick={async () => {
+                      try {
+                        await signOut();
+                        setIsMenuOpen(false);
+                        window.location.href = '/';
+                      } catch (error) {
+                        console.error('Sign out error:', error);
+                        setIsMenuOpen(false);
+                      }
+                    }}
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sign Out
+                  </Button>
+                </div>
               </div>
             )}
+
+
+            {/* Mobile Auth Section */}
+            <div className="md:hidden">
+              {user ? (
+                <div className="space-y-2 border-t border-border/20 pt-4">
+                  <div className="flex justify-center pb-2">
+                    <LanguageSwitcher
+                      currentLanguage={locale}
+                      onLanguageChange={setLocale}
+                      compact={false}
+                    />
+                  </div>
+                  {user.user_metadata?.full_name && (
+                    <Link
+                      href="/dashboard"
+                      className="w-full flex items-center justify-center space-x-2 px-6 py-3 bg-accent rounded-xl font-medium"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <User className="h-4 w-4" />
+                      <span>{user.user_metadata.full_name}</span>
+                    </Link>
+                  )}
+                  <Button
+                    variant="destructive"
+                    className="w-full"
+                    onClick={async () => {
+                      try {
+                        await signOut();
+                        setIsMenuOpen(false);
+                        window.location.href = '/';
+                      } catch (error) {
+                        console.error('Sign out error:', error);
+                        setIsMenuOpen(false);
+                      }
+                    }}
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sign Out
+                  </Button>
+                </div>
+              ) : (
+                <div className="border-t border-border/20 pt-4 space-y-4">
+                  <div className="flex justify-center">
+                    <LanguageSwitcher
+                      currentLanguage={locale}
+                      onLanguageChange={setLocale}
+                      compact={false}
+                    />
+                  </div>
+                  <Link href="/auth/signin" onClick={() => setIsMenuOpen(false)}>
+                    <button className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-electric hover:opacity-90 text-white font-semibold rounded-xl transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-electric/20 focus:scale-105">
+                      {t('auth.signIn')}
+                    </button>
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
