@@ -224,6 +224,7 @@ export const Navigation = () => {
                   </Link>
                 </div>
               )}
+            </div>
           </div>
         )}
       </div>
