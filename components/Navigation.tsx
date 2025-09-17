@@ -61,23 +61,19 @@ export const Navigation = () => {
             </div>
           </div>
 
-          {/* Desktop Auth Button / User Menu */}
+          {/* Desktop Actions */}
           <div className="hidden md:flex items-center space-x-3">
             {loading ? (
               <div className="w-8 h-8 rounded-full bg-muted animate-pulse" />
             ) : user ? (
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsMenuOpen(!isMenuOpen)}
-                  className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-accent border-electric/30 bg-electric/5"
-                >
-                  <User className="h-4 w-4 text-electric" />
-                  <span className="text-sm font-medium text-electric">{user.user_metadata?.full_name || 'Account'}</span>
-                  <Menu className="h-4 w-4 text-electric" />
-                </Button>
-              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-accent"
+              >
+                {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </Button>
             ) : (
               <>
                 <LanguageSwitcher
@@ -106,12 +102,12 @@ export const Navigation = () => {
           </div>
         </div>
 
-        {/* Mobile Navigation / User Menu */}
+        {/* Unified Hamburger Menu - Same for all devices */}
         {isMenuOpen && (
-          <div className={`py-4 space-y-4 ${user ? '' : 'md:hidden'}`}>
-            {/* Show regular navigation links only on mobile when not logged in */}
-            {/* On desktop when logged in, this becomes the user menu */}
-            <div className="md:hidden space-y-4">
+          <div className="py-4 space-y-4 border-t border-border/20 md:absolute md:top-full md:right-4 md:w-64 md:bg-card/95 md:backdrop-blur-sm md:border md:border-border/50 md:rounded-xl md:shadow-lg md:p-4 md:z-50">
+
+            {/* Navigation Links - Always show when menu is open */}
+            <div className="space-y-4">
               <Link
                 href="/about"
                 className={`block hover:text-primary transition-colors ${isActive('/about') ? 'text-primary' : 'text-muted-foreground'}`}
@@ -149,10 +145,10 @@ export const Navigation = () => {
               </Link>
             </div>
 
-            {/* Desktop User Menu - only when logged in */}
+            {/* User Info Section - When logged in */}
             {user && (
-              <div className="hidden md:block space-y-4 bg-card/95 backdrop-blur-sm border border-border/50 rounded-xl shadow-lg p-4 absolute top-full right-4 w-64 z-50">
-                <div className="flex items-center space-x-3 pb-2 border-b border-border/20">
+              <div className="pt-2 border-t border-border/20">
+                <div className="flex items-center space-x-3 pb-2">
                   <div className="w-8 h-8 bg-electric/20 rounded-full flex items-center justify-center">
                     <User className="h-4 w-4 text-electric" />
                   </div>
@@ -162,88 +158,30 @@ export const Navigation = () => {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Link
-                    href="/dashboard"
-                    className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-accent transition-colors"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <User className="h-4 w-4" />
-                    <span className="text-sm">Dashboard</span>
-                  </Link>
-                </div>
-
-                <div className="pt-2 border-t border-border/20">
-                  <LanguageSwitcher
-                    currentLanguage={locale}
-                    onLanguageChange={setLocale}
-                    compact={false}
-                  />
-                </div>
-
-                <div className="pt-2 border-t border-border/20">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full border-border/50 hover:bg-muted disabled:opacity-50"
-                    disabled={loading}
-                    onClick={async (e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      console.log('🔄 Desktop sign out clicked');
-
-                      // Prevent multiple clicks
-                      const button = e.currentTarget as HTMLButtonElement;
-                      button.disabled = true;
-
-                      try {
-                        console.log('🔄 Calling signOut function...');
-                        await signOut();
-                        console.log('✅ SignOut completed, closing menu...');
-                        setIsMenuOpen(false);
-                        console.log('🔄 Redirecting to home...');
-                        // Small delay to ensure state is updated
-                        setTimeout(() => {
-                          window.location.href = '/';
-                        }, 100);
-                      } catch (error) {
-                        console.error('❌ Sign out error:', error);
-                        setIsMenuOpen(false);
-                        button.disabled = false; // Re-enable on error
-                      }
-                    }}
-                  >
-                    <LogOut className="h-4 w-4 mr-2" />
-                    {loading ? 'Signing out...' : t('auth.signOut')}
-                  </Button>
-                </div>
+                {/* Dashboard Link */}
+                <Link
+                  href="/dashboard"
+                  className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-accent transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <User className="h-4 w-4" />
+                  <span className="text-sm">Dashboard</span>
+                </Link>
               </div>
             )}
 
-            {/* Mobile Language Switcher - show in mobile menu */}
-            <div className="md:hidden pt-2 border-t border-border/20">
-              <div className="flex justify-center">
-                <LanguageSwitcher
-                  currentLanguage={locale}
-                  onLanguageChange={setLocale}
-                  compact={false}
-                />
-              </div>
+            {/* Language Switcher - Always show */}
+            <div className="pt-2 border-t border-border/20">
+              <LanguageSwitcher
+                currentLanguage={locale}
+                onLanguageChange={setLocale}
+                compact={false}
+              />
             </div>
 
-            {/* Mobile Auth Section */}
-            {user ? (
-              <div className="md:hidden space-y-2 border-t border-border/20 pt-4">
-                {user.user_metadata?.full_name && (
-                  <Link
-                    href="/dashboard"
-                    className="w-full flex items-center justify-center space-x-2 px-6 py-3 bg-accent rounded-xl font-medium"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <User className="h-4 w-4" />
-                    <span>{user.user_metadata.full_name}</span>
-                  </Link>
-                )}
+            {/* Auth Actions */}
+            <div className="pt-2 border-t border-border/20">
+              {user ? (
                 <Button
                   variant="outline"
                   className="w-full border-border/50 hover:bg-muted disabled:opacity-50"
@@ -251,7 +189,7 @@ export const Navigation = () => {
                   onClick={async (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('🔄 Mobile sign out clicked');
+                    console.log('🔄 Hamburger sign out clicked');
 
                     // Prevent multiple clicks
                     const button = e.currentTarget as HTMLButtonElement;
@@ -277,16 +215,16 @@ export const Navigation = () => {
                   <LogOut className="h-4 w-4 mr-2" />
                   {loading ? 'Signing out...' : t('auth.signOut')}
                 </Button>
-              </div>
-            ) : (
-              <div className="md:hidden border-t border-border/20 pt-4">
-                <Link href="/auth/signin" onClick={() => setIsMenuOpen(false)}>
-                  <button className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-electric hover:opacity-90 text-white font-semibold rounded-xl transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-electric/20 focus:scale-105">
-                    {t('auth.signIn')}
-                  </button>
-                </Link>
-              </div>
-            )}
+              ) : (
+                <div className="md:hidden">
+                  <Link href="/auth/signin" onClick={() => setIsMenuOpen(false)}>
+                    <button className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-electric hover:opacity-90 text-white font-semibold rounded-xl transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-electric/20 focus:scale-105">
+                      {t('auth.signIn')}
+                    </button>
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
