@@ -68,14 +68,14 @@ export const Navigation = () => {
             ) : user ? (
               <div className="flex items-center space-x-2">
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   onClick={() => setIsMenuOpen(!isMenuOpen)}
-                  className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-accent"
+                  className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-accent border-electric/30 bg-electric/5"
                 >
-                  <User className="h-4 w-4" />
-                  <span className="text-sm font-medium">{user.user_metadata?.full_name || 'Account'}</span>
-                  <Menu className="h-4 w-4" />
+                  <User className="h-4 w-4 text-electric" />
+                  <span className="text-sm font-medium text-electric">{user.user_metadata?.full_name || 'Account'}</span>
+                  <Menu className="h-4 w-4 text-electric" />
                 </Button>
               </div>
             ) : (
@@ -185,24 +185,36 @@ export const Navigation = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="w-full border-border/50 hover:bg-muted"
-                    onClick={async () => {
+                    className="w-full border-border/50 hover:bg-muted disabled:opacity-50"
+                    disabled={loading}
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
                       console.log('🔄 Desktop sign out clicked');
+
+                      // Prevent multiple clicks
+                      const button = e.currentTarget as HTMLButtonElement;
+                      button.disabled = true;
+
                       try {
                         console.log('🔄 Calling signOut function...');
                         await signOut();
                         console.log('✅ SignOut completed, closing menu...');
                         setIsMenuOpen(false);
                         console.log('🔄 Redirecting to home...');
-                        window.location.href = '/';
+                        // Small delay to ensure state is updated
+                        setTimeout(() => {
+                          window.location.href = '/';
+                        }, 100);
                       } catch (error) {
                         console.error('❌ Sign out error:', error);
                         setIsMenuOpen(false);
+                        button.disabled = false; // Re-enable on error
                       }
                     }}
                   >
                     <LogOut className="h-4 w-4 mr-2" />
-                    {t('auth.signOut')}
+                    {loading ? 'Signing out...' : t('auth.signOut')}
                   </Button>
                 </div>
               </div>
@@ -234,25 +246,36 @@ export const Navigation = () => {
                 )}
                 <Button
                   variant="outline"
-                  className="w-full border-border/50 hover:bg-muted"
-                  onClick={async () => {
+                  className="w-full border-border/50 hover:bg-muted disabled:opacity-50"
+                  disabled={loading}
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     console.log('🔄 Mobile sign out clicked');
+
+                    // Prevent multiple clicks
+                    const button = e.currentTarget as HTMLButtonElement;
+                    button.disabled = true;
+
                     try {
                       console.log('🔄 Calling signOut function...');
                       await signOut();
                       console.log('✅ SignOut completed, closing menu...');
                       setIsMenuOpen(false);
                       console.log('🔄 Redirecting to home...');
-                      // Redirect to home page after sign out
-                      window.location.href = '/';
+                      // Small delay to ensure state is updated
+                      setTimeout(() => {
+                        window.location.href = '/';
+                      }, 100);
                     } catch (error) {
                       console.error('❌ Sign out error:', error);
                       setIsMenuOpen(false);
+                      button.disabled = false; // Re-enable on error
                     }
                   }}
                 >
                   <LogOut className="h-4 w-4 mr-2" />
-                  {t('auth.signOut')}
+                  {loading ? 'Signing out...' : t('auth.signOut')}
                 </Button>
               </div>
             ) : (
