@@ -287,6 +287,7 @@
   },
   "auth": {
     "signIn": "Anmelden",
+    "signOut": "Abmelden",
     "signInDescription": "Melden Sie sich an, um Ihre Vibelogs zu speichern und auf Ihr persönliches Dashboard zuzugreifen.",
     "signInWith": "Anmelden mit {{provider}}",
     "termsAgreement": "Durch die Anmeldung stimmen Sie unseren Nutzungsbedingungen und Datenschutzrichtlinien zu."

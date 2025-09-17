@@ -183,9 +183,9 @@ export const Navigation = () => {
 
                 <div className="pt-2 border-t border-border/20">
                   <Button
-                    variant="destructive"
+                    variant="outline"
                     size="sm"
-                    className="w-full"
+                    className="w-full border-border/50 hover:bg-muted"
                     onClick={async () => {
                       try {
                         await signOut();
@@ -198,7 +198,7 @@ export const Navigation = () => {
                     }}
                   >
                     <LogOut className="h-4 w-4 mr-2" />
-                    Sign Out
+                    {t('auth.signOut')}
                   </Button>
                 </div>
               </div>
@@ -229,8 +229,8 @@ export const Navigation = () => {
                   </Link>
                 )}
                 <Button
-                  variant="destructive"
-                  className="w-full"
+                  variant="outline"
+                  className="w-full border-border/50 hover:bg-muted"
                   onClick={async () => {
                     try {
                       await signOut();
@@ -244,7 +244,7 @@ export const Navigation = () => {
                   }}
                 >
                   <LogOut className="h-4 w-4 mr-2" />
-                  Sign Out
+                  {t('auth.signOut')}
                 </Button>
               </div>
             ) : (

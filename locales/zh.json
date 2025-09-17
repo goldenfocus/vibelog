@@ -287,6 +287,7 @@
   },
   "auth": {
     "signIn": "登录",
+    "signOut": "退出登录",
     "signInDescription": "登录以保存您的语音日志并访问个人仪表板。",
     "signInWith": "使用{{provider}}登录",
     "termsAgreement": "登录即表示您同意我们的服务条款和隐私政策。"
