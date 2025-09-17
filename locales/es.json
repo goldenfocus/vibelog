@@ -287,6 +287,7 @@
   },
   "auth": {
     "signIn": "Iniciar Sesión",
+    "signOut": "Cerrar Sesión",
     "signInDescription": "Inicia sesión para guardar tus vibelogs y acceder a tu panel personal.",
     "signInWith": "Iniciar sesión con {{provider}}",
     "termsAgreement": "Al iniciar sesión, aceptas nuestros Términos de Servicio y Política de Privacidad."
