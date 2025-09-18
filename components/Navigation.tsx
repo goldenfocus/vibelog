@@ -41,7 +41,7 @@ export const Navigation = () => {
     try {
       setIsMenuOpen(false);
       await signOut();
-      window.location.href = '/';
+      // Remove the window.location.href redirect that was causing issues
     } catch (error) {
       console.error('Sign out error:', error);
     }
@@ -56,9 +56,10 @@ export const Navigation = () => {
     { href: "/community", label: t('navigation.community') },
     { href: "/people", label: t('navigation.people') },
   ];
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-sm border-b border-border/20">
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" className="text-xl font-bold">
@@ -149,15 +150,6 @@ export const Navigation = () => {
                             {link.label}
                           </Link>
                         ))}
-                        <hr className="my-2 border-border" />
-                        <Link
-                          href="/dashboard"
-                          onClick={closeMenu}
-                          className="flex items-center space-x-2 px-2 py-2 text-sm rounded hover:bg-muted transition-colors"
-                        >
-                          <User className="h-4 w-4" />
-                          <span>Dashboard</span>
-                        </Link>
                       </div>
 
                       {/* Language Switcher */}
@@ -251,14 +243,6 @@ export const Navigation = () => {
                         </p>
                       </div>
                     </div>
-                    <Link
-                      href="/dashboard"
-                      onClick={closeMenu}
-                      className="flex items-center space-x-2 py-2 text-sm hover:text-primary transition-colors"
-                    >
-                      <User className="h-4 w-4" />
-                      <span>Dashboard</span>
-                    </Link>
                   </div>
                 </>
               )}
