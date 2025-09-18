@@ -1,13 +1,14 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Menu, X, User, LogOut } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useI18n } from "@/components/providers/I18nProvider";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { useAuth } from "@/components/providers/AuthProvider";
+import { Menu, X, User, LogOut } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useState, useEffect } from 'react';
+
+import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { useAuth } from '@/components/providers/AuthProvider';
+import { useI18n } from '@/components/providers/I18nProvider';
+import { Button } from '@/components/ui/button';
 
 export const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -43,32 +44,30 @@ export const Navigation = () => {
   };
 
   const navLinks = [
-    { href: "/about", label: t('navigation.about') },
-    { href: "/faq", label: t('navigation.faq') },
-    { href: "/pricing", label: t('navigation.pricing') },
-    { href: "/community", label: t('navigation.community') },
-    { href: "/people", label: t('navigation.people') },
+    { href: '/about', label: t('navigation.about') },
+    { href: '/faq', label: t('navigation.faq') },
+    { href: '/pricing', label: t('navigation.pricing') },
+    { href: '/community', label: t('navigation.community') },
+    { href: '/people', label: t('navigation.people') },
   ];
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-sm border-b border-border/20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+    <nav className="fixed left-0 right-0 top-0 z-50 border-b border-border/20 bg-background/80 backdrop-blur-sm">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="text-xl font-bold">
-            <span className="bg-gradient-electric bg-clip-text text-transparent">
-              vibelog.io
-            </span>
+            <span className="bg-gradient-electric bg-clip-text text-transparent">vibelog.io</span>
           </Link>
 
           {/* Desktop Navigation Links - Only show when NOT logged in */}
           {!user && !loading && (
-            <div className="hidden md:flex items-center space-x-6">
-              {navLinks.map((link) => (
+            <div className="hidden items-center space-x-6 md:flex">
+              {navLinks.map(link => (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`hover:text-primary transition-colors ${
+                  className={`transition-colors hover:text-primary ${
                     isActive(link.href) ? 'text-primary' : 'text-muted-foreground'
                   }`}
                 >
@@ -91,7 +90,7 @@ export const Navigation = () => {
 
             {/* Loading State */}
             {loading ? (
-              <div className="w-8 h-8 rounded-full bg-muted animate-pulse" />
+              <div className="h-8 w-8 animate-pulse rounded-full bg-muted" />
             ) : user ? (
               /* Logged In User - Hamburger Menu for both desktop and mobile */
               <div className="relative" data-menu-container>
@@ -108,19 +107,19 @@ export const Navigation = () => {
 
                 {/* Hamburger Menu Dropdown */}
                 {isMenuOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-64 bg-card border border-border rounded-lg shadow-lg z-50">
+                  <div className="absolute right-0 top-full z-50 mt-2 w-64 rounded-lg border border-border bg-card shadow-lg">
                     <div className="p-4">
                       {/* Mobile Navigation Links - Only visible on mobile */}
-                      <div className="md:hidden space-y-3 mb-4 pb-4 border-b border-border">
-                        {navLinks.map((link) => (
+                      <div className="mb-4 space-y-3 border-b border-border pb-4 md:hidden">
+                        {navLinks.map(link => (
                           <Link
                             key={link.href}
                             href={link.href}
                             onClick={() => setIsMenuOpen(false)}
                             className={`block py-2 text-base ${
                               isActive(link.href)
-                                ? 'text-primary font-medium'
-                                : 'text-foreground hover:text-primary transition-colors'
+                                ? 'font-medium text-primary'
+                                : 'text-foreground transition-colors hover:text-primary'
                             }`}
                           >
                             {link.label}
@@ -129,22 +128,20 @@ export const Navigation = () => {
                       </div>
 
                       {/* User Info - Always visible */}
-                      <div className="flex items-center space-x-3 pb-3 border-b border-border">
-                        <div className="w-10 h-10 bg-electric/20 rounded-full flex items-center justify-center">
+                      <div className="flex items-center space-x-3 border-b border-border pb-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-electric/20">
                           <User className="h-5 w-5 text-electric" />
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium">
                             {user.user_metadata?.full_name || 'Account'}
                           </p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {user.email}
-                          </p>
+                          <p className="truncate text-xs text-muted-foreground">{user.email}</p>
                         </div>
                       </div>
 
                       {/* Language Switcher for logged-in users */}
-                      <div className="py-3 border-b border-border">
+                      <div className="border-b border-border py-3">
                         <LanguageSwitcher
                           currentLanguage={locale}
                           onLanguageChange={setLocale}
@@ -161,7 +158,7 @@ export const Navigation = () => {
                           disabled={loading}
                           className="w-full"
                         >
-                          <LogOut className="h-4 w-4 mr-2" />
+                          <LogOut className="mr-2 h-4 w-4" />
                           {t('auth.signOut')}
                         </Button>
                       </div>
@@ -172,7 +169,7 @@ export const Navigation = () => {
             ) : (
               /* Not Logged In - Sign In Button */
               <Link href="/auth/signin">
-                <Button className="bg-gradient-electric hover:opacity-90 text-white">
+                <Button className="bg-gradient-electric text-white hover:opacity-90">
                   {t('auth.signIn')}
                 </Button>
               </Link>

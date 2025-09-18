@@ -1,125 +1,144 @@
-"use client"
+'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase'
-import type { User } from '@supabase/supabase-js'
+import type { User } from '@supabase/supabase-js';
+import { createContext, useContext, useEffect, useState } from 'react';
+
+import { createClient } from '@/lib/supabase';
 
 type AuthContextType = {
-  user: User | null
-  profile: any | null
-  loading: boolean
-  signIn: (provider: 'google' | 'apple') => Promise<void>
-  signOut: () => Promise<void>
-  error: string | null
-}
+  user: User | null;
+  profile: any | null;
+  loading: boolean;
+  signIn: (provider: 'google' | 'apple') => Promise<void>;
+  signOut: () => Promise<void>;
+  error: string | null;
+};
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [profile, setProfile] = useState<any | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const supabase = createClient()
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const supabase = createClient();
 
   // Fetch user profile when user changes
   const fetchProfile = async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single()
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
 
       if (error) {
         // Handle common profile fetch errors gracefully
         if (error.code === 'PGRST116') {
-          console.log('No profile found for user, which is normal for new users')
+          console.log('No profile found for user, which is normal for new users');
         } else if (error.code === '42501' || error.code === 'PGRST204') {
-          console.log('Profile access restricted by RLS policies, continuing without profile')
+          console.log('Profile access restricted by RLS policies, continuing without profile');
         } else {
-          console.warn('Profile fetch error (non-critical):', error.message)
+          console.warn('Profile fetch error (non-critical):', error.message);
         }
-        setProfile(null)
-        return
+        setProfile(null);
+        return;
       }
 
-      setProfile(data)
+      setProfile(data);
     } catch (err) {
-      console.warn('Profile fetch error (non-critical):', err)
-      setProfile(null)
+      console.warn('Profile fetch error (non-critical):', err);
+      setProfile(null);
     }
-  }
+  };
 
   useEffect(() => {
+    let mounted = true;
+
     // Get initial session
     const getInitialSession = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession()
+        console.log('🔄 AuthProvider: Getting initial session...');
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession();
 
         if (error) {
-          console.error('Session error:', error)
-          setError(error.message)
+          console.error('Session error:', error);
+          setError(error.message);
         }
 
-        setUser(session?.user ?? null)
+        if (mounted) {
+          console.log('🔄 AuthProvider: Setting initial user:', session?.user?.email || 'none');
+          setUser(session?.user ?? null);
 
-        if (session?.user) {
-          await fetchProfile(session.user.id)
+          if (session?.user) {
+            await fetchProfile(session.user.id);
+          }
+
+          // Always set loading to false after initial session check
+          setLoading(false);
+          console.log('✅ AuthProvider: Initial session processing complete, loading=false');
         }
       } catch (err) {
-        console.error('Auth initialization error:', err)
-        setError('Failed to initialize authentication')
-      } finally {
-        setLoading(false)
+        console.error('Auth initialization error:', err);
+        if (mounted) {
+          setError('Failed to initialize authentication');
+          setLoading(false);
+        }
       }
-    }
+    };
 
-    getInitialSession()
+    getInitialSession();
 
     // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state change:', event, session?.user?.email)
+      console.log('🔄 Auth state change:', event, session?.user?.email);
 
-      setUser(session?.user ?? null)
-      setProfile(null)
+      if (mounted) {
+        // Only set loading to true for sign-in/sign-out operations
+        if (event === 'SIGNED_OUT') {
+          setLoading(true);
+        }
 
-      if (session?.user) {
-        await fetchProfile(session.user.id)
+        setUser(session?.user ?? null);
+        setProfile(null);
+
+        if (session?.user) {
+          await fetchProfile(session.user.id);
+        }
+
+        if (event === 'SIGNED_IN') {
+          setError(null);
+        }
+
+        // Always set loading to false after processing auth state change
+        setLoading(false);
+        console.log('✅ Auth state processed for event:', event, 'loading set to false');
       }
+    });
 
-      if (event === 'SIGNED_IN') {
-        setError(null)
-      }
-
-      // Only set loading to false if we're not in the middle of a sign out process
-      if (event !== 'SIGNED_OUT') {
-        setLoading(false)
-      }
-      console.log('Auth state processed for event:', event)
-    })
-
-    return () => subscription.unsubscribe()
-  }, [])
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const signIn = async (provider: 'google' | 'apple') => {
     try {
-      setError(null)
-      setLoading(true)
+      setError(null);
+      setLoading(true);
 
       // Ensure we use the correct redirect URL
       const redirectUrl = process.env.NEXT_PUBLIC_SITE_URL
         ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`
-        : `${window.location.origin}/auth/callback`
+        : `${window.location.origin}/auth/callback`;
 
-      console.log('=== OAUTH SIGN IN DEBUG ===')
-      console.log('Provider:', provider)
-      console.log('Environment SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL)
-      console.log('Window origin:', window.location.origin)
-      console.log('Final redirect URL:', redirectUrl)
-      console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
+      console.log('=== OAUTH SIGN IN DEBUG ===');
+      console.log('Provider:', provider);
+      console.log('Environment SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL);
+      console.log('Window origin:', window.location.origin);
+      console.log('Final redirect URL:', redirectUrl);
+      console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
 
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
@@ -130,54 +149,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             prompt: 'consent',
           },
         },
-      })
+      });
 
-      console.log('OAuth response:', { data, error })
+      console.log('OAuth response:', { data, error });
 
       if (error) {
         console.error('Sign in error details:', {
           message: error.message,
           status: error.status,
-          details: error
-        })
-        setError(`Sign in failed: ${error.message}`)
-        setLoading(false)
-        return
+          details: error,
+        });
+        setError(`Sign in failed: ${error.message}`);
+        setLoading(false);
+        return;
       }
 
       // If we get here without redirect, something's wrong
-      console.log('OAuth response received but no redirect happened')
-      console.log('This might indicate a configuration issue')
-
+      console.log('OAuth response received but no redirect happened');
+      console.log('This might indicate a configuration issue');
     } catch (err) {
-      console.error('Sign in exception:', err)
-      setError('Sign in failed. Please try again.')
-      setLoading(false)
+      console.error('Sign in exception:', err);
+      setError('Sign in failed. Please try again.');
+      setLoading(false);
     }
-  }
+  };
 
   const signOut = async () => {
     try {
-      console.log('🔄 AuthProvider signOut started')
-      setError(null)
-      setLoading(true)
+      console.log('🔄 AuthProvider signOut started');
+      setError(null);
+      setLoading(true);
 
-      console.log('🔄 Calling supabase.auth.signOut()')
-      await supabase.auth.signOut()
-      console.log('✅ Supabase signOut completed')
+      console.log('🔄 Calling supabase.auth.signOut()');
+      await supabase.auth.signOut();
+      console.log('✅ Supabase signOut completed');
 
       // Clear state immediately after successful sign out
-      setUser(null)
-      setProfile(null)
-      setLoading(false)
-      console.log('✅ AuthProvider signOut completed successfully')
-
+      setUser(null);
+      setProfile(null);
+      setLoading(false);
+      console.log('✅ AuthProvider signOut completed successfully');
     } catch (err) {
-      console.error('❌ AuthProvider sign out error:', err)
-      setError('Failed to sign out')
-      setLoading(false)
+      console.error('❌ AuthProvider sign out error:', err);
+      setError('Failed to sign out');
+      setLoading(false);
     }
-  }
+  };
 
   const value = {
     user,
@@ -186,15 +203,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signIn,
     signOut,
     error,
-  }
+  };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export const useAuth = () => {
-  const context = useContext(AuthContext)
+  const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
+    throw new Error('useAuth must be used within an AuthProvider');
   }
-  return context
-}
+  return context;
+};
