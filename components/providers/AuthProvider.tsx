@@ -31,14 +31,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq('id', userId)
         .single()
 
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching profile:', error)
+      if (error) {
+        // Handle common profile fetch errors gracefully
+        if (error.code === 'PGRST116') {
+          console.log('No profile found for user, which is normal for new users')
+        } else if (error.code === '42501' || error.status === 406) {
+          console.log('Profile access restricted by RLS policies, continuing without profile')
+        } else {
+          console.warn('Profile fetch error (non-critical):', error.message)
+        }
+        setProfile(null)
         return
       }
 
       setProfile(data)
     } catch (err) {
-      console.error('Profile fetch error:', err)
+      console.warn('Profile fetch error (non-critical):', err)
+      setProfile(null)
     }
   }
 
