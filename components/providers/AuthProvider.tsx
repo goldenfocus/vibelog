@@ -35,7 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Handle common profile fetch errors gracefully
         if (error.code === 'PGRST116') {
           console.log('No profile found for user, which is normal for new users')
-        } else if (error.code === '42501' || error.status === 406) {
+        } else if (error.code === '42501' || error.code === 'PGRST204') {
           console.log('Profile access restricted by RLS policies, continuing without profile')
         } else {
           console.warn('Profile fetch error (non-critical):', error.message)
