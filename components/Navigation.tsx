@@ -38,16 +38,9 @@ export const Navigation = () => {
   const isActive = (path: string) => pathname === path;
 
   const handleSignOut = async () => {
-    try {
-      setIsMenuOpen(false);
-      await signOut();
-      // Remove the window.location.href redirect that was causing issues
-    } catch (error) {
-      console.error('Sign out error:', error);
-    }
+    setIsMenuOpen(false);
+    await signOut();
   };
-
-  const closeMenu = () => setIsMenuOpen(false);
 
   const navLinks = [
     { href: "/about", label: t('navigation.about') },
@@ -68,24 +61,26 @@ export const Navigation = () => {
             </span>
           </Link>
 
-          {/* Desktop Navigation Links */}
-          <div className="hidden lg:flex items-center space-x-6">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`hover:text-primary transition-colors ${
-                  isActive(link.href) ? 'text-primary' : 'text-muted-foreground'
-                }`}
-              >
-                {link.label}
-              </Link>
-            ))}
-          </div>
+          {/* Desktop Navigation Links - Only show when NOT logged in */}
+          {!user && !loading && (
+            <div className="hidden md:flex items-center space-x-6">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`hover:text-primary transition-colors ${
+                    isActive(link.href) ? 'text-primary' : 'text-muted-foreground'
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+          )}
 
-          {/* Desktop Right Side */}
-          <div className="hidden lg:flex items-center space-x-4">
-            {/* Language Switcher for non-logged users */}
+          {/* Right Side - Authentication */}
+          <div className="flex items-center space-x-4">
+            {/* Language Switcher - only show when not logged in */}
             {!user && !loading && (
               <LanguageSwitcher
                 currentLanguage={locale}
@@ -94,11 +89,11 @@ export const Navigation = () => {
               />
             )}
 
-            {/* Auth State */}
+            {/* Loading State */}
             {loading ? (
               <div className="w-8 h-8 rounded-full bg-muted animate-pulse" />
             ) : user ? (
-              /* Logged In User - Desktop Dropdown */
+              /* Logged In User - Hamburger Menu for both desktop and mobile */
               <div className="relative" data-menu-container>
                 <Button
                   variant="ghost"
@@ -108,20 +103,32 @@ export const Navigation = () => {
                   aria-expanded={isMenuOpen}
                   aria-haspopup="true"
                 >
-                  <div className="w-6 h-6 bg-electric/20 rounded-full flex items-center justify-center">
-                    <User className="h-3 w-3 text-electric" />
-                  </div>
-                  <span className="text-sm max-w-[100px] truncate">
-                    {user.user_metadata?.full_name || user.email}
-                  </span>
-                  {isMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+                  {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
                 </Button>
 
-                {/* Desktop User Dropdown */}
+                {/* Hamburger Menu Dropdown */}
                 {isMenuOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-72 bg-card border border-border rounded-lg shadow-lg z-50">
+                  <div className="absolute right-0 top-full mt-2 w-64 bg-card border border-border rounded-lg shadow-lg z-50">
                     <div className="p-4">
-                      {/* User Info */}
+                      {/* Mobile Navigation Links - Only visible on mobile */}
+                      <div className="md:hidden space-y-3 mb-4 pb-4 border-b border-border">
+                        {navLinks.map((link) => (
+                          <Link
+                            key={link.href}
+                            href={link.href}
+                            onClick={() => setIsMenuOpen(false)}
+                            className={`block py-2 text-base ${
+                              isActive(link.href)
+                                ? 'text-primary font-medium'
+                                : 'text-foreground hover:text-primary transition-colors'
+                            }`}
+                          >
+                            {link.label}
+                          </Link>
+                        ))}
+                      </div>
+
+                      {/* User Info - Always visible */}
                       <div className="flex items-center space-x-3 pb-3 border-b border-border">
                         <div className="w-10 h-10 bg-electric/20 rounded-full flex items-center justify-center">
                           <User className="h-5 w-5 text-electric" />
@@ -136,24 +143,8 @@ export const Navigation = () => {
                         </div>
                       </div>
 
-                      {/* Navigation Links */}
-                      <div className="py-3 space-y-1">
-                        {navLinks.map((link) => (
-                          <Link
-                            key={link.href}
-                            href={link.href}
-                            onClick={closeMenu}
-                            className={`block px-2 py-2 text-sm rounded hover:bg-muted transition-colors ${
-                              isActive(link.href) ? 'text-primary bg-muted' : ''
-                            }`}
-                          >
-                            {link.label}
-                          </Link>
-                        ))}
-                      </div>
-
-                      {/* Language Switcher */}
-                      <div className="pt-3 border-t border-border">
+                      {/* Language Switcher for logged-in users */}
+                      <div className="py-3 border-b border-border">
                         <LanguageSwitcher
                           currentLanguage={locale}
                           onLanguageChange={setLocale}
@@ -171,7 +162,7 @@ export const Navigation = () => {
                           className="w-full"
                         >
                           <LogOut className="h-4 w-4 mr-2" />
-                          {loading ? 'Signing out...' : t('auth.signOut')}
+                          {t('auth.signOut')}
                         </Button>
                       </div>
                     </div>
@@ -187,100 +178,7 @@ export const Navigation = () => {
               </Link>
             )}
           </div>
-
-          {/* Mobile/Tablet Menu Button */}
-          <div className="lg:hidden" data-menu-container>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="p-2"
-              aria-expanded={isMenuOpen}
-              aria-haspopup="true"
-            >
-              {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </Button>
-          </div>
         </div>
-
-        {/* Mobile/Tablet Menu */}
-        {isMenuOpen && (
-          <div className="lg:hidden border-t border-border bg-background">
-            <div className="px-4 py-4 space-y-4">
-              {/* Navigation Links */}
-              <div className="space-y-3">
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    onClick={closeMenu}
-                    className={`block py-2 text-base ${
-                      isActive(link.href)
-                        ? 'text-primary font-medium'
-                        : 'text-foreground hover:text-primary transition-colors'
-                    }`}
-                  >
-                    {link.label}
-                  </Link>
-                ))}
-              </div>
-
-              {/* User Section */}
-              {user && (
-                <>
-                  <hr className="border-border" />
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-electric/20 rounded-full flex items-center justify-center">
-                        <User className="h-4 w-4 text-electric" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">
-                          {user.user_metadata?.full_name || 'Account'}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {user.email}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* Language Switcher */}
-              <hr className="border-border" />
-              <div>
-                <LanguageSwitcher
-                  currentLanguage={locale}
-                  onLanguageChange={setLocale}
-                  compact={false}
-                />
-              </div>
-
-              {/* Auth Action */}
-              <hr className="border-border" />
-              <div>
-                {user ? (
-                  <Button
-                    variant="outline"
-                    onClick={handleSignOut}
-                    disabled={loading}
-                    className="w-full"
-                  >
-                    <LogOut className="h-4 w-4 mr-2" />
-                    {loading ? 'Signing out...' : t('auth.signOut')}
-                  </Button>
-                ) : (
-                  <Link href="/auth/signin" onClick={closeMenu}>
-                    <Button className="w-full bg-gradient-electric hover:opacity-90 text-white">
-                      {t('auth.signIn')}
-                    </Button>
-                  </Link>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </nav>
   );
