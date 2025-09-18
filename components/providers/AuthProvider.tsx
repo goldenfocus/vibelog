@@ -73,6 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state change:', event, session?.user?.email)
+      console.log('Loading state before processing:', loading)
 
       setUser(session?.user ?? null)
       setProfile(null)
@@ -86,6 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       setLoading(false)
+      console.log('Loading state set to false after auth state change')
     })
 
     return () => subscription.unsubscribe()
@@ -147,6 +149,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('🔄 AuthProvider signOut started')
       setError(null)
+      setLoading(true)
       console.log('🔄 Calling supabase.auth.signOut()')
       await supabase.auth.signOut()
       console.log('✅ Supabase signOut completed')
@@ -155,6 +158,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       console.error('❌ AuthProvider sign out error:', err)
       setError('Failed to sign out')
+    } finally {
+      setLoading(false)
     }
   }
 
