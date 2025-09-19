@@ -54,6 +54,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No audio file provided' }, { status: 400 });
     }
 
+    // Use file constraints from config
+    const { maxSize: MAX_SIZE_BYTES, allowedTypes, minSize: MIN_SIZE_BYTES } = config.files.audio;
+    const ALLOWED_TYPES = new Set(allowedTypes);
+
     // Check for empty or too small files
     if (audioFile.size === 0) {
       return NextResponse.json(
@@ -72,10 +76,6 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-
-    // Use file constraints from config
-    const { maxSize: MAX_SIZE_BYTES, allowedTypes, minSize: MIN_SIZE_BYTES } = config.files.audio;
-    const ALLOWED_TYPES = new Set(allowedTypes);
 
     if (audioFile.size > MAX_SIZE_BYTES) {
       return NextResponse.json({ error: 'Audio file too large' }, { status: 413 });
