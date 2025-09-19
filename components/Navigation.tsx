@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { Menu, X, LogOut } from 'lucide-react';
+import { Menu, X, LogOut, User } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
@@ -159,6 +159,15 @@ export const Navigation = () => {
                             {link.label}
                           </Link>
                         ))}
+                        <hr className="my-2 border-border" />
+                        <Link
+                          href="/dashboard"
+                          onClick={() => setIsMenuOpen(false)}
+                          className="flex items-center space-x-2 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted/40"
+                        >
+                          <User className="h-4 w-4" />
+                          <span>Dashboard</span>
+                        </Link>
                       </div>
 
                       <div className="border-y border-border py-3">
@@ -197,15 +206,16 @@ export const Navigation = () => {
 
           {/* Mobile/Tablet Menu Button */}
           <div className="lg:hidden" data-menu-container>
-            <button
-              onClick={() => setIsMenuOpen(prev => !prev)}
-              className="flex items-center justify-center rounded-md px-3 py-2"
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="p-2"
               aria-expanded={isMenuOpen}
               aria-haspopup="true"
-              aria-label={isMenuOpen ? t('navigation.closeMenu') : t('navigation.openMenu')}
             >
               {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -255,6 +265,14 @@ export const Navigation = () => {
                         <p className="truncate text-xs text-muted-foreground">{user.email}</p>
                       </div>
                     </div>
+                    <Link
+                      href="/dashboard"
+                      onClick={closeMenu}
+                      className="flex items-center space-x-2 py-2 text-sm transition-colors hover:text-primary"
+                    >
+                      <User className="h-4 w-4" />
+                      <span>Dashboard</span>
+                    </Link>
                   </div>
                 </>
               )}
