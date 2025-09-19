@@ -8,7 +8,8 @@
     "signUp": "Anmelden",
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
-    "accountMenu": "Account menu"
+    "accountMenu": "Account menu",
+    "dashboard": "Dashboard"
   },
   "hero": {
     "title": {
@@ -293,6 +294,7 @@
     "signOut": "Abmelden",
     "signInDescription": "Melden Sie sich an, um Ihre Vibelogs zu speichern und auf Ihr persönliches Dashboard zuzugreifen.",
     "signInWith": "Anmelden mit {{provider}}",
-    "termsAgreement": "Durch die Anmeldung stimmen Sie unseren Nutzungsbedingungen und Datenschutzrichtlinien zu."
+    "termsAgreement": "Durch die Anmeldung stimmen Sie unseren Nutzungsbedingungen und Datenschutzrichtlinien zu.",
+    "signingOut": "Signing out..."
   }
 }

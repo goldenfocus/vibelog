@@ -8,7 +8,8 @@
     "signUp": "Sign Up",
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
-    "accountMenu": "Account menu"
+    "accountMenu": "Account menu",
+    "dashboard": "Dashboard"
   },
   "hero": {
     "title": {
@@ -296,6 +297,7 @@
     "signOut": "Sign Out",
     "signInDescription": "Sign in to save your vibelogs and access your personal dashboard.",
     "signInWith": "Sign in with {{provider}}",
-    "termsAgreement": "By signing in, you agree to our Terms of Service and Privacy Policy."
+    "termsAgreement": "By signing in, you agree to our Terms of Service and Privacy Policy.",
+    "signingOut": "Signing out..."
   }
 }
