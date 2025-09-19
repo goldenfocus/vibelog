@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
     // More flexible audio type checking - allow common formats and variations
     if (audioFile.type) {
       const isValidType =
-        ALLOWED_TYPES.has(audioFile.type) ||
+        (allowedTypes as readonly string[]).includes(audioFile.type) ||
         audioFile.type.startsWith('audio/webm') ||
         audioFile.type.startsWith('audio/mp4') ||
         audioFile.type.startsWith('audio/wav') ||

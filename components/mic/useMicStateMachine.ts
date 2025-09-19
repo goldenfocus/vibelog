@@ -238,16 +238,10 @@ export function useMicStateMachine(): UseMicStateMachineReturn {
 
     setUpgradePrompt({
       visible: true,
-      message: t('components.micRecorder.loginEditMessage', 'Sign in to edit your transcript.'),
+      message: t('components.micRecorder.loginEditMessage'),
       benefits: [
-        t(
-          'components.micRecorder.benefit.saveHistory',
-          'Keep an unlimited history of your vibelogs.'
-        ),
-        t(
-          'components.micRecorder.benefit.editAnytime',
-          'Edit transcripts and polished posts anytime.'
-        ),
+        t('components.micRecorder.benefit.saveHistory'),
+        t('components.micRecorder.benefit.editAnytime'),
       ],
     });
   }, [isLoggedIn, t]);
@@ -255,7 +249,7 @@ export function useMicStateMachine(): UseMicStateMachineReturn {
   const updateTranscript = useCallback(
     (newTranscription: string) => {
       setTranscription(newTranscription);
-      showToast(t('components.micRecorder.transcriptUpdated', 'Transcript updated successfully!'));
+      showToast(t('components.micRecorder.transcriptUpdated'));
     },
     [showToast, t]
   );
@@ -302,18 +296,18 @@ export function useMicStateMachine(): UseMicStateMachineReturn {
           ]);
 
           if (!opts.silent) {
-            showToast(t('toast.copiedWithImage', 'Copied text and cover image!'));
+            showToast(t('toast.copiedWithImage'));
           }
           return;
         }
 
         await navigator.clipboard.writeText(contentWithSignature);
         if (!opts.silent) {
-          showToast(t('toast.copied', 'Copied to clipboard'));
+          showToast(t('toast.copied'));
         }
       } catch (error) {
         if (!opts.silent) {
-          showToast(t('toast.copyFailed', 'Copy failed. Please try again.'));
+          showToast(t('toast.copyFailed'));
         }
         throw error;
       }
@@ -333,7 +327,7 @@ export function useMicStateMachine(): UseMicStateMachineReturn {
       if (navigator.share) {
         try {
           const shareData: ShareData = {
-            title: parsedBlog.title || t('share.title', 'Your vibelog'),
+            title: parsedBlog.title || t('share.title'),
             text: `${shareContent}\n\n${attributionBlock}`,
             url: typeof window !== 'undefined' ? window.location.href : undefined,
           };
@@ -369,7 +363,7 @@ export function useMicStateMachine(): UseMicStateMachineReturn {
       }
 
       await handleCopy(shareContent);
-      showToast(t('toast.copiedForSharing', 'Copied for sharing'));
+      showToast(t('toast.copiedForSharing'));
     },
     [
       attribution.plainSignature,
@@ -395,7 +389,7 @@ export function useMicStateMachine(): UseMicStateMachineReturn {
   const finalizeEdit = useCallback(() => {
     setBlogContent(editedContent);
     setIsEditing(false);
-    showToast(t('components.micRecorder.vibelogUpdated', 'Vibelog updated successfully!'));
+    showToast(t('components.micRecorder.vibelogUpdated'));
   }, [editedContent, showToast, t]);
 
   const cancelEdit = useCallback(() => {
@@ -474,7 +468,7 @@ export function useMicStateMachine(): UseMicStateMachineReturn {
       if (DEBUG_MODE) {
         console.warn('No content available to save after processing');
       }
-      showToast(t('components.micRecorder.noContentToSave', 'No content generated to save.'));
+      showToast(t('components.micRecorder.noContentToSave'));
       setRecordingState('complete');
       return;
     }
@@ -510,16 +504,16 @@ export function useMicStateMachine(): UseMicStateMachineReturn {
           });
 
           if (criticalWarnings.length) {
-            showToast(t('components.micRecorder.savedWithWarnings', 'Saved with minor warnings.'));
+            showToast(t('components.micRecorder.savedWithWarnings'));
           } else {
-            showToast(t('components.micRecorder.saved', 'Vibelog saved successfully!'));
+            showToast(t('components.micRecorder.saved'));
           }
         } else {
-          showToast(t('components.micRecorder.saved', 'Vibelog saved successfully!'));
+          showToast(t('components.micRecorder.saved'));
         }
       } else {
         showToast(
-          t('components.micRecorder.saveFallback', 'Save issue – content preserved locally.')
+          t('components.micRecorder.saveFallback')
         );
       }
     } catch (error) {
@@ -527,7 +521,7 @@ export function useMicStateMachine(): UseMicStateMachineReturn {
         console.error('Unexpected auto-save error', error);
       }
       showToast(
-        t('components.micRecorder.saveFallback', 'Save issue – content preserved locally.')
+        t('components.micRecorder.saveFallback')
       );
     }
 
@@ -553,10 +547,9 @@ export function useMicStateMachine(): UseMicStateMachineReturn {
     if (recordingState === 'recording' && recordingTime >= limit) {
       stopRecording();
       showToast(
-        t(
-          'components.micRecorder.timeLimitReached',
-          `Recording stopped — Free plan limit reached (${Math.round(limit / 60)} minutes)`
-        )
+        t('components.micRecorder.timeLimitReached', {
+          minutes: Math.round(limit / 60)
+        })
       );
     }
   }, [recordingState, recordingTime, showToast, stopRecording, t]);

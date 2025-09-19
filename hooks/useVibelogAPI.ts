@@ -209,7 +209,7 @@ export function useVibelogAPI(
       }
 
       // Apply teaser logic
-      const teaserResult = createTeaserContent(blogContent, transcriptionData);
+      const teaserResult = createTeaserContent(blogContent);
       // Store the FULL content for cover generation, not the teaser
       processingDataRef.current.blogContentData = blogContent;
 
