@@ -105,14 +105,32 @@ export default function Navigation() {
         />
       );
     }
-    const textClasses = size === 'lg' ? 'text-base' : 'text-sm';
+    const textClasses = size === 'lg' ? 'text-lg font-bold' : 'text-sm font-bold';
     return (
-      <span
-        className={`flex h-full w-full items-center justify-center rounded-full bg-gradient-electric text-background ${textClasses} font-semibold`}
+      <div
+        className={`absolute inset-0 flex items-center justify-center ${textClasses}`}
+        style={{
+          color: '#FFFFFF',
+          textShadow: '0 1px 3px rgba(0, 0, 0, 0.5)',
+          fontWeight: '700',
+        }}
       >
         {avatarInitial}
-      </span>
+      </div>
     );
+  };
+
+  const getAvatarContainerStyle = (hasImage: boolean) => {
+    if (hasImage) {
+      return {
+        backgroundColor: '#374151', // Gray for images
+      };
+    }
+    // Fallback gradient with hardcoded colors
+    return {
+      background: 'linear-gradient(135deg, #60A5FA 0%, #3B82F6 50%, #2563EB 100%)',
+      backgroundColor: '#3B82F6', // Fallback solid blue
+    };
   };
 
   const desktopMenu = (
@@ -121,7 +139,10 @@ export default function Navigation() {
         <div className="absolute right-4 top-16 z-50 w-80 rounded-2xl border border-border bg-card shadow-2xl">
           <div className="p-4">
             <div className="mb-4 flex items-center gap-3 border-b border-border pb-4">
-              <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-border/40">
+              <div
+                className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-border/40"
+                style={getAvatarContainerStyle(avatarUrl && !avatarError)}
+              >
                 {renderAvatarContent('lg')}
               </div>
               <div className="min-w-0 flex-1">
@@ -209,7 +230,10 @@ export default function Navigation() {
             {user && (
               <div className="space-y-2 border-t border-border pt-6">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border/40">
+                  <div
+                    className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border/40"
+                    style={getAvatarContainerStyle(avatarUrl && !avatarError)}
+                  >
                     {renderAvatarContent('sm')}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -319,6 +343,7 @@ export default function Navigation() {
                   aria-expanded={isMenuOpen}
                   aria-haspopup="true"
                   className="hidden h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border/40 lg:flex"
+                  style={getAvatarContainerStyle(avatarUrl && !avatarError)}
                 >
                   {renderAvatarContent('sm')}
                 </button>
