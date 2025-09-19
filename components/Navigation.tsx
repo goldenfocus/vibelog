@@ -94,7 +94,6 @@ export default function Navigation() {
   };
 
   const renderAvatarContent = (size: 'sm' | 'lg') => {
-    const commonClasses = size === 'lg' ? 'text-sm font-semibold' : 'text-xs font-semibold';
     if (avatarUrl && !avatarError) {
       return (
         <img
@@ -106,7 +105,8 @@ export default function Navigation() {
         />
       );
     }
-    return <span className={`${commonClasses} text-foreground`}>{avatarInitial}</span>;
+    const textClasses = size === 'lg' ? 'text-base' : 'text-sm';
+    return <span className={`${textClasses} font-semibold text-electric`}>{avatarInitial}</span>;
   };
 
   const desktopMenu = (
@@ -115,7 +115,11 @@ export default function Navigation() {
         <div className="absolute right-4 top-16 z-50 w-80 rounded-2xl border border-border bg-card shadow-2xl">
           <div className="p-4">
             <div className="mb-4 flex items-center gap-3 border-b border-border pb-4">
-              <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-border/40 bg-electric/20">
+              <div
+                className={`flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-border/40 ${
+                  avatarUrl && !avatarError ? 'bg-muted/60' : 'bg-electric/15'
+                }`}
+              >
                 {renderAvatarContent('lg')}
               </div>
               <div className="min-w-0 flex-1">
@@ -203,7 +207,11 @@ export default function Navigation() {
             {user && (
               <div className="space-y-2 border-t border-border pt-6">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border/40 bg-electric/20">
+                  <div
+                    className={`flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border/40 ${
+                      avatarUrl && !avatarError ? 'bg-muted/60' : 'bg-electric/15'
+                    }`}
+                  >
                     {renderAvatarContent('sm')}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -301,7 +309,7 @@ export default function Navigation() {
                   aria-label={isMenuOpen ? t('navigation.closeMenu') : t('navigation.openMenu')}
                   aria-expanded={isMenuOpen}
                   aria-haspopup="true"
-                  className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border/40 bg-muted/60 lg:hidden"
+                  className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border/40 bg-muted/60 text-muted-foreground lg:hidden"
                 >
                   {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
                 </button>
@@ -312,7 +320,9 @@ export default function Navigation() {
                   aria-label={t('navigation.accountMenu')}
                   aria-expanded={isMenuOpen}
                   aria-haspopup="true"
-                  className="hidden h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border/40 bg-muted/60 lg:flex"
+                  className={`hidden h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border/40 lg:flex ${
+                    avatarUrl && !avatarError ? 'bg-muted/60' : 'bg-electric/15'
+                  }`}
                 >
                   {renderAvatarContent('sm')}
                 </button>
