@@ -1,10 +1,11 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
-import { useI18n } from "@/components/providers/I18nProvider"
-import { useAuth } from "@/components/providers/AuthProvider"
 import { useSearchParams } from "next/navigation"
 import { useEffect, useState, Suspense } from "react"
+
+import { useAuth } from "@/components/providers/AuthProvider"
+import { useI18n } from "@/components/providers/I18nProvider"
+import { Button } from "@/components/ui/button"
 
 function SignInContent() {
   const { t } = useI18n()

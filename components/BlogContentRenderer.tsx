@@ -2,8 +2,9 @@
 
 import React from "react";
 import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import rehypeSanitize from "rehype-sanitize";
+import remarkGfm from "remark-gfm";
+
 import { useI18n } from "@/components/providers/I18nProvider";
 
 interface BlogContentRendererProps {

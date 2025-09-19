@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
-import { Navigation } from "@/components/Navigation";
-import { ChevronDown, Mail, Send } from "lucide-react";
-import { useI18n } from "@/components/providers/I18nProvider";
 import emailjs from '@emailjs/browser';
+import { ChevronDown, Mail, Send } from "lucide-react";
+import React, { useState } from "react";
+
+import { Navigation } from "@/components/Navigation";
+import { useI18n } from "@/components/providers/I18nProvider";
+
 
 interface FAQItem {
   question: string;

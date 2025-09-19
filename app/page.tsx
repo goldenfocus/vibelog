@@ -1,8 +1,9 @@
 "use client";
 
-import Navigation from "@/components/Navigation";
-import MicRecorder from "@/components/MicRecorder";
 import { MessageCircle, Bot, Share2 } from "lucide-react";
+
+import MicRecorder from "@/components/MicRecorder";
+import Navigation from "@/components/Navigation";
 import { useI18n } from "@/components/providers/I18nProvider";
 
 

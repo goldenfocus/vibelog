@@ -29,7 +29,7 @@ export function ToastNotification({
     }
   }, [toast.visible, onHide, autoHideDelay]);
 
-  if (!toast.visible) return null;
+  if (!toast.visible) {return null;}
 
   const getToastStyles = () => {
     const baseStyles = "fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300 max-w-md";

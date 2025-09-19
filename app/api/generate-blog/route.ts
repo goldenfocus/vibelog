@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+
 import { rateLimit, tooManyResponse } from '@/lib/rateLimit';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
@@ -7,7 +8,7 @@ import { createServerSupabaseClient } from '@/lib/supabase';
 // Examples: blog -> vibelog, blogging -> vibelogging, blogger -> vibelogger
 // Heuristic: do NOT modify URLs.
 function applyBranding(content: string): string {
-  if (!content) return content;
+  if (!content) {return content;}
 
   // Temporarily protect URLs so replacements do not break links
   const urls: string[] = [];

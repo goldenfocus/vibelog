@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+
 import Controls from '@/components/mic/Controls'
 import type { RecordingState } from '@/components/mic/Controls'
 

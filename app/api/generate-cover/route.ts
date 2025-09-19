@@ -1,8 +1,10 @@
+import crypto from 'crypto'
+
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
-import crypto from 'crypto'
-import { storage } from '@/lib/storage'
+
 import { styleFromTone, buildImagePrompt, buildAltText, watermarkAndResize } from '@/lib/image'
+import { storage } from '@/lib/storage'
 
 export const runtime = 'nodejs'
 
@@ -23,7 +25,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as Body
     const title = (body.title || '').trim()
-    if (!title) return NextResponse.json({ error: 'Missing title' }, { status: 400 })
+    if (!title) {return NextResponse.json({ error: 'Missing title' }, { status: 400 })}
 
     const { style, label } = styleFromTone(body.tone)
     const prompt = buildImagePrompt(title, body.summary, body.tone)
@@ -56,7 +58,7 @@ export async function POST(req: NextRequest) {
         response_format: 'b64_json',
       })
       const b64 = img.data?.[0]?.b64_json
-      if (!b64) throw new Error('Image generation returned empty data')
+      if (!b64) {throw new Error('Image generation returned empty data')}
       raw = Buffer.from(b64, 'base64')
     } catch (err) {
       console.error('OpenAI image generation error:', err)

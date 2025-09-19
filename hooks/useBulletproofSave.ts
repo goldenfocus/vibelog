@@ -44,15 +44,15 @@ export function useBulletproofSave() {
       const metrics = JSON.parse(localStorage.getItem(METRICS_KEY) || '{}');
       const timestamp = new Date().toISOString();
 
-      if (!metrics.events) metrics.events = [];
-      if (!metrics.summary) metrics.summary = {
+      if (!metrics.events) {metrics.events = [];}
+      if (!metrics.summary) {metrics.summary = {
         totalSaves: 0,
         successfulSaves: 0,
         failedSaves: 0,
         localBackups: 0,
         retryAttempts: 0,
         averageResponseTime: 0
-      };
+      };}
 
       metrics.events.push({ event, timestamp, data });
 

@@ -209,7 +209,7 @@ async function runAllTests() {
   console.log("=" * 60);
 
   let passedTests = 0;
-  let totalTests = testScenarios.length;
+  const totalTests = testScenarios.length;
 
   for (const scenario of testScenarios) {
     console.log(`\n🧪 ${scenario.name}`);

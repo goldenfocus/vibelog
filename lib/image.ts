@@ -10,12 +10,12 @@ export type CoverStyle =
 
 export function styleFromTone(tone?: string | null): { style: CoverStyle; label: string } {
   const t = (tone || '').toLowerCase()
-  if (/(serious|analysis|analytical|expert|strategy|research)/.test(t)) return { style: 'editorial', label: 'minimalist editorial' }
-  if (/(playful|fun|humor|casual)/.test(t)) return { style: 'comic', label: 'comic book / cartoon' }
-  if (/(futuristic|tech|ai|cyber|neon|sci[- ]?fi|innovation)/.test(t)) return { style: 'sci-fi', label: 'neon sci‑fi / cyberpunk' }
-  if (/(zen|calm|nature|mindful|outdoor|garden|forest|sea|mountain)/.test(t)) return { style: 'watercolor', label: 'watercolor / ink, soft gradients' }
-  if (/(dark|moody|dramatic|chiaroscuro)/.test(t)) return { style: 'painterly', label: 'painterly chiaroscuro' }
-  if (/(inspire|inspirational|hope|uplift|warm|story)/.test(t)) return { style: 'cinematic', label: 'cinematic, photo‑realistic, warm light' }
+  if (/(serious|analysis|analytical|expert|strategy|research)/.test(t)) {return { style: 'editorial', label: 'minimalist editorial' }}
+  if (/(playful|fun|humor|casual)/.test(t)) {return { style: 'comic', label: 'comic book / cartoon' }}
+  if (/(futuristic|tech|ai|cyber|neon|sci[- ]?fi|innovation)/.test(t)) {return { style: 'sci-fi', label: 'neon sci‑fi / cyberpunk' }}
+  if (/(zen|calm|nature|mindful|outdoor|garden|forest|sea|mountain)/.test(t)) {return { style: 'watercolor', label: 'watercolor / ink, soft gradients' }}
+  if (/(dark|moody|dramatic|chiaroscuro)/.test(t)) {return { style: 'painterly', label: 'painterly chiaroscuro' }}
+  if (/(inspire|inspirational|hope|uplift|warm|story)/.test(t)) {return { style: 'cinematic', label: 'cinematic, photo‑realistic, warm light' }}
   return { style: 'cinematic', label: 'cinematic, photo‑realistic, warm light' }
 }
 
@@ -36,7 +36,7 @@ export function buildAltText(title: string, styleLabel: string, summary?: string
   // Simple, ≤140 chars, no emojis
   const base = summary ? `${summary.split(/[.!?]/)[0]}` : title
   let alt = `${base} — ${styleLabel} cover image`
-  if (alt.length > 140) alt = alt.slice(0, 137) + '…'
+  if (alt.length > 140) {alt = alt.slice(0, 137) + '…'}
   return alt
 }
 

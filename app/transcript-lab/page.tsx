@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+
 import TranscriptionPanel from "@/components/mic/TranscriptionPanel";
 import { useI18n } from "@/components/providers/I18nProvider";
 

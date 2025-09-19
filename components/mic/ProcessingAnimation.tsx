@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+
 import { useI18n } from "@/components/providers/I18nProvider";
 
 export interface ProcessingStep {
@@ -122,7 +123,7 @@ export default function ProcessingAnimation({
       setProcessingSteps(prev => prev.map((s, idx) => idx < i ? { ...s, completed: true } : s));
 
       const step = steps[i];
-      if (!step) return;
+      if (!step) {return;}
 
       if (step.id === 'capture') {
         await new Promise(res => setTimeout(res, preDwell));
@@ -130,12 +131,12 @@ export default function ProcessingAnimation({
         await transcribePromise; // wait for real work
         await new Promise(res => setTimeout(res, minDwell));
         // Start generation after transcription succeeds or completes
-        if (!generatePromise) startGenerate();
+        if (!generatePromise) {startGenerate();}
       } else if (betweenSteps.includes(step.id)) {
         await new Promise(res => setTimeout(res, betweenPerStep));
       } else if (step.id === 'structure') {
         // Gate text generation here so FORMAT can be short
-        if (!generatePromise) startGenerate();
+        if (!generatePromise) {startGenerate();}
         await generatePromise;
         // Wait for React state updates to process after blog generation
         await new Promise(res => setTimeout(res, minDwell + 500));
@@ -164,7 +165,7 @@ export default function ProcessingAnimation({
         }
         const elapsed = performance.now() - start;
         const minImage = 1200;
-        if (elapsed < minImage) await new Promise(res => setTimeout(res, minImage - elapsed));
+        if (elapsed < minImage) {await new Promise(res => setTimeout(res, minImage - elapsed));}
       } else {
         // Post steps: scale by generation time, keep UX snappy
         const base = Math.min(700, Math.max(220, Math.floor((generateMs || 1600) / postSteps.length)));
@@ -186,7 +187,7 @@ export default function ProcessingAnimation({
 
 
   useEffect(() => {
-    if (!isVisible || isAnimating) return;
+    if (!isVisible || isAnimating) {return;}
 
     // Defer starting processing to the next tick so initial render assertions pass
     const id = setTimeout(() => {

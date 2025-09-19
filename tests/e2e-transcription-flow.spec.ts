@@ -48,7 +48,7 @@ test.describe('E2E Transcription Flow', () => {
         }
         start() {
           this.state = 'recording';
-          if (this.onstart) this.onstart();
+          if (this.onstart) {this.onstart();}
           // Simulate data available after a short delay
           setTimeout(() => {
             if (this.ondataavailable) {
@@ -59,7 +59,7 @@ test.describe('E2E Transcription Flow', () => {
         }
         stop() {
           this.state = 'inactive';
-          if (this.onstop) this.onstop();
+          if (this.onstop) {this.onstop();}
         }
       };
       
@@ -79,7 +79,7 @@ test.describe('E2E Transcription Flow', () => {
           this.onend = null;
         }
         start() {
-          if (this.onstart) this.onstart();
+          if (this.onstart) {this.onstart();}
           // Simulate live transcript
           setTimeout(() => {
             if (this.onresult) {
@@ -95,7 +95,7 @@ test.describe('E2E Transcription Flow', () => {
           }, 500);
         }
         stop() {
-          if (this.onend) this.onend();
+          if (this.onend) {this.onend();}
         }
       };
     });
@@ -310,11 +310,11 @@ test.describe('E2E Transcription Flow', () => {
         }
         start() {
           this.state = 'recording';
-          if (this.onstart) this.onstart();
+          if (this.onstart) {this.onstart();}
         }
         stop() {
           this.state = 'inactive';
-          if (this.onstop) this.onstop();
+          if (this.onstop) {this.onstop();}
           if (this.ondataavailable) {
             const mockData = new Blob(['mock audio data'], { type: 'audio/webm' });
             this.ondataavailable({ data: mockData });

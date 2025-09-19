@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
 import { Mic, Circle } from "lucide-react";
+import React from "react";
+
 import { useI18n } from "@/components/providers/I18nProvider";
 
 export type RecordingState = "idle" | "recording" | "processing" | "complete";
@@ -80,7 +81,7 @@ export default function Controls({
   };
 
   const handleClick = () => {
-    if (disabled) return;
+    if (disabled) {return;}
     
     switch (recordingState) {
       case "recording":

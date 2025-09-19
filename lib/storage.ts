@@ -26,7 +26,7 @@ function supabaseStorage(): Storage {
         contentType,
         upsert: true,
       })
-      if (error) throw error
+      if (error) {throw error}
       return { url: publicUrl(path), path }
     },
     publicUrl,

@@ -43,7 +43,7 @@ export function useAudioPlayback(audioBlob: Blob | null): UseAudioPlaybackReturn
       const dataArray = new Uint8Array(bufferLength);
       
       const loop = () => {
-        if (!isPlaying) return;
+        if (!isPlaying) {return;}
         
         analyser.getByteFrequencyData(dataArray);
         
@@ -121,7 +121,7 @@ export function useAudioPlayback(audioBlob: Blob | null): UseAudioPlaybackReturn
   }, [audioBlob]);
 
   const play = async () => {
-    if (!audioRef.current) return;
+    if (!audioRef.current) {return;}
 
     try {
       // For mobile Safari: ensure audio is loaded and ready
@@ -142,7 +142,7 @@ export function useAudioPlayback(audioBlob: Blob | null): UseAudioPlaybackReturn
   };
 
   const pause = () => {
-    if (!audioRef.current) return;
+    if (!audioRef.current) {return;}
     audioRef.current.pause();
   };
 
@@ -159,7 +159,7 @@ export function useAudioPlayback(audioBlob: Blob | null): UseAudioPlaybackReturn
   };
 
   const formatTime = (seconds: number): string => {
-    if (!seconds || isNaN(seconds) || !isFinite(seconds) || seconds === Infinity) return "0:00";
+    if (!seconds || isNaN(seconds) || !isFinite(seconds) || seconds === Infinity) {return "0:00";}
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { Navigation } from "@/components/Navigation";
-import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
+import { useState } from "react";
+
+import { Navigation } from "@/components/Navigation";
 import { useI18n } from "@/components/providers/I18nProvider";
+import { Button } from "@/components/ui/button";
 
 export default function Pricing() {
   const { t } = useI18n();
