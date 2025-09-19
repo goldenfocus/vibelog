@@ -17,6 +17,7 @@ export const Navigation = () => {
   const pathname = usePathname();
   const { t, locale, setLocale } = useI18n();
   const { user, loading, signOut } = useAuth();
+
   const avatarUrl =
     (typeof user?.user_metadata?.avatar_url === 'string' && user.user_metadata.avatar_url) ||
     (typeof user?.user_metadata?.picture === 'string' && user.user_metadata.picture) ||
@@ -47,9 +48,16 @@ export const Navigation = () => {
   const isActive = (path: string) => pathname === path;
 
   const handleSignOut = async () => {
-    setIsMenuOpen(false);
-    await signOut();
+    try {
+      setIsMenuOpen(false);
+      await signOut();
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
   };
+
+  const closeMenu = () => setIsMenuOpen(false);
 
   const navLinks = [
     { href: '/about', label: t('navigation.about') },
@@ -69,25 +77,23 @@ export const Navigation = () => {
           </Link>
 
           {/* Desktop Navigation Links */}
-          {!loading && (
-            <div className="hidden items-center space-x-6 md:flex">
-              {navLinks.map(link => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`transition-colors hover:text-primary ${
-                    isActive(link.href) ? 'text-primary' : 'text-muted-foreground'
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </div>
-          )}
+          <div className="hidden items-center space-x-6 lg:flex">
+            {navLinks.map(link => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`transition-colors hover:text-primary ${
+                  isActive(link.href) ? 'text-primary' : 'text-muted-foreground'
+                }`}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
 
-          {/* Right Side - Authentication */}
-          <div className="flex items-center space-x-4">
-            {/* Language Switcher - only show when not logged in */}
+          {/* Desktop Right Side */}
+          <div className="hidden items-center space-x-4 lg:flex">
+            {/* Language Switcher for non-logged users */}
             {!user && !loading && (
               <LanguageSwitcher
                 currentLanguage={locale}
@@ -96,22 +102,12 @@ export const Navigation = () => {
               />
             )}
 
-            {/* Loading State */}
+            {/* Auth State */}
             {loading ? (
               <div className="h-8 w-8 animate-pulse rounded-full bg-muted" />
             ) : user ? (
-              /* Logged In - Account menu (avatar on desktop, hamburger on mobile) */
+              /* Logged In User - Desktop Dropdown */
               <div className="relative" data-menu-container>
-                <button
-                  onClick={() => setIsMenuOpen(prev => !prev)}
-                  className="flex items-center justify-center rounded-md px-3 py-2 md:hidden"
-                  aria-expanded={isMenuOpen}
-                  aria-haspopup="true"
-                  aria-label={isMenuOpen ? t('navigation.closeMenu') : t('navigation.openMenu')}
-                >
-                  {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-                </button>
-
                 <button
                   onClick={() => setIsMenuOpen(prev => !prev)}
                   className="hidden h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border/40 bg-muted/60 md:flex"
@@ -126,6 +122,7 @@ export const Navigation = () => {
                   )}
                 </button>
 
+                {/* Desktop User Dropdown */}
                 {isMenuOpen && (
                   <div className="absolute right-0 top-full z-50 mt-2 w-64 rounded-lg border border-border bg-card shadow-lg md:mt-3 md:w-80 md:rounded-2xl">
                     <div className="p-4">
@@ -181,7 +178,7 @@ export const Navigation = () => {
                           className="w-full"
                         >
                           <LogOut className="mr-2 h-4 w-4" />
-                          {t('auth.signOut')}
+                          {loading ? 'Signing out...' : t('auth.signOut')}
                         </Button>
                       </div>
                     </div>
@@ -197,7 +194,105 @@ export const Navigation = () => {
               </Link>
             )}
           </div>
+
+          {/* Mobile/Tablet Menu Button */}
+          <div className="lg:hidden" data-menu-container>
+            <button
+              onClick={() => setIsMenuOpen(prev => !prev)}
+              className="flex items-center justify-center rounded-md px-3 py-2"
+              aria-expanded={isMenuOpen}
+              aria-haspopup="true"
+              aria-label={isMenuOpen ? t('navigation.closeMenu') : t('navigation.openMenu')}
+            >
+              {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+          </div>
         </div>
+
+        {/* Mobile/Tablet Menu */}
+        {isMenuOpen && (
+          <div className="border-t border-border bg-background lg:hidden">
+            <div className="space-y-4 px-4 py-4">
+              {/* Navigation Links */}
+              <div className="space-y-3">
+                {navLinks.map(link => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={closeMenu}
+                    className={`block py-2 text-base ${
+                      isActive(link.href)
+                        ? 'font-medium text-primary'
+                        : 'text-foreground transition-colors hover:text-primary'
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+
+              {/* User Section */}
+              {user && (
+                <>
+                  <hr className="border-border" />
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-3">
+                      <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-border/40 bg-electric/20">
+                        {avatarUrl ? (
+                          <img
+                            src={avatarUrl}
+                            alt={displayName}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-xs font-semibold text-electric">
+                            {avatarInitial}
+                          </span>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">{displayName}</p>
+                        <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Language Switcher */}
+              <hr className="border-border" />
+              <div>
+                <LanguageSwitcher
+                  currentLanguage={locale}
+                  onLanguageChange={setLocale}
+                  compact={false}
+                />
+              </div>
+
+              {/* Auth Action */}
+              <hr className="border-border" />
+              <div>
+                {user ? (
+                  <Button
+                    variant="outline"
+                    onClick={handleSignOut}
+                    disabled={loading}
+                    className="w-full"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    {loading ? 'Signing out...' : t('auth.signOut')}
+                  </Button>
+                ) : (
+                  <Link href="/auth/signin" onClick={closeMenu}>
+                    <Button className="w-full bg-gradient-electric text-white hover:opacity-90">
+                      {t('auth.signIn')}
+                    </Button>
+                  </Link>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </nav>
   );
