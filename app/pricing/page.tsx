@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { Check } from "lucide-react";
-import { useState } from "react";
+import { Check } from 'lucide-react';
+import { useState } from 'react';
 
-import { Navigation } from "@/components/Navigation";
-import { useI18n } from "@/components/providers/I18nProvider";
-import { Button } from "@/components/ui/button";
+import Navigation from '@/components/Navigation';
+import { useI18n } from '@/components/providers/I18nProvider';
+import { Button } from '@/components/ui/button';
 
 export default function Pricing() {
   const { t } = useI18n();
@@ -19,7 +19,7 @@ export default function Pricing() {
       yearlyPrice: t('pages.pricing.plans.casual.price'),
       features: t('pages.pricing.plans.casual.features'),
       cta: t('pages.pricing.plans.casual.cta'),
-      popular: false
+      popular: false,
     },
     {
       name: t('pages.pricing.plans.influencer.name'),
@@ -28,7 +28,7 @@ export default function Pricing() {
       yearlyPrice: t('pages.pricing.plans.influencer.yearlyPrice'),
       features: t('pages.pricing.plans.influencer.features'),
       cta: t('pages.pricing.plans.influencer.cta'),
-      popular: true
+      popular: true,
     },
     {
       name: t('pages.pricing.plans.agency.name'),
@@ -37,27 +37,27 @@ export default function Pricing() {
       yearlyPrice: t('pages.pricing.plans.agency.yearlyPrice'),
       features: t('pages.pricing.plans.agency.features'),
       cta: t('pages.pricing.plans.agency.cta'),
-      popular: false
-    }
+      popular: false,
+    },
   ];
 
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      
-      <main className="pt-24 pb-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h1 className="text-4xl sm:text-5xl font-bold mb-6">
-              {t('pages.pricing.title')}
-            </h1>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
+
+      <main className="px-4 pb-16 pt-24 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-16 text-center">
+            <h1 className="mb-6 text-4xl font-bold sm:text-5xl">{t('pages.pricing.title')}</h1>
+            <p className="mx-auto mb-8 max-w-2xl text-xl text-muted-foreground">
               {t('pages.pricing.subtitle')}
             </p>
-            
+
             {/* Billing Toggle */}
-            <div className="flex items-center justify-center space-x-4 mb-12">
-              <span className={`text-sm ${!isYearly ? 'text-foreground' : 'text-muted-foreground'}`}>
+            <div className="mb-12 flex items-center justify-center space-x-4">
+              <span
+                className={`text-sm ${!isYearly ? 'text-foreground' : 'text-muted-foreground'}`}
+              >
                 {t('pages.pricing.billing.monthly')}
               </span>
               <button
@@ -76,7 +76,7 @@ export default function Pricing() {
                 {t('pages.pricing.billing.yearly')}
               </span>
               {isYearly && (
-                <span className="text-sm bg-electric/20 text-electric px-2 py-1 rounded-full">
+                <span className="rounded-full bg-electric/20 px-2 py-1 text-sm text-electric">
                   Save ~30% with yearly
                 </span>
               )}
@@ -84,28 +84,28 @@ export default function Pricing() {
           </div>
 
           {/* Pricing Cards */}
-          <div className="grid lg:grid-cols-3 gap-8 mb-16">
+          <div className="mb-16 grid gap-8 lg:grid-cols-3">
             {plans.map((plan, index) => (
               <div
                 key={index}
-                className={`relative bg-card rounded-2xl border p-8 ${
+                className={`relative rounded-2xl border bg-card p-8 ${
                   plan.popular
-                    ? 'border-electric shadow-electric/20 shadow-2xl'
+                    ? 'border-electric shadow-2xl shadow-electric/20'
                     : 'border-border/20'
                 }`}
               >
                 {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <span className="bg-gradient-electric text-white px-4 py-2 rounded-full text-sm font-medium">
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 transform">
+                    <span className="rounded-full bg-gradient-electric px-4 py-2 text-sm font-medium text-white">
                       {t('pages.pricing.plans.influencer.popular')}
                     </span>
                   </div>
                 )}
-                
-                <div className="text-center mb-8">
-                  <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
-                  <p className="text-muted-foreground mb-6">{plan.description}</p>
-                  
+
+                <div className="mb-8 text-center">
+                  <h3 className="mb-2 text-2xl font-bold">{plan.name}</h3>
+                  <p className="mb-6 text-muted-foreground">{plan.description}</p>
+
                   <div className="mb-6">
                     <span className="text-4xl font-bold">
                       {(() => {
@@ -120,12 +120,10 @@ export default function Pricing() {
                       })()}
                     </span>
                     {plan.price !== t('pages.pricing.plans.casual.price') && (
-                      <span className="text-muted-foreground">
-                        {isYearly ? '/mo' : '/month'}
-                      </span>
+                      <span className="text-muted-foreground">{isYearly ? '/mo' : '/month'}</span>
                     )}
                     {isYearly && plan.price !== t('pages.pricing.plans.casual.price') && (
-                      <div className="text-sm text-muted-foreground mt-2">
+                      <div className="mt-2 text-sm text-muted-foreground">
                         <div>billed yearly</div>
                         <div className="mt-1">
                           {plan.name === t('pages.pricing.plans.influencer.name') && '$99/year'}
@@ -134,7 +132,7 @@ export default function Pricing() {
                       </div>
                     )}
                   </div>
-                  
+
                   <Button
                     className={`w-full ${
                       plan.popular
@@ -145,7 +143,7 @@ export default function Pricing() {
                     {plan.cta}
                   </Button>
                 </div>
-                
+
                 <div className="space-y-4">
                   {(() => {
                     try {
@@ -153,13 +151,13 @@ export default function Pricing() {
                       if (Array.isArray(features) && features.length > 0) {
                         return features.map((feature, featureIndex) => (
                           <div key={featureIndex} className="flex items-start space-x-3">
-                            <Check className="w-5 h-5 text-electric mt-0.5 flex-shrink-0" />
+                            <Check className="mt-0.5 h-5 w-5 flex-shrink-0 text-electric" />
                             <span className="text-sm text-muted-foreground">{feature}</span>
                           </div>
                         ));
                       }
                       return <div>Loading features...</div>;
-                    } catch (error) {
+                    } catch {
                       return <div>Loading...</div>;
                     }
                   })()}
@@ -169,15 +167,11 @@ export default function Pricing() {
           </div>
 
           {/* CTA Section */}
-          <div className="text-center bg-gradient-subtle rounded-3xl p-12 border border-border/20">
-            <h2 className="text-3xl font-bold mb-4">
-              {t('pages.pricing.cta.title')}
-            </h2>
-            <p className="text-xl text-muted-foreground mb-8">
-              {t('pages.pricing.cta.subtitle')}
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
-              <Button className="bg-gradient-electric hover:opacity-90 px-8 py-3">
+          <div className="rounded-3xl border border-border/20 bg-gradient-subtle p-12 text-center">
+            <h2 className="mb-4 text-3xl font-bold">{t('pages.pricing.cta.title')}</h2>
+            <p className="mb-8 text-xl text-muted-foreground">{t('pages.pricing.cta.subtitle')}</p>
+            <div className="flex flex-col items-center justify-center space-y-4 sm:flex-row sm:space-x-4 sm:space-y-0">
+              <Button className="bg-gradient-electric px-8 py-3 hover:opacity-90">
                 {t('pages.pricing.cta.startTrial')}
               </Button>
               <Button variant="outline" className="px-8 py-3">
