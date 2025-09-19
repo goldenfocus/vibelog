@@ -121,17 +121,7 @@ export default function Navigation() {
         <div className="absolute right-4 top-16 z-50 w-80 rounded-2xl border border-border bg-card shadow-2xl">
           <div className="p-4">
             <div className="mb-4 flex items-center gap-3 border-b border-border pb-4">
-              <div
-                className={`flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border-2 ${
-                  avatarUrl && !avatarError
-                    ? 'border-gray-600 bg-gray-700'
-                    : 'border-blue-500 bg-blue-600'
-                }`}
-                style={{
-                  backgroundColor: avatarUrl && !avatarError ? '#374151' : '#2563EB',
-                  borderColor: avatarUrl && !avatarError ? '#4B5563' : '#3B82F6',
-                }}
-              >
+              <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-border/40">
                 {renderAvatarContent('lg')}
               </div>
               <div className="min-w-0 flex-1">
@@ -328,15 +318,7 @@ export default function Navigation() {
                   aria-label={t('navigation.accountMenu')}
                   aria-expanded={isMenuOpen}
                   aria-haspopup="true"
-                  className={`hidden h-10 w-10 items-center justify-center overflow-hidden rounded-full border-2 lg:flex ${
-                    avatarUrl && !avatarError
-                      ? 'border-gray-600 bg-gray-700'
-                      : 'border-blue-500 bg-blue-600'
-                  }`}
-                  style={{
-                    backgroundColor: avatarUrl && !avatarError ? '#374151' : '#2563EB',
-                    borderColor: avatarUrl && !avatarError ? '#4B5563' : '#3B82F6',
-                  }}
+                  className="hidden h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border/40 lg:flex"
                 >
                   {renderAvatarContent('sm')}
                 </button>
