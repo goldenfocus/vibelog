@@ -31,12 +31,12 @@ export const config = {
   // Rate limiting
   rateLimits: {
     transcription: {
-      anonymous: { limit: isDev ? 10000 : 10000, window: '24h' },
-      authenticated: { limit: 10000, window: '15m' },
+      anonymous: { limit: isDev ? 10000 : 10000, window: '24 h' },
+      authenticated: { limit: 10000, window: '15 m' },
     },
     generation: {
-      anonymous: { limit: isDev ? 10000 : 10000, window: '24h' },
-      authenticated: { limit: 10000, window: '15m' },
+      anonymous: { limit: isDev ? 10000 : 10000, window: '24 h' },
+      authenticated: { limit: 10000, window: '15 m' },
     },
   },
 
