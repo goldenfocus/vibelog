@@ -108,12 +108,7 @@ export default function Navigation() {
     const textClasses = size === 'lg' ? 'text-base' : 'text-sm';
     return (
       <span
-        className={`${textClasses} font-bold text-white`}
-        style={{
-          color: '#60A5FA',
-          textShadow: '0 0 10px rgba(96, 165, 250, 0.5)',
-          fontWeight: '700',
-        }}
+        className={`flex h-full w-full items-center justify-center rounded-full bg-gradient-electric text-background ${textClasses} font-semibold`}
       >
         {avatarInitial}
       </span>
@@ -224,17 +219,7 @@ export default function Navigation() {
             {user && (
               <div className="space-y-2 border-t border-border pt-6">
                 <div className="flex items-center gap-3">
-                  <div
-                    className={`flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border-2 ${
-                      avatarUrl && !avatarError
-                        ? 'border-gray-600 bg-gray-700'
-                        : 'border-blue-500 bg-blue-600'
-                    }`}
-                    style={{
-                      backgroundColor: avatarUrl && !avatarError ? '#374151' : '#2563EB',
-                      borderColor: avatarUrl && !avatarError ? '#4B5563' : '#3B82F6',
-                    }}
-                  >
+                  <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border/40">
                     {renderAvatarContent('sm')}
                   </div>
                   <div className="min-w-0 flex-1">
