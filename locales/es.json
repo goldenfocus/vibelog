@@ -1,11 +1,14 @@
 {
   "navigation": {
     "about": "Acerca de",
-    "faq": "FAQ", 
+    "faq": "FAQ",
     "pricing": "Precios",
     "community": "Comunidad",
     "people": "Personas",
-    "signUp": "Registrarse"
+    "signUp": "Registrarse",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "accountMenu": "Account menu"
   },
   "hero": {
     "title": {
@@ -25,7 +28,7 @@
   },
   "processingSteps": {
     "transcribe": "Convirtiendo voz a texto",
-    "clean": "Eliminando muletillas y ruido", 
+    "clean": "Eliminando muletillas y ruido",
     "structure": "Analizando estructura del contenido",
     "seo": "Optimizando para SEO",
     "format": "Creando formato rico",
@@ -45,7 +48,7 @@
       "description": "Pega, sube o graba"
     },
     "aiMagic": {
-      "title": "Magia IA", 
+      "title": "Magia IA",
       "description": "IA limpia y formatea"
     },
     "share": {

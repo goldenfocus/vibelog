@@ -1,6 +1,8 @@
 'use client';
 
-import { Menu, X, User, LogOut } from 'lucide-react';
+/* eslint-disable @next/next/no-img-element */
+
+import { Menu, X, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
@@ -15,6 +17,12 @@ export const Navigation = () => {
   const pathname = usePathname();
   const { t, locale, setLocale } = useI18n();
   const { user, loading, signOut } = useAuth();
+  const avatarUrl =
+    (typeof user?.user_metadata?.avatar_url === 'string' && user.user_metadata.avatar_url) ||
+    (typeof user?.user_metadata?.picture === 'string' && user.user_metadata.picture) ||
+    null;
+  const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Account';
+  const avatarInitial = displayName.charAt(0).toUpperCase();
 
   // Close menu on route change
   useEffect(() => {
@@ -60,8 +68,8 @@ export const Navigation = () => {
             <span className="bg-gradient-electric bg-clip-text text-transparent">vibelog.io</span>
           </Link>
 
-          {/* Desktop Navigation Links - Only show when NOT logged in */}
-          {!user && !loading && (
+          {/* Desktop Navigation Links */}
+          {!loading && (
             <div className="hidden items-center space-x-6 md:flex">
               {navLinks.map(link => (
                 <Link
@@ -92,34 +100,63 @@ export const Navigation = () => {
             {loading ? (
               <div className="h-8 w-8 animate-pulse rounded-full bg-muted" />
             ) : user ? (
-              /* Logged In User - Hamburger Menu for both desktop and mobile */
+              /* Logged In - Account menu (avatar on desktop, hamburger on mobile) */
               <div className="relative" data-menu-container>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsMenuOpen(!isMenuOpen)}
-                  className="flex items-center space-x-2 px-3 py-2"
+                <button
+                  onClick={() => setIsMenuOpen(prev => !prev)}
+                  className="flex items-center justify-center rounded-md px-3 py-2 md:hidden"
                   aria-expanded={isMenuOpen}
                   aria-haspopup="true"
+                  aria-label={isMenuOpen ? t('navigation.closeMenu') : t('navigation.openMenu')}
                 >
                   {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-                </Button>
+                </button>
 
-                {/* Hamburger Menu Dropdown */}
+                <button
+                  onClick={() => setIsMenuOpen(prev => !prev)}
+                  className="hidden h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border/40 bg-muted/60 md:flex"
+                  aria-expanded={isMenuOpen}
+                  aria-haspopup="true"
+                  aria-label={t('navigation.accountMenu')}
+                >
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt={displayName} className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="text-sm font-semibold text-foreground">{avatarInitial}</span>
+                  )}
+                </button>
+
                 {isMenuOpen && (
-                  <div className="absolute right-0 top-full z-50 mt-2 w-64 rounded-lg border border-border bg-card shadow-lg">
+                  <div className="absolute right-0 top-full z-50 mt-2 w-64 rounded-lg border border-border bg-card shadow-lg md:mt-3 md:w-80 md:rounded-2xl">
                     <div className="p-4">
-                      {/* Mobile Navigation Links - Only visible on mobile */}
-                      <div className="mb-4 space-y-3 border-b border-border pb-4 md:hidden">
+                      <div className="mb-4 flex items-center space-x-3 border-b border-border pb-4">
+                        <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border/40 bg-electric/20">
+                          {avatarUrl ? (
+                            <img
+                              src={avatarUrl}
+                              alt={displayName}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-sm font-semibold text-electric">
+                              {avatarInitial}
+                            </span>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold">{displayName}</p>
+                          <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+                        </div>
+                      </div>
+
+                      <div className="mb-4 space-y-2">
                         {navLinks.map(link => (
                           <Link
                             key={link.href}
                             href={link.href}
                             onClick={() => setIsMenuOpen(false)}
-                            className={`block py-2 text-base ${
-                              isActive(link.href)
-                                ? 'font-medium text-primary'
-                                : 'text-foreground transition-colors hover:text-primary'
+                            className={`block rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted/40 ${
+                              isActive(link.href) ? 'text-primary' : 'text-muted-foreground'
                             }`}
                           >
                             {link.label}
@@ -127,21 +164,7 @@ export const Navigation = () => {
                         ))}
                       </div>
 
-                      {/* User Info - Always visible */}
-                      <div className="flex items-center space-x-3 border-b border-border pb-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-electric/20">
-                          <User className="h-5 w-5 text-electric" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium">
-                            {user.user_metadata?.full_name || 'Account'}
-                          </p>
-                          <p className="truncate text-xs text-muted-foreground">{user.email}</p>
-                        </div>
-                      </div>
-
-                      {/* Language Switcher for logged-in users */}
-                      <div className="border-b border-border py-3">
+                      <div className="border-y border-border py-3">
                         <LanguageSwitcher
                           currentLanguage={locale}
                           onLanguageChange={setLocale}
@@ -149,7 +172,6 @@ export const Navigation = () => {
                         />
                       </div>
 
-                      {/* Sign Out */}
                       <div className="pt-3">
                         <Button
                           variant="outline"

@@ -1,11 +1,14 @@
 {
   "navigation": {
     "about": "关于",
-    "faq": "常见问题", 
+    "faq": "常见问题",
     "pricing": "价格",
     "community": "社区",
     "people": "人员",
-    "signUp": "注册"
+    "signUp": "注册",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "accountMenu": "Account menu"
   },
   "hero": {
     "title": {
@@ -25,7 +28,7 @@
   },
   "processingSteps": {
     "transcribe": "将语音转换为文本",
-    "clean": "删除填充词和噪音", 
+    "clean": "删除填充词和噪音",
     "structure": "分析内容结构",
     "seo": "SEO 优化",
     "format": "创建丰富格式",
@@ -45,7 +48,7 @@
       "description": "粘贴、上传或录制"
     },
     "aiMagic": {
-      "title": "AI 魔法", 
+      "title": "AI 魔法",
       "description": "AI 清理和格式化"
     },
     "share": {

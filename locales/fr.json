@@ -1,11 +1,14 @@
 {
   "navigation": {
     "about": "À propos",
-    "faq": "FAQ", 
+    "faq": "FAQ",
     "pricing": "Tarifs",
     "community": "Communauté",
     "people": "Personnes",
-    "signUp": "S'inscrire"
+    "signUp": "S'inscrire",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "accountMenu": "Account menu"
   },
   "hero": {
     "title": {
@@ -25,7 +28,7 @@
   },
   "processingSteps": {
     "transcribe": "Conversion de la parole en texte",
-    "clean": "Suppression des mots de remplissage et du bruit", 
+    "clean": "Suppression des mots de remplissage et du bruit",
     "structure": "Analyse de la structure du contenu",
     "seo": "Optimisation pour le SEO",
     "format": "Création du formatage riche",
@@ -45,7 +48,7 @@
       "description": "Collez, téléchargez ou enregistrez"
     },
     "aiMagic": {
-      "title": "Magie IA", 
+      "title": "Magie IA",
       "description": "L'IA nettoie et formate"
     },
     "share": {
@@ -88,7 +91,7 @@
         "polish": "✨ Polissage final",
         "captureTitle": "CAPTURE",
         "captureDesc": "Analyse de vos patterns vocaux et extraction de données audio pures",
-        "transcribeTitle": "TRANSCRIPTION", 
+        "transcribeTitle": "TRANSCRIPTION",
         "transcribeDesc": "Conversion de la parole en texte avec des réseaux neuronaux avancés",
         "cleanTitle": "NETTOYAGE",
         "cleanDesc": "Suppression des mots de remplissage et polissage de votre discours naturel",

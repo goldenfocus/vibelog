@@ -1,11 +1,14 @@
 {
   "navigation": {
     "about": "Giới thiệu",
-    "faq": "FAQ", 
+    "faq": "FAQ",
     "pricing": "Bảng giá",
     "community": "Cộng đồng",
     "people": "Mọi người",
-    "signUp": "Đăng ký"
+    "signUp": "Đăng ký",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "accountMenu": "Account menu"
   },
   "hero": {
     "title": {
@@ -25,7 +28,7 @@
   },
   "processingSteps": {
     "transcribe": "Chuyển đổi giọng nói thành văn bản",
-    "clean": "Loại bỏ từ lấp đầy và tiếng ồn", 
+    "clean": "Loại bỏ từ lấp đầy và tiếng ồn",
     "structure": "Phân tích cấu trúc nội dung",
     "seo": "Tối ưu hóa cho SEO",
     "format": "Tạo định dạng phong phú",
@@ -45,7 +48,7 @@
       "description": "Dán, tải lên hoặc ghi âm"
     },
     "aiMagic": {
-      "title": "Phép màu AI", 
+      "title": "Phép màu AI",
       "description": "AI làm sạch và định dạng"
     },
     "share": {

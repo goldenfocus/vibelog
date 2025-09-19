@@ -1,11 +1,14 @@
 {
   "navigation": {
     "about": "Über uns",
-    "faq": "FAQ", 
+    "faq": "FAQ",
     "pricing": "Preise",
     "community": "Community",
     "people": "Personen",
-    "signUp": "Anmelden"
+    "signUp": "Anmelden",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "accountMenu": "Account menu"
   },
   "hero": {
     "title": {
@@ -25,7 +28,7 @@
   },
   "processingSteps": {
     "transcribe": "Sprache zu Text konvertieren",
-    "clean": "Füllwörter und Rauschen entfernen", 
+    "clean": "Füllwörter und Rauschen entfernen",
     "structure": "Inhaltsstruktur analysieren",
     "seo": "Für SEO optimieren",
     "format": "Rich-Formatierung erstellen",
@@ -45,7 +48,7 @@
       "description": "Einfügen, hochladen oder aufnehmen"
     },
     "aiMagic": {
-      "title": "KI-Magie", 
+      "title": "KI-Magie",
       "description": "KI bereinigt und formatiert"
     },
     "share": {

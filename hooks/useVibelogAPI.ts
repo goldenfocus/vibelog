@@ -1,30 +1,40 @@
-import { useRef } from "react";
+import { useRef } from 'react';
+
 import {
   TranscriptionResponse,
   BlogGenerationResponse,
   TeaserResult,
   UpgradePromptState,
-  ProcessingData
-} from "@/types/micRecorder";
+  ProcessingData,
+} from '@/types/micRecorder';
 
 export interface UseVibelogAPIReturn {
   processTranscription: (audioBlob: Blob) => Promise<string>;
   processBlogGeneration: (transcription: string) => Promise<TeaserResult>;
-  processCoverImage: (args: { blogContent: string; username?: string; tags?: string[] }) => Promise<{ url: string; alt: string; width: number; height: number }>;
-  uploadAudio: (audioBlob: Blob, sessionId: string, userId?: string) => Promise<{ url: string; duration: number }>;
+  processCoverImage: (args: {
+    blogContent: string;
+    username?: string;
+    tags?: string[];
+  }) => Promise<{ url: string; alt: string; width: number; height: number }>;
+  uploadAudio: (
+    audioBlob: Blob,
+    sessionId: string,
+    userId?: string
+  ) => Promise<{ url: string; duration: number }>;
   processingData: React.MutableRefObject<ProcessingData>;
 }
 
 export function useVibelogAPI(
   onUpgradePrompt: (prompt: UpgradePromptState) => void
 ): UseVibelogAPIReturn {
+  const DEBUG_MODE = process.env.NODE_ENV !== 'production';
   // Shared data for transcription and blog generation
   const processingDataRef = useRef<ProcessingData>({
     transcriptionData: '',
-    blogContentData: ''
+    blogContentData: '',
   });
 
-  const createTeaserContent = (fullContent: string, transcription: string): TeaserResult => {
+  const createTeaserContent = (fullContent: string): TeaserResult => {
     // Always create a teaser for non-logged users to encourage signup
     // Target: Show approximately 3 paragraphs or ~3-4 sentences maximum
 
@@ -42,7 +52,9 @@ export function useVibelogAPI(
 
     // Try to include up to 3 paragraphs or until we hit a reasonable length limit
     for (const paragraph of paragraphs) {
-      if (paragraphCount >= 3) break;
+      if (paragraphCount >= 3) {
+        break;
+      }
 
       const potentialContent = teaserContent + (teaserContent ? '\n\n' : '') + paragraph;
 
@@ -55,7 +67,9 @@ export function useVibelogAPI(
       paragraphCount++;
 
       // If we've got a good amount of content (600+ chars), stop here
-      if (teaserContent.length >= 600) break;
+      if (teaserContent.length >= 600) {
+        break;
+      }
     }
 
     // Fallback: if paragraph-based approach didn't work well, use sentence-based
@@ -82,16 +96,17 @@ export function useVibelogAPI(
     // Ensure we have at least some content
     if (!teaserContent) {
       const firstSentence = fullContent.split(/[.!?]+/)[0];
-      teaserContent = firstSentence ? firstSentence.trim() + '.' : fullContent.slice(0, 400) + '...';
+      teaserContent = firstSentence
+        ? firstSentence.trim() + '.'
+        : fullContent.slice(0, 400) + '...';
     }
 
     return {
       content: teaserContent,
       isTeaser: true,
-      fullContent
+      fullContent,
     };
   };
-
 
   const handleAPIError = async (response: Response): Promise<never> => {
     if (response.status === 429) {
@@ -103,20 +118,20 @@ export function useVibelogAPI(
             visible: true,
             message: errorData.message || 'Daily limit reached. Sign in to get more requests!',
             benefits: errorData.upgrade.benefits || [],
-            resetTime: errorData.reset
+            resetTime: errorData.reset,
           });
           throw new Error('UPGRADE_PROMPT_SHOWN'); // Special error to stop processing
         }
         // If we got JSON but no upgrade info, throw with the parsed error
         console.error(`API failed with status ${response.status}:`, errorData);
         throw new Error(`API failed: ${response.status} - ${errorData.error || 'Unknown error'}`);
-      } catch (jsonError) {
+      } catch {
         // If JSON parsing fails, try to get text (but response may already be consumed)
         try {
           const errorText = await response.text();
           console.error(`API failed with status ${response.status}:`, errorText);
           throw new Error(`API failed: ${response.status} - ${errorText}`);
-        } catch (textError) {
+        } catch {
           // If both JSON and text fail, just use status
           console.error(`API failed with status ${response.status}`);
           throw new Error(`API failed: ${response.status}`);
@@ -128,7 +143,7 @@ export function useVibelogAPI(
         const errorText = await response.text();
         console.error(`API failed with status ${response.status}:`, errorText);
         throw new Error(`API failed: ${response.status} - ${errorText}`);
-      } catch (textError) {
+      } catch {
         console.error(`API failed with status ${response.status}`);
         throw new Error(`API failed: ${response.status}`);
       }
@@ -155,11 +170,11 @@ export function useVibelogAPI(
       }
 
       const { transcription }: TranscriptionResponse = await transcribeResponse.json();
-      
+
       if (!transcription) {
         throw new Error('No transcription received from API');
       }
-      
+
       processingDataRef.current.transcriptionData = transcription;
       return transcription;
     } catch (error) {
@@ -207,28 +222,36 @@ export function useVibelogAPI(
 
   // Extract title and summary from markdown (improved heuristics)
   function parseMarkdown(md: string): { title: string; summary?: string } {
-    const lines = md.split(/\r?\n/)
-    let title = 'Untitled'
-    let summary = ''
-    let i = 0
+    const lines = md.split(/\r?\n/);
+    let title = 'Untitled';
+    let summary = '';
+    let i = 0;
 
     // Look for the first heading (# title)
     for (; i < lines.length; i++) {
-      const l = lines[i].trim()
+      const l = lines[i].trim();
       if (l.startsWith('# ')) {
-        title = l.replace(/^#\s+/, '').trim()
-        i++
-        break
+        title = l.replace(/^#\s+/, '').trim();
+        i++;
+        break;
       }
     }
 
     // Look for the first meaningful paragraph as summary
     for (; i < lines.length; i++) {
-      const l = lines[i].trim()
-      if (!l) continue // Skip empty lines
-      if (l.startsWith('#')) break // Stop at next heading
-      if (l.startsWith('![')) continue // Skip image markdown
-      if (l.startsWith('---')) continue // Skip separators
+      const l = lines[i].trim();
+      if (!l) {
+        continue;
+      } // Skip empty lines
+      if (l.startsWith('#')) {
+        break;
+      } // Stop at next heading
+      if (l.startsWith('![')) {
+        continue;
+      } // Skip image markdown
+      if (l.startsWith('---')) {
+        continue;
+      } // Skip separators
 
       // Clean the line and use it as summary
       const cleanLine = l
@@ -238,102 +261,129 @@ export function useVibelogAPI(
         .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold formatting
         .replace(/\*(.*?)\*/g, '$1') // Remove italic formatting
         .replace(/`([^`]+)`/g, '$1') // Remove code formatting
-        .trim()
+        .trim();
 
-      if (cleanLine && cleanLine.length > 10) { // Require meaningful length
-        summary = cleanLine
-        break
+      if (cleanLine && cleanLine.length > 10) {
+        // Require meaningful length
+        summary = cleanLine;
+        break;
       }
     }
 
-    return { title, summary }
+    return { title, summary };
   }
 
-  const uploadAudio = async (audioBlob: Blob, sessionId: string, userId?: string): Promise<{ url: string; duration: number }> => {
+  const uploadAudio = async (
+    audioBlob: Blob,
+    sessionId: string,
+    userId?: string
+  ): Promise<{ url: string; duration: number }> => {
     try {
-      const formData = new FormData()
-      formData.append('audio', audioBlob, 'recording.webm')
-      formData.append('sessionId', sessionId)
-      if (userId) formData.append('userId', userId)
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'recording.webm');
+      formData.append('sessionId', sessionId);
+      if (userId) {
+        formData.append('userId', userId);
+      }
 
-      console.log('🎵 [AUDIO-UPLOAD] Uploading original recording...')
+      if (DEBUG_MODE) {
+        console.log('🎵 [AUDIO-UPLOAD] Uploading original recording...');
+      }
 
       const response = await fetch('/api/upload-audio', {
         method: 'POST',
-        body: formData
-      })
+        body: formData,
+      });
 
       if (!response.ok) {
-        const text = await response.text().catch(() => '')
-        console.error('Audio upload failed:', response.status, text)
-        throw new Error(`Audio upload failed: ${response.status}`)
+        const text = await response.text().catch(() => '');
+        console.error('Audio upload failed:', response.status, text);
+        throw new Error(`Audio upload failed: ${response.status}`);
       }
 
-      const data = await response.json()
-      console.log('✅ [AUDIO-UPLOAD] Upload successful:', data.url)
+      const data = await response.json();
+      if (DEBUG_MODE) {
+        console.log('✅ [AUDIO-UPLOAD] Upload successful:', data.url);
+      }
 
       // Calculate duration from blob (approximate)
-      const duration = await getAudioDuration(audioBlob)
+      const duration = await getAudioDuration(audioBlob);
 
       return {
         url: data.url,
-        duration: duration || 0
-      }
+        duration: duration || 0,
+      };
     } catch (error) {
-      console.error('Audio upload error:', error)
+      console.error('Audio upload error:', error);
       // Don't fail the whole process if audio upload fails
-      return { url: '', duration: 0 }
+      return { url: '', duration: 0 };
     }
-  }
+  };
 
   // Helper function to get audio duration
   const getAudioDuration = (blob: Blob): Promise<number> => {
-    return new Promise((resolve) => {
-      const audio = new Audio()
-      const url = URL.createObjectURL(blob)
+    return new Promise(resolve => {
+      const audio = new Audio();
+      const url = URL.createObjectURL(blob);
 
       audio.addEventListener('loadedmetadata', () => {
-        URL.revokeObjectURL(url)
-        resolve(audio.duration)
-      })
+        URL.revokeObjectURL(url);
+        resolve(audio.duration);
+      });
 
       audio.addEventListener('error', () => {
-        URL.revokeObjectURL(url)
-        resolve(0)
-      })
+        URL.revokeObjectURL(url);
+        resolve(0);
+      });
 
-      audio.src = url
-    })
-  }
+      audio.src = url;
+    });
+  };
 
-  const processCoverImage = async (args: { blogContent: string; username?: string; tags?: string[] }) => {
-
-    const { title, summary } = parseMarkdown(args.blogContent)
+  const processCoverImage = async (args: {
+    blogContent: string;
+    username?: string;
+    tags?: string[];
+  }) => {
+    const { title, summary } = parseMarkdown(args.blogContent);
 
     try {
-      const requestBody = { title, summary, username: args.username, tags: args.tags }
+      const requestBody = { title, summary, username: args.username, tags: args.tags };
 
       const res = await fetch('/api/generate-cover', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
-      })
+        body: JSON.stringify(requestBody),
+      });
 
       if (!res.ok) {
-        const text = await res.text().catch(() => '')
-        console.error('Cover generation failed:', res.status, text)
-        throw new Error(`Cover generation failed: ${res.status} ${text}`)
+        const text = await res.text().catch(() => '');
+        console.error('Cover generation failed:', res.status, text);
+        throw new Error(`Cover generation failed: ${res.status} ${text}`);
       }
 
-      const data = await res.json()
-      processingDataRef.current = { ...processingDataRef.current, blogContentData: args.blogContent }
+      const data = await res.json();
+      processingDataRef.current = {
+        ...processingDataRef.current,
+        blogContentData: args.blogContent,
+      };
 
-      return { url: data.url as string, alt: data.alt as string, width: data.width as number, height: data.height as number }
+      return {
+        url: data.url as string,
+        alt: data.alt as string,
+        width: data.width as number,
+        height: data.height as number,
+      };
     } catch (e) {
-      console.error('Cover generation error, using fallback:', e)
-      return { url: '/og-image.png', alt: `${title} — cinematic cover image`, width: 1200, height: 630 }
+      console.error('Cover generation error, using fallback:', e);
+      return {
+        url: '/og-image.png',
+        alt: `${title} — cinematic cover image`,
+        width: 1200,
+        height: 630,
+      };
     }
-  }
+  };
 
   return {
     processTranscription,
