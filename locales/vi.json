@@ -8,7 +8,8 @@
     "signUp": "Đăng ký",
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
-    "accountMenu": "Account menu"
+    "accountMenu": "Account menu",
+    "dashboard": "Dashboard"
   },
   "hero": {
     "title": {
@@ -293,6 +294,7 @@
     "signOut": "Đăng Xuất",
     "signInDescription": "Đăng nhập để lưu các vibelog của bạn và truy cập bảng điều khiển cá nhân.",
     "signInWith": "Đăng nhập với {{provider}}",
-    "termsAgreement": "Bằng cách đăng nhập, bạn đồng ý với Điều khoản Dịch vụ và Chính sách Bảo mật của chúng tôi."
+    "termsAgreement": "Bằng cách đăng nhập, bạn đồng ý với Điều khoản Dịch vụ và Chính sách Bảo mật của chúng tôi.",
+    "signingOut": "Signing out..."
   }
 }

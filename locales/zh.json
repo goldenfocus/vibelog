@@ -8,7 +8,8 @@
     "signUp": "注册",
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
-    "accountMenu": "Account menu"
+    "accountMenu": "Account menu",
+    "dashboard": "Dashboard"
   },
   "hero": {
     "title": {
@@ -293,6 +294,7 @@
     "signOut": "退出登录",
     "signInDescription": "登录以保存您的语音日志并访问个人仪表板。",
     "signInWith": "使用{{provider}}登录",
-    "termsAgreement": "登录即表示您同意我们的服务条款和隐私政策。"
+    "termsAgreement": "登录即表示您同意我们的服务条款和隐私政策。",
+    "signingOut": "Signing out..."
   }
 }
