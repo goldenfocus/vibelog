@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { Copy, Share, Edit, X, LogIn, Play, Pause, Loader2 } from "lucide-react";
-import { useI18n } from "@/components/providers/I18nProvider";
-import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import { Copy, Share, Edit, X, LogIn, Play, Pause, Loader2 } from 'lucide-react';
+import React, { useState } from 'react';
+
+import { useI18n } from '@/components/providers/I18nProvider';
+import { useTextToSpeech } from '@/hooks/useTextToSpeech';
 
 export interface PublishActionsProps {
   content: string;
   isLoggedIn?: boolean;
   isTeaserContent?: boolean;
-  onCopy: (content: string) => void;
+  onCopy: (content: string) => Promise<void> | void;
   onEdit: () => void;
   onShare: () => void;
   onUpgradePrompt?: (message: string, benefits: string[]) => void;
-  showSignature?: boolean;
   className?: string;
 }
 
@@ -26,43 +26,43 @@ interface LoginPopupProps {
 const LoginPopup: React.FC<LoginPopupProps> = ({ type, isOpen, onClose }) => {
   const { t } = useI18n();
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   const isEditPopup = type === 'edit';
-  
+
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-card/95 backdrop-blur-sm border border-border/50 rounded-2xl p-8 shadow-2xl max-w-md w-full">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-foreground">{t('components.micRecorder.loginRequired')}</h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-2xl border border-border/50 bg-card/95 p-8 shadow-2xl backdrop-blur-sm">
+        <div className="mb-6 flex items-center justify-between">
+          <h3 className="text-xl font-bold text-foreground">
+            {t('components.micRecorder.loginRequired')}
+          </h3>
           <button
             onClick={onClose}
-            className="text-muted-foreground hover:text-foreground transition-colors"
+            className="text-muted-foreground transition-colors hover:text-foreground"
             data-testid="close-popup-button"
           >
-            <X className="w-5 h-5" />
+            <X className="h-5 w-5" />
           </button>
         </div>
-        <p className="text-muted-foreground mb-6 leading-relaxed">
-          {isEditPopup 
+        <p className="mb-6 leading-relaxed text-muted-foreground">
+          {isEditPopup
             ? t('components.micRecorder.loginEditMessage')
-            : t('components.micRecorder.loginSaveMessage')
-          }
+            : t('components.micRecorder.loginSaveMessage')}
         </p>
         <div className="flex flex-col gap-3">
-          <button 
-            className="flex items-center justify-center gap-3 px-6 py-3 bg-gradient-electric hover:opacity-90 text-white font-semibold rounded-2xl transition-all duration-200"
+          <button
+            className="flex items-center justify-center gap-3 rounded-2xl bg-gradient-electric px-6 py-3 font-semibold text-white transition-all duration-200 hover:opacity-90"
             data-testid="sign-in-button"
           >
-            <LogIn className="w-5 h-5" />
-            {isEditPopup 
-              ? t('components.micRecorder.signInToEdit')
-              : 'Sign In to Save'
-            }
+            <LogIn className="h-5 w-5" />
+            {isEditPopup ? t('components.micRecorder.signInToEdit') : 'Sign In to Save'}
           </button>
           <button
             onClick={onClose}
-            className="text-muted-foreground hover:text-foreground transition-colors text-center py-2"
+            className="py-2 text-center text-muted-foreground transition-colors hover:text-foreground"
             data-testid="maybe-later-button"
           >
             {t('components.micRecorder.maybeLater')}
@@ -81,23 +81,24 @@ export default function PublishActions({
   onEdit,
   onShare,
   onUpgradePrompt,
-  showSignature = false,
-  className = ""
+  className = '',
 }: PublishActionsProps) {
+  const DEBUG_MODE = process.env.NODE_ENV !== 'production';
   const { t } = useI18n();
   const [showEditPopup, setShowEditPopup] = useState(false);
   const [showSignInPrompt, setShowSignInPrompt] = useState(false);
 
   const handleTTSEnded = () => {
-    // Show sign-in prompt after teaser playback ends for non-logged users
     if (isTeaserContent && !isLoggedIn) {
       setShowSignInPrompt(true);
-      // Auto-hide after 5 seconds
       setTimeout(() => setShowSignInPrompt(false), 5000);
     }
   };
 
-  const { isPlaying, isLoading, playText, stop, progress } = useTextToSpeech(onUpgradePrompt, handleTTSEnded);
+  const { isPlaying, isLoading, playText, stop, progress } = useTextToSpeech(
+    onUpgradePrompt,
+    handleTTSEnded
+  );
 
   const handleEditClick = () => {
     if (!isLoggedIn) {
@@ -110,69 +111,33 @@ export default function PublishActions({
   const handlePlayClick = async () => {
     if (isPlaying) {
       stop();
-    } else {
-      // Strip markdown and HTML for cleaner TTS
-      let cleanContent = content
-        .replace(/#{1,6}\s/g, '') // Remove markdown headers
-        .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold formatting
-        .replace(/\*(.*?)\*/g, '$1') // Remove italic formatting
-        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove links, keep text
-        .replace(/`([^`]+)`/g, '$1') // Remove code formatting
-        .replace(/\n\s*\n/g, '\n') // Remove extra line breaks
-        .trim();
-
-      // Add signup prompt for teaser content when user is not logged in
-      if (isTeaserContent && !isLoggedIn) {
-        cleanContent += '. Sign in to listen to the full vibelog and unlock unlimited content creation.';
-      }
-
-      await playText(cleanContent, 'shimmer'); // Using shimmer voice (closest to "Juniper" feel)
+      return;
     }
+
+    let cleanContent = content
+      .replace(/#{1,6}\s/g, '')
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .replace(/\*(.*?)\*/g, '$1')
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      .replace(/`([^`]+)`/g, '$1')
+      .replace(/\n\s*\n/g, '\n')
+      .trim();
+
+    if (isTeaserContent && !isLoggedIn) {
+      cleanContent +=
+        '. Sign in to listen to the full vibelog and unlock unlimited content creation.';
+    }
+
+    await playText(cleanContent, 'shimmer');
   };
 
   const handleCopyClick = async () => {
-    let contentToCopy = content;
-    if (showSignature) {
-      if (isLoggedIn) {
-        // Logged in users get personal branding
-        contentToCopy = content + '\n\n---\nCreated by @vibeyang\nhttps://vibelog.io/vibeyang';
-      } else {
-        // Anonymous users get simple vibelog.io branding
-        contentToCopy = content + '\n\n---\nCreated with vibelog.io';
-      }
-    }
-
-    // Mobile-friendly copy implementation
     try {
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(contentToCopy);
-        onCopy(contentToCopy);
-      } else {
-        // Fallback for mobile browsers or non-HTTPS
-        const textArea = document.createElement('textarea');
-        textArea.value = contentToCopy;
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-999999px';
-        textArea.style.top = '-999999px';
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-
-        try {
-          document.execCommand('copy');
-          onCopy(contentToCopy);
-        } catch (err) {
-          console.error('Fallback copy failed:', err);
-          // Show user-friendly error
-          alert('Copy failed. Please manually select and copy the text.');
-        } finally {
-          document.body.removeChild(textArea);
-        }
+      await onCopy(content);
+    } catch (error) {
+      if (DEBUG_MODE) {
+        console.error('Copy failed', error);
       }
-    } catch (err) {
-      console.error('Copy failed:', err);
-      // Show user-friendly error
-      alert('Copy failed. Please manually select and copy the text.');
     }
   };
 
@@ -180,32 +145,38 @@ export default function PublishActions({
 
   return (
     <>
-      <div className={`flex justify-center gap-2 sm:gap-3 ${className}`} data-testid="publish-actions">
+      <div
+        className={`flex justify-center gap-2 sm:gap-3 ${className}`}
+        data-testid="publish-actions"
+      >
         <button
           onClick={handleEditClick}
-          className="group flex flex-col items-center gap-2 p-3 sm:p-4 bg-muted/20 hover:bg-muted/30 border border-border/20 rounded-2xl transition-all duration-200 hover:scale-105 min-w-[70px] sm:min-w-[80px]"
+          className="group flex min-w-[70px] flex-col items-center gap-2 rounded-2xl border border-border/20 bg-muted/20 p-3 transition-all duration-200 hover:scale-105 hover:bg-muted/30 sm:min-w-[80px] sm:p-4"
           data-testid="edit-button"
         >
-          <Edit className="w-5 h-5 sm:w-6 sm:h-6 text-foreground group-hover:text-electric transition-colors" />
-          <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">{t('actions.edit')}</span>
+          <Edit className="h-5 w-5 text-foreground transition-colors group-hover:text-electric sm:h-6 sm:w-6" />
+          <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">
+            {t('actions.edit')}
+          </span>
         </button>
-        
+
         <button
           onClick={handleCopyClick}
-          className="group flex flex-col items-center gap-2 p-3 sm:p-4 bg-muted/20 hover:bg-muted/30 border border-border/20 rounded-2xl transition-all duration-200 hover:scale-105 min-w-[70px] sm:min-w-[80px]"
+          className="group flex min-w-[70px] flex-col items-center gap-2 rounded-2xl border border-border/20 bg-muted/20 p-3 transition-all duration-200 hover:scale-105 hover:bg-muted/30 sm:min-w-[80px] sm:p-4"
           data-testid="copy-button"
         >
-          <Copy className="w-5 h-5 sm:w-6 sm:h-6 text-foreground group-hover:text-electric transition-colors" />
-          <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">{t('actions.copy')}</span>
+          <Copy className="h-5 w-5 text-foreground transition-colors group-hover:text-electric sm:h-6 sm:w-6" />
+          <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">
+            {t('actions.copy')}
+          </span>
         </button>
-        
+
         <button
           onClick={handlePlayClick}
           disabled={isLoading}
-          className="group relative flex flex-col items-center gap-2 p-3 sm:p-4 bg-muted/20 hover:bg-muted/30 border border-border/20 rounded-2xl transition-all duration-200 hover:scale-105 min-w-[70px] sm:min-w-[80px] overflow-hidden"
+          className="group relative flex min-w-[70px] flex-col items-center gap-2 overflow-hidden rounded-2xl border border-border/20 bg-muted/20 p-3 transition-all duration-200 hover:scale-105 hover:bg-muted/30 sm:min-w-[80px] sm:p-4"
           data-testid="play-button"
         >
-          {/* Progress indicator */}
           {isPlaying && (
             <div
               className="absolute bottom-0 left-0 h-1 bg-electric transition-all duration-100 ease-out"
@@ -215,11 +186,11 @@ export default function PublishActions({
 
           <div className="relative flex items-center justify-center">
             {isLoading ? (
-              <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 text-foreground animate-spin" />
+              <Loader2 className="h-5 w-5 animate-spin text-foreground sm:h-6 sm:w-6" />
             ) : isPlaying ? (
-              <Pause className="w-5 h-5 sm:w-6 sm:h-6 text-foreground group-hover:text-electric transition-colors" />
+              <Pause className="h-5 w-5 text-foreground transition-colors group-hover:text-electric sm:h-6 sm:w-6" />
             ) : (
-              <Play className="w-5 h-5 sm:w-6 sm:h-6 text-foreground group-hover:text-electric transition-colors" />
+              <Play className="h-5 w-5 text-foreground transition-colors group-hover:text-electric sm:h-6 sm:w-6" />
             )}
           </div>
 
@@ -227,36 +198,30 @@ export default function PublishActions({
             {isPlaying ? 'Pause' : 'Listen'}
           </span>
         </button>
-        
+
         <button
           onClick={onShare}
-          className="group flex flex-col items-center gap-2 p-3 sm:p-4 bg-muted/20 hover:bg-muted/30 border border-border/20 rounded-2xl transition-all duration-200 hover:scale-105 min-w-[70px] sm:min-w-[80px]"
+          className="group flex min-w-[70px] flex-col items-center gap-2 rounded-2xl border border-border/20 bg-muted/20 p-3 transition-all duration-200 hover:scale-105 hover:bg-muted/30 sm:min-w-[80px] sm:p-4"
           data-testid="share-button"
         >
-          <Share className="w-5 h-5 sm:w-6 sm:h-6 text-foreground group-hover:text-electric transition-colors" />
-          <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">{t('actions.share')}</span>
+          <Share className="h-5 w-5 text-foreground transition-colors group-hover:text-electric sm:h-6 sm:w-6" />
+          <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">
+            {t('actions.share')}
+          </span>
         </button>
       </div>
 
-      {/* Login Popup */}
-      <LoginPopup
-        type="edit"
-        isOpen={showEditPopup}
-        onClose={closeEditPopup}
-      />
+      <LoginPopup type="edit" isOpen={showEditPopup} onClose={closeEditPopup} />
 
-      {/* Sign-in Prompt after teaser playback */}
       {showSignInPrompt && (
-        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-gradient-electric text-white px-6 py-3 rounded-2xl shadow-lg z-50 flex items-center gap-3 animate-in slide-in-from-bottom-2 duration-300">
-          <LogIn className="w-5 h-5" />
-          <span className="font-medium">
-            Sign in to listen to full vibelogs
-          </span>
+        <div className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 transform items-center gap-3 rounded-2xl bg-gradient-electric px-6 py-3 text-white shadow-lg duration-300 animate-in slide-in-from-bottom-2">
+          <LogIn className="h-5 w-5" />
+          <span className="font-medium">Sign in to listen to full vibelogs</span>
           <button
             onClick={() => setShowSignInPrompt(false)}
-            className="ml-2 text-white/80 hover:text-white transition-colors"
+            className="ml-2 text-white/80 transition-colors hover:text-white"
           >
-            <X className="w-4 h-4" />
+            <X className="h-4 w-4" />
           </button>
         </div>
       )}

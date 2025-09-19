@@ -1,8 +1,9 @@
 "use client";
 
+import { Heart, MessageCircle, Share, User } from "lucide-react";
+
 import { Navigation } from "@/components/Navigation";
 import { useI18n } from "@/components/providers/I18nProvider";
-import { Heart, MessageCircle, Share, User } from "lucide-react";
 
 export default function About() {
   const { t } = useI18n();

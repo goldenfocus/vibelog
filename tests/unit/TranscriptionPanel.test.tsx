@@ -1,7 +1,8 @@
-import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import React from 'react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
+
 import TranscriptionPanel from '@/components/mic/TranscriptionPanel';
 
 // Mock the I18n provider

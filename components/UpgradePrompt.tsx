@@ -1,7 +1,8 @@
 "use client";
 
-import React from 'react';
 import { X, Zap, Clock, Shield, Star, LogIn, CheckCircle } from 'lucide-react';
+import React from 'react';
+
 import { useAuth } from '@/components/providers/AuthProvider';
 
 interface UpgradePromptProps {
@@ -21,15 +22,15 @@ export default function UpgradePrompt({
 }: UpgradePromptProps) {
   const { signIn } = useAuth();
 
-  if (!isVisible) return null;
+  if (!isVisible) {return null;}
 
   const formatTimeUntilReset = () => {
-    if (!resetTime) return '';
+    if (!resetTime) {return '';}
     
     const now = Date.now();
     const diff = resetTime - now;
     
-    if (diff <= 0) return '';
+    if (diff <= 0) {return '';}
     
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));

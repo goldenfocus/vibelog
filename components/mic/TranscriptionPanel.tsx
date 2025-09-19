@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
 import { Copy, Edit, X, Check } from "lucide-react";
+import React, { useState } from "react";
+
 import { useI18n } from "@/components/providers/I18nProvider";
 
 export interface TranscriptionPanelProps {
@@ -25,7 +26,7 @@ interface EditModalProps {
 const EditModal: React.FC<EditModalProps> = ({ content, isOpen, onSave, onCancel }) => {
   const [editedContent, setEditedContent] = useState(content);
 
-  if (!isOpen) return null;
+  if (!isOpen) {return null;}
 
   const handleSave = () => {
     onSave(editedContent);

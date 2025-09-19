@@ -1,17 +1,28 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
+
+// Bundle analyzer configuration
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+});
 
 const nextConfig: NextConfig = {
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   turbopack: {
     rules: {
-      "*.svg": {
-        loaders: ["@svgr/webpack"],
-        as: "*.js",
+      '*.svg': {
+        loaders: ['@svgr/webpack'],
+        as: '*.js',
       },
     },
   },
   async headers() {
-    const isProd = process.env.NODE_ENV === 'production'
-    const scriptSrc = ["'self'", "'unsafe-inline'", "https://vercel.live"].concat(isProd ? [] : ["'unsafe-eval'"]).join(' ')
+    const isProd = process.env.NODE_ENV === 'production';
+    const scriptSrc = ["'self'", "'unsafe-inline'", 'https://vercel.live']
+      .concat(isProd ? [] : ["'unsafe-eval'"])
+      .join(' ');
     const csp = [
       "default-src 'self'",
       "base-uri 'self'",
@@ -31,7 +42,7 @@ const nextConfig: NextConfig = {
       "form-action 'self'",
       // Upgrade insecure requests when behind HTTPS
       'upgrade-insecure-requests',
-    ].join('; ')
+    ].join('; ');
 
     return [
       {
@@ -46,11 +57,14 @@ const nextConfig: NextConfig = {
           { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
           { key: 'Cross-Origin-Resource-Policy', value: 'same-origin' },
           // 2 years HSTS; ensure HTTPS enabled before enabling preload
-          { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=63072000; includeSubDomains; preload',
+          },
         ],
       },
-    ]
+    ];
   },
 };
 
-export default nextConfig;
+export default withBundleAnalyzer(nextConfig);

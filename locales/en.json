@@ -5,7 +5,10 @@
     "pricing": "Pricing",
     "community": "Community",
     "people": "People",
-    "signUp": "Sign Up"
+    "signUp": "Sign Up",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "accountMenu": "Account menu"
   },
   "hero": {
     "title": {

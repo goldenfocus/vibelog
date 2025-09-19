@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+
 import MicRecorder from "@/components/MicRecorder";
 import { useI18n } from "@/components/providers/I18nProvider";
 

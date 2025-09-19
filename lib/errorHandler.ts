@@ -90,8 +90,8 @@ export class ErrorHandler {
     } else if (error && typeof error === 'object') {
       // Handle API error responses
       const apiError = error as any;
-      if (apiError.code) code = apiError.code;
-      if (apiError.message) message = apiError.message;
+      if (apiError.code) {code = apiError.code;}
+      if (apiError.message) {message = apiError.message;}
       details = apiError;
     }
 

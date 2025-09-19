@@ -1,19 +1,29 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Menu, X, User, LogOut } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useI18n } from "@/components/providers/I18nProvider";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { useAuth } from "@/components/providers/AuthProvider";
+/* eslint-disable @next/next/no-img-element */
+
+import { Menu, X, LogOut, User } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useState, useEffect } from 'react';
+
+import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { useAuth } from '@/components/providers/AuthProvider';
+import { useI18n } from '@/components/providers/I18nProvider';
+import { Button } from '@/components/ui/button';
 
 export const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
   const { t, locale, setLocale } = useI18n();
   const { user, loading, signOut } = useAuth();
+
+  const avatarUrl =
+    (typeof user?.user_metadata?.avatar_url === 'string' && user.user_metadata.avatar_url) ||
+    (typeof user?.user_metadata?.picture === 'string' && user.user_metadata.picture) ||
+    null;
+  const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Account';
+  const avatarInitial = displayName.charAt(0).toUpperCase();
 
   // Close menu on route change
   useEffect(() => {
@@ -50,30 +60,29 @@ export const Navigation = () => {
   const closeMenu = () => setIsMenuOpen(false);
 
   const navLinks = [
-    { href: "/about", label: t('navigation.about') },
-    { href: "/faq", label: t('navigation.faq') },
-    { href: "/pricing", label: t('navigation.pricing') },
-    { href: "/community", label: t('navigation.community') },
-    { href: "/people", label: t('navigation.people') },
+    { href: '/about', label: t('navigation.about') },
+    { href: '/faq', label: t('navigation.faq') },
+    { href: '/pricing', label: t('navigation.pricing') },
+    { href: '/community', label: t('navigation.community') },
+    { href: '/people', label: t('navigation.people') },
   ];
+
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-sm border-b border-border/20">
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+    <nav className="fixed left-0 right-0 top-0 z-50 border-b border-border/20 bg-background/80 backdrop-blur-sm">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="text-xl font-bold">
-            <span className="bg-gradient-electric bg-clip-text text-transparent">
-              vibelog.io
-            </span>
+            <span className="bg-gradient-electric bg-clip-text text-transparent">vibelog.io</span>
           </Link>
 
           {/* Desktop Navigation Links */}
-          <div className="hidden lg:flex items-center space-x-6">
-            {navLinks.map((link) => (
+          <div className="hidden items-center space-x-6 lg:flex">
+            {navLinks.map(link => (
               <Link
                 key={link.href}
                 href={link.href}
-                className={`hover:text-primary transition-colors ${
+                className={`transition-colors hover:text-primary ${
                   isActive(link.href) ? 'text-primary' : 'text-muted-foreground'
                 }`}
               >
@@ -83,7 +92,7 @@ export const Navigation = () => {
           </div>
 
           {/* Desktop Right Side */}
-          <div className="hidden lg:flex items-center space-x-4">
+          <div className="hidden items-center space-x-4 lg:flex">
             {/* Language Switcher for non-logged users */}
             {!user && !loading && (
               <LanguageSwitcher
@@ -95,55 +104,56 @@ export const Navigation = () => {
 
             {/* Auth State */}
             {loading ? (
-              <div className="w-8 h-8 rounded-full bg-muted animate-pulse" />
+              <div className="h-8 w-8 animate-pulse rounded-full bg-muted" />
             ) : user ? (
               /* Logged In User - Desktop Dropdown */
               <div className="relative" data-menu-container>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsMenuOpen(!isMenuOpen)}
-                  className="flex items-center space-x-2 px-3 py-2"
+                <button
+                  onClick={() => setIsMenuOpen(prev => !prev)}
+                  className="hidden h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border/40 bg-muted/60 md:flex"
                   aria-expanded={isMenuOpen}
                   aria-haspopup="true"
+                  aria-label={t('navigation.accountMenu')}
                 >
-                  <div className="w-6 h-6 bg-electric/20 rounded-full flex items-center justify-center">
-                    <User className="h-3 w-3 text-electric" />
-                  </div>
-                  <span className="text-sm max-w-[100px] truncate">
-                    {user.user_metadata?.full_name || user.email}
-                  </span>
-                  {isMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-                </Button>
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt={displayName} className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="text-sm font-semibold text-foreground">{avatarInitial}</span>
+                  )}
+                </button>
 
                 {/* Desktop User Dropdown */}
                 {isMenuOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-72 bg-card border border-border rounded-lg shadow-lg z-50">
+                  <div className="absolute right-0 top-full z-50 mt-2 w-64 rounded-lg border border-border bg-card shadow-lg md:mt-3 md:w-80 md:rounded-2xl">
                     <div className="p-4">
-                      {/* User Info */}
-                      <div className="flex items-center space-x-3 pb-3 border-b border-border">
-                        <div className="w-10 h-10 bg-electric/20 rounded-full flex items-center justify-center">
-                          <User className="h-5 w-5 text-electric" />
+                      <div className="mb-4 flex items-center space-x-3 border-b border-border pb-4">
+                        <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border/40 bg-electric/20">
+                          {avatarUrl ? (
+                            <img
+                              src={avatarUrl}
+                              alt={displayName}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-sm font-semibold text-electric">
+                              {avatarInitial}
+                            </span>
+                          )}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate">
-                            {user.user_metadata?.full_name || 'Account'}
-                          </p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {user.email}
-                          </p>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold">{displayName}</p>
+                          <p className="truncate text-xs text-muted-foreground">{user.email}</p>
                         </div>
                       </div>
 
-                      {/* Navigation Links */}
-                      <div className="py-3 space-y-1">
-                        {navLinks.map((link) => (
+                      <div className="mb-4 space-y-2">
+                        {navLinks.map(link => (
                           <Link
                             key={link.href}
                             href={link.href}
-                            onClick={closeMenu}
-                            className={`block px-2 py-2 text-sm rounded hover:bg-muted transition-colors ${
-                              isActive(link.href) ? 'text-primary bg-muted' : ''
+                            onClick={() => setIsMenuOpen(false)}
+                            className={`block rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted/40 ${
+                              isActive(link.href) ? 'text-primary' : 'text-muted-foreground'
                             }`}
                           >
                             {link.label}
@@ -152,16 +162,15 @@ export const Navigation = () => {
                         <hr className="my-2 border-border" />
                         <Link
                           href="/dashboard"
-                          onClick={closeMenu}
-                          className="flex items-center space-x-2 px-2 py-2 text-sm rounded hover:bg-muted transition-colors"
+                          onClick={() => setIsMenuOpen(false)}
+                          className="flex items-center space-x-2 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted/40"
                         >
                           <User className="h-4 w-4" />
                           <span>Dashboard</span>
                         </Link>
                       </div>
 
-                      {/* Language Switcher */}
-                      <div className="pt-3 border-t border-border">
+                      <div className="border-y border-border py-3">
                         <LanguageSwitcher
                           currentLanguage={locale}
                           onLanguageChange={setLocale}
@@ -169,7 +178,6 @@ export const Navigation = () => {
                         />
                       </div>
 
-                      {/* Sign Out */}
                       <div className="pt-3">
                         <Button
                           variant="outline"
@@ -178,7 +186,7 @@ export const Navigation = () => {
                           disabled={loading}
                           className="w-full"
                         >
-                          <LogOut className="h-4 w-4 mr-2" />
+                          <LogOut className="mr-2 h-4 w-4" />
                           {loading ? 'Signing out...' : t('auth.signOut')}
                         </Button>
                       </div>
@@ -189,7 +197,7 @@ export const Navigation = () => {
             ) : (
               /* Not Logged In - Sign In Button */
               <Link href="/auth/signin">
-                <Button className="bg-gradient-electric hover:opacity-90 text-white">
+                <Button className="bg-gradient-electric text-white hover:opacity-90">
                   {t('auth.signIn')}
                 </Button>
               </Link>
@@ -213,19 +221,19 @@ export const Navigation = () => {
 
         {/* Mobile/Tablet Menu */}
         {isMenuOpen && (
-          <div className="lg:hidden border-t border-border bg-background">
-            <div className="px-4 py-4 space-y-4">
+          <div className="border-t border-border bg-background lg:hidden">
+            <div className="space-y-4 px-4 py-4">
               {/* Navigation Links */}
               <div className="space-y-3">
-                {navLinks.map((link) => (
+                {navLinks.map(link => (
                   <Link
                     key={link.href}
                     href={link.href}
                     onClick={closeMenu}
                     className={`block py-2 text-base ${
                       isActive(link.href)
-                        ? 'text-primary font-medium'
-                        : 'text-foreground hover:text-primary transition-colors'
+                        ? 'font-medium text-primary'
+                        : 'text-foreground transition-colors hover:text-primary'
                     }`}
                   >
                     {link.label}
@@ -239,22 +247,28 @@ export const Navigation = () => {
                   <hr className="border-border" />
                   <div className="space-y-3">
                     <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-electric/20 rounded-full flex items-center justify-center">
-                        <User className="h-4 w-4 text-electric" />
+                      <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-border/40 bg-electric/20">
+                        {avatarUrl ? (
+                          <img
+                            src={avatarUrl}
+                            alt={displayName}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-xs font-semibold text-electric">
+                            {avatarInitial}
+                          </span>
+                        )}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">
-                          {user.user_metadata?.full_name || 'Account'}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {user.email}
-                        </p>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">{displayName}</p>
+                        <p className="truncate text-xs text-muted-foreground">{user.email}</p>
                       </div>
                     </div>
                     <Link
                       href="/dashboard"
                       onClick={closeMenu}
-                      className="flex items-center space-x-2 py-2 text-sm hover:text-primary transition-colors"
+                      className="flex items-center space-x-2 py-2 text-sm transition-colors hover:text-primary"
                     >
                       <User className="h-4 w-4" />
                       <span>Dashboard</span>
@@ -283,12 +297,12 @@ export const Navigation = () => {
                     disabled={loading}
                     className="w-full"
                   >
-                    <LogOut className="h-4 w-4 mr-2" />
+                    <LogOut className="mr-2 h-4 w-4" />
                     {loading ? 'Signing out...' : t('auth.signOut')}
                   </Button>
                 ) : (
                   <Link href="/auth/signin" onClick={closeMenu}>
-                    <Button className="w-full bg-gradient-electric hover:opacity-90 text-white">
+                    <Button className="w-full bg-gradient-electric text-white hover:opacity-90">
                       {t('auth.signIn')}
                     </Button>
                   </Link>

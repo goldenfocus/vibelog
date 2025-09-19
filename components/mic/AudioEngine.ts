@@ -73,7 +73,7 @@ export class AudioEngine {
   async startRecording(): Promise<boolean> {
     if (!this.streamRef || !this.audioContextRef || !this.analyserRef) {
       const hasPermission = await this.requestPermission();
-      if (!hasPermission) return false;
+      if (!hasPermission) {return false;}
     }
 
     try {
@@ -177,7 +177,7 @@ export class AudioEngine {
    * Start real-time level monitoring for waveform visualization
    */
   private startLevelMonitoring(): void {
-    if (!this.analyserRef || !this.isRecording) return;
+    if (!this.analyserRef || !this.isRecording) {return;}
     
     const analyser = this.analyserRef;
     const bufferLength = analyser.frequencyBinCount;
@@ -185,7 +185,7 @@ export class AudioEngine {
     const bars = 15;
     
     const loop = () => {
-      if (!this.isRecording) return;
+      if (!this.isRecording) {return;}
       
       analyser.getByteFrequencyData(dataArray);
       

@@ -1,5 +1,6 @@
 import 'server-only'
 import { NextRequest, NextResponse } from 'next/server'
+
 import { createServerAdminClient } from '@/lib/supabaseAdmin'
 
 type WindowUnit = 's' | 'm' | 'h'
@@ -42,7 +43,7 @@ function getIP(req: NextRequest): string {
 
   // Try other common headers
   const realIp = req.headers.get('x-real-ip')
-  if (realIp) return realIp
+  if (realIp) {return realIp}
 
   return 'unknown'
 }
@@ -89,7 +90,7 @@ export async function rateLimit(
         .select('count, reset_at')
         .single()
 
-      if (insErr) throw insErr
+      if (insErr) {throw insErr}
 
       return {
         success: true,
@@ -117,7 +118,7 @@ export async function rateLimit(
       .select('count, reset_at')
       .single()
 
-    if (updErr) throw updErr
+    if (updErr) {throw updErr}
 
     const allowed = nextCount <= opts.limit
     return {
@@ -148,10 +149,10 @@ export function tooManyResponse(info?: RateLimitResult) {
   if (info) {
     const now = Date.now()
     const retrySeconds = info.reset ? Math.max(0, Math.ceil((info.reset - now) / 1000)) : undefined
-    if (retrySeconds !== undefined) headers['Retry-After'] = String(retrySeconds)
-    if (info.limit !== undefined) headers['X-RateLimit-Limit'] = String(info.limit)
-    if (info.remaining !== undefined) headers['X-RateLimit-Remaining'] = String(info.remaining)
-    if (info.reset !== undefined) headers['X-RateLimit-Reset'] = String(Math.ceil(info.reset / 1000))
+    if (retrySeconds !== undefined) {headers['Retry-After'] = String(retrySeconds)}
+    if (info.limit !== undefined) {headers['X-RateLimit-Limit'] = String(info.limit)}
+    if (info.remaining !== undefined) {headers['X-RateLimit-Remaining'] = String(info.remaining)}
+    if (info.reset !== undefined) {headers['X-RateLimit-Reset'] = String(Math.ceil(info.reset / 1000))}
   }
 
   return NextResponse.json(

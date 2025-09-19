@@ -1,7 +1,8 @@
 import { useRef, useEffect, useState, useCallback } from "react";
+
 import { AudioEngine } from "@/components/mic/AudioEngine";
-import { AudioEngineCallbacks } from "@/types/micRecorder";
 import { RecordingState } from "@/components/mic/Controls";
+import { AudioEngineCallbacks } from "@/types/micRecorder";
 
 export interface UseAudioEngineReturn {
   audioEngine: AudioEngine | null;
@@ -78,7 +79,7 @@ export function useAudioEngine(
   }, []);
 
   const startRecording = async (): Promise<boolean> => {
-    if (!audioEngineRef.current) return false;
+    if (!audioEngineRef.current) {return false;}
     
     const success = await audioEngineRef.current.startRecording();
     if (success) {
@@ -90,7 +91,7 @@ export function useAudioEngine(
   };
 
   const stopRecording = () => {
-    if (!audioEngineRef.current) return;
+    if (!audioEngineRef.current) {return;}
     audioEngineRef.current.stopRecordingAndRelease();
   };
 

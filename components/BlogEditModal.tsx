@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
 import { Check, X } from "lucide-react";
+import React from "react";
 
 interface BlogEditModalProps {
   isVisible: boolean;
@@ -18,7 +18,7 @@ export default function BlogEditModal({
   onSave,
   onCancel,
 }: BlogEditModalProps) {
-  if (!isVisible) return null;
+  if (!isVisible) {return null;}
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">

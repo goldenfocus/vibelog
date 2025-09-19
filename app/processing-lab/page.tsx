@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+
 import ProcessingAnimation from "@/components/mic/ProcessingAnimation";
 import { useI18n } from "@/components/providers/I18nProvider";
 

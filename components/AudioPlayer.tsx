@@ -1,9 +1,10 @@
 "use client";
 
-import React from "react";
 import { Volume2, Play, Pause } from "lucide-react";
-import { useI18n } from "@/components/providers/I18nProvider";
+import React from "react";
+
 import Waveform from "@/components/mic/Waveform";
+import { useI18n } from "@/components/providers/I18nProvider";
 import { UseAudioPlaybackReturn } from "@/hooks/useAudioPlayback";
 
 interface AudioPlayerProps {
@@ -81,7 +82,7 @@ export default function AudioPlayer({ audioBlob, playback }: AudioPlayerProps) {
     }
   };
 
-  if (!audioBlob) return null;
+  if (!audioBlob) {return null;}
 
   return (
     <div className="bg-card/50 backdrop-blur-sm rounded-2xl p-6 border border-border/30 mb-8">
