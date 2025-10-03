@@ -270,43 +270,75 @@ export default function Navigation() {
       {isMobileUserOpen && (
         <div className="fixed inset-0 z-[100] bg-black">
           <div className="flex h-full flex-col bg-black">
-            <div className="flex items-center justify-between border-b border-border px-6 py-4">
-              <span className="text-lg font-semibold">Account</span>
+            {/* Header with close button - larger touch target */}
+            <div className="flex items-center justify-between border-b border-border px-5 py-5">
+              <span className="text-xl font-semibold">Account</span>
               <button
                 onClick={() => setIsMobileUserOpen(false)}
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-border/50 bg-primary/10 text-primary"
+                className="flex h-12 w-12 items-center justify-center rounded-xl border border-border/50 bg-primary/10 text-primary transition-transform active:scale-95"
                 aria-label={t('navigation.closeMenu')}
               >
-                <X className="h-5 w-5" />
+                <X className="h-6 w-6" />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-6 py-8">
-              <div className="mb-6 flex items-center gap-4 rounded-xl border border-border bg-muted/30 p-4">
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-y-auto px-5 py-6">
+              {/* User profile card - prominent */}
+              <div className="mb-8 flex items-center gap-5 rounded-2xl border border-border bg-muted/30 p-5">
                 <div
-                  className="relative flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border-2 border-border/40"
+                  className="relative flex h-16 w-16 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-border/40"
                   style={getAvatarContainerStyle(avatarUrl && !avatarError)}
                 >
                   {renderAvatarContent('lg')}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-base font-semibold">{displayName}</p>
-                  <p className="truncate text-sm text-muted-foreground">{user?.email}</p>
+                  <p className="truncate text-lg font-semibold">{displayName}</p>
+                  <p className="truncate text-base text-muted-foreground">{user?.email}</p>
                 </div>
               </div>
 
-              <div className="space-y-1">
+              {/* Navigation links - larger touch targets */}
+              <div className="space-y-2">
                 <Link
                   href="/dashboard"
-                  className="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium text-foreground transition-colors hover:bg-muted/50"
+                  className="flex items-center gap-4 rounded-xl px-5 py-4 text-lg font-medium text-foreground transition-colors hover:bg-muted/50 active:bg-muted/70"
                   onClick={() => setIsMobileUserOpen(false)}
                 >
-                  <span className="text-xl">👤</span>
+                  <span className="text-2xl">👤</span>
                   {t('navigation.dashboard')}
+                </Link>
+
+                <Link
+                  href="/about"
+                  className="flex items-center gap-4 rounded-xl px-5 py-4 text-lg font-medium text-foreground transition-colors hover:bg-muted/50 active:bg-muted/70"
+                  onClick={() => setIsMobileUserOpen(false)}
+                >
+                  <span className="text-2xl">ℹ️</span>
+                  vibelog.io
+                </Link>
+
+                <Link
+                  href="/faq"
+                  className="flex items-center gap-4 rounded-xl px-5 py-4 text-lg font-medium text-foreground transition-colors hover:bg-muted/50 active:bg-muted/70"
+                  onClick={() => setIsMobileUserOpen(false)}
+                >
+                  <span className="text-2xl">❓</span>
+                  FAQ
+                </Link>
+
+                <Link
+                  href="/pricing"
+                  className="flex items-center gap-4 rounded-xl px-5 py-4 text-lg font-medium text-foreground transition-colors hover:bg-muted/50 active:bg-muted/70"
+                  onClick={() => setIsMobileUserOpen(false)}
+                >
+                  <span className="text-2xl">💎</span>
+                  Pricing
                 </Link>
               </div>
 
-              <div className="mt-6">
+              {/* Sign out button - prominent and easy to tap */}
+              <div className="mt-8">
                 <Button
                   variant="outline"
                   size="lg"
@@ -315,12 +347,12 @@ export default function Navigation() {
                     setIsMobileUserOpen(false);
                   }}
                   disabled={isSigningOut}
-                  className="flex w-full items-center justify-center gap-2"
+                  className="active:scale-98 flex h-14 w-full items-center justify-center gap-3 text-lg font-medium transition-transform"
                 >
                   {isSigningOut ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <Loader2 className="h-6 w-6 animate-spin" />
                   ) : (
-                    <LogOut className="h-5 w-5" />
+                    <LogOut className="h-6 w-6" />
                   )}
                   {isSigningOut ? t('auth.signingOut') : t('auth.signOut')}
                 </Button>
