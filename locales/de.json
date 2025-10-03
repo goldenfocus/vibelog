@@ -295,6 +295,14 @@
     "signInDescription": "Melden Sie sich an, um Ihre Vibelogs zu speichern und auf Ihr persönliches Dashboard zuzugreifen.",
     "signInWith": "Anmelden mit {{provider}}",
     "termsAgreement": "Durch die Anmeldung stimmen Sie unseren Nutzungsbedingungen und Datenschutzrichtlinien zu.",
-    "signingOut": "Signing out..."
+    "signingOut": "Abmelden..."
+  },
+  "dashboard": {
+    "welcome": "Willkommen zurück,",
+    "subtitle": "Starten Sie Vibelogging oder verwalten Sie Ihre Inhalte",
+    "newVibelog": "Neues Vibelog",
+    "account": "Kontodetails",
+    "signedInWith": "Angemeldet mit",
+    "comingSoon": "Ihre Vibelogs-Bibliothek kommt bald — speichern, organisieren und veröffentlichen Sie mit Leichtigkeit"
   }
 }

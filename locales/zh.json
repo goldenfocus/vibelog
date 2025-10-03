@@ -295,6 +295,14 @@
     "signInDescription": "登录以保存您的语音日志并访问个人仪表板。",
     "signInWith": "使用{{provider}}登录",
     "termsAgreement": "登录即表示您同意我们的服务条款和隐私政策。",
-    "signingOut": "Signing out..."
+    "signingOut": "正在退出..."
+  },
+  "dashboard": {
+    "welcome": "欢迎回来，",
+    "subtitle": "开始录制或管理您的内容",
+    "newVibelog": "新建Vibelog",
+    "account": "账户详情",
+    "signedInWith": "登录方式",
+    "comingSoon": "您的vibelog库即将推出 — 轻松保存、整理和发布"
   }
 }
