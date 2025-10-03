@@ -113,17 +113,48 @@ export function useAudioPlayback(audioBlob: Blob | null): UseAudioPlaybackReturn
       setAudioUrl(url);
 
       // Force load metadata to get real duration
-      setTimeout(() => {
-        if (audioRef.current) {
-          audioRef.current.load(); // Force reload
+      // Use multiple approaches to ensure duration loads
+      const loadDuration = async () => {
+        if (!audioRef.current) {
+          return;
         }
-      }, 100);
+
+        // Approach 1: Force load and wait for metadata
+        audioRef.current.load();
+
+        // Approach 2: Create temporary audio element to get duration
+        const tempAudio = new Audio(url);
+        tempAudio.preload = 'metadata';
+
+        try {
+          await new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => reject(new Error('Timeout')), 5000);
+            tempAudio.addEventListener(
+              'loadedmetadata',
+              () => {
+                clearTimeout(timeout);
+                if (tempAudio.duration && isFinite(tempAudio.duration) && tempAudio.duration > 0) {
+                  setDuration(tempAudio.duration);
+                }
+                resolve(undefined);
+              },
+              { once: true }
+            );
+            tempAudio.addEventListener('error', reject, { once: true });
+          });
+        } catch (error) {
+          console.warn('Could not preload audio duration:', error);
+        }
+      };
+
+      loadDuration();
 
       return () => {
         URL.revokeObjectURL(url);
       };
     } else {
       setAudioUrl(null);
+      setDuration(0);
     }
   }, [audioBlob]);
 
