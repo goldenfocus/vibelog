@@ -2,11 +2,12 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { Loader2, LogOut, Menu, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
+import { AccountSheet } from '@/components/AccountSheet';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useI18n } from '@/components/providers/I18nProvider';
@@ -15,12 +16,11 @@ import { Button } from '@/components/ui/button';
 export default function Navigation() {
   const pathname = usePathname();
   const { t, locale, setLocale } = useI18n();
-  const { user, loading, signOut } = useAuth();
+  const { user, loading } = useAuth();
 
   const [isMenuOpen, setIsMenuOpen] = useState(false); // Desktop menu
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false); // Mobile hamburger menu
   const [isMobileUserOpen, setIsMobileUserOpen] = useState(false); // Mobile user menu
-  const [isSigningOut, setIsSigningOut] = useState(false);
   const [avatarError, setAvatarError] = useState(false);
 
   const navLinks = useMemo(
@@ -66,44 +66,7 @@ export default function Navigation() {
     setIsMobileNavOpen(false);
     setIsMobileUserOpen(false);
     setAvatarError(false);
-    setIsSigningOut(false);
   }, [pathname, user?.id]);
-
-  useEffect(() => {
-    if (!isMenuOpen) {
-      return;
-    }
-
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement | null;
-      if (!target?.closest('[data-nav-menu]') && !target?.closest('[data-nav-trigger]')) {
-        setIsMenuOpen(false);
-      }
-    };
-
-    const handleKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setIsMenuOpen(false);
-      }
-    };
-
-    document.addEventListener('click', handleClickOutside);
-    document.addEventListener('keydown', handleKey);
-    return () => {
-      document.removeEventListener('click', handleClickOutside);
-      document.removeEventListener('keydown', handleKey);
-    };
-  }, [isMenuOpen]);
-
-  const handleSignOut = async () => {
-    setIsSigningOut(true);
-    try {
-      await signOut();
-    } finally {
-      setIsSigningOut(false);
-      setIsMenuOpen(false);
-    }
-  };
 
   const renderAvatarContent = (size: 'sm' | 'lg') => {
     if (avatarUrl && !avatarError) {
@@ -149,65 +112,6 @@ export default function Navigation() {
       backgroundColor: '#3B82F6', // Fallback solid blue
     };
   };
-
-  const desktopMenu = (
-    <div data-nav-menu className="hidden lg:block">
-      {isMenuOpen && (
-        <div className="absolute right-4 top-16 z-50 w-80 rounded-2xl border border-border bg-card shadow-2xl">
-          <div className="p-4">
-            <div className="mb-4 flex items-center gap-3 border-b border-border pb-4">
-              <div
-                className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-border/40"
-                style={getAvatarContainerStyle(avatarUrl && !avatarError)}
-              >
-                {renderAvatarContent('lg')}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold">{displayName}</p>
-                <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
-              </div>
-            </div>
-
-            <div className="mb-4 space-y-1">
-              <Link
-                href="/dashboard"
-                className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted/40"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <span className="text-lg">👤</span>
-                {t('navigation.dashboard')}
-              </Link>
-            </div>
-
-            <div className="border-y border-border py-3">
-              <LanguageSwitcher
-                currentLanguage={locale}
-                onLanguageChange={setLocale}
-                compact={false}
-              />
-            </div>
-
-            <div className="pt-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSignOut}
-                disabled={isSigningOut}
-                className="flex w-full items-center justify-center gap-2"
-              >
-                {isSigningOut ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <LogOut className="h-4 w-4" />
-                )}
-                {isSigningOut ? t('auth.signingOut') : t('auth.signOut')}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
 
   // Mobile hamburger menu (site navigation)
   const mobileNavMenu = (
@@ -256,106 +160,6 @@ export default function Navigation() {
                   onLanguageChange={setLocale}
                   compact={false}
                 />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
-  // Mobile user menu (account actions)
-  const mobileUserMenu = (
-    <div data-user-menu className="lg:hidden">
-      {isMobileUserOpen && (
-        <div className="fixed inset-0 z-[100] bg-background">
-          <div className="flex h-full flex-col bg-background">
-            {/* Header with close button - larger touch target */}
-            <div className="flex items-center justify-between border-b border-border px-5 py-5">
-              <span className="text-xl font-semibold">Account</span>
-              <button
-                onClick={() => setIsMobileUserOpen(false)}
-                className="flex h-12 w-12 items-center justify-center rounded-xl border border-border/50 bg-primary/10 text-primary transition-transform active:scale-95"
-                aria-label={t('navigation.closeMenu')}
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
-
-            {/* Content - optimized to show all items at once */}
-            <div className="flex h-full flex-col px-4 py-4">
-              {/* Compact user profile */}
-              <div className="mb-4 flex items-center gap-3 rounded-xl border border-border bg-muted/30 p-3">
-                <div
-                  className="relative flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-border/40"
-                  style={getAvatarContainerStyle(avatarUrl && !avatarError)}
-                >
-                  {renderAvatarContent('lg')}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-base font-semibold">{displayName}</p>
-                  <p className="truncate text-sm text-muted-foreground">{user?.email}</p>
-                </div>
-              </div>
-
-              {/* Navigation links - compact but tappable */}
-              <div className="flex-1 space-y-1">
-                <Link
-                  href="/dashboard"
-                  className="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium text-foreground transition-colors hover:bg-muted/50 active:bg-muted/70"
-                  onClick={() => setIsMobileUserOpen(false)}
-                >
-                  <span className="text-xl">👤</span>
-                  {t('navigation.dashboard')}
-                </Link>
-
-                <Link
-                  href="/about"
-                  className="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium text-foreground transition-colors hover:bg-muted/50 active:bg-muted/70"
-                  onClick={() => setIsMobileUserOpen(false)}
-                >
-                  <span className="text-xl">ℹ️</span>
-                  vibelog.io
-                </Link>
-
-                <Link
-                  href="/faq"
-                  className="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium text-foreground transition-colors hover:bg-muted/50 active:bg-muted/70"
-                  onClick={() => setIsMobileUserOpen(false)}
-                >
-                  <span className="text-xl">❓</span>
-                  FAQ
-                </Link>
-
-                <Link
-                  href="/pricing"
-                  className="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium text-foreground transition-colors hover:bg-muted/50 active:bg-muted/70"
-                  onClick={() => setIsMobileUserOpen(false)}
-                >
-                  <span className="text-xl">💎</span>
-                  Pricing
-                </Link>
-              </div>
-
-              {/* Sign out button - fixed at bottom */}
-              <div className="mt-auto pt-4">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={() => {
-                    handleSignOut();
-                    setIsMobileUserOpen(false);
-                  }}
-                  disabled={isSigningOut}
-                  className="active:scale-98 flex h-12 w-full items-center justify-center gap-2 text-base font-medium transition-transform"
-                >
-                  {isSigningOut ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <LogOut className="h-5 w-5" />
-                  )}
-                  {isSigningOut ? t('auth.signingOut') : t('auth.signOut')}
-                </Button>
               </div>
             </div>
           </div>
@@ -455,9 +259,23 @@ export default function Navigation() {
         </div>
       </div>
 
-      {desktopMenu}
       {mobileNavMenu}
-      {mobileUserMenu}
+
+      {/* Account Sheet for mobile and desktop */}
+      {user && (
+        <AccountSheet
+          open={isMobileUserOpen || isMenuOpen}
+          onOpenChange={open => {
+            setIsMobileUserOpen(open);
+            setIsMenuOpen(open);
+          }}
+          displayName={displayName}
+          email={user.email || ''}
+          avatarUrl={avatarUrl}
+          renderAvatarContent={renderAvatarContent}
+          getAvatarContainerStyle={getAvatarContainerStyle}
+        />
+      )}
     </nav>
   );
 }
