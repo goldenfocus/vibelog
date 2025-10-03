@@ -138,13 +138,13 @@ export default function Navigation() {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-6 py-8">
-              <div className="space-y-1">
+            <div className="flex h-full flex-col px-5 py-6">
+              <div className="flex-1 space-y-2">
                 {navLinks.map(link => (
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={`block rounded-lg px-4 py-3 text-base font-medium transition-colors hover:bg-muted/50 ${
+                    className={`block rounded-lg px-4 py-3 text-base font-medium transition-colors hover:bg-muted/50 active:bg-muted/70 ${
                       isActive(link.href) ? 'bg-muted text-primary' : 'text-foreground'
                     }`}
                     onClick={() => setIsMobileNavOpen(false)}
@@ -154,7 +154,7 @@ export default function Navigation() {
                 ))}
               </div>
 
-              <div className="mt-8 border-t border-border pt-6">
+              <div className="mt-auto border-t border-border pt-4">
                 <LanguageSwitcher
                   currentLanguage={locale}
                   onLanguageChange={setLocale}
