@@ -33,13 +33,7 @@ export default function AudioPlayer({ audioBlob, playback }: AudioPlayerProps) {
     handleEnded,
     handlePlay,
     handlePause,
-  } = playback as UseAudioPlaybackReturn & {
-    handleLoadedMetadata: () => void;
-    handleTimeUpdate: () => void;
-    handleEnded: () => void;
-    handlePlay: () => void;
-    handlePause: () => void;
-  };
+  } = playback;
 
   const handlePlayPause = async () => {
     // Immediate visual feedback
