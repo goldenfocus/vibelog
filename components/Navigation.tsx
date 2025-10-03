@@ -17,7 +17,9 @@ export default function Navigation() {
   const { t, locale, setLocale } = useI18n();
   const { user, loading, signOut } = useAuth();
 
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false); // Desktop menu
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false); // Mobile hamburger menu
+  const [isMobileUserOpen, setIsMobileUserOpen] = useState(false); // Mobile user menu
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [avatarError, setAvatarError] = useState(false);
 
@@ -61,6 +63,8 @@ export default function Navigation() {
 
   useEffect(() => {
     setIsMenuOpen(false);
+    setIsMobileNavOpen(false);
+    setIsMobileUserOpen(false);
     setAvatarError(false);
     setIsSigningOut(false);
   }, [pathname, user?.id]);
@@ -205,92 +209,123 @@ export default function Navigation() {
     </div>
   );
 
-  const mobileMenu = (
+  // Mobile hamburger menu (site navigation)
+  const mobileNavMenu = (
     <div data-nav-menu className="lg:hidden">
-      {isMenuOpen && (
-        <div className="fixed inset-0 z-50 bg-background backdrop-blur-xl">
-          <div className="flex items-center justify-between px-6 pt-6">
-            <Link href="/" onClick={() => setIsMenuOpen(false)} className="text-xl font-semibold">
-              <span className="bg-gradient-electric bg-clip-text text-transparent">vibelog.io</span>
-            </Link>
-            <button
-              onClick={() => setIsMenuOpen(false)}
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-border/50 bg-primary/10 text-primary"
-              aria-label={t('navigation.closeMenu')}
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-
-          <div className="mt-8 space-y-6 px-6 pb-10">
-            <div className="space-y-4">
-              {navLinks.map(link => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="block text-lg font-medium text-muted-foreground"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {link.label}
-                </Link>
-              ))}
+      {isMobileNavOpen && (
+        <div className="fixed inset-0 z-50 bg-background">
+          <div className="flex h-full flex-col">
+            <div className="flex items-center justify-between border-b border-border px-6 py-4">
+              <Link
+                href="/"
+                onClick={() => setIsMobileNavOpen(false)}
+                className="text-xl font-semibold"
+              >
+                <span className="bg-gradient-electric bg-clip-text text-transparent">
+                  vibelog.io
+                </span>
+              </Link>
+              <button
+                onClick={() => setIsMobileNavOpen(false)}
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-border/50 bg-primary/10 text-primary"
+                aria-label={t('navigation.closeMenu')}
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
 
-            {user && (
-              <div className="space-y-2 border-t border-border pt-6">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border/40"
-                    style={getAvatarContainerStyle(avatarUrl && !avatarError)}
+            <div className="flex-1 overflow-y-auto px-6 py-8">
+              <div className="space-y-1">
+                {navLinks.map(link => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`block rounded-lg px-4 py-3 text-base font-medium transition-colors hover:bg-muted/50 ${
+                      isActive(link.href) ? 'bg-muted text-primary' : 'text-foreground'
+                    }`}
+                    onClick={() => setIsMobileNavOpen(false)}
                   >
-                    {renderAvatarContent('sm')}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-base font-semibold">{displayName}</p>
-                    <p className="truncate text-xs text-muted-foreground">{user.email}</p>
-                  </div>
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+
+              <div className="mt-8 border-t border-border pt-6">
+                <LanguageSwitcher
+                  currentLanguage={locale}
+                  onLanguageChange={setLocale}
+                  compact={false}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // Mobile user menu (account actions)
+  const mobileUserMenu = (
+    <div data-user-menu className="lg:hidden">
+      {isMobileUserOpen && (
+        <div className="fixed inset-0 z-50 bg-background">
+          <div className="flex h-full flex-col">
+            <div className="flex items-center justify-between border-b border-border px-6 py-4">
+              <span className="text-lg font-semibold">Account</span>
+              <button
+                onClick={() => setIsMobileUserOpen(false)}
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-border/50 bg-primary/10 text-primary"
+                aria-label={t('navigation.closeMenu')}
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-6 py-8">
+              <div className="mb-6 flex items-center gap-4 rounded-xl border border-border bg-muted/30 p-4">
+                <div
+                  className="relative flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border-2 border-border/40"
+                  style={getAvatarContainerStyle(avatarUrl && !avatarError)}
+                >
+                  {renderAvatarContent('lg')}
                 </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-base font-semibold">{displayName}</p>
+                  <p className="truncate text-sm text-muted-foreground">{user?.email}</p>
+                </div>
+              </div>
+
+              <div className="space-y-1">
                 <Link
                   href="/dashboard"
-                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted/40"
-                  onClick={() => setIsMenuOpen(false)}
+                  className="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium text-foreground transition-colors hover:bg-muted/50"
+                  onClick={() => setIsMobileUserOpen(false)}
                 >
-                  <span className="text-lg">👤</span>
+                  <span className="text-xl">👤</span>
                   {t('navigation.dashboard')}
                 </Link>
               </div>
-            )}
 
-            <div className="border-t border-border pt-6">
-              <LanguageSwitcher
-                currentLanguage={locale}
-                onLanguageChange={setLocale}
-                compact={false}
-              />
-            </div>
-
-            {user ? (
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={handleSignOut}
-                disabled={isSigningOut}
-                className="flex w-full items-center justify-center gap-2"
-              >
-                {isSigningOut ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <LogOut className="h-5 w-5" />
-                )}
-                {isSigningOut ? t('auth.signingOut') : t('auth.signOut')}
-              </Button>
-            ) : (
-              <Link href="/auth/signin" onClick={() => setIsMenuOpen(false)}>
-                <Button className="w-full bg-gradient-electric text-white hover:opacity-90">
-                  {t('auth.signIn')}
+              <div className="mt-6">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => {
+                    handleSignOut();
+                    setIsMobileUserOpen(false);
+                  }}
+                  disabled={isSigningOut}
+                  className="flex w-full items-center justify-center gap-2"
+                >
+                  {isSigningOut ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <LogOut className="h-5 w-5" />
+                  )}
+                  {isSigningOut ? t('auth.signingOut') : t('auth.signOut')}
                 </Button>
-              </Link>
-            )}
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -334,17 +369,26 @@ export default function Navigation() {
               <div className="h-8 w-8 animate-pulse rounded-full bg-muted" />
             ) : user ? (
               <>
+                {/* Mobile: Hamburger menu button */}
                 <button
-                  data-nav-trigger
-                  onClick={() => setIsMenuOpen(prev => !prev)}
-                  aria-label={isMenuOpen ? t('navigation.closeMenu') : t('navigation.openMenu')}
-                  aria-expanded={isMenuOpen}
-                  aria-haspopup="true"
-                  className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border/40 bg-muted/60 text-muted-foreground lg:hidden"
+                  onClick={() => setIsMobileNavOpen(true)}
+                  aria-label="Open navigation menu"
+                  className="flex h-10 w-10 items-center justify-center rounded-lg border border-border/40 bg-muted/60 text-foreground lg:hidden"
                 >
-                  {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                  <Menu className="h-5 w-5" />
                 </button>
 
+                {/* Mobile: User avatar button */}
+                <button
+                  onClick={() => setIsMobileUserOpen(true)}
+                  aria-label="Open account menu"
+                  className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border/40 lg:hidden"
+                  style={getAvatarContainerStyle(avatarUrl && !avatarError)}
+                >
+                  {renderAvatarContent('sm')}
+                </button>
+
+                {/* Desktop: Avatar button */}
                 <button
                   data-nav-trigger
                   onClick={() => setIsMenuOpen(prev => !prev)}
@@ -358,18 +402,30 @@ export default function Navigation() {
                 </button>
               </>
             ) : (
-              <Link href="/auth/signin">
-                <Button className="bg-gradient-electric text-white hover:opacity-90">
-                  {t('auth.signIn')}
-                </Button>
-              </Link>
+              <>
+                {/* Not logged in: Show hamburger + sign in button */}
+                <button
+                  onClick={() => setIsMobileNavOpen(true)}
+                  aria-label="Open navigation menu"
+                  className="flex h-10 w-10 items-center justify-center rounded-lg border border-border/40 bg-muted/60 text-foreground lg:hidden"
+                >
+                  <Menu className="h-5 w-5" />
+                </button>
+
+                <Link href="/auth/signin">
+                  <Button className="bg-gradient-electric text-white hover:opacity-90">
+                    {t('auth.signIn')}
+                  </Button>
+                </Link>
+              </>
             )}
           </div>
         </div>
       </div>
 
       {desktopMenu}
-      {mobileMenu}
+      {mobileNavMenu}
+      {mobileUserMenu}
     </nav>
   );
 }
