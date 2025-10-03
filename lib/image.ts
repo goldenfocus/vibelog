@@ -113,7 +113,7 @@ export async function watermarkAndResize(params: {
   console.log('🚫 [WATERMARK] Watermarks disabled - returning clean image');
 
   const out = await base
-    .withMetadata({ xmp } as { xmp: Buffer })
+    .withMetadata({ xmp } as any)
     .jpeg({ quality: 88 })
     .toBuffer({ resolveWithObject: true });
 
