@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState } from 'react';
 
 // Extend Window interface for webkitAudioContext
 declare global {
@@ -18,6 +18,11 @@ export interface UseAudioPlaybackReturn {
   pause: () => void;
   seek: (time: number) => void;
   formatTime: (seconds: number) => string;
+  handleLoadedMetadata: () => void;
+  handleTimeUpdate: () => void;
+  handleEnded: () => void;
+  handlePlay: () => void;
+  handlePause: () => void;
 }
 
 export function useAudioPlayback(audioBlob: Blob | null): UseAudioPlaybackReturn {
@@ -41,36 +46,38 @@ export function useAudioPlayback(audioBlob: Blob | null): UseAudioPlaybackReturn
       const analyser = playbackAnalyserRef.current;
       const bufferLength = analyser.frequencyBinCount;
       const dataArray = new Uint8Array(bufferLength);
-      
+
       const loop = () => {
-        if (!isPlaying) {return;}
-        
+        if (!isPlaying) {
+          return;
+        }
+
         analyser.getByteFrequencyData(dataArray);
-        
+
         // Map frequency data to playback bars (same logic as recording)
         const newLevels = [...playbackLevelsRef.current];
         const bars = 15;
-        
+
         for (let i = 0; i < bars; i++) {
           const minFreq = 0;
           const maxFreq = bufferLength * 0.7;
           const freq = minFreq + (maxFreq - minFreq) * Math.pow(i / (bars - 1), 1.5);
-          
+
           const start = Math.floor(freq);
           const end = Math.min(start + Math.floor(bufferLength / bars) + 1, bufferLength);
           let sum = 0;
           let count = 0;
-          
+
           for (let j = start; j < end && j < bufferLength; j++) {
             sum += dataArray[j];
             count++;
           }
-          
+
           const average = count > 0 ? sum / count : 0;
           let normalized = (average / 255) * 2.5; // Slightly less aggressive for playback
           normalized = Math.pow(normalized, 0.6);
           normalized = Math.max(0.1, Math.min(1, normalized));
-          
+
           // Smooth transition
           newLevels[i] += (normalized - newLevels[i]) * 0.5;
         }
@@ -79,7 +86,7 @@ export function useAudioPlayback(audioBlob: Blob | null): UseAudioPlaybackReturn
         setPlaybackLevels([...newLevels]);
         playbackRafRef.current = requestAnimationFrame(loop);
       };
-      
+
       playbackRafRef.current = requestAnimationFrame(loop);
     } else if (!isPlaying) {
       if (playbackRafRef.current) {
@@ -91,7 +98,7 @@ export function useAudioPlayback(audioBlob: Blob | null): UseAudioPlaybackReturn
       playbackLevelsRef.current = fadeLevel;
       setPlaybackLevels(fadeLevel);
     }
-    
+
     return () => {
       if (playbackRafRef.current) {
         cancelAnimationFrame(playbackRafRef.current);
@@ -104,14 +111,14 @@ export function useAudioPlayback(audioBlob: Blob | null): UseAudioPlaybackReturn
     if (audioBlob) {
       const url = URL.createObjectURL(audioBlob);
       setAudioUrl(url);
-      
+
       // Force load metadata to get real duration
       setTimeout(() => {
         if (audioRef.current) {
           audioRef.current.load(); // Force reload
         }
       }, 100);
-      
+
       return () => {
         URL.revokeObjectURL(url);
       };
@@ -121,14 +128,16 @@ export function useAudioPlayback(audioBlob: Blob | null): UseAudioPlaybackReturn
   }, [audioBlob]);
 
   const play = async () => {
-    if (!audioRef.current) {return;}
+    if (!audioRef.current) {
+      return;
+    }
 
     try {
       // For mobile Safari: ensure audio is loaded and ready
       if (audioRef.current.readyState < 3) {
         // Load the audio if not ready
         audioRef.current.load();
-        await new Promise((resolve) => {
+        await new Promise(resolve => {
           audioRef.current?.addEventListener('canplay', resolve, { once: true });
         });
       }
@@ -142,7 +151,9 @@ export function useAudioPlayback(audioBlob: Blob | null): UseAudioPlaybackReturn
   };
 
   const pause = () => {
-    if (!audioRef.current) {return;}
+    if (!audioRef.current) {
+      return;
+    }
     audioRef.current.pause();
   };
 
@@ -150,7 +161,7 @@ export function useAudioPlayback(audioBlob: Blob | null): UseAudioPlaybackReturn
     if (!audioRef.current || !duration || isNaN(duration) || duration <= 0) {
       return;
     }
-    
+
     // Ensure seekTime is valid and finite
     if (isFinite(time) && time >= 0 && time <= duration) {
       audioRef.current.currentTime = time;
@@ -159,7 +170,9 @@ export function useAudioPlayback(audioBlob: Blob | null): UseAudioPlaybackReturn
   };
 
   const formatTime = (seconds: number): string => {
-    if (!seconds || isNaN(seconds) || !isFinite(seconds) || seconds === Infinity) {return "0:00";}
+    if (!seconds || isNaN(seconds) || !isFinite(seconds) || seconds === Infinity) {
+      return '0:00';
+    }
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
@@ -189,12 +202,12 @@ export function useAudioPlayback(audioBlob: Blob | null): UseAudioPlaybackReturn
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
         const source = audioContext.createMediaElementSource(audioRef.current);
         const analyser = audioContext.createAnalyser();
-        
+
         analyser.fftSize = 512;
         analyser.smoothingTimeConstant = 0.8;
         source.connect(analyser);
         analyser.connect(audioContext.destination);
-        
+
         playbackContextRef.current = audioContext;
         playbackAnalyserRef.current = analyser;
       } catch (error) {
@@ -222,5 +235,10 @@ export function useAudioPlayback(audioBlob: Blob | null): UseAudioPlaybackReturn
     pause,
     seek,
     formatTime,
+    handleLoadedMetadata,
+    handleTimeUpdate,
+    handleEnded,
+    handlePlay,
+    handlePause,
   };
 }
