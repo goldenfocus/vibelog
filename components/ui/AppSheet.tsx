@@ -46,7 +46,7 @@ export function AppSheet({
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-hidden">{children}</div>
+            <div className="flex flex-1 flex-col overflow-hidden">{children}</div>
           </div>
         </Dialog.Content>
       </Dialog.Portal>

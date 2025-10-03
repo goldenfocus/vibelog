@@ -118,8 +118,9 @@ export default function Navigation() {
     <div data-nav-menu className="lg:hidden">
       {isMobileNavOpen && (
         <div className="fixed inset-0 z-[100] bg-background">
-          <div className="flex h-full flex-col bg-background">
-            <div className="flex items-center justify-between border-b border-border px-6 py-4">
+          <div className="flex h-screen flex-col bg-background">
+            {/* Header */}
+            <div className="flex shrink-0 items-center justify-between border-b border-border px-5 py-4">
               <Link
                 href="/"
                 onClick={() => setIsMobileNavOpen(false)}
@@ -131,36 +132,36 @@ export default function Navigation() {
               </Link>
               <button
                 onClick={() => setIsMobileNavOpen(false)}
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-border/50 bg-primary/10 text-primary"
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-border/50 bg-primary/10 text-primary active:scale-95"
                 aria-label={t('navigation.closeMenu')}
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="flex h-full flex-col px-5 py-6">
-              <div className="flex-1 space-y-2">
-                {navLinks.map(link => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className={`block rounded-lg px-4 py-3 text-base font-medium transition-colors hover:bg-muted/50 active:bg-muted/70 ${
-                      isActive(link.href) ? 'bg-muted text-primary' : 'text-foreground'
-                    }`}
-                    onClick={() => setIsMobileNavOpen(false)}
-                  >
-                    {link.label}
-                  </Link>
-                ))}
-              </div>
+            {/* Nav Links */}
+            <div className="flex-1 space-y-2 px-5 py-4">
+              {navLinks.map(link => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`block rounded-lg px-4 py-3 text-base font-medium transition-colors hover:bg-muted/50 active:bg-muted/70 ${
+                    isActive(link.href) ? 'bg-muted text-primary' : 'text-foreground'
+                  }`}
+                  onClick={() => setIsMobileNavOpen(false)}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
 
-              <div className="mt-auto border-t border-border pt-4">
-                <LanguageSwitcher
-                  currentLanguage={locale}
-                  onLanguageChange={setLocale}
-                  compact={false}
-                />
-              </div>
+            {/* Language Switcher at bottom */}
+            <div className="shrink-0 border-t border-border px-5 py-4">
+              <LanguageSwitcher
+                currentLanguage={locale}
+                onLanguageChange={setLocale}
+                compact={false}
+              />
             </div>
           </div>
         </div>
