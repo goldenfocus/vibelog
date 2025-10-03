@@ -213,7 +213,7 @@ export default function Navigation() {
   const mobileNavMenu = (
     <div data-nav-menu className="lg:hidden">
       {isMobileNavOpen && (
-        <div className="fixed inset-0 z-50 bg-background">
+        <div className="fixed inset-0 z-50 bg-[#0a0a0a]">
           <div className="flex h-full flex-col">
             <div className="flex items-center justify-between border-b border-border px-6 py-4">
               <Link
@@ -268,7 +268,7 @@ export default function Navigation() {
   const mobileUserMenu = (
     <div data-user-menu className="lg:hidden">
       {isMobileUserOpen && (
-        <div className="fixed inset-0 z-50 bg-background">
+        <div className="fixed inset-0 z-50 bg-[#0a0a0a]">
           <div className="flex h-full flex-col">
             <div className="flex items-center justify-between border-b border-border px-6 py-4">
               <span className="text-lg font-semibold">Account</span>
