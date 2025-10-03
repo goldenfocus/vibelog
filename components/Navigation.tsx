@@ -151,20 +151,20 @@ export default function Navigation() {
       {isMenuOpen && (
         <div className="absolute right-4 top-16 z-50 w-80 rounded-2xl border border-border bg-card shadow-2xl">
           <div className="p-4">
-            <div className="mb-4 border-b border-border pb-4">
-              <div className="mb-3 flex items-center gap-3">
-                <div
-                  className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-border/40"
-                  style={getAvatarContainerStyle(avatarUrl && !avatarError)}
-                >
-                  {renderAvatarContent('lg')}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold">{displayName}</p>
-                  <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
-                </div>
+            <div className="mb-4 flex items-center gap-3 border-b border-border pb-4">
+              <div
+                className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-border/40"
+                style={getAvatarContainerStyle(avatarUrl && !avatarError)}
+              >
+                {renderAvatarContent('lg')}
               </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold">{displayName}</p>
+                <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
+              </div>
+            </div>
 
+            <div className="mb-4 space-y-1">
               <Link
                 href="/dashboard"
                 className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted/40"
@@ -173,21 +173,6 @@ export default function Navigation() {
                 <span className="text-lg">👤</span>
                 {t('navigation.dashboard')}
               </Link>
-            </div>
-
-            <div className="mb-4 space-y-2">
-              {navLinks.map(link => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`block rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted/40 ${
-                    isActive(link.href) ? 'text-primary' : 'text-muted-foreground'
-                  }`}
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {link.label}
-                </Link>
-              ))}
             </div>
 
             <div className="border-y border-border py-3">
@@ -223,7 +208,7 @@ export default function Navigation() {
   const mobileMenu = (
     <div data-nav-menu className="lg:hidden">
       {isMenuOpen && (
-        <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-md">
+        <div className="fixed inset-0 z-50 bg-background backdrop-blur-xl">
           <div className="flex items-center justify-between px-6 pt-6">
             <Link href="/" onClick={() => setIsMenuOpen(false)} className="text-xl font-semibold">
               <span className="bg-gradient-electric bg-clip-text text-transparent">vibelog.io</span>
