@@ -282,63 +282,63 @@ export default function Navigation() {
               </button>
             </div>
 
-            {/* Scrollable content */}
-            <div className="flex-1 overflow-y-auto px-5 py-6">
-              {/* User profile card - prominent */}
-              <div className="mb-8 flex items-center gap-5 rounded-2xl border border-border bg-muted/30 p-5">
+            {/* Content - optimized to show all items at once */}
+            <div className="flex h-full flex-col px-4 py-4">
+              {/* Compact user profile */}
+              <div className="mb-4 flex items-center gap-3 rounded-xl border border-border bg-muted/30 p-3">
                 <div
-                  className="relative flex h-16 w-16 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-border/40"
+                  className="relative flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-border/40"
                   style={getAvatarContainerStyle(avatarUrl && !avatarError)}
                 >
                   {renderAvatarContent('lg')}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-lg font-semibold">{displayName}</p>
-                  <p className="truncate text-base text-muted-foreground">{user?.email}</p>
+                  <p className="truncate text-base font-semibold">{displayName}</p>
+                  <p className="truncate text-sm text-muted-foreground">{user?.email}</p>
                 </div>
               </div>
 
-              {/* Navigation links - larger touch targets */}
-              <div className="space-y-2">
+              {/* Navigation links - compact but tappable */}
+              <div className="flex-1 space-y-1">
                 <Link
                   href="/dashboard"
-                  className="flex items-center gap-4 rounded-xl px-5 py-4 text-lg font-medium text-foreground transition-colors hover:bg-muted/50 active:bg-muted/70"
+                  className="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium text-foreground transition-colors hover:bg-muted/50 active:bg-muted/70"
                   onClick={() => setIsMobileUserOpen(false)}
                 >
-                  <span className="text-2xl">👤</span>
+                  <span className="text-xl">👤</span>
                   {t('navigation.dashboard')}
                 </Link>
 
                 <Link
                   href="/about"
-                  className="flex items-center gap-4 rounded-xl px-5 py-4 text-lg font-medium text-foreground transition-colors hover:bg-muted/50 active:bg-muted/70"
+                  className="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium text-foreground transition-colors hover:bg-muted/50 active:bg-muted/70"
                   onClick={() => setIsMobileUserOpen(false)}
                 >
-                  <span className="text-2xl">ℹ️</span>
+                  <span className="text-xl">ℹ️</span>
                   vibelog.io
                 </Link>
 
                 <Link
                   href="/faq"
-                  className="flex items-center gap-4 rounded-xl px-5 py-4 text-lg font-medium text-foreground transition-colors hover:bg-muted/50 active:bg-muted/70"
+                  className="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium text-foreground transition-colors hover:bg-muted/50 active:bg-muted/70"
                   onClick={() => setIsMobileUserOpen(false)}
                 >
-                  <span className="text-2xl">❓</span>
+                  <span className="text-xl">❓</span>
                   FAQ
                 </Link>
 
                 <Link
                   href="/pricing"
-                  className="flex items-center gap-4 rounded-xl px-5 py-4 text-lg font-medium text-foreground transition-colors hover:bg-muted/50 active:bg-muted/70"
+                  className="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium text-foreground transition-colors hover:bg-muted/50 active:bg-muted/70"
                   onClick={() => setIsMobileUserOpen(false)}
                 >
-                  <span className="text-2xl">💎</span>
+                  <span className="text-xl">💎</span>
                   Pricing
                 </Link>
               </div>
 
-              {/* Sign out button - prominent and easy to tap */}
-              <div className="mt-8">
+              {/* Sign out button - fixed at bottom */}
+              <div className="mt-auto pt-4">
                 <Button
                   variant="outline"
                   size="lg"
@@ -347,12 +347,12 @@ export default function Navigation() {
                     setIsMobileUserOpen(false);
                   }}
                   disabled={isSigningOut}
-                  className="active:scale-98 flex h-14 w-full items-center justify-center gap-3 text-lg font-medium transition-transform"
+                  className="active:scale-98 flex h-12 w-full items-center justify-center gap-2 text-base font-medium transition-transform"
                 >
                   {isSigningOut ? (
-                    <Loader2 className="h-6 w-6 animate-spin" />
+                    <Loader2 className="h-5 w-5 animate-spin" />
                   ) : (
-                    <LogOut className="h-6 w-6" />
+                    <LogOut className="h-5 w-5" />
                   )}
                   {isSigningOut ? t('auth.signingOut') : t('auth.signOut')}
                 </Button>
