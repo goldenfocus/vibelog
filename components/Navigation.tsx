@@ -35,14 +35,22 @@ export default function Navigation() {
   const isActive = (path: string) => pathname === path;
 
   const avatarUrl = useMemo(() => {
-    if (typeof user?.user_metadata?.avatar_url === 'string' && user.user_metadata.avatar_url) {
-      return user.user_metadata.avatar_url as string;
+    const avatar_url = user?.user_metadata?.avatar_url;
+    const picture = user?.user_metadata?.picture;
+
+    console.log('Avatar URL debug:', { avatar_url, picture, user_metadata: user?.user_metadata });
+
+    if (typeof avatar_url === 'string' && avatar_url) {
+      console.log('Using avatar_url:', avatar_url);
+      return avatar_url;
     }
-    if (typeof user?.user_metadata?.picture === 'string' && user.user_metadata.picture) {
-      return user.user_metadata.picture as string;
+    if (typeof picture === 'string' && picture) {
+      console.log('Using picture:', picture);
+      return picture;
     }
+    console.log('No avatar URL found, will use initials');
     return null;
-  }, [user?.user_metadata?.avatar_url, user?.user_metadata?.picture]);
+  }, [user?.user_metadata]);
 
   const displayName = useMemo(
     () => user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Account',
@@ -99,19 +107,24 @@ export default function Navigation() {
         <img
           src={avatarUrl}
           alt={displayName}
-          className="h-full w-full object-cover"
+          className="h-full w-full rounded-full object-cover"
           referrerPolicy="no-referrer"
-          onError={() => setAvatarError(true)}
+          onError={() => {
+            console.log('Avatar image failed to load:', avatarUrl);
+            setAvatarError(true);
+          }}
+          onLoad={() => {
+            console.log('Avatar image loaded successfully:', avatarUrl);
+          }}
         />
       );
     }
     const textClasses = size === 'lg' ? 'text-lg font-bold' : 'text-sm font-bold';
     return (
       <div
-        className={`absolute inset-0 flex items-center justify-center ${textClasses}`}
+        className={`absolute inset-0 flex items-center justify-center ${textClasses} text-white`}
         style={{
-          color: '#FFFFFF',
-          textShadow: '0 1px 3px rgba(0, 0, 0, 0.5)',
+          textShadow: '0 1px 3px rgba(0, 0, 0, 0.8)',
           fontWeight: '700',
         }}
       >
@@ -123,10 +136,10 @@ export default function Navigation() {
   const getAvatarContainerStyle = (hasImage: boolean) => {
     if (hasImage) {
       return {
-        backgroundColor: '#374151', // Gray for images
+        backgroundColor: 'transparent', // Let image show through
       };
     }
-    // Fallback gradient with hardcoded colors
+    // Fallback gradient with hardcoded colors for initials
     return {
       background: 'linear-gradient(135deg, #60A5FA 0%, #3B82F6 50%, #2563EB 100%)',
       backgroundColor: '#3B82F6', // Fallback solid blue
@@ -138,17 +151,28 @@ export default function Navigation() {
       {isMenuOpen && (
         <div className="absolute right-4 top-16 z-50 w-80 rounded-2xl border border-border bg-card shadow-2xl">
           <div className="p-4">
-            <div className="mb-4 flex items-center gap-3 border-b border-border pb-4">
-              <div
-                className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-border/40"
-                style={getAvatarContainerStyle(avatarUrl && !avatarError)}
+            <div className="mb-4 border-b border-border pb-4">
+              <div className="mb-3 flex items-center gap-3">
+                <div
+                  className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-border/40"
+                  style={getAvatarContainerStyle(avatarUrl && !avatarError)}
+                >
+                  {renderAvatarContent('lg')}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold">{displayName}</p>
+                  <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
+                </div>
+              </div>
+
+              <Link
+                href="/dashboard"
+                className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted/40"
+                onClick={() => setIsMenuOpen(false)}
               >
-                {renderAvatarContent('lg')}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold">{displayName}</p>
-                <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
-              </div>
+                <span className="text-lg">👤</span>
+                {t('navigation.dashboard')}
+              </Link>
             </div>
 
             <div className="mb-4 space-y-2">
@@ -342,7 +366,7 @@ export default function Navigation() {
                   aria-label={t('navigation.accountMenu')}
                   aria-expanded={isMenuOpen}
                   aria-haspopup="true"
-                  className="hidden h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border/40 lg:flex"
+                  className="relative hidden h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border/40 transition-all duration-200 hover:ring-2 hover:ring-primary/50 lg:flex"
                   style={getAvatarContainerStyle(avatarUrl && !avatarError)}
                 >
                   {renderAvatarContent('sm')}

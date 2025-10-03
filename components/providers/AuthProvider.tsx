@@ -5,9 +5,14 @@ import { createContext, useContext, useEffect, useState } from 'react';
 
 import { createClient } from '@/lib/supabase';
 
+type Profile = {
+  id: string;
+  [key: string]: unknown;
+} | null;
+
 type AuthContextType = {
   user: User | null;
-  profile: any | null;
+  profile: Profile;
   loading: boolean;
   signIn: (provider: 'google' | 'apple') => Promise<void>;
   signOut: () => Promise<void>;
@@ -18,15 +23,26 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<any | null>(null);
+  const [profile, setProfile] = useState<Profile>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
 
-  // Fetch user profile when user changes
+  // Fetch user profile when user changes (non-blocking, with timeout)
   const fetchProfile = async (userId: string) => {
     try {
-      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Profile fetch timeout')), 3000)
+      );
+
+      const fetchPromise = supabase.from('profiles').select('*').eq('id', userId).single();
+
+      const result = await Promise.race([fetchPromise, timeoutPromise]);
+      const { data, error } = result as {
+        data: Profile;
+        error: { code?: string; message?: string };
+      };
 
       if (error) {
         // Handle common profile fetch errors gracefully
@@ -94,8 +110,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('🔄 Auth state change:', event, session?.user?.email);
 
-      if (mounted) {
-        // Only set loading to true for sign-in/sign-out operations
+      if (!mounted) {
+        console.log('⚠️ Component unmounted, skipping auth state change');
+        return;
+      }
+
+      try {
+        // Only set loading to true for sign-out operations
         if (event === 'SIGNED_OUT') {
           setLoading(true);
         }
@@ -103,17 +124,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         setProfile(null);
 
+        // Fetch profile in background (don't block on it)
         if (session?.user) {
-          await fetchProfile(session.user.id);
+          console.log('📥 Fetching profile for user:', session.user.id);
+          fetchProfile(session.user.id)
+            .then(() => {
+              console.log('✅ Profile fetch completed');
+            })
+            .catch(err => {
+              console.warn('⚠️ Profile fetch failed:', err);
+            });
         }
 
         if (event === 'SIGNED_IN') {
           setError(null);
         }
 
-        // Always set loading to false after processing auth state change
+        // Set loading to false immediately (don't wait for profile)
+        console.log('🔄 Setting loading to false for event:', event);
         setLoading(false);
         console.log('✅ Auth state processed for event:', event, 'loading set to false');
+      } catch (err) {
+        console.error('❌ Error in auth state change handler:', err);
+        setLoading(false);
       }
     });
 
@@ -121,6 +154,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       mounted = false;
       subscription.unsubscribe();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const signIn = async (provider: 'google' | 'apple') => {
@@ -128,10 +162,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setError(null);
       setLoading(true);
 
-      // Ensure we use the correct redirect URL
-      const redirectUrl = process.env.NEXT_PUBLIC_SITE_URL
-        ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`
-        : `${window.location.origin}/auth/callback`;
+      // Prefer the current browser origin so local dev stays on localhost.
+      let redirectUrl: string | null = null;
+      if (typeof window !== 'undefined') {
+        redirectUrl = `${window.location.origin}/auth/callback`;
+      } else if (process.env.NEXT_PUBLIC_SITE_URL) {
+        redirectUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`;
+      }
+
+      if (!redirectUrl) {
+        console.warn('No site URL available for OAuth redirect; falling back to relative path.');
+        redirectUrl = '/auth/callback';
+      }
 
       console.log('=== OAUTH SIGN IN DEBUG ===');
       console.log('Provider:', provider);

@@ -299,5 +299,13 @@
     "signInWith": "Sign in with {{provider}}",
     "termsAgreement": "By signing in, you agree to our Terms of Service and Privacy Policy.",
     "signingOut": "Signing out..."
+  },
+  "dashboard": {
+    "welcome": "Welcome back,",
+    "subtitle": "Start vibelogging or manage your content",
+    "newVibelog": "New Vibelog",
+    "account": "Account Details",
+    "signedInWith": "Signed in with",
+    "comingSoon": "Your vibelogs library coming soon — save, organize & publish with ease"
   }
 }

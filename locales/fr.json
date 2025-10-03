@@ -295,6 +295,14 @@
     "signInDescription": "Connectez-vous pour sauvegarder vos vibelogs et accéder à votre tableau de bord personnel.",
     "signInWith": "Se connecter avec {{provider}}",
     "termsAgreement": "En vous connectant, vous acceptez nos Conditions d'Utilisation et notre Politique de Confidentialité.",
-    "signingOut": "Signing out..."
+    "signingOut": "Déconnexion..."
+  },
+  "dashboard": {
+    "welcome": "Bon retour,",
+    "subtitle": "Commencez à vibelog ou gérez votre contenu",
+    "newVibelog": "Nouveau Vibelog",
+    "account": "Détails du Compte",
+    "signedInWith": "Connecté avec",
+    "comingSoon": "Votre bibliothèque de vibelogs bientôt disponible — sauvegardez, organisez et publiez facilement"
   }
 }

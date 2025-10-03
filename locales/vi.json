@@ -295,6 +295,14 @@
     "signInDescription": "Đăng nhập để lưu các vibelog của bạn và truy cập bảng điều khiển cá nhân.",
     "signInWith": "Đăng nhập với {{provider}}",
     "termsAgreement": "Bằng cách đăng nhập, bạn đồng ý với Điều khoản Dịch vụ và Chính sách Bảo mật của chúng tôi.",
-    "signingOut": "Signing out..."
+    "signingOut": "Đang đăng xuất..."
+  },
+  "dashboard": {
+    "welcome": "Chào mừng trở lại,",
+    "subtitle": "Bắt đầu vibelog hoặc quản lý nội dung của bạn",
+    "newVibelog": "Vibelog Mới",
+    "account": "Thông Tin Tài Khoản",
+    "signedInWith": "Đã đăng nhập bằng",
+    "comingSoon": "Thư viện vibelog của bạn sắp ra mắt — lưu trữ, sắp xếp và xuất bản dễ dàng"
   }
 }
