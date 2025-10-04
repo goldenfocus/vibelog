@@ -54,7 +54,7 @@ export default function BlogContentRenderer({
             <ol className="counter-reset-[list-counter] mb-6 space-y-3 pl-0" {...props} />
           ),
           li: ({ node: _node, ...props }) => {
-            const parent = (node as any)?.parent?.tagName;
+            const parent = (_node as any)?.parent?.tagName;
             if (parent === 'ul') {
               return (
                 <li
