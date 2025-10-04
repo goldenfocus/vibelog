@@ -50,22 +50,28 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform data to include author info
-    const transformedVibelogs = vibelogs.map(vibelog => ({
-      ...vibelog,
-      author: vibelog.user_id
-        ? {
-            username: vibelog.profiles?.username || 'user',
-            display_name: vibelog.profiles?.display_name || 'Vibelog User',
-            avatar_url: vibelog.profiles?.avatar_url || null,
-          }
-        : {
-            username: 'anonymous',
-            display_name: 'Anonymous',
-            avatar_url: null,
-          },
-      // Remove the profiles join data
-      profiles: undefined,
-    }));
+    const transformedVibelogs = (vibelogs || []).map((vibelog: any) => {
+      // profiles is returned as an array or object depending on relationship
+      const profile = Array.isArray(vibelog.profiles) ? vibelog.profiles[0] : vibelog.profiles;
+
+      return {
+        ...vibelog,
+        author:
+          vibelog.user_id && profile
+            ? {
+                username: profile.username || 'user',
+                display_name: profile.display_name || 'Vibelog User',
+                avatar_url: profile.avatar_url || null,
+              }
+            : {
+                username: 'anonymous',
+                display_name: 'Anonymous',
+                avatar_url: null,
+              },
+        // Remove the profiles join data
+        profiles: undefined,
+      };
+    });
 
     return NextResponse.json({
       success: true,
