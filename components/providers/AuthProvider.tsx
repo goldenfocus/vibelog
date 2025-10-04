@@ -77,8 +77,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } = await supabase.auth.getSession();
 
         if (error) {
-          console.error('Session error:', error);
-          setError(error.message);
+          // Refresh token errors are expected when logged out or session expired
+          if (
+            error.message?.includes('Refresh Token') ||
+            error.message?.includes('refresh_token')
+          ) {
+            console.log('ℹ️ No active session (expected when logged out)');
+          } else {
+            console.error('Session error:', error);
+            setError(error.message);
+          }
         }
 
         if (mounted) {

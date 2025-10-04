@@ -40,14 +40,10 @@ export default function Navigation() {
     const avatar_url = user?.user_metadata?.avatar_url;
     const picture = user?.user_metadata?.picture;
 
-    console.log('Avatar URL debug:', { avatar_url, picture, user_metadata: user?.user_metadata });
-
     if (typeof avatar_url === 'string' && avatar_url) {
-      console.log('Using avatar_url:', avatar_url);
       return avatar_url;
     }
     if (typeof picture === 'string' && picture) {
-      console.log('Using picture:', picture);
       return picture;
     }
     console.log('No avatar URL found, will use initials');
