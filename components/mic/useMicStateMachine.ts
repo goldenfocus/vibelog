@@ -192,7 +192,7 @@ export function useMicStateMachine(
       console.log('🎵 Loading remix content...');
       setBlogContent(remixContent);
       setFullBlogContent(remixContent);
-      setRecordingState('done');
+      setRecordingState('complete');
       showToast('Vibelog loaded for remixing!');
     }
   }, [remixContent, showToast]);
