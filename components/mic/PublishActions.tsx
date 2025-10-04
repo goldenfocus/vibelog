@@ -76,7 +76,7 @@ const LoginPopup: React.FC<LoginPopupProps> = ({ type, isOpen, onClose }) => {
 export default function PublishActions({
   content,
   isLoggedIn = false,
-  isTeaserContent = false,
+  isTeaserContent: _isTeaserContent = false,
   onCopy,
   onEdit,
   onShare,
@@ -86,19 +86,8 @@ export default function PublishActions({
   const DEBUG_MODE = process.env.NODE_ENV !== 'production';
   const { t } = useI18n();
   const [showEditPopup, setShowEditPopup] = useState(false);
-  const [showSignInPrompt, setShowSignInPrompt] = useState(false);
 
-  const handleTTSEnded = () => {
-    if (isTeaserContent && !isLoggedIn) {
-      setShowSignInPrompt(true);
-      setTimeout(() => setShowSignInPrompt(false), 5000);
-    }
-  };
-
-  const { isPlaying, isLoading, playText, stop, progress } = useTextToSpeech(
-    onUpgradePrompt,
-    handleTTSEnded
-  );
+  const { isPlaying, isLoading, playText, stop, progress } = useTextToSpeech(onUpgradePrompt);
 
   const handleEditClick = () => {
     if (!isLoggedIn) {
@@ -114,7 +103,7 @@ export default function PublishActions({
       return;
     }
 
-    let cleanContent = content
+    const cleanContent = content
       .replace(/#{1,6}\s/g, '')
       .replace(/\*\*(.*?)\*\*/g, '$1')
       .replace(/\*(.*?)\*/g, '$1')
@@ -122,11 +111,6 @@ export default function PublishActions({
       .replace(/`([^`]+)`/g, '$1')
       .replace(/\n\s*\n/g, '\n')
       .trim();
-
-    if (isTeaserContent && !isLoggedIn) {
-      cleanContent +=
-        '. Sign in to listen to the full vibelog and unlock unlimited content creation.';
-    }
 
     await playText(cleanContent, 'shimmer');
   };
@@ -212,19 +196,6 @@ export default function PublishActions({
       </div>
 
       <LoginPopup type="edit" isOpen={showEditPopup} onClose={closeEditPopup} />
-
-      {showSignInPrompt && (
-        <div className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 transform items-center gap-3 rounded-2xl bg-gradient-electric px-6 py-3 text-white shadow-lg duration-300 animate-in slide-in-from-bottom-2">
-          <LogIn className="h-5 w-5" />
-          <span className="font-medium">Sign in to listen to full vibelogs</span>
-          <button
-            onClick={() => setShowSignInPrompt(false)}
-            className="ml-2 text-white/80 transition-colors hover:text-white"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      )}
     </>
   );
 }
