@@ -2,24 +2,29 @@
 
 import { MessageCircle, Bot, Share2 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 
 import MicRecorder from '@/components/MicRecorder';
 import Navigation from '@/components/Navigation';
 import { useI18n } from '@/components/providers/I18nProvider';
 
-export default function Home() {
-  const { t, isLoading } = useI18n();
+function RemixHandler({ onRemixContent }: { onRemixContent: (content: string | null) => void }) {
   const searchParams = useSearchParams();
-  const [remixContent, setRemixContent] = useState<string | null>(null);
 
   useEffect(() => {
     // Check for remix parameter in URL
     const remix = searchParams.get('remix');
     if (remix) {
-      setRemixContent(decodeURIComponent(remix));
+      onRemixContent(decodeURIComponent(remix));
     }
-  }, [searchParams]);
+  }, [searchParams, onRemixContent]);
+
+  return null;
+}
+
+export default function Home() {
+  const { t, isLoading } = useI18n();
+  const [remixContent, setRemixContent] = useState<string | null>(null);
 
   if (isLoading) {
     return (
@@ -34,6 +39,9 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
+      <Suspense fallback={null}>
+        <RemixHandler onRemixContent={setRemixContent} />
+      </Suspense>
       <Navigation />
 
       {/* Hero Section */}
