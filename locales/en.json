@@ -134,6 +134,9 @@
       "freePlanLimit": "Free plan: {{timeLimit}} max",
       "timeRemaining": "{{seconds}}s remaining",
       "liveTranscript": "Live Transcript"
+    },
+    "vibelogCard": {
+      "remix": "Remix"
     }
   },
   "pages": {

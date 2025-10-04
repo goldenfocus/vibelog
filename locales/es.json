@@ -131,6 +131,9 @@
       "yourRecording": "Tu Grabación",
       "freePlanLimit": "Plan gratuito: {{timeLimit}} máx",
       "timeRemaining": "{{seconds}}s restantes"
+    },
+    "vibelogCard": {
+      "remix": "Remezclar"
     }
   },
   "pages": {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { createServerSupabaseClient } from '@/lib/supabase';
+import { createServerAdminClient } from '@/lib/supabaseAdmin';
 
 export const runtime = 'nodejs';
 
@@ -18,6 +19,33 @@ interface SaveVibelogRequest {
   sessionId?: string; // For anonymous users
 }
 
+/**
+ * Generate teaser from markdown content (first 2-3 paragraphs)
+ */
+function generateTeaser(content: string): string {
+  // Split by double newlines to get paragraphs
+  const paragraphs = content.split(/\n\n+/).filter(p => p.trim().length > 0);
+
+  // Take first 2-3 paragraphs (aim for ~300 chars minimum)
+  let teaser = '';
+  let paraCount = 0;
+
+  for (const para of paragraphs) {
+    teaser += para + '\n\n';
+    paraCount++;
+
+    // Stop after 2-3 paragraphs or ~400 chars
+    if (paraCount >= 2 && teaser.length >= 300) {
+      break;
+    }
+    if (paraCount >= 3) {
+      break;
+    }
+  }
+
+  return teaser.trim();
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body: SaveVibelogRequest = await request.json();
@@ -25,26 +53,43 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!title || !content) {
+      return NextResponse.json({ error: 'Title and content are required' }, { status: 400 });
+    }
+
+    // Must have EITHER userId OR sessionId
+    if (!userId && !sessionId) {
       return NextResponse.json(
-        { error: 'Title and content are required' },
+        { error: 'Either userId or sessionId is required' },
         { status: 400 }
       );
     }
 
-    const supabase = await createServerSupabaseClient();
+    // Use admin client for anonymous inserts (bypass RLS)
+    // Use regular client for authenticated inserts
+    const supabase = sessionId
+      ? await createServerAdminClient()
+      : await createServerSupabaseClient();
+
+    // Generate teaser from content
+    const teaser = generateTeaser(content);
 
     // Prepare the data for insertion
     const vibelogData = {
       title: title.trim(),
       content: content.trim(),
-      transcription: transcription?.trim() || null,
+      teaser: teaser,
+      transcription: transcription?.trim() || '',
       cover_image_url: coverImage?.url || null,
-      cover_image_alt: coverImage?.alt || null,
-      cover_image_width: coverImage?.width || null,
-      cover_image_height: coverImage?.height || null,
       user_id: userId || null,
       session_id: sessionId || null,
-      created_at: new Date().toISOString(),
+      // Auto-publish all vibelogs to community
+      is_published: true,
+      is_public: true,
+      published_at: new Date().toISOString(),
+      language: 'en', // TODO: detect from content or pass from client
+      word_count: content.split(/\s+/).length,
+      read_time: Math.ceil(content.split(/\s+/).length / 200), // ~200 words per minute
+      tags: [], // TODO: extract from content or pass from client
     };
 
     // Insert into database
@@ -57,7 +102,7 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.error('Database error:', error);
       return NextResponse.json(
-        { error: 'Failed to save vibelog' },
+        { error: 'Failed to save vibelog', details: error.message },
         { status: 500 }
       );
     }
@@ -66,14 +111,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       vibelog: data,
-      message: 'Vibelog saved successfully'
+      message: 'Vibelog saved and published successfully',
     });
-
   } catch (error) {
     console.error('Save vibelog error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

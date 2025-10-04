@@ -131,6 +131,9 @@
       "loginRequired": "Anmeldung Erforderlich",
       "freePlanLimit": "Kostenloser Plan: {{timeLimit}} max",
       "timeRemaining": "{{seconds}}s verbleibend"
+    },
+    "vibelogCard": {
+      "remix": "Remixen"
     }
   },
   "pages": {

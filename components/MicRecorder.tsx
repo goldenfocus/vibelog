@@ -14,7 +14,11 @@ import Waveform from '@/components/mic/Waveform';
 import { useI18n } from '@/components/providers/I18nProvider';
 import UpgradePrompt from '@/components/UpgradePrompt';
 
-export default function MicRecorder() {
+interface MicRecorderProps {
+  remixContent?: string | null;
+}
+
+export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
   const { t } = useI18n();
   const {
     recordingState,
@@ -51,7 +55,7 @@ export default function MicRecorder() {
     processBlogGeneration,
     processCoverImage,
     completeProcessing,
-  } = useMicStateMachine();
+  } = useMicStateMachine({ remixContent });
 
   const showRecordingUI = recordingState === 'recording';
   const showCompletedUI = recordingState === 'complete';
