@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import React from "react";
-import ReactMarkdown from "react-markdown";
-import rehypeSanitize from "rehype-sanitize";
-import remarkGfm from "remark-gfm";
+import React from 'react';
+import ReactMarkdown from 'react-markdown';
+import rehypeSanitize from 'rehype-sanitize';
+import remarkGfm from 'remark-gfm';
 
-import { useI18n } from "@/components/providers/I18nProvider";
+import { useI18n } from '@/components/providers/I18nProvider';
 
 interface BlogContentRendererProps {
   content: string;
@@ -14,7 +14,7 @@ interface BlogContentRendererProps {
 
 export default function BlogContentRenderer({
   content,
-  isTeaser = false
+  isTeaser = false,
 }: BlogContentRendererProps) {
   const { t } = useI18n();
 
@@ -25,71 +25,97 @@ export default function BlogContentRenderer({
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeSanitize]}
         components={{
-          h1: ({ node, ...props }) => (
+          h1: ({ node: _node, ...props }) => (
             <h1
-              className="text-3xl sm:text-4xl font-bold bg-gradient-electric bg-clip-text text-transparent mb-6 leading-tight tracking-tight"
+              className="mb-6 bg-gradient-electric bg-clip-text text-3xl font-bold leading-tight tracking-tight text-transparent sm:text-4xl"
               {...props}
             />
           ),
-          h2: ({ node, ...props }) => (
-            <h2 className="text-2xl sm:text-3xl text-foreground font-semibold mt-8 mb-4 tracking-tight border-l-4 border-electric/30 pl-4" {...props} />
+          h2: ({ node: _node, ...props }) => (
+            <h2
+              className="mb-4 mt-8 border-l-4 border-electric/30 pl-4 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl"
+              {...props}
+            />
           ),
-          h3: ({ node, ...props }) => (
-            <h3 className="text-xl sm:text-2xl text-foreground font-semibold mt-6 mb-3 tracking-tight" {...props} />
+          h3: ({ node: _node, ...props }) => (
+            <h3
+              className="mb-3 mt-6 text-xl font-semibold tracking-tight text-foreground sm:text-2xl"
+              {...props}
+            />
           ),
-          p: ({ node, ...props }) => (
-            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-6 tracking-wide" {...props} />
+          p: ({ node: _node, ...props }) => (
+            <p
+              className="mb-6 text-base leading-relaxed tracking-wide text-muted-foreground sm:text-lg"
+              {...props}
+            />
           ),
-          ul: ({ node, ...props }) => (
-            <ul className="space-y-3 mb-6 pl-0" {...props} />
+          ul: ({ node: _node, ...props }) => <ul className="mb-6 space-y-3 pl-0" {...props} />,
+          ol: ({ node: _node, ...props }) => (
+            <ol className="counter-reset-[list-counter] mb-6 space-y-3 pl-0" {...props} />
           ),
-          ol: ({ node, ...props }) => (
-            <ol className="space-y-3 mb-6 pl-0 counter-reset-[list-counter]" {...props} />
-          ),
-          li: ({ node, ...props }) => {
-            const parent = (node as any)?.parent?.tagName;
+          li: ({ node: _node, ...props }) => {
+            const parent = (_node as any)?.parent?.tagName;
             if (parent === 'ul') {
               return (
-                <li className="flex items-start gap-3 text-muted-foreground leading-relaxed" {...props}>
-                  <span className="w-2 h-2 rounded-full bg-electric/60 mt-2 flex-shrink-0"></span>
+                <li
+                  className="flex items-start gap-3 leading-relaxed text-muted-foreground"
+                  {...props}
+                >
+                  <span className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-electric/60"></span>
                   <span className="flex-1">{props.children}</span>
                 </li>
               );
             }
             return (
-              <li className="flex items-start gap-3 text-muted-foreground leading-relaxed counter-increment-[list-counter]" {...props}>
-                <span className="w-6 h-6 rounded-full bg-electric/10 border border-electric/30 flex items-center justify-center text-sm font-semibold text-electric flex-shrink-0 mt-0.5">
+              <li
+                className="counter-increment-[list-counter] flex items-start gap-3 leading-relaxed text-muted-foreground"
+                {...props}
+              >
+                <span className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border border-electric/30 bg-electric/10 text-sm font-semibold text-electric">
                   <span className="counter-[list-counter]"></span>
                 </span>
                 <span className="flex-1">{props.children}</span>
               </li>
             );
           },
-          strong: ({ node, ...props }) => (
-            <strong className="font-semibold text-foreground bg-electric/5 px-1 py-0.5 rounded" {...props} />
+          strong: ({ node: _node, ...props }) => (
+            <strong
+              className="rounded bg-electric/5 px-1 py-0.5 font-semibold text-foreground"
+              {...props}
+            />
           ),
-          em: ({ node, ...props }) => (
-            <em className="italic text-electric/80" {...props} />
+          em: ({ node: _node, ...props }) => <em className="italic text-electric/80" {...props} />,
+          code: ({ node: _node, ...props }) => (
+            <code
+              className="rounded border bg-muted/50 px-1.5 py-0.5 font-mono text-sm text-electric"
+              {...props}
+            />
           ),
-          code: ({ node, ...props }) => (
-            <code className="bg-muted/50 text-electric px-1.5 py-0.5 rounded text-sm font-mono border" {...props} />
+          pre: ({ node: _node, ...props }) => (
+            <pre
+              className="mb-6 overflow-x-auto rounded-xl border border-border/20 bg-muted/30 p-4"
+              {...props}
+            />
           ),
-          pre: ({ node, ...props }) => (
-            <pre className="bg-muted/30 p-4 rounded-xl overflow-x-auto border border-border/20 mb-6" {...props} />
+          blockquote: ({ node: _node, ...props }) => (
+            <blockquote
+              className="my-6 rounded-r-lg border-l-4 border-electric/30 bg-electric/5 py-4 pl-6 pr-4 italic text-muted-foreground"
+              {...props}
+            />
           ),
-          blockquote: ({ node, ...props }) => (
-            <blockquote className="border-l-4 border-electric/30 bg-electric/5 pl-6 pr-4 py-4 my-6 italic text-muted-foreground rounded-r-lg" {...props} />
-          ),
-          a: ({ node, ...props }) => (
+          a: ({ node: _node, ...props }) => (
             <a
-              className="text-electric underline hover:text-electric-glow transition-colors duration-200 font-medium"
+              className="font-medium text-electric underline transition-colors duration-200 hover:text-electric-glow"
               target="_blank"
               rel="noopener noreferrer"
               {...props}
             />
           ),
-          hr: ({ node, ...props }) => (
-            <hr className="border-0 h-px bg-gradient-to-r from-transparent via-border to-transparent my-8" {...props} />
+          hr: ({ node: _node, ...props }) => (
+            <hr
+              className="my-8 h-px border-0 bg-gradient-to-r from-transparent via-border to-transparent"
+              {...props}
+            />
           ),
         }}
       >
@@ -98,21 +124,21 @@ export default function BlogContentRenderer({
 
       {/* Teaser CTA if applicable */}
       {isTeaser && (
-        <div className="mt-8 p-6 bg-gradient-to-r from-electric/5 via-electric/10 to-transparent border border-electric/20 rounded-2xl backdrop-blur-sm">
+        <div className="mt-8 rounded-2xl border border-electric/20 bg-gradient-to-r from-electric/5 via-electric/10 to-transparent p-6 backdrop-blur-sm">
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-full bg-electric/10 flex items-center justify-center flex-shrink-0">
+            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-electric/10">
               <span className="text-2xl">🔒</span>
             </div>
             <div className="flex-1">
-              <h4 className="text-lg font-semibold text-electric mb-2">Continue Reading</h4>
-              <p className="text-muted-foreground mb-4 leading-relaxed">
+              <h4 className="mb-2 text-lg font-semibold text-electric">Continue Reading</h4>
+              <p className="mb-4 leading-relaxed text-muted-foreground">
                 {t('components.micRecorder.unlockMessage')}
               </p>
               <button
-                onClick={() => window.open('/pricing', '_blank', 'noopener,noreferrer')}
-                className="inline-flex items-center gap-2 bg-electric text-white px-4 py-2 rounded-lg font-medium hover:bg-electric-glow transition-colors duration-200"
+                onClick={() => (window.location.href = '/auth/signin')}
+                className="inline-flex items-center gap-2 rounded-lg bg-electric px-4 py-2 font-medium text-white transition-colors duration-200 hover:bg-electric-glow"
               >
-                {t('navigation.signUp')}
+                {t('navigation.signIn')}
                 <span className="text-sm">→</span>
               </button>
             </div>
