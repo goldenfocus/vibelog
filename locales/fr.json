@@ -131,6 +131,9 @@
       "loginRequired": "Connexion Requise",
       "freePlanLimit": "Plan gratuit : {{timeLimit}} max",
       "timeRemaining": "{{seconds}}s restantes"
+    },
+    "vibelogCard": {
+      "remix": "Remixer"
     }
   },
   "pages": {

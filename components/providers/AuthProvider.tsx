@@ -3,6 +3,7 @@
 import type { User } from '@supabase/supabase-js';
 import { createContext, useContext, useEffect, useState } from 'react';
 
+import { getSessionId, clearSessionId } from '@/lib/session';
 import { createClient } from '@/lib/supabase';
 
 type Profile = {
@@ -144,7 +145,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             });
         }
 
-        if (event === 'SIGNED_IN') {
+        // Transfer anonymous vibelogs to user account on sign-in
+        if (event === 'SIGNED_IN' && session?.user) {
+          const sessionId = getSessionId();
+          if (sessionId) {
+            console.log('🔄 Transferring anonymous vibelogs to user account...');
+            try {
+              const { data, error } = await supabase.rpc('transfer_session_vibelogs', {
+                p_session_id: sessionId,
+                p_user_id: session.user.id,
+              });
+
+              if (error) {
+                console.warn('⚠️ Failed to transfer vibelogs:', error);
+              } else {
+                console.log(`✅ Transferred ${data} vibelogs to user account`);
+                clearSessionId(); // Clear session ID after successful transfer
+              }
+            } catch (err) {
+              console.warn('⚠️ Error transferring vibelogs:', err);
+            }
+          }
           setError(null);
         }
 

@@ -126,7 +126,14 @@ function splitTitleFromMarkdown(md: string): { title: string | null; body: strin
   return { title, body };
 }
 
-export function useMicStateMachine(): UseMicStateMachineReturn {
+interface UseMicStateMachineOptions {
+  remixContent?: string | null;
+}
+
+export function useMicStateMachine(
+  options: UseMicStateMachineOptions = {}
+): UseMicStateMachineReturn {
+  const { remixContent } = options;
   const { t } = useI18n();
   const { user } = useAuth();
   const isLoggedIn = Boolean(user);
@@ -178,6 +185,17 @@ export function useMicStateMachine(): UseMicStateMachineReturn {
   const attribution = useMemo(() => buildAttribution(isLoggedIn, user), [isLoggedIn, user]);
 
   const parsedBlog = useMemo(() => splitTitleFromMarkdown(blogContent), [blogContent]);
+
+  // Load remix content when provided
+  useEffect(() => {
+    if (remixContent) {
+      console.log('🎵 Loading remix content...');
+      setBlogContent(remixContent);
+      setFullBlogContent(remixContent);
+      setRecordingState('done');
+      showToast('Vibelog loaded for remixing!');
+    }
+  }, [remixContent, showToast]);
 
   const clearRecordingTimer = useCallback(() => {
     if (recordingTimerRef.current) {
@@ -512,17 +530,13 @@ export function useMicStateMachine(): UseMicStateMachineReturn {
           showToast(t('components.micRecorder.saved'));
         }
       } else {
-        showToast(
-          t('components.micRecorder.saveFallback')
-        );
+        showToast(t('components.micRecorder.saveFallback'));
       }
     } catch (error) {
       if (DEBUG_MODE) {
         console.error('Unexpected auto-save error', error);
       }
-      showToast(
-        t('components.micRecorder.saveFallback')
-      );
+      showToast(t('components.micRecorder.saveFallback'));
     }
 
     setTimeout(() => {
@@ -548,7 +562,7 @@ export function useMicStateMachine(): UseMicStateMachineReturn {
       stopRecording();
       showToast(
         t('components.micRecorder.timeLimitReached', {
-          minutes: Math.round(limit / 60)
+          minutes: Math.round(limit / 60),
         })
       );
     }

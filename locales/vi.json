@@ -131,6 +131,9 @@
       "yourRecording": "Bản Ghi Của Bạn",
       "freePlanLimit": "Gói miễn phí: tối đa {{timeLimit}}",
       "timeRemaining": "còn {{seconds}}s"
+    },
+    "vibelogCard": {
+      "remix": "Phối lại"
     }
   },
   "pages": {

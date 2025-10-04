@@ -131,6 +131,9 @@
       "yourRecording": "您的录音",
       "freePlanLimit": "免费计划：最多 {{timeLimit}}",
       "timeRemaining": "剩余 {{seconds}}秒"
+    },
+    "vibelogCard": {
+      "remix": "重新创作"
     }
   },
   "pages": {
