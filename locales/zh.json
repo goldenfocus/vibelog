@@ -9,7 +9,8 @@
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
     "accountMenu": "Account menu",
-    "dashboard": "Dashboard"
+    "dashboard": "Dashboard",
+    "signIn": "登录"
   },
   "hero": {
     "title": {
