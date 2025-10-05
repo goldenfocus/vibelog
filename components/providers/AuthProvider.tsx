@@ -79,8 +79,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setTimeout(() => reject(new Error('Session timeout after 10s')), 10000)
         );
 
-        const result = await Promise.race([sessionPromise, timeoutPromise]);
-        const { session, error } = result.data;
+        const {
+          data: { session },
+          error,
+        } = await Promise.race([sessionPromise, timeoutPromise]);
 
         if (error) {
           // Refresh token errors are expected when logged out or session expired
