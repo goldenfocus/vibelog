@@ -72,10 +72,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const getInitialSession = async () => {
       try {
         console.log('🔄 AuthProvider: Getting initial session...');
-        const {
-          data: { session },
-          error,
-        } = await supabase.auth.getSession();
+
+        // Add timeout to prevent hanging
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Session timeout after 10s')), 10000)
+        );
+
+        const result = await Promise.race([sessionPromise, timeoutPromise]);
+        const { session, error } = result.data;
 
         if (error) {
           // Refresh token errors are expected when logged out or session expired
@@ -105,8 +110,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (err) {
         console.error('Auth initialization error:', err);
         if (mounted) {
-          setError('Failed to initialize authentication');
+          setError(err instanceof Error ? err.message : 'Failed to initialize authentication');
           setLoading(false);
+          console.log('⚠️ AuthProvider: Failed to get session, setting loading=false anyway');
         }
       }
     };
