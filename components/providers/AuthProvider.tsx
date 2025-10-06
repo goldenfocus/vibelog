@@ -73,10 +73,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         console.log('🔄 AuthProvider: Getting initial session...');
 
-        // Add timeout to prevent hanging
+        // Add timeout to prevent hanging (reduced to 3s for better UX)
         const sessionPromise = supabase.auth.getSession();
         const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Session timeout after 10s')), 10000)
+          setTimeout(() => reject(new Error('Session check timed out - continuing anyway')), 3000)
         );
 
         const {
@@ -110,11 +110,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.log('✅ AuthProvider: Initial session processing complete, loading=false');
         }
       } catch (err) {
-        console.error('Auth initialization error:', err);
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+
+        // Don't log timeout as an error - it's expected behavior to prevent hanging
+        if (errorMessage.includes('timed out')) {
+          console.log('⏱️ AuthProvider: Session check timed out, continuing without session');
+        } else {
+          console.error('Auth initialization error:', err);
+        }
+
         if (mounted) {
-          setError(err instanceof Error ? err.message : 'Failed to initialize authentication');
+          // Don't set error state for timeouts - just continue
+          if (!errorMessage.includes('timed out')) {
+            setError(errorMessage);
+          }
           setLoading(false);
-          console.log('⚠️ AuthProvider: Failed to get session, setting loading=false anyway');
+          console.log('✅ AuthProvider: Loading complete (no session)');
         }
       }
     };
