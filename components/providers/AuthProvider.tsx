@@ -73,10 +73,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         console.log('🔄 AuthProvider: Getting initial session...');
 
-        // Add timeout to prevent hanging (reduced to 3s for better UX)
+        // Add timeout to prevent hanging (5s to allow OAuth redirects to complete)
         const sessionPromise = supabase.auth.getSession();
         const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Session check timed out - continuing anyway')), 3000)
+          setTimeout(() => reject(new Error('Session check timed out - continuing anyway')), 5000)
         );
 
         const {
