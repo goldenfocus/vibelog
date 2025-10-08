@@ -67,16 +67,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
+    let authStateChangeFired = false;
 
     // Get initial session
     const getInitialSession = async () => {
       try {
         console.log('🔄 AuthProvider: Getting initial session...');
 
-        // Add timeout to prevent hanging (5s to allow OAuth redirects to complete)
+        // Check if we just came from OAuth callback
+        const isAfterOAuthCallback =
+          typeof window !== 'undefined' &&
+          (window.location.pathname === '/dashboard' ||
+            document.referrer.includes('/auth/callback'));
+
+        // Use longer timeout for OAuth redirects (wait for onAuthStateChange to fire)
+        // Use shorter timeout for normal page loads
+        const timeout = isAfterOAuthCallback ? 10000 : 3000;
+        console.log(
+          `⏱️ Using ${timeout}ms timeout (isAfterOAuthCallback: ${isAfterOAuthCallback})`
+        );
+
+        // Add timeout to prevent hanging
         const sessionPromise = supabase.auth.getSession();
         const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Session check timed out - continuing anyway')), 5000)
+          setTimeout(
+            () => reject(new Error('Session check timed out - continuing anyway')),
+            timeout
+          )
         );
 
         const {
@@ -124,8 +141,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (!errorMessage.includes('timed out')) {
             setError(errorMessage);
           }
-          setLoading(false);
-          console.log('✅ AuthProvider: Loading complete (no session)');
+          // If auth state change hasn't fired and we might be after OAuth, keep loading
+          const isAfterOAuthCallback =
+            typeof window !== 'undefined' &&
+            (window.location.pathname === '/dashboard' ||
+              document.referrer.includes('/auth/callback'));
+          if (!authStateChangeFired && isAfterOAuthCallback) {
+            console.log(
+              '⏳ Timeout during OAuth flow - keeping loading=true, waiting for onAuthStateChange'
+            );
+          } else {
+            setLoading(false);
+            console.log('✅ AuthProvider: Loading complete (no session)');
+          }
         }
       }
     };
@@ -137,6 +165,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('🔄 Auth state change:', event, session?.user?.email);
+      authStateChangeFired = true;
 
       if (!mounted) {
         console.log('⚠️ Component unmounted, skipping auth state change');
