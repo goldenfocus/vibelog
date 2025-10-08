@@ -1,6 +1,5 @@
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextRequest, NextResponse } from 'next/server';
-
-import { createServerSupabaseClient } from '@/lib/supabase';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -28,9 +27,46 @@ export async function GET(request: NextRequest) {
   }
 
   if (code) {
+    const requestUrl = new URL(request.url);
+    const response = NextResponse.redirect(new URL('/dashboard', requestUrl.origin));
+
     try {
       console.log('Processing auth code exchange...');
-      const supabase = await createServerSupabaseClient();
+
+      // Import next/headers to get cookies
+      const { cookies } = await import('next/headers');
+      const cookieStore = await cookies();
+
+      // Create Supabase client with proper cookie handling for response
+      const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            get(name: string) {
+              return cookieStore.get(name)?.value;
+            },
+            set(name: string, value: string, options: CookieOptions) {
+              // Set cookie in both the cookie store AND the response
+              try {
+                cookieStore.set({ name, value, ...options });
+                response.cookies.set({ name, value, ...options });
+              } catch {
+                // Cookie is read-only in some contexts, ignore
+              }
+            },
+            remove(name: string, options: CookieOptions) {
+              try {
+                cookieStore.delete({ name, ...options });
+                response.cookies.delete({ name, ...options });
+              } catch {
+                // Cookie is read-only in some contexts, ignore
+              }
+            },
+          },
+        }
+      );
+
       const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
       if (exchangeError) {
@@ -57,8 +93,8 @@ export async function GET(request: NextRequest) {
         });
       }
 
-      console.log('Redirecting to dashboard...');
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+      console.log('Redirecting to dashboard with session cookies...');
+      return response;
     } catch (err) {
       console.error('Callback processing error:', err);
       return NextResponse.redirect(
