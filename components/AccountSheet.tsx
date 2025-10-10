@@ -1,6 +1,6 @@
 'use client';
 
-import { LogOut, Loader2 } from 'lucide-react';
+import { LogOut, Loader2, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -69,6 +69,15 @@ export function AccountSheet({
         >
           <span className="text-xl">👤</span>
           {t('navigation.dashboard')}
+        </Link>
+
+        <Link
+          href="/settings/profile"
+          className="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium text-foreground transition-colors hover:bg-muted/50 active:bg-muted/70"
+          onClick={() => onOpenChange(false)}
+        >
+          <Settings className="h-5 w-5" />
+          Profile Settings
         </Link>
 
         <Link

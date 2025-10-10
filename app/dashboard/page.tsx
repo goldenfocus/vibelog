@@ -77,20 +77,15 @@ export default function DashboardPage() {
             <MicRecorder />
           </div>
 
-          {/* User Info Card */}
-          <div className="mx-auto max-w-2xl rounded-2xl border border-border/50 bg-card/50 p-6 backdrop-blur-sm sm:p-8">
-            <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
-              <div className="text-center sm:text-left">
-                <h3 className="mb-1 text-lg font-semibold">{t('dashboard.account')}</h3>
-                <p className="text-sm text-muted-foreground">{user?.email}</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {t('dashboard.signedInWith')}{' '}
-                  {user?.app_metadata?.provider === 'google'
-                    ? 'Google'
-                    : user?.app_metadata?.provider}
-                </p>
-              </div>
-            </div>
+          {/* Profile Settings Link */}
+          <div className="mx-auto max-w-2xl text-center">
+            <Button
+              onClick={() => router.push('/settings/profile')}
+              variant="outline"
+              className="text-sm"
+            >
+              Edit Profile Settings
+            </Button>
           </div>
 
           {/* Coming Soon Section */}
