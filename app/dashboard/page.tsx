@@ -23,8 +23,10 @@ export default function DashboardPage() {
   });
 
   // Redirect to sign in if not authenticated
+  // Don't redirect immediately after OAuth - give session time to load
   if (!loading && !user) {
-    router.push('/auth/signin');
+    // Use replace instead of push to avoid back button issues
+    router.replace('/auth/signin');
     return null;
   }
 
