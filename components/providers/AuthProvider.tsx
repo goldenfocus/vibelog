@@ -289,7 +289,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(true);
 
       console.log('🔄 Calling supabase.auth.signOut()');
-      await supabase.auth.signOut();
+
+      // Add timeout to prevent hanging forever
+      const signOutPromise = supabase.auth.signOut();
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Sign out timeout')), 5000)
+      );
+
+      await Promise.race([signOutPromise, timeoutPromise]);
       console.log('✅ Supabase signOut completed');
 
       // Clear state immediately after successful sign out
@@ -297,10 +304,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setProfile(null);
       setLoading(false);
       console.log('✅ AuthProvider signOut completed successfully');
+
+      // Redirect to home page after sign out
+      if (typeof window !== 'undefined') {
+        window.location.href = '/';
+      }
     } catch (err) {
       console.error('❌ AuthProvider sign out error:', err);
-      setError('Failed to sign out');
+
+      // Even if signOut fails, clear local state and redirect
+      // This prevents users from being stuck
+      setUser(null);
+      setProfile(null);
+      setError('Signed out (connection issue)');
       setLoading(false);
+
+      // Force redirect even on error
+      if (typeof window !== 'undefined') {
+        window.location.href = '/';
+      }
     }
   };
 
