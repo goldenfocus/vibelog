@@ -125,12 +125,19 @@ All colors MUST be HSL.
   }
 
   html {
-    /* Default theme variables are defined on :root; no need to apply `dark` */
+    /* Optimize font loading and rendering */
+    font-display: swap;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    /* Optimize for performance */
+    contain: layout style paint;
+    will-change: auto;
   }
   
   /* Custom scrollbar for dark theme */

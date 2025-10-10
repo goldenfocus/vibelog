@@ -6,6 +6,7 @@ import { useState, useEffect, Suspense } from 'react';
 
 import MicRecorder from '@/components/MicRecorder';
 import Navigation from '@/components/Navigation';
+import { PerformanceMonitor } from '@/components/PerformanceMonitor';
 import { useI18n } from '@/components/providers/I18nProvider';
 
 function RemixHandler({ onRemixContent }: { onRemixContent: (content: string | null) => void }) {
@@ -39,6 +40,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
+      <PerformanceMonitor />
       <Suspense fallback={null}>
         <RemixHandler onRemixContent={setRemixContent} />
       </Suspense>
