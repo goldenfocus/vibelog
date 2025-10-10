@@ -67,7 +67,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
-    let authStateChangeFired = false;
 
     // Get initial session
     const getInitialSession = async () => {
@@ -141,19 +140,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (!errorMessage.includes('timed out')) {
             setError(errorMessage);
           }
-          // If auth state change hasn't fired and we might be after OAuth, keep loading
-          const isAfterOAuthCallback =
-            typeof window !== 'undefined' &&
-            (window.location.pathname === '/dashboard' ||
-              document.referrer.includes('/auth/callback'));
-          if (!authStateChangeFired && isAfterOAuthCallback) {
-            console.log(
-              '⏳ Timeout during OAuth flow - keeping loading=true, waiting for onAuthStateChange'
-            );
-          } else {
-            setLoading(false);
-            console.log('✅ AuthProvider: Loading complete (no session)');
-          }
+          // Always set loading to false - don't hang forever waiting for auth state change
+          // The onAuthStateChange handler will update the user state when it fires
+          setLoading(false);
+          console.log('✅ AuthProvider: Loading complete (error/timeout handled)');
         }
       }
     };
@@ -165,7 +155,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('🔄 Auth state change:', event, session?.user?.email);
-      authStateChangeFired = true;
 
       if (!mounted) {
         console.log('⚠️ Component unmounted, skipping auth state change');
