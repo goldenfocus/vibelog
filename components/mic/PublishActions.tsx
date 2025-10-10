@@ -3,17 +3,22 @@
 import { Copy, Share, Edit, X, LogIn, Play, Pause, Loader2 } from 'lucide-react';
 import React, { useState } from 'react';
 
+import ExportButton from '@/components/ExportButton';
 import { useI18n } from '@/components/providers/I18nProvider';
 import { useTextToSpeech } from '@/hooks/useTextToSpeech';
+import type { ExportFormat } from '@/lib/export';
 
 export interface PublishActionsProps {
   content: string;
+  title?: string;
+  author?: string;
   isLoggedIn?: boolean;
   isTeaserContent?: boolean;
   onCopy: (content: string) => Promise<void> | void;
   onEdit: () => void;
   onShare: () => void;
   onUpgradePrompt?: (message: string, benefits: string[]) => void;
+  onExport?: (format: ExportFormat) => void;
   className?: string;
 }
 
@@ -75,12 +80,15 @@ const LoginPopup: React.FC<LoginPopupProps> = ({ type, isOpen, onClose }) => {
 
 export default function PublishActions({
   content,
+  title,
+  author,
   isLoggedIn = false,
   isTeaserContent: _isTeaserContent = false,
   onCopy,
   onEdit,
   onShare,
   onUpgradePrompt,
+  onExport,
   className = '',
 }: PublishActionsProps) {
   const DEBUG_MODE = process.env.NODE_ENV !== 'production';
@@ -193,6 +201,8 @@ export default function PublishActions({
             {t('actions.share')}
           </span>
         </button>
+
+        <ExportButton content={content} title={title} author={author} onExport={onExport} />
       </div>
 
       <LoginPopup type="edit" isOpen={showEditPopup} onClose={closeEditPopup} />
