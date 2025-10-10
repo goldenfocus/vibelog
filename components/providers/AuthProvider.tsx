@@ -1,7 +1,7 @@
 'use client';
 
 import type { User } from '@supabase/supabase-js';
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
 
 import { getSessionId, clearSessionId } from '@/lib/session';
 import { createClient } from '@/lib/supabase';
@@ -27,6 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const isSigningOutRef = useRef(false);
   const supabase = createClient();
 
   // Fetch user profile when user changes (non-blocking, with timeout)
@@ -161,6 +162,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      // Ignore auth state changes during manual sign out
+      if (event === 'SIGNED_OUT' && isSigningOutRef.current) {
+        console.log('⏭️ Ignoring SIGNED_OUT event during manual sign out');
+        return;
+      }
+
       try {
         // Only set loading to true for sign-out operations
         if (event === 'SIGNED_OUT') {
@@ -285,6 +292,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       console.log('🔄 AuthProvider signOut started');
+      isSigningOutRef.current = true;
       setError(null);
       setLoading(true);
 
@@ -305,6 +313,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
       console.log('✅ AuthProvider signOut completed successfully');
 
+      // Small delay to ensure state is cleared before redirect
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       // Redirect to home page after sign out
       if (typeof window !== 'undefined') {
         window.location.href = '/';
@@ -319,10 +330,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setError('Signed out (connection issue)');
       setLoading(false);
 
+      // Small delay to ensure state is cleared
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       // Force redirect even on error
       if (typeof window !== 'undefined') {
         window.location.href = '/';
       }
+    } finally {
+      isSigningOutRef.current = false;
     }
   };
 
