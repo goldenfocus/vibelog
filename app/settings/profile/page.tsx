@@ -8,11 +8,10 @@ import Navigation from '@/components/Navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useI18n } from '@/components/providers/I18nProvider';
 import { Button } from '@/components/ui/button';
-import { createClient } from '@/lib/supabase';
-
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { createClient } from '@/lib/supabase';
 
 export default function ProfileSettingsPage() {
   const { user, profile, loading: authLoading } = useAuth();
@@ -38,11 +37,11 @@ export default function ProfileSettingsPage() {
   // Load profile data
   useEffect(() => {
     if (profile) {
-      setUsername(profile.username || '');
-      setDisplayName(profile.display_name || '');
-      setBio(profile.bio || '');
-      setAvatarUrl(profile.avatar_url || '');
-      setHeaderImage(profile.header_image || '');
+      setUsername((profile.username as string) || '');
+      setDisplayName((profile.display_name as string) || '');
+      setBio((profile.bio as string) || '');
+      setAvatarUrl((profile.avatar_url as string) || '');
+      setHeaderImage((profile.header_image as string) || '');
     }
   }, [profile]);
 
