@@ -77,17 +77,6 @@ export default function DashboardPage() {
             <MicRecorder />
           </div>
 
-          {/* Profile Settings Link */}
-          <div className="mx-auto max-w-2xl text-center">
-            <Button
-              onClick={() => router.push('/settings/profile')}
-              variant="outline"
-              className="text-sm"
-            >
-              Edit Profile Settings
-            </Button>
-          </div>
-
           {/* Coming Soon Section */}
           <div className="mt-12 text-center">
             <div className="inline-block rounded-xl border border-border/30 bg-card/30 px-6 py-4 backdrop-blur-sm">
