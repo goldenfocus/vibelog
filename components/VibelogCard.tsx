@@ -2,6 +2,7 @@
 
 import { Clock, Heart, Share2, User, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 
 import BlogContentRenderer from '@/components/BlogContentRenderer';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -38,11 +39,19 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
   const { t } = useI18n();
   const router = useRouter();
 
+  // Client-side only state to avoid SSR/hydration mismatch
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   // Show full content if:
   // 1. User is logged in
   // 2. Still loading (optimistic - prevents flash of login prompt for cached users)
+  // 3. Not yet client-side hydrated (show full content during SSR to avoid flash)
   const isLoggedIn = !!user;
-  const showFullContent = isLoggedIn || loading;
+  const showFullContent = !isClient || isLoggedIn || loading;
 
   const displayContent = showFullContent ? vibelog.content : vibelog.teaser;
   const isTeaser = !showFullContent;
