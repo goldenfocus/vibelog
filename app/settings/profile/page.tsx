@@ -11,10 +11,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { useProfile } from '@/hooks/useProfile';
 import { createClient } from '@/lib/supabase';
 
 export default function ProfileSettingsPage() {
-  const { user, profile, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const { profile } = useProfile(user?.id);
   const { isLoading: i18nLoading } = useI18n();
   const router = useRouter();
   const supabase = createClient();

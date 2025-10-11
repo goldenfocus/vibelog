@@ -1,111 +1,99 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextRequest, NextResponse } from 'next/server';
 
+/**
+ * Ultra-Fast OAuth Callback Handler
+ *
+ * Minimal processing for maximum speed:
+ * 1. Handle errors immediately
+ * 2. Exchange code for session
+ * 3. Set cookies and redirect
+ *
+ * Client will cache session via AuthProvider
+ */
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
   const error = searchParams.get('error');
   const errorDescription = searchParams.get('error_description');
 
-  console.log('=== AUTH CALLBACK DEBUG ===');
-  console.log('Request URL:', request.url);
-  console.log('Code:', code ? 'present' : 'missing');
-  console.log('Error:', error);
-  console.log('Error Description:', errorDescription);
-  console.log('All URL params:', Object.fromEntries(searchParams.entries()));
-
-  // Handle OAuth errors (user cancelled, etc.)
+  // === HANDLE ERRORS ===
   if (error) {
-    console.error('OAuth error detected:', error, errorDescription);
-    const errorMessage =
-      error === 'access_denied'
-        ? 'Sign in was cancelled'
-        : `Authentication failed: ${error} - ${errorDescription || 'Unknown error'}`;
+    console.error('OAuth error:', error, errorDescription);
+    const message =
+      error === 'access_denied' ? 'Sign in was cancelled' : `Auth failed: ${errorDescription}`;
     return NextResponse.redirect(
-      new URL(`/auth/signin?error=${encodeURIComponent(errorMessage)}`, request.url)
+      new URL(`/auth/signin?error=${encodeURIComponent(message)}`, request.url)
     );
   }
 
-  if (code) {
+  // === VALIDATE CODE ===
+  if (!code) {
+    console.error('No OAuth code provided');
+    return NextResponse.redirect(new URL('/auth/signin?error=no_code', request.url));
+  }
+
+  // === EXCHANGE CODE FOR SESSION ===
+  try {
     const requestUrl = new URL(request.url);
     const response = NextResponse.redirect(new URL('/dashboard', requestUrl.origin));
 
-    try {
-      console.log('Processing auth code exchange...');
+    // Import cookies
+    const { cookies } = await import('next/headers');
+    const cookieStore = await cookies();
 
-      // Import next/headers to get cookies
-      const { cookies } = await import('next/headers');
-      const cookieStore = await cookies();
-
-      // Create Supabase client with proper cookie handling for response
-      const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-          cookies: {
-            get(name: string) {
-              return cookieStore.get(name)?.value;
-            },
-            set(name: string, value: string, options: CookieOptions) {
-              // Set cookie in both the cookie store AND the response
-              try {
-                cookieStore.set({ name, value, ...options });
-                response.cookies.set({ name, value, ...options });
-              } catch {
-                // Cookie is read-only in some contexts, ignore
-              }
-            },
-            remove(name: string, options: CookieOptions) {
-              try {
-                cookieStore.delete({ name, ...options });
-                response.cookies.delete({ name, ...options });
-              } catch {
-                // Cookie is read-only in some contexts, ignore
-              }
-            },
+    // Create Supabase client with cookie handling
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
           },
-        }
-      );
-
-      const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-
-      if (exchangeError) {
-        console.error('Supabase auth exchange error:', {
-          message: exchangeError.message,
-          status: exchangeError.status,
-          details: exchangeError,
-        });
-        return NextResponse.redirect(
-          new URL(
-            `/auth/signin?error=${encodeURIComponent(`Auth exchange failed: ${exchangeError.message}`)}`,
-            request.url
-          )
-        );
+          set(name: string, value: string, options: CookieOptions) {
+            try {
+              cookieStore.set({ name, value, ...options });
+              response.cookies.set({ name, value, ...options });
+            } catch (err) {
+              // Cookies are read-only in some contexts
+              console.warn('Cookie set warning:', err);
+            }
+          },
+          remove(name: string, options: CookieOptions) {
+            try {
+              cookieStore.delete({ name, ...options });
+              response.cookies.delete({ name, ...options });
+            } catch (err) {
+              console.warn('Cookie delete warning:', err);
+            }
+          },
+        },
       }
+    );
 
-      // Log successful sign in for debugging
-      if (data.user) {
-        console.log('✅ Successful sign in:', {
-          email: data.user.email,
-          id: data.user.id,
-          provider: data.user.app_metadata?.provider,
-          metadata: data.user.user_metadata,
-        });
-      }
+    // Exchange code for session
+    const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
-      console.log('Redirecting to dashboard with session cookies...');
-      return response;
-    } catch (err) {
-      console.error('Callback processing error:', err);
+    if (exchangeError) {
+      console.error('Code exchange failed:', exchangeError);
       return NextResponse.redirect(
-        new URL(
-          `/auth/signin?error=${encodeURIComponent(`Callback error: ${err instanceof Error ? err.message : 'Unknown error'}`)}`,
-          request.url
-        )
+        new URL(`/auth/signin?error=${encodeURIComponent(exchangeError.message)}`, request.url)
       );
     }
-  }
 
-  console.log('No code or error, redirecting to sign in...');
-  return NextResponse.redirect(new URL('/auth/signin?error=no_code', request.url));
+    // Log success
+    console.log('✅ OAuth success:', data.user?.email);
+
+    // Redirect to dashboard (AuthProvider will cache session)
+    return response;
+  } catch (err) {
+    console.error('Callback error:', err);
+    return NextResponse.redirect(
+      new URL(
+        `/auth/signin?error=${encodeURIComponent(err instanceof Error ? err.message : 'Unknown error')}`,
+        request.url
+      )
+    );
+  }
 }

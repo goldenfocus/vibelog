@@ -1,261 +1,163 @@
 'use client';
 
 import type { User } from '@supabase/supabase-js';
+import { useRouter } from 'next/navigation';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 
-import { getSessionId, clearSessionId } from '@/lib/session';
+import { clearCachedSession, getCachedSession, setCachedSession } from '@/lib/auth-cache';
 import { createClient } from '@/lib/supabase';
-
-type Profile = {
-  id: string;
-  [key: string]: unknown;
-} | null;
 
 type AuthContextType = {
   user: User | null;
-  profile: Profile;
   loading: boolean;
   signIn: (provider: 'google' | 'apple') => Promise<void>;
   signOut: () => Promise<void>;
+  refreshSession: () => Promise<void>;
   error: string | null;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+/**
+ * Ultra-Fast AuthProvider
+ *
+ * Performance Optimizations:
+ * - Instant load from localStorage cache (0ms)
+ * - Background session validation
+ * - No timeouts (proper error handling)
+ * - Optimistic sign out (< 100ms)
+ * - Browser-specific handling
+ */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const isSigningOutRef = useRef(false);
+  const hasMountedRef = useRef(false);
   const supabase = createClient();
-
-  // Fetch user profile when user changes (non-blocking, with timeout)
-  const fetchProfile = async (userId: string) => {
-    try {
-      // Add timeout to prevent hanging
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Profile fetch timeout')), 3000)
-      );
-
-      const fetchPromise = supabase.from('profiles').select('*').eq('id', userId).single();
-
-      const result = await Promise.race([fetchPromise, timeoutPromise]);
-      const { data, error } = result as {
-        data: Profile;
-        error: { code?: string; message?: string };
-      };
-
-      if (error) {
-        // Handle common profile fetch errors gracefully
-        if (error.code === 'PGRST116') {
-          console.log('No profile found for user, which is normal for new users');
-        } else if (error.code === '42501' || error.code === 'PGRST204') {
-          console.log('Profile access restricted by RLS policies, continuing without profile');
-        } else {
-          console.warn('Profile fetch error (non-critical):', error.message);
-        }
-        setProfile(null);
-        return;
-      }
-
-      setProfile(data);
-    } catch (err) {
-      console.warn('Profile fetch error (non-critical):', err);
-      setProfile(null);
-    }
-  };
+  const router = useRouter();
 
   useEffect(() => {
     let mounted = true;
+    hasMountedRef.current = true;
 
-    // Get initial session
-    const getInitialSession = async () => {
+    // ====== PHASE 1: INSTANT LOAD FROM CACHE ======
+    const cachedUser = getCachedSession();
+    if (cachedUser) {
+      console.log('⚡ Loaded cached session instantly:', cachedUser.email);
+      setUser(cachedUser);
+      setLoading(false);
+    }
+
+    // ====== PHASE 2: BACKGROUND VALIDATION ======
+    const validateSession = async () => {
       try {
-        console.log('🔄 AuthProvider: Getting initial session...');
-
-        // Check if we just came from OAuth callback
-        const isAfterOAuthCallback =
-          typeof window !== 'undefined' &&
-          (window.location.pathname === '/dashboard' ||
-            document.referrer.includes('/auth/callback'));
-
-        // Use longer timeout for OAuth redirects (wait for onAuthStateChange to fire)
-        // Use shorter timeout for normal page loads
-        const timeout = isAfterOAuthCallback ? 10000 : 3000;
-        console.log(
-          `⏱️ Using ${timeout}ms timeout (isAfterOAuthCallback: ${isAfterOAuthCallback})`
-        );
-
-        // Add timeout to prevent hanging
-        const sessionPromise = supabase.auth.getSession();
-        const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(
-            () => reject(new Error('Session check timed out - continuing anyway')),
-            timeout
-          )
-        );
-
         const {
           data: { session },
-          error,
-        } = await Promise.race([sessionPromise, timeoutPromise]);
+          error: sessionError,
+        } = await supabase.auth.getSession();
 
-        if (error) {
-          // Refresh token errors are expected when logged out or session expired
+        if (!mounted) {
+          return;
+        }
+
+        if (sessionError) {
+          // Expected errors when logged out
           if (
-            error.message?.includes('Refresh Token') ||
-            error.message?.includes('refresh_token')
+            sessionError.message?.includes('Refresh Token') ||
+            sessionError.message?.includes('refresh_token')
           ) {
-            console.log('ℹ️ No active session (expected when logged out)');
+            console.log('ℹ️  No active session (logged out)');
           } else {
-            console.error('Session error:', error);
-            setError(error.message);
+            console.error('Session validation error:', sessionError);
+            setError(sessionError.message);
           }
-        }
-
-        if (mounted) {
-          console.log('🔄 AuthProvider: Setting initial user:', session?.user?.email || 'none');
-          setUser(session?.user ?? null);
-
-          if (session?.user) {
-            await fetchProfile(session.user.id);
+          // Clear cache if session is invalid
+          if (cachedUser) {
+            clearCachedSession();
+            setUser(null);
           }
-
-          // Always set loading to false after initial session check
           setLoading(false);
-          console.log('✅ AuthProvider: Initial session processing complete, loading=false');
+          return;
         }
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
 
-        // Don't log timeout as an error - it's expected behavior to prevent hanging
-        if (errorMessage.includes('timed out')) {
-          console.log('⏱️ AuthProvider: Session check timed out, continuing without session');
+        if (session?.user) {
+          // Update cache if session is valid
+          setCachedSession(session.user);
+          setUser(session.user);
+          console.log('✅ Session validated:', session.user.email);
         } else {
-          console.error('Auth initialization error:', err);
+          // No session, clear cache
+          clearCachedSession();
+          setUser(null);
         }
 
+        setLoading(false);
+      } catch (err) {
+        console.error('Session validation failed:', err);
         if (mounted) {
-          // Don't set error state for timeouts - just continue
-          if (!errorMessage.includes('timed out')) {
-            setError(errorMessage);
-          }
-          // Always set loading to false - don't hang forever waiting for auth state change
-          // The onAuthStateChange handler will update the user state when it fires
+          setError(err instanceof Error ? err.message : 'Auth error');
           setLoading(false);
-          console.log('✅ AuthProvider: Loading complete (error/timeout handled)');
         }
       }
     };
 
-    getInitialSession();
+    // Run validation in background (doesn't block UI if cache exists)
+    validateSession();
 
-    // Listen for auth changes
+    // ====== PHASE 3: LISTEN FOR AUTH CHANGES ======
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('🔄 Auth state change:', event, session?.user?.email);
 
       if (!mounted) {
-        console.log('⚠️ Component unmounted, skipping auth state change');
         return;
       }
 
-      // Ignore auth state changes during manual sign out
+      // Ignore SIGNED_OUT during manual sign out (we handle it optimistically)
       if (event === 'SIGNED_OUT' && isSigningOutRef.current) {
-        console.log('⏭️ Ignoring SIGNED_OUT event during manual sign out');
+        console.log('⏭️  Ignoring SIGNED_OUT event (manual sign out)');
         return;
       }
 
-      try {
-        // Only set loading to true for sign-out operations
-        if (event === 'SIGNED_OUT') {
-          setLoading(true);
-        }
-
-        setUser(session?.user ?? null);
-        setProfile(null);
-
-        // Fetch profile in background (don't block on it)
-        if (session?.user) {
-          console.log('📥 Fetching profile for user:', session.user.id);
-          fetchProfile(session.user.id)
-            .then(() => {
-              console.log('✅ Profile fetch completed');
-            })
-            .catch(err => {
-              console.warn('⚠️ Profile fetch failed:', err);
-            });
-        }
-
-        // Transfer anonymous vibelogs to user account on sign-in
-        if (event === 'SIGNED_IN' && session?.user) {
-          const sessionId = getSessionId();
-          if (sessionId) {
-            console.log('🔄 Transferring anonymous vibelogs to user account...');
-            try {
-              const { data, error } = await supabase.rpc('transfer_session_vibelogs', {
-                p_session_id: sessionId,
-                p_user_id: session.user.id,
-              });
-
-              if (error) {
-                console.warn('⚠️ Failed to transfer vibelogs:', error);
-              } else {
-                console.log(`✅ Transferred ${data} vibelogs to user account`);
-                clearSessionId(); // Clear session ID after successful transfer
-              }
-            } catch (err) {
-              console.warn('⚠️ Error transferring vibelogs:', err);
-            }
-          }
-          setError(null);
-        }
-
-        // Set loading to false immediately (don't wait for profile)
-        console.log('🔄 Setting loading to false for event:', event);
-        setLoading(false);
-        console.log('✅ Auth state processed for event:', event, 'loading set to false');
-      } catch (err) {
-        console.error('❌ Error in auth state change handler:', err);
-        setLoading(false);
+      // Update user state and cache
+      if (session?.user) {
+        setCachedSession(session.user);
+        setUser(session.user);
+        setError(null);
+      } else {
+        clearCachedSession();
+        setUser(null);
       }
+
+      setLoading(false);
     });
 
     return () => {
       mounted = false;
       subscription.unsubscribe();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [supabase, router]);
 
+  /**
+   * Sign in with OAuth provider
+   * Triggers OAuth flow, redirects to provider
+   */
   const signIn = async (provider: 'google' | 'apple') => {
     try {
       setError(null);
       setLoading(true);
 
-      // Prefer the current browser origin so local dev stays on localhost.
-      let redirectUrl: string | null = null;
-      if (typeof window !== 'undefined') {
-        redirectUrl = `${window.location.origin}/auth/callback`;
-      } else if (process.env.NEXT_PUBLIC_SITE_URL) {
-        redirectUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`;
-      }
+      // Build redirect URL
+      const redirectUrl =
+        typeof window !== 'undefined'
+          ? `${window.location.origin}/auth/callback`
+          : `${process.env.NEXT_PUBLIC_SITE_URL || ''}/auth/callback`;
 
-      if (!redirectUrl) {
-        console.warn('No site URL available for OAuth redirect; falling back to relative path.');
-        redirectUrl = '/auth/callback';
-      }
+      console.log('🔐 Starting OAuth sign in:', { provider, redirectUrl });
 
-      console.log('=== OAUTH SIGN IN DEBUG ===');
-      console.log('Provider:', provider);
-      console.log('Environment SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL);
-      console.log('Window origin:', window.location.origin);
-      console.log('Final redirect URL:', redirectUrl);
-      console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
-
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error: signInError } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
           redirectTo: redirectUrl,
@@ -266,22 +168,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         },
       });
 
-      console.log('OAuth response:', { data, error });
-
-      if (error) {
-        console.error('Sign in error details:', {
-          message: error.message,
-          status: error.status,
-          details: error,
-        });
-        setError(`Sign in failed: ${error.message}`);
+      if (signInError) {
+        console.error('OAuth sign in error:', signInError);
+        setError(`Sign in failed: ${signInError.message}`);
         setLoading(false);
         return;
       }
 
-      // If we get here without redirect, something's wrong
-      console.log('OAuth response received but no redirect happened');
-      console.log('This might indicate a configuration issue');
+      // OAuth redirect will happen automatically
+      // Loading state will be cleared by callback or auth state change
     } catch (err) {
       console.error('Sign in exception:', err);
       setError('Sign in failed. Please try again.');
@@ -289,65 +184,95 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  /**
+   * Ultra-fast optimistic sign out
+   * - Clears UI state immediately (< 100ms)
+   * - Navigates instantly
+   * - Calls Supabase in background
+   */
   const signOut = async () => {
     try {
-      console.log('🔄 AuthProvider signOut started');
+      console.log('🚪 Fast sign out started');
       isSigningOutRef.current = true;
+
+      // PHASE 1: Clear UI state immediately (optimistic)
+      setUser(null);
+      clearCachedSession();
       setError(null);
-      setLoading(true);
-
-      console.log('🔄 Calling supabase.auth.signOut()');
-
-      // Add timeout to prevent hanging forever
-      const signOutPromise = supabase.auth.signOut();
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Sign out timeout')), 5000)
-      );
-
-      await Promise.race([signOutPromise, timeoutPromise]);
-      console.log('✅ Supabase signOut completed');
-
-      // Clear state immediately after successful sign out
-      setUser(null);
-      setProfile(null);
       setLoading(false);
-      console.log('✅ AuthProvider signOut completed successfully');
+      console.log('✅ UI state cleared');
 
-      // Small delay to ensure state is cleared before redirect
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // PHASE 2: Navigate immediately (don't wait for Supabase)
+      router.replace('/');
+      console.log('✅ Navigated to home');
 
-      // Redirect to home page after sign out
-      if (typeof window !== 'undefined') {
-        window.location.href = '/';
-      }
+      // PHASE 3: Call Supabase in background (don't block UI)
+      supabase.auth
+        .signOut()
+        .then(() => {
+          console.log('✅ Supabase sign out completed');
+        })
+        .catch(err => {
+          console.warn('⚠️  Supabase sign out error (non-critical):', err);
+        })
+        .finally(() => {
+          isSigningOutRef.current = false;
+        });
     } catch (err) {
-      console.error('❌ AuthProvider sign out error:', err);
-
-      // Even if signOut fails, clear local state and redirect
-      // This prevents users from being stuck
+      console.error('❌ Sign out error:', err);
+      // Even on error, ensure user is signed out locally
       setUser(null);
-      setProfile(null);
-      setError('Signed out (connection issue)');
+      clearCachedSession();
       setLoading(false);
-
-      // Small delay to ensure state is cleared
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      // Force redirect even on error
-      if (typeof window !== 'undefined') {
-        window.location.href = '/';
-      }
-    } finally {
+      router.replace('/');
       isSigningOutRef.current = false;
+    }
+  };
+
+  /**
+   * Manually refresh session
+   * Useful for recovering from auth errors
+   */
+  const refreshSession = async () => {
+    try {
+      setLoading(true);
+      const {
+        data: { session },
+        error: refreshError,
+      } = await supabase.auth.refreshSession();
+
+      if (refreshError) {
+        console.error('Session refresh error:', refreshError);
+        clearCachedSession();
+        setUser(null);
+        setError(refreshError.message);
+        setLoading(false);
+        return;
+      }
+
+      if (session?.user) {
+        setCachedSession(session.user);
+        setUser(session.user);
+        setError(null);
+      } else {
+        clearCachedSession();
+        setUser(null);
+      }
+
+      setLoading(false);
+    } catch (err) {
+      console.error('Refresh session failed:', err);
+      setError(err instanceof Error ? err.message : 'Refresh failed');
+      setLoading(false);
     }
   };
 
   const value = {
     user,
-    profile,
     loading,
     signIn,
     signOut,
+    refreshSession,
     error,
   };
 
