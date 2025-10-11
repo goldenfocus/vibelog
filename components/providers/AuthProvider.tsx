@@ -29,8 +29,27 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
  * - Browser-specific handling
  */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Initialize with cache immediately (synchronous)
+  const [user, setUser] = useState<User | null>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = getCachedSession();
+      if (cached) {
+        console.log('⚡ Initial cached user loaded:', cached.email);
+        return cached;
+      }
+    }
+    return null;
+  });
+
+  // Start with loading=false if cache exists, true otherwise
+  const [loading, setLoading] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const hasCache = getCachedSession() !== null;
+      return !hasCache; // false if cache exists, true if no cache
+    }
+    return true;
+  });
+
   const [error, setError] = useState<string | null>(null);
   const isSigningOutRef = useRef(false);
   const hasMountedRef = useRef(false);
@@ -41,17 +60,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let mounted = true;
     hasMountedRef.current = true;
 
-    // ====== PHASE 1: INSTANT LOAD FROM CACHE ======
-    const cachedUser = getCachedSession();
-    if (cachedUser) {
-      console.log('⚡ Loaded cached session instantly:', cachedUser.email);
-      setUser(cachedUser);
-      setLoading(false);
-    }
-
-    // ====== PHASE 2: BACKGROUND VALIDATION ======
+    // ====== BACKGROUND VALIDATION ======
     const validateSession = async () => {
       try {
+        console.log('🔄 Validating session in background...');
         const {
           data: { session },
           error: sessionError,
@@ -73,10 +85,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setError(sessionError.message);
           }
           // Clear cache if session is invalid
-          if (cachedUser) {
-            clearCachedSession();
-            setUser(null);
-          }
+          clearCachedSession();
+          setUser(null);
           setLoading(false);
           return;
         }
@@ -105,7 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Run validation in background (doesn't block UI if cache exists)
     validateSession();
 
-    // ====== PHASE 3: LISTEN FOR AUTH CHANGES ======
+    // ====== LISTEN FOR AUTH CHANGES ======
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
