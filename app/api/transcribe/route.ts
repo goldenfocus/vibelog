@@ -6,6 +6,10 @@ import { isDev } from '@/lib/env';
 import { rateLimit, tooManyResponse } from '@/lib/rateLimit';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
+// Use Node.js runtime for better performance with larger payloads
+export const runtime = 'nodejs';
+export const maxDuration = 60; // 60 seconds for transcription
+
 export async function POST(request: NextRequest) {
   try {
     // Rate limit per user if logged in; otherwise per IP
@@ -56,7 +60,6 @@ export async function POST(request: NextRequest) {
 
     // Use file constraints from config
     const { maxSize: MAX_SIZE_BYTES, allowedTypes, minSize: MIN_SIZE_BYTES } = config.files.audio;
-    const ALLOWED_TYPES = new Set(allowedTypes);
 
     // Check for empty or too small files
     if (audioFile.size === 0) {

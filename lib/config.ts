@@ -51,7 +51,7 @@ export const config = {
   // File constraints
   files: {
     audio: {
-      maxSize: 25 * 1024 * 1024, // 25MB
+      maxSize: 4 * 1024 * 1024, // 4MB (Vercel has 4.5MB request body limit)
       allowedTypes: [
         'audio/webm',
         'audio/wav',
