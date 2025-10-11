@@ -4,6 +4,7 @@ import OpenAI from 'openai';
 import { config } from '@/lib/config';
 import { isDev } from '@/lib/env';
 import { rateLimit, tooManyResponse } from '@/lib/rateLimit';
+import { downloadFromStorage, deleteFromStorage } from '@/lib/storage';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
 // Use Node.js runtime for better performance with larger payloads
@@ -51,64 +52,87 @@ export async function POST(request: NextRequest) {
       return tooManyResponse(rl);
     }
 
-    const formData = await request.formData();
-    const audioFile = formData.get('audio') as File;
+    // Support two methods: direct upload (formData) and storage path (JSON)
+    const contentType = request.headers.get('content-type') || '';
+    let audioFile: File;
+    let storagePath: string | null = null;
 
-    if (!audioFile) {
-      return NextResponse.json({ error: 'No audio file provided' }, { status: 400 });
-    }
+    if (contentType.includes('application/json')) {
+      // NEW WAY: Download from storage (supports unlimited file sizes!)
+      const body = await request.json();
+      storagePath = body.storagePath;
 
-    // Use file constraints from config
-    const { maxSize: MAX_SIZE_BYTES, allowedTypes, minSize: MIN_SIZE_BYTES } = config.files.audio;
+      if (!storagePath) {
+        return NextResponse.json({ error: 'Missing storagePath in request body' }, { status: 400 });
+      }
 
-    // Check for empty or too small files
-    if (audioFile.size === 0) {
-      return NextResponse.json(
-        { error: 'Audio file is empty. Please try recording again.' },
-        { status: 400 }
-      );
-    }
+      console.log('📥 Downloading audio from storage:', storagePath);
 
-    // Check for minimum file size to avoid corrupted recordings
-    if (audioFile.size < MIN_SIZE_BYTES) {
-      return NextResponse.json(
-        {
-          error:
-            'Audio file is too small or corrupted. Please try recording again with longer audio.',
-        },
-        { status: 400 }
-      );
-    }
+      try {
+        // Download file from Supabase Storage
+        const blob = await downloadFromStorage(storagePath);
 
-    if (audioFile.size > MAX_SIZE_BYTES) {
-      return NextResponse.json({ error: 'Audio file too large' }, { status: 413 });
-    }
+        // Convert blob to File
+        audioFile = new File([blob], 'recording.webm', {
+          type: blob.type || 'audio/webm',
+        });
 
-    // More flexible audio type checking - allow common formats and variations
-    if (audioFile.type) {
-      const isValidType =
-        (allowedTypes as readonly string[]).includes(audioFile.type) ||
-        audioFile.type.startsWith('audio/webm') ||
-        audioFile.type.startsWith('audio/mp4') ||
-        audioFile.type.startsWith('audio/wav') ||
-        audioFile.type.startsWith('audio/ogg');
-
-      if (!isValidType) {
-        console.warn('Unsupported audio type:', audioFile.type);
+        console.log('✅ Downloaded:', audioFile.size, 'bytes');
+      } catch (storageError) {
+        console.error('Storage download failed:', storageError);
         return NextResponse.json(
-          { error: 'Unsupported audio type: ' + audioFile.type },
-          { status: 415 }
+          {
+            error: 'Failed to download audio from storage',
+            message: storageError instanceof Error ? storageError.message : 'Unknown error',
+          },
+          { status: 500 }
         );
+      }
+    } else {
+      // OLD WAY: Direct formData upload (4MB limit, kept for backwards compatibility)
+      const formData = await request.formData();
+      const file = formData.get('audio') as File;
+
+      if (!file) {
+        return NextResponse.json({ error: 'No audio file provided' }, { status: 400 });
+      }
+
+      audioFile = file;
+
+      // Use file constraints from config (only for direct uploads)
+      const { maxSize: MAX_SIZE_BYTES, minSize: MIN_SIZE_BYTES } = config.files.audio;
+
+      // Check for empty or too small files
+      if (audioFile.size === 0) {
+        return NextResponse.json(
+          { error: 'Audio file is empty. Please try recording again.' },
+          { status: 400 }
+        );
+      }
+
+      // Check for minimum file size to avoid corrupted recordings
+      if (audioFile.size < MIN_SIZE_BYTES) {
+        return NextResponse.json(
+          {
+            error:
+              'Audio file is too small or corrupted. Please try recording again with longer audio.',
+          },
+          { status: 400 }
+        );
+      }
+
+      if (audioFile.size > MAX_SIZE_BYTES) {
+        return NextResponse.json({ error: 'Audio file too large' }, { status: 413 });
       }
     }
 
     if (isDev) {
       console.log(
-        'Transcribing audio file:',
-        audioFile.name,
+        '🎤 Transcribing audio:',
         audioFile.size,
         'bytes',
-        audioFile.type
+        audioFile.type,
+        storagePath ? `(from storage: ${storagePath})` : '(direct upload)'
       );
     }
 
@@ -147,6 +171,15 @@ export async function POST(request: NextRequest) {
 
     if (isDev) {
       console.log('Transcription completed:', transcription.substring(0, 100) + '...');
+    }
+
+    // Clean up storage file after successful transcription
+    if (storagePath) {
+      console.log('🧹 Cleaning up storage file:', storagePath);
+      // Fire and forget - don't wait for deletion
+      deleteFromStorage(storagePath).catch(err =>
+        console.warn('Failed to delete storage file:', err)
+      );
     }
 
     return NextResponse.json({

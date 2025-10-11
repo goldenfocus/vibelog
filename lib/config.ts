@@ -51,7 +51,8 @@ export const config = {
   // File constraints
   files: {
     audio: {
-      maxSize: 4 * 1024 * 1024, // 4MB (Vercel has 4.5MB request body limit)
+      maxSize: 500 * 1024 * 1024, // 500MB (enough for 30min recordings via direct storage upload)
+      maxDuration: 30 * 60, // 30 minutes in seconds
       allowedTypes: [
         'audio/webm',
         'audio/wav',
@@ -60,6 +61,9 @@ export const config = {
         'audio/ogg',
         'audio/x-wav',
         'audio/ogg; codecs=opus',
+        'video/webm', // Support video recordings
+        'video/mp4',
+        'video/quicktime',
       ],
       minSize: 1024, // 1KB
     },
