@@ -202,9 +202,7 @@ export default function Navigation() {
               </div>
             )}
 
-            {loading ? (
-              <div className="h-8 w-8 animate-pulse rounded-full bg-muted" />
-            ) : user ? (
+            {user ? (
               <>
                 {/* Mobile: Hamburger menu button */}
                 <button
@@ -249,11 +247,9 @@ export default function Navigation() {
                   <Menu className="h-5 w-5" />
                 </button>
 
-                <Link href="/auth/signin">
-                  <Button className="bg-gradient-electric text-white hover:opacity-90">
-                    {t('auth.signIn')}
-                  </Button>
-                </Link>
+                <Button asChild className="bg-gradient-electric text-white hover:opacity-90">
+                  <Link href="/auth/signin">{t('auth.signIn')}</Link>
+                </Button>
               </>
             )}
           </div>
