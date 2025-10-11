@@ -49,16 +49,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate file type
+    // Validate file type (normalize by stripping codecs parameter)
+    const normalizedFileType = fileType.split(';')[0].trim();
     const allowedTypes = [
       ...config.files.audio.allowedTypes,
       'video/webm',
       'video/mp4',
       'video/quicktime',
-    ];
+    ].map(type => type.split(';')[0].trim());
 
-    if (!allowedTypes.includes(fileType)) {
-      return NextResponse.json({ error: 'Unsupported file type', fileType }, { status: 415 });
+    if (!allowedTypes.includes(normalizedFileType)) {
+      return NextResponse.json(
+        { error: 'Unsupported file type', fileType: normalizedFileType },
+        { status: 415 }
+      );
     }
 
     // Generate storage path
