@@ -1,5 +1,5 @@
 -- Fix RLS policies to allow presigned URL uploads
--- Run this in Supabase SQL Editor: https://supabase.com/dashboard/project/ogqcycqctxulcvhjeiii/sql
+-- Presigned URLs bypass authentication, so we need to allow anon role
 
 -- Drop existing restrictive policy
 DROP POLICY IF EXISTS "Users can upload to own folder" ON storage.objects;

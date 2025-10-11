@@ -168,39 +168,22 @@ export function useVibelogAPI(
       // NEW FLOW: Upload to storage first, then transcribe
       // This bypasses the 4.5MB API route limit
 
-      // Step 1: Request presigned upload URL
-      console.log('📝 Requesting upload URL...');
-      const uploadUrlResponse = await fetch('/api/storage/upload-url', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fileType: audioFile.type,
-          fileSize: audioFile.size,
-        }),
-      });
-
-      if (!uploadUrlResponse.ok) {
-        await handleAPIError(uploadUrlResponse);
-      }
-
-      const { uploadUrl, storagePath } = await uploadUrlResponse.json();
-      console.log('✅ Got upload URL:', storagePath);
-
-      // Step 2: Upload directly to Supabase Storage
+      // Step 1 & 2: Upload to storage via API (server handles storage upload)
       console.log('⬆️  Uploading to storage...');
-      const uploadResponse = await fetch(uploadUrl, {
-        method: 'PUT',
-        body: audioFile,
-        headers: {
-          'Content-Type': audioFile.type,
-        },
+      const formData = new FormData();
+      formData.append('audio', audioFile);
+
+      const uploadResponse = await fetch('/api/storage/upload', {
+        method: 'POST',
+        body: formData,
       });
 
       if (!uploadResponse.ok) {
-        throw new Error(`Storage upload failed: ${uploadResponse.status}`);
+        await handleAPIError(uploadResponse);
       }
 
-      console.log('✅ Upload complete!');
+      const { storagePath } = await uploadResponse.json();
+      console.log('✅ Upload complete! Path:', storagePath);
 
       // Step 3: Request transcription (API downloads from storage)
       console.log('🎯 Requesting transcription...');
