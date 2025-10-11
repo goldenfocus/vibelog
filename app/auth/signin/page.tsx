@@ -1,55 +1,58 @@
-"use client"
+'use client';
 
-import { useSearchParams } from "next/navigation"
-import { useEffect, useState, Suspense } from "react"
+import { useSearchParams } from 'next/navigation';
+import { useEffect, useState, Suspense } from 'react';
 
-import { useAuth } from "@/components/providers/AuthProvider"
-import { useI18n } from "@/components/providers/I18nProvider"
-import { Button } from "@/components/ui/button"
+import { useAuth } from '@/components/providers/AuthProvider';
+import { Button } from '@/components/ui/button';
 
 function SignInContent() {
-  const { t } = useI18n()
-  const { signIn, loading, error } = useAuth()
-  const searchParams = useSearchParams()
-  const [urlError, setUrlError] = useState<string | null>(null)
+  const { signIn, loading, error } = useAuth();
+  const searchParams = useSearchParams();
+  const [urlError, setUrlError] = useState<string | null>(null);
 
   useEffect(() => {
-    const errorParam = searchParams.get('error')
+    const errorParam = searchParams.get('error');
     if (errorParam) {
-      setUrlError(decodeURIComponent(errorParam))
+      setUrlError(decodeURIComponent(errorParam));
+    }
+
+    // Clean up any stale OAuth state from previous attempts
+    // This prevents auto-resuming failed OAuth flows
+    if (window.location.hash) {
+      console.log('🧹 Cleaning up stale OAuth hash from previous session');
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
     }
 
     // Debug info
-    console.log('SignIn page loaded')
-    console.log('Current URL:', window.location.href)
+    console.log('SignIn page loaded');
+    console.log('Current URL:', window.location.href);
     console.log('Environment:', {
       supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
-      hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    })
-  }, [searchParams])
+      hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    });
+  }, [searchParams]);
 
-  const displayError = error || urlError
+  const displayError = error || urlError;
 
   const handleSignIn = () => {
-    console.log('Sign in button clicked')
-    signIn('google')
-  }
+    console.log('Sign in button clicked');
+    signIn('google');
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-black">
-      <div className="bg-card/95 backdrop-blur-lg rounded-2xl p-8 w-full max-w-md border border-electric/20 shadow-2xl">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-foreground mb-2">
-            Continue with VibeLog
-          </h1>
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-black">
+      <div className="w-full max-w-md rounded-2xl border border-electric/20 bg-card/95 p-8 shadow-2xl backdrop-blur-lg">
+        <div className="mb-8 text-center">
+          <h1 className="mb-2 text-2xl font-bold text-foreground">Continue with VibeLog</h1>
           <p className="text-muted-foreground">
             Sign in or create your account to save vibelogs and access your dashboard
           </p>
         </div>
 
         {displayError && (
-          <div className="mb-4 p-3 bg-destructive/20 border border-destructive/30 rounded-lg">
-            <p className="text-destructive text-sm text-center">{displayError}</p>
+          <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/20 p-3">
+            <p className="text-center text-sm text-destructive">{displayError}</p>
           </div>
         )}
 
@@ -57,9 +60,9 @@ function SignInContent() {
           <Button
             onClick={handleSignIn}
             disabled={loading}
-            className="w-full bg-electric hover:bg-electric-glow text-white font-medium py-4 disabled:opacity-50 disabled:cursor-not-allowed relative shadow-lg hover:shadow-electric/25 transition-all duration-200"
+            className="relative w-full bg-electric py-4 font-medium text-white shadow-lg transition-all duration-200 hover:bg-electric-glow hover:shadow-electric/25 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+            <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24">
               <path
                 fill="currentColor"
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -79,31 +82,35 @@ function SignInContent() {
             </svg>
             {loading ? (
               <>
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                 Connecting...
               </>
             ) : (
-              "Continue with Google"
+              'Continue with Google'
             )}
           </Button>
         </div>
 
         <div className="mt-6 text-center">
-          <p className="text-muted-foreground text-sm">
+          <p className="text-sm text-muted-foreground">
             By continuing, you agree to our Terms of Service and Privacy Policy
           </p>
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 export default function SignInPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-black">
-      <div className="text-electric">Loading...</div>
-    </div>}>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-black">
+          <div className="text-electric">Loading...</div>
+        </div>
+      }
+    >
       <SignInContent />
     </Suspense>
-  )
+  );
 }

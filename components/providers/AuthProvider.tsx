@@ -162,6 +162,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setError(null);
       setLoading(true);
 
+      // Clean up any stale OAuth state before starting new flow
+      console.log('🧹 Clearing stale OAuth state before sign in');
+      if (typeof window !== 'undefined') {
+        // Clear URL hash (Supabase OAuth state)
+        if (window.location.hash) {
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        }
+        // Clear any existing session to ensure fresh OAuth flow
+        await supabase.auth.signOut({ scope: 'local' });
+      }
+
       // Build redirect URL
       const redirectUrl =
         typeof window !== 'undefined'
