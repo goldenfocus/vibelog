@@ -71,8 +71,8 @@ function generateSessionId(): string {
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   let requestBody: SaveVibelogRequest | null = null;
-  // eslint-disable-next-line prefer-const
-  let supabase = null;
+  let supabase: Awaited<ReturnType<typeof createServerSupabaseClient>> | null = null;
+  let vibelogData: any = null; // eslint-disable-line @typescript-eslint/no-explicit-any
 
   try {
     // === STEP 1: PARSE REQUEST ===
@@ -123,14 +123,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const sessionId = requestBody.sessionId || generateSessionId();
 
     // SECURITY: Get user from session, NEVER trust client-supplied userId
-    const supabase = await createServerSupabaseClient();
+    supabase = await createServerSupabaseClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
     const userId = user?.id || null;
 
     // Prepare data object using only existing columns
-    const vibelogData = {
+    vibelogData = {
       user_id: userId, // SECURITY: Only use server-verified userId
       session_id: sessionId,
       title: title,
