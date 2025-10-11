@@ -37,8 +37,13 @@ export default function Navigation() {
   const isActive = (path: string) => pathname === path;
 
   const avatarUrl = useMemo(() => {
-    const avatar_url = user?.user_metadata?.avatar_url;
-    const picture = user?.user_metadata?.picture;
+    // Don't log if user doesn't exist
+    if (!user) {
+      return null;
+    }
+
+    const avatar_url = user.user_metadata?.avatar_url;
+    const picture = user.user_metadata?.picture;
 
     if (typeof avatar_url === 'string' && avatar_url) {
       return avatar_url;
@@ -48,7 +53,7 @@ export default function Navigation() {
     }
     console.log('No avatar URL found, will use initials');
     return null;
-  }, [user?.user_metadata]);
+  }, [user]);
 
   const displayName = useMemo(
     () => user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Account',
