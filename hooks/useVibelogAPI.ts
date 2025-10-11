@@ -157,12 +157,57 @@ export function useVibelogAPI(
     }
 
     try {
-      const formData = new FormData();
-      formData.append('audio', audioFile, 'recording.webm');
+      console.log('🎤 Starting transcription process...');
+      console.log(
+        '📦 Audio file size:',
+        audioFile.size,
+        'bytes',
+        `(${(audioFile.size / 1024 / 1024).toFixed(2)}MB)`
+      );
 
+      // NEW FLOW: Upload to storage first, then transcribe
+      // This bypasses the 4.5MB API route limit
+
+      // Step 1: Request presigned upload URL
+      console.log('📝 Requesting upload URL...');
+      const uploadUrlResponse = await fetch('/api/storage/upload-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileType: audioFile.type,
+          fileSize: audioFile.size,
+        }),
+      });
+
+      if (!uploadUrlResponse.ok) {
+        await handleAPIError(uploadUrlResponse);
+      }
+
+      const { uploadUrl, storagePath } = await uploadUrlResponse.json();
+      console.log('✅ Got upload URL:', storagePath);
+
+      // Step 2: Upload directly to Supabase Storage
+      console.log('⬆️  Uploading to storage...');
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'PUT',
+        body: audioFile,
+        headers: {
+          'Content-Type': audioFile.type,
+        },
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error(`Storage upload failed: ${uploadResponse.status}`);
+      }
+
+      console.log('✅ Upload complete!');
+
+      // Step 3: Request transcription (API downloads from storage)
+      console.log('🎯 Requesting transcription...');
       const transcribeResponse = await fetch('/api/transcribe', {
         method: 'POST',
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ storagePath }),
       });
 
       if (!transcribeResponse.ok) {
@@ -175,10 +220,11 @@ export function useVibelogAPI(
         throw new Error('No transcription received from API');
       }
 
+      console.log('✅ Transcription complete!');
       processingDataRef.current.transcriptionData = transcription;
       return transcription;
     } catch (error) {
-      console.error('Transcription error:', error);
+      console.error('❌ Transcription error:', error);
       throw error;
     }
   };
