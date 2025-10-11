@@ -34,15 +34,18 @@ interface VibelogCardProps {
 }
 
 export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const { t } = useI18n();
   const router = useRouter();
 
+  // Show full content if:
+  // 1. User is logged in
+  // 2. Still loading (optimistic - prevents flash of login prompt for cached users)
   const isLoggedIn = !!user;
+  const showFullContent = isLoggedIn || loading;
 
-  // Show full content if logged in, teaser if not
-  const displayContent = isLoggedIn ? vibelog.content : vibelog.teaser;
-  const isTeaser = !isLoggedIn;
+  const displayContent = showFullContent ? vibelog.content : vibelog.teaser;
+  const isTeaser = !showFullContent;
 
   const handleRemix = () => {
     if (onRemix) {
