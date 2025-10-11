@@ -35,6 +35,7 @@ export async function GET(request: NextRequest) {
 
   // === EXCHANGE CODE FOR SESSION ===
   try {
+    console.log('🔄 [OAuth Callback] Starting code exchange...');
     const requestUrl = new URL(request.url);
     const response = NextResponse.redirect(new URL('/dashboard', requestUrl.origin));
 
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest) {
     const { cookies } = await import('next/headers');
     const cookieStore = await cookies();
 
-    // Create Supabase client with cookie handling
+    // Create Supabase client with Brave-compatible cookie handling
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -53,8 +54,15 @@ export async function GET(request: NextRequest) {
           },
           set(name: string, value: string, options: CookieOptions) {
             try {
-              cookieStore.set({ name, value, ...options });
-              response.cookies.set({ name, value, ...options });
+              // Brave-compatible cookie options
+              const cookieOptions = {
+                ...options,
+                sameSite: 'lax' as const, // Brave works better with 'lax' than 'strict'
+                secure: true,
+                path: options.path || '/',
+              };
+              cookieStore.set({ name, value, ...cookieOptions });
+              response.cookies.set({ name, value, ...cookieOptions });
             } catch (err) {
               // Cookies are read-only in some contexts
               console.warn('Cookie set warning:', err);
@@ -73,17 +81,27 @@ export async function GET(request: NextRequest) {
     );
 
     // Exchange code for session
+    console.log('🔄 [OAuth Callback] Exchanging code for session...');
     const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
     if (exchangeError) {
-      console.error('Code exchange failed:', exchangeError);
+      console.error('❌ [OAuth Callback] Code exchange failed:', exchangeError);
       return NextResponse.redirect(
         new URL(`/auth/signin?error=${encodeURIComponent(exchangeError.message)}`, request.url)
       );
     }
 
+    if (!data.session) {
+      console.error('❌ [OAuth Callback] No session returned');
+      return NextResponse.redirect(new URL('/auth/signin?error=no_session', request.url));
+    }
+
     // Log success
-    console.log('✅ OAuth success:', data.user?.email);
+    console.log(
+      '✅ [OAuth Callback] Success! User:',
+      data.user?.email,
+      'Redirecting to dashboard...'
+    );
 
     // Redirect to dashboard (AuthProvider will cache session)
     return response;
