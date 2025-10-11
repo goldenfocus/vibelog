@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase';
 type AuthContextType = {
   user: User | null;
   loading: boolean;
+  isSigningOut: boolean;
   signIn: (provider: 'google' | 'apple') => Promise<void>;
   signOut: () => Promise<void>;
   refreshSession: () => Promise<void>;
@@ -50,6 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
 
   const [error, setError] = useState<string | null>(null);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const isSigningOutRef = useRef(false);
   const hasMountedRef = useRef(false);
   const supabase = createClient();
@@ -195,6 +197,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       isSigningOutRef.current = true;
+      setIsSigningOut(true);
 
       // PHASE 1: Clear UI state immediately (optimistic)
       setUser(null);
@@ -213,6 +216,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         })
         .finally(() => {
           isSigningOutRef.current = false;
+          setIsSigningOut(false);
         });
     } catch (err) {
       console.error('Sign out error:', err);
@@ -222,6 +226,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
       router.replace('/community');
       isSigningOutRef.current = false;
+      setIsSigningOut(false);
     }
   };
 
@@ -266,6 +271,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value = {
     user,
     loading,
+    isSigningOut,
     signIn,
     signOut,
     refreshSession,
