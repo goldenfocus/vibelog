@@ -14,6 +14,12 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createServerSupabaseClient();
 
+    // SECURITY: Get user from session, NEVER trust client-supplied userId
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const userId = user?.id || null;
+
     // Use only columns that definitely exist
     const basicData = {
       title: body.title || 'Test Vibelog',
@@ -25,11 +31,11 @@ export async function POST(request: NextRequest) {
       tags: [],
       is_public: false,
       is_published: false,
-      user_id: body.userId || null,
-      session_id: body.sessionId || `test_${Date.now()}`, // Add session_id to satisfy constraint
+      user_id: userId, // SECURITY: Only use server-verified userId
+      session_id: body.sessionId || `test_${Date.now()}`,
       view_count: 0,
       share_count: 0,
-      like_count: 0
+      like_count: 0,
     };
 
     console.log('🔍 [TEST-SAVE] Attempting insert with basic data:', Object.keys(basicData));
@@ -42,26 +48,31 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('❌ [TEST-SAVE] Insert failed:', error);
-      return NextResponse.json({
-        success: false,
-        error: error.message,
-        hint: error.hint,
-        details: error.details
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: error.message,
+          hint: error.hint,
+          details: error.details,
+        },
+        { status: 500 }
+      );
     }
 
     console.log('✅ [TEST-SAVE] Success! Vibelog ID:', data.id);
     return NextResponse.json({
       success: true,
       vibelogId: data.id,
-      message: 'Vibelog saved successfully!'
+      message: 'Vibelog saved successfully!',
     });
-
   } catch (err) {
     console.error('❌ [TEST-SAVE] Unexpected error:', err);
-    return NextResponse.json({
-      success: false,
-      error: 'Unexpected server error'
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Unexpected server error',
+      },
+      { status: 500 }
+    );
   }
 }

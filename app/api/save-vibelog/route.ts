@@ -15,8 +15,7 @@ interface SaveVibelogRequest {
     width: number;
     height: number;
   };
-  userId?: string; // Optional - for logged-in users
-  sessionId?: string; // For anonymous users
+  sessionId?: string; // For anonymous users ONLY - never trust userId from client
 }
 
 /**
@@ -49,26 +48,37 @@ function generateTeaser(content: string): string {
 export async function POST(request: NextRequest) {
   try {
     const body: SaveVibelogRequest = await request.json();
-    const { title, content, transcription, coverImage, userId, sessionId } = body;
+    const { title, content, transcription, coverImage, sessionId } = body;
 
     // Validate required fields
     if (!title || !content) {
       return NextResponse.json({ error: 'Title and content are required' }, { status: 400 });
     }
 
-    // Must have EITHER userId OR sessionId
-    if (!userId && !sessionId) {
+    // SECURITY: Get user from session, NEVER trust client-supplied userId
+    const supabaseClient = await createServerSupabaseClient();
+    const {
+      data: { user },
+    } = await supabaseClient.auth.getUser();
+
+    let userId: string | null = null;
+    let supabase;
+
+    if (user) {
+      // Authenticated user - use their verified ID from session
+      userId = user.id;
+      supabase = supabaseClient;
+      console.log('✅ Authenticated save for user:', userId);
+    } else if (sessionId) {
+      // Anonymous user - use admin client to bypass RLS for session-based saves
+      supabase = await createServerAdminClient();
+      console.log('✅ Anonymous save with session:', sessionId);
+    } else {
       return NextResponse.json(
-        { error: 'Either userId or sessionId is required' },
-        { status: 400 }
+        { error: 'Must be authenticated or provide a valid session' },
+        { status: 401 }
       );
     }
-
-    // Use admin client for anonymous inserts (bypass RLS)
-    // Use regular client for authenticated inserts
-    const supabase = sessionId
-      ? await createServerAdminClient()
-      : await createServerSupabaseClient();
 
     // Generate teaser from content
     const teaser = generateTeaser(content);
@@ -80,7 +90,7 @@ export async function POST(request: NextRequest) {
       teaser: teaser,
       transcription: transcription?.trim() || '',
       cover_image_url: coverImage?.url || null,
-      user_id: userId || null,
+      user_id: userId, // SECURITY: Only use server-verified userId
       session_id: sessionId || null,
       // Auto-publish all vibelogs to community
       is_published: true,
