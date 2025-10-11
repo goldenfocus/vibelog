@@ -22,7 +22,7 @@ interface SessionCache {
 }
 
 /**
- * Get cached session from localStorage
+ * Get cached session from localStorage (or sessionStorage as fallback for Brave)
  * Returns null if cache is invalid or expired
  */
 export function getCachedSession(): User | null {
@@ -31,7 +31,14 @@ export function getCachedSession(): User | null {
   }
 
   try {
-    const cached = localStorage.getItem(SESSION_CACHE_KEY);
+    // Try localStorage first
+    let cached = localStorage.getItem(SESSION_CACHE_KEY);
+
+    // Fallback to sessionStorage if localStorage blocked (Brave Shields)
+    if (!cached) {
+      cached = sessionStorage.getItem(SESSION_CACHE_KEY);
+    }
+
     if (!cached) {
       return null;
     }
@@ -59,7 +66,7 @@ export function getCachedSession(): User | null {
 }
 
 /**
- * Cache session in localStorage
+ * Cache session in localStorage (with sessionStorage fallback for Brave)
  */
 export function setCachedSession(user: User): void {
   if (typeof window === 'undefined') {
@@ -74,14 +81,25 @@ export function setCachedSession(user: User): void {
       cachedAt: Date.now(),
     };
 
-    localStorage.setItem(SESSION_CACHE_KEY, JSON.stringify(cache));
+    const cacheStr = JSON.stringify(cache);
+
+    // Try localStorage first
+    try {
+      localStorage.setItem(SESSION_CACHE_KEY, cacheStr);
+    } catch {
+      // localStorage blocked (Brave Shields) - fallback to sessionStorage
+      console.warn('localStorage blocked, using sessionStorage fallback');
+    }
+
+    // Always write to sessionStorage as fallback for Brave
+    sessionStorage.setItem(SESSION_CACHE_KEY, cacheStr);
   } catch (error) {
     console.warn('Failed to cache session:', error);
   }
 }
 
 /**
- * Clear session cache
+ * Clear session cache from both localStorage and sessionStorage
  */
 export function clearCachedSession(): void {
   if (typeof window === 'undefined') {
@@ -90,6 +108,7 @@ export function clearCachedSession(): void {
 
   try {
     localStorage.removeItem(SESSION_CACHE_KEY);
+    sessionStorage.removeItem(SESSION_CACHE_KEY);
   } catch (error) {
     console.warn('Failed to clear session cache:', error);
   }
