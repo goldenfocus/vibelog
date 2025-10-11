@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { useVibelogTransfer } from '@/hooks/useVibelogTransfer';
 
 export default function DashboardPage() {
-  const { user, loading } = useAuth();
+  const { user, loading, isSigningOut } = useAuth();
   const { t, isLoading: i18nLoading } = useI18n();
   const router = useRouter();
 
@@ -27,12 +27,12 @@ export default function DashboardPage() {
     }
   }, [transferred, count]);
 
-  // Redirect to sign in if not authenticated (useEffect to avoid render-time redirect)
+  // Redirect to sign in if not authenticated (but NOT during sign out!)
   useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && !user && !isSigningOut) {
       router.replace('/auth/signin');
     }
-  }, [loading, user, router]);
+  }, [loading, user, isSigningOut, router]);
 
   // Show loading state only if still loading and no cached user
   if (loading || i18nLoading) {
