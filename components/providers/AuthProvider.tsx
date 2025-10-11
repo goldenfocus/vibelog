@@ -34,7 +34,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (typeof window !== 'undefined') {
       const cached = getCachedSession();
       if (cached) {
-        console.log('⚡ Initial cached user loaded:', cached.email);
         return cached;
       }
     }
@@ -63,7 +62,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // ====== BACKGROUND VALIDATION ======
     const validateSession = async () => {
       try {
-        console.log('🔄 Validating session in background...');
         const {
           data: { session },
           error: sessionError,
@@ -79,7 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             sessionError.message?.includes('Refresh Token') ||
             sessionError.message?.includes('refresh_token')
           ) {
-            console.log('ℹ️  No active session (logged out)');
+            // No active session - this is expected when logged out
           } else {
             console.error('Session validation error:', sessionError);
             setError(sessionError.message);
@@ -95,7 +93,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Update cache if session is valid
           setCachedSession(session.user);
           setUser(session.user);
-          console.log('✅ Session validated:', session.user.email);
         } else {
           // No session, clear cache
           clearCachedSession();
@@ -119,15 +116,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('🔄 Auth state change:', event, session?.user?.email);
-
       if (!mounted) {
         return;
       }
 
       // Ignore SIGNED_OUT during manual sign out (we handle it optimistically)
       if (event === 'SIGNED_OUT' && isSigningOutRef.current) {
-        console.log('⏭️  Ignoring SIGNED_OUT event (manual sign out)');
         return;
       }
 
@@ -165,8 +159,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           ? `${window.location.origin}/auth/callback`
           : `${process.env.NEXT_PUBLIC_SITE_URL || ''}/auth/callback`;
 
-      console.log('🔐 Starting OAuth sign in:', { provider, redirectUrl });
-
       const { error: signInError } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
@@ -202,7 +194,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    */
   const signOut = async () => {
     try {
-      console.log('🚪 Fast sign out started');
       isSigningOutRef.current = true;
 
       // PHASE 1: Clear UI state immediately (optimistic)
@@ -210,26 +201,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clearCachedSession();
       setError(null);
       setLoading(false);
-      console.log('✅ UI state cleared');
 
       // PHASE 2: Navigate immediately (don't wait for Supabase)
       router.replace('/');
-      console.log('✅ Navigated to home');
 
       // PHASE 3: Call Supabase in background (don't block UI)
       supabase.auth
         .signOut()
-        .then(() => {
-          console.log('✅ Supabase sign out completed');
-        })
         .catch(err => {
-          console.warn('⚠️  Supabase sign out error (non-critical):', err);
+          console.warn('Supabase sign out error (non-critical):', err);
         })
         .finally(() => {
           isSigningOutRef.current = false;
         });
     } catch (err) {
-      console.error('❌ Sign out error:', err);
+      console.error('Sign out error:', err);
       // Even on error, ensure user is signed out locally
       setUser(null);
       clearCachedSession();

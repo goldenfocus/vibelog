@@ -37,7 +37,6 @@ export default function Navigation() {
   const isActive = (path: string) => pathname === path;
 
   const avatarUrl = useMemo(() => {
-    // Don't log if user doesn't exist
     if (!user) {
       return null;
     }
@@ -51,7 +50,7 @@ export default function Navigation() {
     if (typeof picture === 'string' && picture) {
       return picture;
     }
-    console.log('No avatar URL found, will use initials');
+    // No avatar - will use initials (no need to log)
     return null;
   }, [user]);
 
