@@ -202,8 +202,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setError(null);
       setLoading(false);
 
-      // PHASE 2: Navigate immediately (don't wait for Supabase)
-      router.replace('/');
+      // PHASE 2: Navigate to community page (keep users engaged!)
+      router.replace('/community');
 
       // PHASE 3: Call Supabase in background (don't block UI)
       supabase.auth
@@ -220,7 +220,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       clearCachedSession();
       setLoading(false);
-      router.replace('/');
+      router.replace('/community');
       isSigningOutRef.current = false;
     }
   };

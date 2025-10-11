@@ -4,13 +4,19 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-// Client-side Supabase client
+// Client-side Supabase client with Brave-compatible settings
 export const createClient = () =>
   createBrowserClient(supabaseUrl, supabaseAnonKey, {
     global: {
       headers: {
         Accept: 'application/json',
       },
+    },
+    cookieOptions: {
+      // Brave-compatible cookie options
+      sameSite: 'lax', // 'lax' works better with Brave than 'strict'
+      secure: true,
+      path: '/',
     },
   });
 
