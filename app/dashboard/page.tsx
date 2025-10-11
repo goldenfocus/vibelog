@@ -2,37 +2,40 @@
 
 import { Mic } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 import MicRecorder from '@/components/MicRecorder';
 import Navigation from '@/components/Navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useI18n } from '@/components/providers/I18nProvider';
 import { Button } from '@/components/ui/button';
+import { useVibelogTransfer } from '@/hooks/useVibelogTransfer';
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
   const { t, isLoading: i18nLoading } = useI18n();
   const router = useRouter();
 
-  // Debug logging
-  console.log('🔍 Dashboard Debug:', {
-    userExists: !!user,
-    authLoading: loading,
-    i18nLoading,
-    userEmail: user?.email,
-  });
+  // Transfer anonymous vibelogs to user account (background, non-blocking)
+  const { transferred, count } = useVibelogTransfer(user?.id);
 
-  // Redirect to sign in if not authenticated
-  // Don't redirect immediately after OAuth - give session time to load
-  if (!loading && !user) {
-    // Use replace instead of push to avoid back button issues
-    router.replace('/auth/signin');
-    return null;
-  }
+  // Show optional success message when transfer completes
+  useEffect(() => {
+    if (transferred && count > 0) {
+      console.log(`✅ ${count} vibelogs transferred to your account`);
+      // Could show a toast notification here if desired
+    }
+  }, [transferred, count]);
 
-  // Show loading state
+  // Redirect to sign in if not authenticated (useEffect to avoid render-time redirect)
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace('/auth/signin');
+    }
+  }, [loading, user, router]);
+
+  // Show loading state only if still loading and no cached user
   if (loading || i18nLoading) {
-    console.log('⏳ Still loading...', { loading, i18nLoading });
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center">
@@ -43,7 +46,13 @@ export default function DashboardPage() {
     );
   }
 
-  const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+  // If no user, return null (useEffect will redirect)
+  if (!user) {
+    return null;
+  }
+
+  // Render dashboard immediately for authenticated users
+  const displayName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
 
   return (
     <div className="min-h-screen bg-background">
