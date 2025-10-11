@@ -139,6 +139,9 @@ export function getVibelogPublicUrl(storagePath: string): string {
  * Get file extension from mime type
  */
 export function getExtensionFromMimeType(mimeType: string): string {
+  // Normalize by stripping codecs parameter (e.g., "audio/webm; codecs=opus" -> "audio/webm")
+  const normalizedMimeType = mimeType.split(';')[0].trim();
+
   const map: Record<string, string> = {
     'audio/webm': 'webm',
     'audio/wav': 'wav',
@@ -153,7 +156,7 @@ export function getExtensionFromMimeType(mimeType: string): string {
     'image/webp': 'webp',
   };
 
-  return map[mimeType] || 'webm';
+  return map[normalizedMimeType] || 'webm';
 }
 
 /**
