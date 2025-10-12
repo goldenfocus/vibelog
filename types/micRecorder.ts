@@ -1,4 +1,4 @@
-import { RecordingState } from "@/components/mic/Controls";
+import { RecordingState } from '@/components/mic/Controls';
 
 export interface ToastState {
   message: string;
@@ -21,7 +21,7 @@ export interface AudioPlaybackState {
 
 export interface ProcessingData {
   transcriptionData: string;
-  blogContentData: string;
+  vibelogContentData: string;
 }
 
 export interface TeaserResult {
@@ -59,15 +59,21 @@ export interface TranscriptionResponse extends APIResponse {
   transcription?: string;
 }
 
+export interface VibelogGenerationResponse extends APIResponse {
+  vibelogContent?: string;
+}
+
+// Legacy alias for backwards compatibility during migration
 export interface BlogGenerationResponse extends APIResponse {
   blogContent?: string;
+  vibelogContent?: string;
 }
 
 export interface MicRecorderState {
   recordingState: RecordingState;
   transcription: string;
   liveTranscript: string;
-  blogContent: string;
+  vibelogContent: string;
   isTeaserContent: boolean;
   isEditing: boolean;
   editedContent: string;
@@ -100,7 +106,7 @@ export interface MicRecorderHandlers {
 
 export interface AudioProcessingFunctions {
   doTranscription: () => Promise<string>;
-  doBlogGeneration: () => Promise<string>;
+  doVibelogGeneration: () => Promise<string>;
   doCoverGeneration?: () => Promise<CoverImage>;
 }
 

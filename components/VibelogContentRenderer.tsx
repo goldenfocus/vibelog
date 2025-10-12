@@ -7,15 +7,15 @@ import remarkGfm from 'remark-gfm';
 
 import { useI18n } from '@/components/providers/I18nProvider';
 
-interface BlogContentRendererProps {
+interface VibelogContentRendererProps {
   content: string;
   isTeaser?: boolean;
 }
 
-export default function BlogContentRenderer({
+export default function VibelogContentRenderer({
   content,
   isTeaser = false,
-}: BlogContentRendererProps) {
+}: VibelogContentRendererProps) {
   const { t } = useI18n();
 
   return (

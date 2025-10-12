@@ -25,9 +25,9 @@ interface UseMicStateMachineReturn {
   recordingTime: number;
   transcription: string;
   liveTranscript: string;
-  blogContent: string;
-  fullBlogContent: string;
-  parsedBlog: { title: string | null; body: string };
+  vibelogContent: string;
+  fullVibelogContent: string;
+  parsedVibelog: { title: string | null; body: string };
   isTeaserContent: boolean;
   isEditing: boolean;
   editedContent: string;
@@ -57,8 +57,8 @@ interface UseMicStateMachineReturn {
 
   // Processing callbacks
   processTranscription: () => Promise<string>;
-  processBlogGeneration: () => Promise<string>;
-  processCoverImage: (blogContent?: string) => Promise<CoverImage | null>;
+  processVibelogGeneration: () => Promise<string>;
+  processCoverImage: (vibelogContent?: string) => Promise<CoverImage | null>;
   completeProcessing: () => Promise<void>;
 }
 
@@ -140,8 +140,8 @@ export function useMicStateMachine(
 
   const [recordingState, setRecordingState] = useState<RecordingState>('idle');
   const [transcription, setTranscription] = useState('');
-  const [blogContent, setBlogContent] = useState('');
-  const [fullBlogContent, setFullBlogContent] = useState('');
+  const [vibelogContent, setVibelogContent] = useState('');
+  const [fullVibelogContent, setFullVibelogContent] = useState('');
   const [isTeaserContent, setIsTeaserContent] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState('');
@@ -184,14 +184,14 @@ export function useMicStateMachine(
 
   const attribution = useMemo(() => buildAttribution(isLoggedIn, user), [isLoggedIn, user]);
 
-  const parsedBlog = useMemo(() => splitTitleFromMarkdown(blogContent), [blogContent]);
+  const parsedVibelog = useMemo(() => splitTitleFromMarkdown(vibelogContent), [vibelogContent]);
 
   // Load remix content when provided
   useEffect(() => {
     if (remixContent) {
       console.log('🎵 Loading remix content...');
-      setBlogContent(remixContent);
-      setFullBlogContent(remixContent);
+      setVibelogContent(remixContent);
+      setFullVibelogContent(remixContent);
       setRecordingState('complete');
       showToast('Vibelog loaded for remixing!');
     }
@@ -207,8 +207,8 @@ export function useMicStateMachine(
   const resetRecordingState = useCallback(() => {
     setRecordingState('idle');
     setTranscription('');
-    setBlogContent('');
-    setFullBlogContent('');
+    setVibelogContent('');
+    setFullVibelogContent('');
     setIsTeaserContent(false);
     setRecordingTime(0);
     setCoverImage(null);
@@ -226,8 +226,8 @@ export function useMicStateMachine(
 
     setRecordingState('recording');
     setTranscription('');
-    setBlogContent('');
-    setFullBlogContent('');
+    setVibelogContent('');
+    setFullVibelogContent('');
     setIsTeaserContent(false);
     setRecordingTime(0);
     setCoverImage(null);
@@ -335,7 +335,7 @@ export function useMicStateMachine(
 
   const handleShare = useCallback(
     async (content?: string) => {
-      const shareContent = content || blogContent;
+      const shareContent = content || vibelogContent;
       if (!shareContent) {
         return;
       }
@@ -345,7 +345,7 @@ export function useMicStateMachine(
       if (navigator.share) {
         try {
           const shareData: ShareData = {
-            title: parsedBlog.title || t('share.title'),
+            title: parsedVibelog.title || t('share.title'),
             text: `${shareContent}\n\n${attributionBlock}`,
             url: typeof window !== 'undefined' ? window.location.href : undefined,
           };
@@ -385,10 +385,10 @@ export function useMicStateMachine(
     },
     [
       attribution.plainSignature,
-      blogContent,
+      vibelogContent,
       coverImage,
       handleCopy,
-      parsedBlog.title,
+      parsedVibelog.title,
       showToast,
       t,
     ]
@@ -400,12 +400,12 @@ export function useMicStateMachine(
       return;
     }
 
-    setEditedContent(blogContent);
+    setEditedContent(vibelogContent);
     setIsEditing(true);
-  }, [blogContent, handleTranscriptUpgradeGate, isLoggedIn]);
+  }, [vibelogContent, handleTranscriptUpgradeGate, isLoggedIn]);
 
   const finalizeEdit = useCallback(() => {
-    setBlogContent(editedContent);
+    setVibelogContent(editedContent);
     setIsEditing(false);
     showToast(t('components.micRecorder.vibelogUpdated'));
   }, [editedContent, showToast, t]);
@@ -441,33 +441,33 @@ export function useMicStateMachine(
     return transcriptionResult;
   }, [audioBlob, user?.id, vibelogAPI]);
 
-  const processBlogGeneration = useCallback(async () => {
+  const processVibelogGeneration = useCallback(async () => {
     const transcriptionData = vibelogAPI.processingData.current.transcriptionData;
     if (!transcriptionData) {
       throw new Error('No transcription data available');
     }
 
-    const teaserResult = await vibelogAPI.processBlogGeneration(transcriptionData);
-    setBlogContent(teaserResult.content);
-    setFullBlogContent(teaserResult.fullContent || teaserResult.content);
+    const teaserResult = await vibelogAPI.processVibelogGeneration(transcriptionData);
+    setVibelogContent(teaserResult.content);
+    setFullVibelogContent(teaserResult.fullContent || teaserResult.content);
     setIsTeaserContent(teaserResult.isTeaser);
 
     return teaserResult.fullContent || teaserResult.content;
   }, [vibelogAPI]);
 
   const processCoverImage = useCallback(
-    async (blogContentOverride?: string) => {
+    async (vibelogContentOverride?: string) => {
       try {
         const contentToUse =
-          blogContentOverride ||
-          vibelogAPI.processingData.current.blogContentData ||
-          fullBlogContent;
+          vibelogContentOverride ||
+          vibelogAPI.processingData.current.vibelogContentData ||
+          fullVibelogContent;
 
         if (!contentToUse) {
           return null;
         }
 
-        const image = await vibelogAPI.processCoverImage({ blogContent: contentToUse });
+        const image = await vibelogAPI.processCoverImage({ vibelogContent: contentToUse });
         setCoverImage(image);
         return image;
       } catch (error) {
@@ -477,11 +477,11 @@ export function useMicStateMachine(
         return null;
       }
     },
-    [fullBlogContent, vibelogAPI]
+    [fullVibelogContent, vibelogAPI]
   );
 
   const completeProcessing = useCallback(async () => {
-    const contentToSave = blogContent || vibelogAPI.processingData.current.blogContentData;
+    const contentToSave = vibelogContent || vibelogAPI.processingData.current.vibelogContentData;
     if (!contentToSave) {
       if (DEBUG_MODE) {
         console.warn('No content available to save after processing');
@@ -492,7 +492,7 @@ export function useMicStateMachine(
     }
 
     try {
-      const fullContent = vibelogAPI.processingData.current.blogContentData || contentToSave;
+      const fullContent = vibelogAPI.processingData.current.vibelogContentData || contentToSave;
 
       const result = await saveVibelog({
         content: contentToSave,
@@ -553,7 +553,7 @@ export function useMicStateMachine(
     transcription,
     user?.id,
     vibelogAPI.processingData,
-    blogContent,
+    vibelogContent,
   ]);
 
   useEffect(() => {
@@ -583,9 +583,9 @@ export function useMicStateMachine(
     recordingTime,
     transcription,
     liveTranscript: speechRecognition.liveTranscript,
-    blogContent,
-    fullBlogContent,
-    parsedBlog,
+    vibelogContent,
+    fullVibelogContent,
+    parsedVibelog,
     isTeaserContent,
     isEditing,
     editedContent,
@@ -611,7 +611,7 @@ export function useMicStateMachine(
     setUpgradePrompt,
     clearUpgradePrompt: () => setUpgradePrompt({ visible: false, message: '', benefits: [] }),
     processTranscription,
-    processBlogGeneration,
+    processVibelogGeneration,
     processCoverImage,
     completeProcessing,
   };

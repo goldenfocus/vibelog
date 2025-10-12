@@ -3,8 +3,6 @@
 /* eslint-disable @next/next/no-img-element */
 
 import AudioPlayer from '@/components/AudioPlayer';
-import BlogContentRenderer from '@/components/BlogContentRenderer';
-import BlogEditModal from '@/components/BlogEditModal';
 import Controls from '@/components/mic/Controls';
 import ProcessingAnimation from '@/components/mic/ProcessingAnimation';
 import PublishActions from '@/components/mic/PublishActions';
@@ -13,6 +11,8 @@ import { useMicStateMachine } from '@/components/mic/useMicStateMachine';
 import Waveform from '@/components/mic/Waveform';
 import { useI18n } from '@/components/providers/I18nProvider';
 import UpgradePrompt from '@/components/UpgradePrompt';
+import VibelogContentRenderer from '@/components/VibelogContentRenderer';
+import VibelogEditModal from '@/components/VibelogEditModal';
 
 interface MicRecorderProps {
   remixContent?: string | null;
@@ -25,8 +25,8 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
     recordingTime,
     transcription,
     liveTranscript,
-    blogContent,
-    parsedBlog,
+    vibelogContent,
+    parsedVibelog,
     isTeaserContent,
     isEditing,
     editedContent,
@@ -52,7 +52,7 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
     setUpgradePrompt,
     clearUpgradePrompt,
     processTranscription,
-    processBlogGeneration,
+    processVibelogGeneration,
     processCoverImage,
     completeProcessing,
   } = useMicStateMachine({ remixContent });
@@ -89,7 +89,7 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
         isVisible={recordingState === 'processing'}
         recordingTime={recordingTime}
         onTranscribeComplete={processTranscription}
-        onGenerateComplete={processBlogGeneration}
+        onGenerateComplete={processVibelogGeneration}
         onCoverComplete={processCoverImage}
         onAnimationComplete={completeProcessing}
       />
@@ -98,9 +98,9 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
         <AudioPlayer audioBlob={audioBlob} playback={audioPlayback} />
       )}
 
-      {(transcription || blogContent) && showCompletedUI && (
+      {(transcription || vibelogContent) && showCompletedUI && (
         <div className="space-y-8">
-          {blogContent && (
+          {vibelogContent && (
             <div className="overflow-hidden rounded-3xl border border-border/20 bg-card shadow-lg">
               <div className="border-b border-border/10 bg-gradient-to-r from-electric/5 to-transparent p-6">
                 <div className="mb-4 flex items-center justify-between">
@@ -108,15 +108,15 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
                 </div>
 
                 <PublishActions
-                  content={blogContent}
+                  content={vibelogContent}
                   isLoggedIn={isLoggedIn}
                   isTeaserContent={isTeaserContent}
                   onCopy={() => {
-                    void handleCopy(blogContent);
+                    void handleCopy(vibelogContent);
                   }}
                   onEdit={beginEdit}
                   onShare={() => {
-                    void handleShare(blogContent);
+                    void handleShare(vibelogContent);
                   }}
                   onUpgradePrompt={(message, benefits) =>
                     setUpgradePrompt({ visible: true, message, benefits })
@@ -125,9 +125,9 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
               </div>
 
               <div className="p-8">
-                {parsedBlog.title && (
+                {parsedVibelog.title && (
                   <h1 className="mb-4 bg-gradient-electric bg-clip-text text-3xl font-bold leading-tight text-transparent sm:text-4xl">
-                    {parsedBlog.title}
+                    {parsedVibelog.title}
                   </h1>
                 )}
 
@@ -144,8 +144,8 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
                   </div>
                 )}
 
-                <BlogContentRenderer
-                  content={parsedBlog.body || blogContent}
+                <VibelogContentRenderer
+                  content={parsedVibelog.body || vibelogContent}
                   isTeaser={isTeaserContent}
                 />
               </div>
@@ -182,15 +182,15 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
 
                 <div className="p-6 pt-0">
                   <PublishActions
-                    content={blogContent}
+                    content={vibelogContent}
                     isLoggedIn={isLoggedIn}
                     isTeaserContent={isTeaserContent}
                     onCopy={() => {
-                      void handleCopy(blogContent);
+                      void handleCopy(vibelogContent);
                     }}
                     onEdit={beginEdit}
                     onShare={() => {
-                      void handleShare(blogContent);
+                      void handleShare(vibelogContent);
                     }}
                     onUpgradePrompt={(message, benefits) =>
                       setUpgradePrompt({ visible: true, message, benefits })
@@ -219,7 +219,7 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
         resetTime={upgradePrompt.resetTime}
       />
 
-      <BlogEditModal
+      <VibelogEditModal
         isVisible={isEditing}
         editedContent={editedContent}
         onContentChange={setEditedContent}
