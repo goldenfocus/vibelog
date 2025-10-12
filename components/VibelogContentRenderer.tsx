@@ -5,19 +5,17 @@ import ReactMarkdown from 'react-markdown';
 import rehypeSanitize from 'rehype-sanitize';
 import remarkGfm from 'remark-gfm';
 
-import { useI18n } from '@/components/providers/I18nProvider';
-
 interface VibelogContentRendererProps {
   content: string;
   isTeaser?: boolean;
+  onReadMore?: () => void;
 }
 
 export default function VibelogContentRenderer({
   content,
   isTeaser = false,
+  onReadMore,
 }: VibelogContentRendererProps) {
-  const { t } = useI18n();
-
   return (
     <article className="max-w-none">
       {/* Render sanitized markdown content with enhanced styling */}
@@ -123,22 +121,22 @@ export default function VibelogContentRenderer({
       </ReactMarkdown>
 
       {/* Teaser CTA if applicable */}
-      {isTeaser && (
+      {isTeaser && onReadMore && (
         <div className="mt-8 rounded-2xl border border-electric/20 bg-gradient-to-r from-electric/5 via-electric/10 to-transparent p-6 backdrop-blur-sm">
           <div className="flex items-start gap-4">
             <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-electric/10">
-              <span className="text-2xl">🔒</span>
+              <span className="text-2xl">📖</span>
             </div>
             <div className="flex-1">
               <h4 className="mb-2 text-lg font-semibold text-electric">Continue Reading</h4>
               <p className="mb-4 leading-relaxed text-muted-foreground">
-                {t('components.micRecorder.unlockMessage')}
+                Read the full vibelog to discover the complete story and insights.
               </p>
               <button
-                onClick={() => (window.location.href = '/auth/signin')}
+                onClick={onReadMore}
                 className="inline-flex items-center gap-2 rounded-lg bg-electric px-4 py-2 font-medium text-white transition-colors duration-200 hover:bg-electric-glow"
               >
-                {t('navigation.signIn')}
+                Read More
                 <span className="text-sm">→</span>
               </button>
             </div>
