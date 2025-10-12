@@ -342,60 +342,37 @@ export function useMicStateMachine(
 
       const attributionBlock = attribution.plainSignature;
 
-      if (navigator.share) {
-        try {
-          const shareData: ShareData = {
-            title: parsedVibelog.title || t('share.title'),
-            text: `${shareContent}\n\n${attributionBlock}`,
-            url: typeof window !== 'undefined' ? window.location.href : undefined,
-          };
-
-          if (coverImage) {
-            try {
-              const imageResponse = await fetch(coverImage.url);
-              const imageBlob = await imageResponse.blob();
-              const mimeType = imageBlob.type || 'image/jpeg';
-              const fileName = mimeType === 'image/png' ? 'vibelog-cover.png' : 'vibelog-cover.jpg';
-              const imageFile = new File([imageBlob], fileName, { type: mimeType });
-
-              if (navigator.canShare?.({ files: [imageFile] })) {
-                shareData.files = [imageFile];
-              }
-            } catch (imageError) {
-              if (DEBUG_MODE) {
-                console.warn('Failed to attach cover image to share payload', imageError);
-              }
-            }
-          }
-
-          await navigator.share(shareData);
-          showToast('✨ Shared successfully!');
-          return;
-        } catch (error: unknown) {
-          if (error instanceof Error && error.name === 'AbortError') {
-            return; // user cancelled share sheet
-          }
-          // Log the actual error to help debug
-          console.error('Share failed:', error);
-          if (DEBUG_MODE) {
-            console.warn('Share failed, falling back to copy', error);
-          }
-        }
+      // Check if Web Share API is available
+      if (!navigator.share) {
+        // No native share support, fall back to copy
+        await handleCopy(shareContent);
+        showToast(t('toast.copiedForSharing'));
+        return;
       }
 
-      // Fallback: copy to clipboard
-      await handleCopy(shareContent);
-      showToast(t('toast.copiedForSharing'));
+      try {
+        const shareData: ShareData = {
+          title: parsedVibelog.title || t('share.title'),
+          text: `${shareContent}\n\n${attributionBlock}`,
+          url: typeof window !== 'undefined' ? window.location.href : undefined,
+        };
+
+        // Try to share - keep it simple for maximum compatibility
+        await navigator.share(shareData);
+        showToast('✨ Shared successfully!');
+      } catch (error: unknown) {
+        if (error instanceof Error && error.name === 'AbortError') {
+          // User cancelled share sheet - this is normal, don't show error
+          return;
+        }
+
+        // Share failed, log error and fall back to copy
+        console.error('Share failed:', error);
+        await handleCopy(shareContent);
+        showToast(t('toast.copiedForSharing'));
+      }
     },
-    [
-      attribution.plainSignature,
-      vibelogContent,
-      coverImage,
-      handleCopy,
-      parsedVibelog.title,
-      showToast,
-      t,
-    ]
+    [attribution.plainSignature, vibelogContent, handleCopy, parsedVibelog.title, showToast, t]
   );
 
   const beginEdit = useCallback(() => {
