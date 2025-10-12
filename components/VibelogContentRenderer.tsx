@@ -52,6 +52,7 @@ export default function VibelogContentRenderer({
             <ol className="counter-reset-[list-counter] mb-6 space-y-3 pl-0" {...props} />
           ),
           li: ({ node: _node, ...props }) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const parent = (_node as any)?.parent?.tagName;
             if (parent === 'ul') {
               return (
@@ -120,7 +121,7 @@ export default function VibelogContentRenderer({
         {content}
       </ReactMarkdown>
 
-      {/* Teaser CTA if applicable */}
+      {/* Read More CTA - Show when viewing teaser content */}
       {isTeaser && onReadMore && (
         <div className="mt-8 rounded-2xl border border-electric/20 bg-gradient-to-r from-electric/5 via-electric/10 to-transparent p-6 backdrop-blur-sm">
           <div className="flex items-start gap-4">
@@ -130,7 +131,7 @@ export default function VibelogContentRenderer({
             <div className="flex-1">
               <h4 className="mb-2 text-lg font-semibold text-electric">Continue Reading</h4>
               <p className="mb-4 leading-relaxed text-muted-foreground">
-                Read the full vibelog to discover the complete story and insights.
+                Read the full vibelog, engage with the community, and share your thoughts.
               </p>
               <button
                 onClick={onReadMore}

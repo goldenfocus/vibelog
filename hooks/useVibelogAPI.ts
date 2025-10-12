@@ -191,11 +191,13 @@ export function useVibelogAPI(
         '⬆️  Uploading to storage...',
         `(${(audioFile.size / 1024 / 1024).toFixed(2)}MB)`
       );
+      // Strip codecs parameter from MIME type (e.g., "audio/webm;codecs=opus" -> "audio/webm")
+      const contentType = audioFile.type.split(';')[0].trim();
       const uploadResponse = await fetch(uploadUrl, {
         method: 'PUT',
         body: audioFile,
         headers: {
-          'Content-Type': audioFile.type,
+          'Content-Type': contentType,
           'x-upsert': 'false',
         },
       });

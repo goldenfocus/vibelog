@@ -69,6 +69,20 @@ function generateSessionId(): string {
   return `anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
 
+function generateSlug(title: string, vibelogId?: string): string {
+  // Create URL-friendly slug from title
+  const baseSlug = title
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '') // Remove special chars
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-') // Replace multiple hyphens with single
+    .substring(0, 80); // Limit length
+
+  // Add unique suffix if we have a vibelog ID (for uniqueness)
+  const suffix = vibelogId ? `-${vibelogId.substring(0, 8)}` : '';
+  return `${baseSlug}${suffix}`.substring(0, 100);
+}
+
 export async function POST(request: NextRequest): Promise<NextResponse> {
   let requestBody: SaveVibelogRequest | null = null;
   let supabase: Awaited<ReturnType<typeof createServerSupabaseClient>> | null = null;
@@ -129,11 +143,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     } = await supabase.auth.getUser();
     const userId = user?.id || null;
 
+    // Generate slug from title (temporary slug without ID, will update after insert)
+    const temporarySlug = generateSlug(title);
+
     // Prepare data object with both teaser and full content
     vibelogData = {
       user_id: userId, // SECURITY: Only use server-verified userId
       session_id: sessionId,
       title: title,
+      slug: temporarySlug, // Will be updated with ID suffix after insert
       teaser: teaserContent, // Store AI-generated teaser for public preview
       content: fullContent, // Store full content for logged-in users
       transcription: transcription,
@@ -181,10 +199,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         throw directError;
       }
 
-      console.log('✅ [VIBELOG-SAVE] Direct insert successful:', directResult.id);
+      const vibelogId = directResult.id;
+
+      // Update slug with unique ID suffix for guaranteed uniqueness
+      const finalSlug = generateSlug(title, vibelogId);
+      await supabase.from('vibelogs').update({ slug: finalSlug }).eq('id', vibelogId);
+
+      console.log('✅ [VIBELOG-SAVE] Direct insert successful:', vibelogId, 'Slug:', finalSlug);
       return NextResponse.json({
         success: true,
-        vibelogId: directResult.id,
+        vibelogId: vibelogId,
+        slug: finalSlug,
         message: 'Vibelog saved successfully',
         warnings: warnings.length > 0 ? warnings : undefined,
       });
