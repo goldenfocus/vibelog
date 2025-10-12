@@ -165,24 +165,47 @@ export function useVibelogAPI(
         `(${(audioFile.size / 1024 / 1024).toFixed(2)}MB)`
       );
 
-      // NEW FLOW: Upload to storage first, then transcribe
-      // This bypasses the 4.5MB API route limit
+      // NEW FLOW: Get presigned URL, then upload directly to Supabase
+      // This bypasses Vercel's 4.5MB serverless function limit
 
-      // Step 1 & 2: Upload to storage via API (server handles storage upload)
-      console.log('⬆️  Uploading to storage...');
-      const formData = new FormData();
-      formData.append('audio', audioFile);
-
-      const uploadResponse = await fetch('/api/storage/upload', {
+      // Step 1: Get presigned upload URL from server
+      console.log('🔑 Getting presigned upload URL...');
+      const urlResponse = await fetch('/api/storage/upload-url', {
         method: 'POST',
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileType: audioFile.type,
+          fileSize: audioFile.size,
+        }),
+      });
+
+      if (!urlResponse.ok) {
+        await handleAPIError(urlResponse);
+      }
+
+      const { uploadUrl, storagePath } = await urlResponse.json();
+      console.log('✅ Got presigned URL. Path:', storagePath);
+
+      // Step 2: Upload directly to Supabase Storage (bypasses Vercel limits!)
+      console.log(
+        '⬆️  Uploading to storage...',
+        `(${(audioFile.size / 1024 / 1024).toFixed(2)}MB)`
+      );
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'PUT',
+        body: audioFile,
+        headers: {
+          'Content-Type': audioFile.type,
+          'x-upsert': 'false',
+        },
       });
 
       if (!uploadResponse.ok) {
-        await handleAPIError(uploadResponse);
+        const errorText = await uploadResponse.text();
+        console.error('Storage upload failed:', uploadResponse.status, errorText);
+        throw new Error(`Storage upload failed: ${uploadResponse.status}`);
       }
 
-      const { storagePath } = await uploadResponse.json();
       console.log('✅ Upload complete! Path:', storagePath);
 
       // Step 3: Request transcription (API downloads from storage)
