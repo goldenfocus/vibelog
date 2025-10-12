@@ -231,16 +231,30 @@ export function useVibelogAPI(
         await handleAPIError(vibelogResponse);
       }
 
-      const { vibelogContent }: VibelogGenerationResponse = await vibelogResponse.json();
+      const { vibelogTeaser, vibelogContent }: VibelogGenerationResponse =
+        await vibelogResponse.json();
 
       if (!vibelogContent) {
         throw new Error('No vibelog content received from API');
       }
 
-      // Apply teaser logic
-      const teaserResult = createTeaserContent(vibelogContent);
+      // Use AI-generated teaser if available, otherwise fall back to client-side teaser logic
+      const teaserResult: TeaserResult = vibelogTeaser
+        ? {
+            content: vibelogTeaser,
+            isTeaser: true,
+            fullContent: vibelogContent,
+          }
+        : createTeaserContent(vibelogContent);
+
       // Store the FULL content for cover generation, not the teaser
       processingDataRef.current.vibelogContentData = vibelogContent;
+
+      if (DEBUG_MODE) {
+        console.log('🎯 [VIBELOG-GEN] Teaser length:', teaserResult.content.length);
+        console.log('🎯 [VIBELOG-GEN] Full content length:', vibelogContent.length);
+        console.log('🎯 [VIBELOG-GEN] Using AI-generated teaser:', !!vibelogTeaser);
+      }
 
       return teaserResult;
     } catch (error) {

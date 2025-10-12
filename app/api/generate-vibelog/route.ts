@@ -114,6 +114,10 @@ export async function POST(request: NextRequest) {
       console.log('🧪 Using mock vibelog generation for development/testing');
       await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API delay
       return NextResponse.json({
+        vibelogTeaser:
+          postProcessContent(`What if I told you there's a secret weapon that makes content creation 3-4 times faster, more authentic, and accessible to everyone? The answer might shock you.
+
+Voice technology isn't just changing how we create content—it's revolutionizing the entire creative process. But here's what most people don't realize about what's coming next...`),
         vibelogContent:
           postProcessContent(`# The Future of Voice Technology: Transforming Content Creation
 
@@ -169,7 +173,7 @@ As voice technology continues to evolve, we can expect even more sophisticated f
       messages: [
         {
           role: 'system',
-          content: `You are an English vibelog writer. Your task is to write posts in English only.
+          content: `You are an English vibelog writer creating content optimized for maximum engagement. Your task is to write posts in English only.
 
 CRITICAL REQUIREMENTS:
 - You MUST write in English language only - never use Spanish, German, French, or any other language
@@ -178,44 +182,87 @@ CRITICAL REQUIREMENTS:
 - The input is an English transcription that should be transformed into an English vibelog post
 - Branding rule: replace any word that starts with "blog" with the "vibelog" family (blog→vibelog, blogging→vibelogging, blogger→vibelogger). Do NOT modify URLs or product/brand names that are already correct.
 
-FORMAT REQUIREMENTS:
-- Begin with a single H1 that is a concise, compelling title derived from the transcription (no placeholders, no square brackets).
+DUAL-CONTENT OUTPUT FORMAT (CRITICAL):
+You MUST output TWO versions in this EXACT format:
+
+---TEASER---
+[Write a 2-3 paragraph addictive teaser (200-400 chars) using curiosity-gap psychology. This should be an IRRESISTIBLE hook that makes readers NEED to read more. Use techniques like: cliffhanger endings, intriguing questions, controversial statements, surprising facts, or promises of valuable insights. DO NOT just truncate the intro - craft a unique hook designed to maximize click-through.]
+---FULL---
+# [Compelling Title]
+
+[Complete vibelog post with full content, proper structure, H2 sections, engaging writing]
+
+TEASER WRITING TECHNIQUES:
+- Start with a surprising statement or question
+- Build curiosity without revealing the answer
+- Use power words: "shocking", "secret", "truth", "never", "always"
+- Create information gaps that beg to be filled
+- End mid-thought or with a provocative question
+- Promise specific value or transformation
+
+FULL CONTENT REQUIREMENTS:
+- Begin with a single H1 that is a concise, compelling title (no placeholders, no square brackets)
 - Use ## for main sections
 - Write in clear, engaging English
 - Keep paragraphs short and readable
+- Provide complete information and insights
 
-Write a complete English vibelog post based on the transcription provided.`,
+Write a complete dual-content vibelog based on the transcription provided.`,
         },
         {
           role: 'user',
-          content: `Transform this English transcription into an English vibelog post:
+          content: `Transform this English transcription into a dual-content English vibelog post with both an addictive teaser and full content:
 
 "${transcription}"
 
-Write entirely in English with an engaging title and clear structure.`,
+Remember: Output BOTH sections in the exact format:
+---TEASER---
+[irresistible hook content]
+---FULL---
+[complete vibelog with title and full content]`,
         },
       ],
-      temperature: 0.3,
+      temperature: 0.7,
       max_tokens: 4000,
     });
 
     const rawContent = completion.choices[0]?.message?.content || '';
-    const vibelogContent = postProcessContent(rawContent);
+
+    // Parse the dual-content response
+    const teaserMatch = rawContent.match(/---TEASER---\s*([\s\S]*?)---FULL---/);
+    const fullMatch = rawContent.match(/---FULL---\s*([\s\S]*?)$/);
+
+    let teaser = '';
+    let fullContent = '';
+
+    if (teaserMatch && fullMatch) {
+      // Successfully parsed both sections
+      teaser = postProcessContent(teaserMatch[1].trim());
+      fullContent = postProcessContent(fullMatch[1].trim());
+    } else {
+      // Fallback: if parsing fails, use the whole content as full and create a simple teaser
+      console.warn('⚠️ [VIBELOG-GEN] Failed to parse dual-content format, using fallback');
+      fullContent = postProcessContent(rawContent);
+
+      // Create a simple teaser from the first 300 characters
+      const firstParagraphs = fullContent.split('\n\n').slice(0, 2).join('\n\n');
+      teaser = firstParagraphs.substring(0, 300) + (firstParagraphs.length > 300 ? '...' : '');
+    }
 
     if (process.env.NODE_ENV !== 'production') {
-      console.log('🔍 [VIBELOG-GEN] Raw content length:', rawContent.length);
-      console.log('🔍 [VIBELOG-GEN] Processed content length:', vibelogContent.length);
-      console.log(
-        '🔍 [VIBELOG-GEN] Vibelog generation completed:',
-        vibelogContent.substring(0, 100) + '...'
-      );
+      console.log('🔍 [VIBELOG-GEN] Teaser length:', teaser.length);
+      console.log('🔍 [VIBELOG-GEN] Full content length:', fullContent.length);
+      console.log('🔍 [VIBELOG-GEN] Teaser preview:', teaser.substring(0, 100) + '...');
+      console.log('🔍 [VIBELOG-GEN] Full content preview:', fullContent.substring(0, 100) + '...');
     }
 
     // Ensure we always return valid content
-    const finalContent = vibelogContent || 'Content generation failed';
+    const finalTeaser = teaser || 'Content generation in progress...';
+    const finalFullContent = fullContent || 'Content generation failed';
 
     return NextResponse.json({
-      vibelogContent: finalContent,
+      vibelogTeaser: finalTeaser,
+      vibelogContent: finalFullContent,
       success: true,
     });
   } catch (error) {
