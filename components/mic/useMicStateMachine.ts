@@ -420,10 +420,12 @@ export function useMicStateMachine(
       throw new Error('No audio blob available');
     }
 
-    const transcriptionResult = await vibelogAPI.processTranscription(audioBlob);
+    // Generate sessionId first (needed for both transcription and audio upload)
+    const sessionId = `session_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+    const transcriptionResult = await vibelogAPI.processTranscription(audioBlob, sessionId);
     setTranscription(transcriptionResult);
 
-    const sessionId = `session_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     vibelogAPI
       .uploadAudio(audioBlob, sessionId, user?.id)
       .then(result => {

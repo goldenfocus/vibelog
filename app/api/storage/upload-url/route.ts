@@ -19,19 +19,25 @@ export const runtime = 'nodejs';
  */
 export async function POST(request: NextRequest) {
   try {
-    // Auth check
+    // Parse request first
+    const body = await request.json();
+    const { fileType, fileSize, sessionId } = body;
+
+    // Auth check - allow authenticated OR anonymous with session ID
     const supabase = await createServerSupabaseClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // Generate user identifier: use user.id if authenticated, otherwise use sessionId
+    const userId = user?.id || sessionId;
 
-    // Parse request
-    const body = await request.json();
-    const { fileType, fileSize } = body;
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized - missing user or session ID' },
+        { status: 401 }
+      );
+    }
 
     if (!fileType || !fileSize) {
       return NextResponse.json({ error: 'Missing fileType or fileSize' }, { status: 400 });
@@ -65,10 +71,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate storage path
+    // Generate storage path (use userId which can be user.id or sessionId)
     const category = getCategoryFromMimeType(fileType);
     const extension = getExtensionFromMimeType(fileType);
-    const storagePath = generateStoragePath(user.id, category, extension);
+    const storagePath = generateStoragePath(userId, category, extension);
 
     // Get presigned URL
     const { signedUrl, path, token } = await getPresignedUploadUrl(storagePath);

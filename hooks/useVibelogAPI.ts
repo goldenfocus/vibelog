@@ -9,7 +9,7 @@ import {
 } from '@/types/micRecorder';
 
 export interface UseVibelogAPIReturn {
-  processTranscription: (audioBlob: Blob) => Promise<string>;
+  processTranscription: (audioBlob: Blob, sessionId?: string) => Promise<string>;
   processVibelogGeneration: (transcription: string) => Promise<TeaserResult>;
   processCoverImage: (args: {
     vibelogContent: string;
@@ -150,7 +150,7 @@ export function useVibelogAPI(
     }
   };
 
-  const processTranscription = async (audioFile: Blob): Promise<string> => {
+  const processTranscription = async (audioFile: Blob, sessionId?: string): Promise<string> => {
     if (!audioFile) {
       console.error('No audio blob available for processing');
       throw new Error('No audio blob available');
@@ -176,6 +176,7 @@ export function useVibelogAPI(
         body: JSON.stringify({
           fileType: audioFile.type,
           fileSize: audioFile.size,
+          sessionId, // Pass sessionId for anonymous users
         }),
       });
 
