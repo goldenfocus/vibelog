@@ -60,6 +60,7 @@
   },
   "toast": {
     "copied": "✨ Copied to clipboard!",
+    "copiedWithImage": "✨ Copied with cover image!",
     "copyFailed": "❌ Failed to copy",
     "copiedForSharing": "📋 Copied for sharing!",
     "signInToSave": "🔒 Sign in to save your vibelogs!"
