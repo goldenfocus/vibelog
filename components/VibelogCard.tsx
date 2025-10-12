@@ -4,9 +4,9 @@ import { Clock, Heart, Share2, User, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 
-import BlogContentRenderer from '@/components/BlogContentRenderer';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useI18n } from '@/components/providers/I18nProvider';
+import VibelogContentRenderer from '@/components/VibelogContentRenderer';
 
 interface VibelogAuthor {
   username: string;
@@ -136,7 +136,7 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
 
       {/* Content */}
       <div className="mb-6">
-        <BlogContentRenderer content={displayContent} isTeaser={isTeaser} />
+        <VibelogContentRenderer content={displayContent} isTeaser={isTeaser} />
       </div>
 
       {/* Actions */}

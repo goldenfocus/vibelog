@@ -2,7 +2,7 @@ import { useRef } from 'react';
 
 import {
   TranscriptionResponse,
-  BlogGenerationResponse,
+  VibelogGenerationResponse,
   TeaserResult,
   UpgradePromptState,
   ProcessingData,
@@ -10,9 +10,9 @@ import {
 
 export interface UseVibelogAPIReturn {
   processTranscription: (audioBlob: Blob) => Promise<string>;
-  processBlogGeneration: (transcription: string) => Promise<TeaserResult>;
+  processVibelogGeneration: (transcription: string) => Promise<TeaserResult>;
   processCoverImage: (args: {
-    blogContent: string;
+    vibelogContent: string;
     username?: string;
     tags?: string[];
   }) => Promise<{ url: string; alt: string; width: number; height: number }>;
@@ -28,10 +28,10 @@ export function useVibelogAPI(
   onUpgradePrompt: (prompt: UpgradePromptState) => void
 ): UseVibelogAPIReturn {
   const DEBUG_MODE = process.env.NODE_ENV !== 'production';
-  // Shared data for transcription and blog generation
+  // Shared data for transcription and vibelog generation
   const processingDataRef = useRef<ProcessingData>({
     transcriptionData: '',
-    blogContentData: '',
+    vibelogContentData: '',
   });
 
   const createTeaserContent = (fullContent: string): TeaserResult => {
@@ -212,14 +212,14 @@ export function useVibelogAPI(
     }
   };
 
-  const processBlogGeneration = async (transcriptionData: string): Promise<TeaserResult> => {
+  const processVibelogGeneration = async (transcriptionData: string): Promise<TeaserResult> => {
     try {
       if (!transcriptionData) {
-        console.error('No transcription data available for blog generation');
+        console.error('No transcription data available for vibelog generation');
         throw new Error('No transcription data available');
       }
 
-      const blogResponse = await fetch('/api/generate-blog', {
+      const vibelogResponse = await fetch('/api/generate-vibelog', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -227,24 +227,24 @@ export function useVibelogAPI(
         body: JSON.stringify({ transcription: transcriptionData }),
       });
 
-      if (!blogResponse.ok) {
-        await handleAPIError(blogResponse);
+      if (!vibelogResponse.ok) {
+        await handleAPIError(vibelogResponse);
       }
 
-      const { blogContent }: BlogGenerationResponse = await blogResponse.json();
+      const { vibelogContent }: VibelogGenerationResponse = await vibelogResponse.json();
 
-      if (!blogContent) {
-        throw new Error('No blog content received from API');
+      if (!vibelogContent) {
+        throw new Error('No vibelog content received from API');
       }
 
       // Apply teaser logic
-      const teaserResult = createTeaserContent(blogContent);
+      const teaserResult = createTeaserContent(vibelogContent);
       // Store the FULL content for cover generation, not the teaser
-      processingDataRef.current.blogContentData = blogContent;
+      processingDataRef.current.vibelogContentData = vibelogContent;
 
       return teaserResult;
     } catch (error) {
-      console.error('Blog generation error:', error);
+      console.error('Vibelog generation error:', error);
       throw error;
     }
   };
@@ -370,11 +370,11 @@ export function useVibelogAPI(
   };
 
   const processCoverImage = async (args: {
-    blogContent: string;
+    vibelogContent: string;
     username?: string;
     tags?: string[];
   }) => {
-    const { title, summary } = parseMarkdown(args.blogContent);
+    const { title, summary } = parseMarkdown(args.vibelogContent);
 
     try {
       const requestBody = { title, summary, username: args.username, tags: args.tags };
@@ -394,7 +394,7 @@ export function useVibelogAPI(
       const data = await res.json();
       processingDataRef.current = {
         ...processingDataRef.current,
-        blogContentData: args.blogContent,
+        vibelogContentData: args.vibelogContent,
       };
 
       return {
@@ -416,7 +416,7 @@ export function useVibelogAPI(
 
   return {
     processTranscription,
-    processBlogGeneration,
+    processVibelogGeneration,
     processCoverImage,
     uploadAudio,
     processingData: processingDataRef,

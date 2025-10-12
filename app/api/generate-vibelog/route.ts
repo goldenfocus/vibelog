@@ -8,13 +8,15 @@ import { createServerSupabaseClient } from '@/lib/supabase';
 // Examples: blog -> vibelog, blogging -> vibelogging, blogger -> vibelogger
 // Heuristic: do NOT modify URLs.
 function applyBranding(content: string): string {
-  if (!content) {return content;}
+  if (!content) {
+    return content;
+  }
 
   // Temporarily protect URLs so replacements do not break links
   const urls: string[] = [];
   const urlPlaceholder = (i: number) => `__URL_${i}__`;
   const urlRegex = /(https?:\/\/[^\s)]+|www\.[^\s)]+)/gi;
-  const protectedText = content.replace(urlRegex, (m) => {
+  const protectedText = content.replace(urlRegex, m => {
     urls.push(m);
     return urlPlaceholder(urls.length - 1);
   });
@@ -45,31 +47,37 @@ export async function POST(request: NextRequest) {
     // Limits: logged-in 10000 per 15 minutes; anonymous 10000 per day
     // In development, loosen limits to avoid noisy 429s during iteration
     const isDev = process.env.NODE_ENV !== 'production';
-    const baseOpts = userId ? { limit: 10000, window: '15 m' as const } : { limit: 10000, window: '24 h' as const };
+    const baseOpts = userId
+      ? { limit: 10000, window: '15 m' as const }
+      : { limit: 10000, window: '24 h' as const };
     const opts = isDev ? { limit: 10000, window: '15 m' as const } : baseOpts;
-    const rl = await rateLimit(request, 'generate-blog', opts, userId || undefined);
+    const rl = await rateLimit(request, 'generate-vibelog', opts, userId || undefined);
     if (!rl.success) {
       // Custom response for anonymous users to encourage signup
       if (!userId) {
-        return NextResponse.json({
-          error: 'Daily limit reached',
-          message: 'You\'ve used your 10000 free blog generations today. Sign in with Google to get 10000 requests every 15 minutes!',
-          upgrade: {
-            action: 'Sign in with Google',
-            benefits: [
-              '10000 requests every 15 minutes (vs 10000 per day)',
-              'No daily limits',
-              'Faster processing priority',
-              'Save your blog posts'
-            ]
+        return NextResponse.json(
+          {
+            error: 'Daily limit reached',
+            message:
+              "You've used your 10000 free vibelog generations today. Sign in with Google to get 10000 requests every 15 minutes!",
+            upgrade: {
+              action: 'Sign in with Google',
+              benefits: [
+                '10000 requests every 15 minutes (vs 10000 per day)',
+                'No daily limits',
+                'Faster processing priority',
+                'Save your vibelog posts',
+              ],
+            },
+            ...rl,
           },
-          ...rl
-        }, { 
-          status: 429,
-          headers: {
-            'Retry-After': String(Math.ceil(((rl.reset || 0) - Date.now()) / 1000))
+          {
+            status: 429,
+            headers: {
+              'Retry-After': String(Math.ceil(((rl.reset || 0) - Date.now()) / 1000)),
+            },
           }
-        });
+        );
       }
       return tooManyResponse(rl);
     }
@@ -91,15 +99,23 @@ export async function POST(request: NextRequest) {
     }
 
     if (process.env.NODE_ENV !== 'production') {
-      console.log('Generating blog from transcription:', transcription.substring(0, 100) + '...');
+      console.log(
+        'Generating vibelog from transcription:',
+        transcription.substring(0, 100) + '...'
+      );
     }
 
     // Check if we have a real API key, otherwise return mock response for testing
-    if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === 'dummy_key' || process.env.OPENAI_API_KEY === 'your_openai_api_key_here') {
-      console.log('🧪 Using mock blog generation for development/testing');
+    if (
+      !process.env.OPENAI_API_KEY ||
+      process.env.OPENAI_API_KEY === 'dummy_key' ||
+      process.env.OPENAI_API_KEY === 'your_openai_api_key_here'
+    ) {
+      console.log('🧪 Using mock vibelog generation for development/testing');
       await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API delay
       return NextResponse.json({
-        blogContent: postProcessContent(`# The Future of Voice Technology: Transforming Content Creation
+        vibelogContent:
+          postProcessContent(`# The Future of Voice Technology: Transforming Content Creation
 
 Voice technology is revolutionizing how we create and share content. As we move toward a more connected digital world, the ability to transform spoken words into polished, publishable content represents a fundamental shift in content creation.
 
@@ -138,7 +154,7 @@ Modern voice technology combines several cutting-edge technologies:
 As voice technology continues to evolve, we can expect even more sophisticated features like real-time fact-checking, automatic citation generation, and multi-language content creation. The future of content creation is not just digital—it's conversational.
 
 *Ready to try voice-powered content creation? Start speaking your ideas into existence today.*`),
-        success: true
+        success: true,
       });
     }
 
@@ -153,7 +169,7 @@ As voice technology continues to evolve, we can expect even more sophisticated f
       messages: [
         {
           role: 'system',
-      content: `You are an English vibelog writer. Your task is to write posts in English only.
+          content: `You are an English vibelog writer. Your task is to write posts in English only.
 
 CRITICAL REQUIREMENTS:
 - You MUST write in English language only - never use Spanish, German, French, or any other language
@@ -168,43 +184,42 @@ FORMAT REQUIREMENTS:
 - Write in clear, engaging English
 - Keep paragraphs short and readable
 
-Write a complete English vibelog post based on the transcription provided.`
+Write a complete English vibelog post based on the transcription provided.`,
         },
         {
           role: 'user',
-          content: `Transform this English transcription into an English blog post:
+          content: `Transform this English transcription into an English vibelog post:
 
 "${transcription}"
 
-Write entirely in English with an engaging title and clear structure.`
-        }
+Write entirely in English with an engaging title and clear structure.`,
+        },
       ],
       temperature: 0.3,
       max_tokens: 4000,
     });
 
     const rawContent = completion.choices[0]?.message?.content || '';
-    const blogContent = postProcessContent(rawContent);
+    const vibelogContent = postProcessContent(rawContent);
 
     if (process.env.NODE_ENV !== 'production') {
-      console.log('🔍 [BLOG-GEN] Raw content length:', rawContent.length);
-      console.log('🔍 [BLOG-GEN] Processed content length:', blogContent.length);
-      console.log('🔍 [BLOG-GEN] Blog generation completed:', blogContent.substring(0, 100) + '...');
+      console.log('🔍 [VIBELOG-GEN] Raw content length:', rawContent.length);
+      console.log('🔍 [VIBELOG-GEN] Processed content length:', vibelogContent.length);
+      console.log(
+        '🔍 [VIBELOG-GEN] Vibelog generation completed:',
+        vibelogContent.substring(0, 100) + '...'
+      );
     }
 
     // Ensure we always return valid content
-    const finalContent = blogContent || 'Content generation failed';
+    const finalContent = vibelogContent || 'Content generation failed';
 
     return NextResponse.json({
-      blogContent: finalContent,
-      success: true
+      vibelogContent: finalContent,
+      success: true,
     });
-
   } catch (error) {
-    console.error('Blog generation error:', error);
-    return NextResponse.json(
-      { error: 'Failed to generate blog content' }, 
-      { status: 500 }
-    );
+    console.error('Vibelog generation error:', error);
+    return NextResponse.json({ error: 'Failed to generate vibelog content' }, { status: 500 });
   }
 }

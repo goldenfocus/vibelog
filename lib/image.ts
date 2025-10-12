@@ -44,7 +44,7 @@ export function buildImagePrompt(
     : '';
 
   return (
-    `Cover art for a blog post titled "${title}".\n` +
+    `Cover art for a vibelog post titled "${title}".\n` +
     contentContext +
     `Vibe: ${tone || 'default'}. Visual style: ${label}.\n` +
     `Create a striking, shareable composition that visually represents the content.\n` +
