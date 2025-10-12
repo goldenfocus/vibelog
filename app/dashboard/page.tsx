@@ -2,22 +2,76 @@
 
 import { Mic } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import MicRecorder from '@/components/MicRecorder';
 import Navigation from '@/components/Navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useI18n } from '@/components/providers/I18nProvider';
 import { Button } from '@/components/ui/button';
+import VibelogCard from '@/components/VibelogCard';
 import { useVibelogTransfer } from '@/hooks/useVibelogTransfer';
+import { createClient } from '@/lib/supabase';
 
 export default function DashboardPage() {
   const { user, loading, isSigningOut } = useAuth();
   const { t, isLoading: i18nLoading } = useI18n();
   const router = useRouter();
+  const [vibelogs, setVibelogs] = useState<Array<any>>([]);
+  const [loadingVibelogs, setLoadingVibelogs] = useState(true);
 
   // Transfer anonymous vibelogs to user account (background, non-blocking)
   const { transferred, count } = useVibelogTransfer(user?.id);
+
+  // Fetch user's vibelogs
+  useEffect(() => {
+    async function fetchVibelogs() {
+      if (!user?.id) {
+        return;
+      }
+
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from('vibelogs')
+        .select(
+          `
+          id,
+          title,
+          slug,
+          teaser,
+          content,
+          cover_image_url,
+          created_at,
+          published_at,
+          view_count,
+          like_count,
+          share_count,
+          read_time,
+          user_id,
+          profiles!vibelogs_user_id_fkey (
+            username,
+            display_name,
+            avatar_url
+          )
+        `
+        )
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (!error && data) {
+        // Transform data to match VibelogCard interface
+        const transformedData = data.map(v => ({
+          ...v,
+          author: Array.isArray(v.profiles) ? v.profiles[0] : v.profiles,
+        }));
+        setVibelogs(transformedData);
+      }
+      setLoadingVibelogs(false);
+    }
+
+    fetchVibelogs();
+  }, [user?.id, transferred]); // Refetch when vibelogs are transferred
 
   // Show optional success message when transfer completes
   useEffect(() => {
@@ -88,11 +142,44 @@ export default function DashboardPage() {
             <MicRecorder />
           </div>
 
-          {/* Coming Soon Section */}
-          <div className="mt-12 text-center">
-            <div className="inline-block rounded-xl border border-border/30 bg-card/30 px-6 py-4 backdrop-blur-sm">
-              <p className="text-sm text-muted-foreground">📊 {t('dashboard.comingSoon')}</p>
+          {/* Your Vibelogs Section */}
+          <div className="mt-16">
+            <div className="mb-8 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-foreground">Your Vibelogs</h2>
+              {vibelogs.length > 0 && (
+                <Button
+                  onClick={() => router.push(`/${user.user_metadata?.username || 'profile'}`)}
+                  variant="outline"
+                  size="sm"
+                >
+                  View All
+                </Button>
+              )}
             </div>
+
+            {loadingVibelogs ? (
+              <div className="flex justify-center py-12">
+                <div className="text-center">
+                  <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-electric border-t-transparent"></div>
+                  <p className="text-muted-foreground">Loading your vibelogs...</p>
+                </div>
+              </div>
+            ) : vibelogs.length === 0 ? (
+              <div className="rounded-2xl border border-border/30 bg-card/30 p-12 text-center backdrop-blur-sm">
+                <p className="mb-4 text-lg text-muted-foreground">
+                  You haven&apos;t created any vibelogs yet
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Click &quot;New Vibelog&quot; above to start recording your first one! 🎤
+                </p>
+              </div>
+            ) : (
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {vibelogs.map(vibelog => (
+                  <VibelogCard key={vibelog.id} vibelog={vibelog} />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </main>
