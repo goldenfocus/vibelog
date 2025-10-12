@@ -2,7 +2,6 @@
 
 import { Clock, Heart, Share2, User, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
 
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useI18n } from '@/components/providers/I18nProvider';
@@ -35,26 +34,26 @@ interface VibelogCardProps {
 }
 
 export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const { t } = useI18n();
   const router = useRouter();
 
-  // Client-side only state to avoid SSR/hydration mismatch
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  // Show full content if:
-  // 1. User is logged in
-  // 2. Still loading (optimistic - prevents flash of login prompt for cached users)
-  // 3. Not yet client-side hydrated (show full content during SSR to avoid flash)
+  // NEW UX: Always show teaser as a preview card
+  // User clicks "Read More" to go to full vibelog page
+  // This creates better engagement and SEO (each vibelog gets its own page)
   const isLoggedIn = !!user;
-  const showFullContent = !isClient || isLoggedIn || loading;
+  const displayContent = vibelog.teaser || vibelog.content;
+  const isTeaser = true; // Always show as teaser in card view
 
-  const displayContent = showFullContent ? vibelog.content : vibelog.teaser;
-  const isTeaser = !showFullContent;
+  const handleReadMore = () => {
+    if (isLoggedIn) {
+      // Logged-in users: go directly to vibelog page
+      router.push(`/vibelogs/${vibelog.id}`);
+    } else {
+      // Logged-out users: redirect to sign-in with return URL
+      router.push(`/auth/signin?returnTo=/vibelogs/${vibelog.id}`);
+    }
+  };
 
   const handleRemix = () => {
     if (onRemix) {
@@ -136,7 +135,11 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
 
       {/* Content */}
       <div className="mb-6">
-        <VibelogContentRenderer content={displayContent} isTeaser={isTeaser} />
+        <VibelogContentRenderer
+          content={displayContent}
+          isTeaser={isTeaser}
+          onReadMore={handleReadMore}
+        />
       </div>
 
       {/* Actions */}
