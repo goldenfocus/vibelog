@@ -16,6 +16,7 @@ interface VibelogAuthor {
 interface Vibelog {
   id: string;
   title: string;
+  slug?: string | null;
   teaser: string;
   content: string;
   cover_image_url: string | null;
@@ -46,12 +47,17 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
   const isTeaser = true; // Always show as teaser in card view
 
   const handleReadMore = () => {
+    // Use slug-based URL if available (SEO-friendly), otherwise fall back to ID
+    const vibelogPath = vibelog.slug
+      ? `/${vibelog.author.username}/${vibelog.slug}`
+      : `/vibelogs/${vibelog.id}`;
+
     if (isLoggedIn) {
       // Logged-in users: go directly to vibelog page
-      router.push(`/vibelogs/${vibelog.id}`);
+      router.push(vibelogPath);
     } else {
       // Logged-out users: redirect to sign-in with return URL
-      router.push(`/auth/signin?returnTo=/vibelogs/${vibelog.id}`);
+      router.push(`/auth/signin?returnTo=${encodeURIComponent(vibelogPath)}`);
     }
   };
 
