@@ -60,6 +60,7 @@ export interface TranscriptionResponse extends APIResponse {
 }
 
 export interface VibelogGenerationResponse extends APIResponse {
+  vibelogTeaser?: string;
   vibelogContent?: string;
 }
 

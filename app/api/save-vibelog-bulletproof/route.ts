@@ -108,8 +108,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const warnings: string[] = [];
 
     // Extract and normalize all data with fallbacks
-    const content = requestBody.content.trim();
-    const fullContent = requestBody.fullContent?.trim() || content;
+    const teaserContent = requestBody.content.trim(); // This is the teaser
+    const fullContent = requestBody.fullContent?.trim() || teaserContent; // Fallback to teaser if no full content
     let title = requestBody.title?.trim();
 
     if (!title) {
@@ -129,12 +129,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     } = await supabase.auth.getUser();
     const userId = user?.id || null;
 
-    // Prepare data object using only existing columns
+    // Prepare data object with both teaser and full content
     vibelogData = {
       user_id: userId, // SECURITY: Only use server-verified userId
       session_id: sessionId,
       title: title,
-      content: fullContent, // Store full content in the main content field
+      teaser: teaserContent, // Store AI-generated teaser for public preview
+      content: fullContent, // Store full content for logged-in users
       transcription: transcription,
       cover_image_url: requestBody.coverImage?.url || null,
       cover_image_alt: requestBody.coverImage?.alt || null,
@@ -157,6 +158,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     console.log('✅ [VIBELOG-SAVE] Data normalized:', {
       title: vibelogData.title,
+      teaserLength: vibelogData.teaser.length,
       contentLength: vibelogData.content.length,
       wordCount: vibelogData.word_count,
       hasTranscription: !!vibelogData.transcription,
