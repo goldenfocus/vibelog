@@ -369,17 +369,21 @@ export function useMicStateMachine(
           }
 
           await navigator.share(shareData);
+          showToast('✨ Shared successfully!');
           return;
         } catch (error: unknown) {
           if (error instanceof Error && error.name === 'AbortError') {
             return; // user cancelled share sheet
           }
+          // Log the actual error to help debug
+          console.error('Share failed:', error);
           if (DEBUG_MODE) {
             console.warn('Share failed, falling back to copy', error);
           }
         }
       }
 
+      // Fallback: copy to clipboard
       await handleCopy(shareContent);
       showToast(t('toast.copiedForSharing'));
     },
