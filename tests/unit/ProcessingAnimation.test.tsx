@@ -20,6 +20,8 @@ vi.mock('@/components/providers/I18nProvider', () => ({
         'components.micRecorder.symphony.structureDesc': 'Organizing into sections',
         'components.micRecorder.symphony.formatTitle': 'Formatting',
         'components.micRecorder.symphony.formatDesc': 'Applying blog formatting',
+        'components.micRecorder.symphony.imageTitle': 'Generating Image',
+        'components.micRecorder.symphony.imageDesc': 'Creating cover image',
         'components.micRecorder.symphony.optimizeTitle': 'Optimizing',
         'components.micRecorder.symphony.optimizeDesc': 'Enhancing readability',
         'components.micRecorder.symphony.socialTitle': 'Social Ready',
@@ -31,23 +33,21 @@ vi.mock('@/components/providers/I18nProvider', () => ({
         'components.micRecorder.symphony.htmlTitle': 'HTML Perfect',
         'components.micRecorder.symphony.htmlDesc': 'Generating clean HTML',
         'components.micRecorder.symphony.polishTitle': 'Final Polish',
-        'components.micRecorder.symphony.polishDesc': 'Adding final touches'
+        'components.micRecorder.symphony.polishDesc': 'Adding final touches',
       };
       return translations[key] || key;
-    }
-  })
+    },
+  }),
 }));
 
 describe('ProcessingAnimation', () => {
   let mockOnTranscribeComplete: ReturnType<typeof vi.fn>;
   let mockOnGenerateComplete: ReturnType<typeof vi.fn>;
-  let mockOnAnimationComplete: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     // Mock API functions
     mockOnTranscribeComplete = vi.fn().mockResolvedValue('Mock transcription result');
     mockOnGenerateComplete = vi.fn().mockResolvedValue('Mock blog content');
-    mockOnAnimationComplete = vi.fn();
 
     // Mock console methods to avoid noise in tests
     vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -69,7 +69,7 @@ describe('ProcessingAnimation', () => {
         />
       );
 
-      expect(screen.queryByText('⚡ Vibelogging your content...')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('timeline-stream')).not.toBeInTheDocument();
     });
 
     it('should render when isVisible is true', () => {
@@ -82,7 +82,8 @@ describe('ProcessingAnimation', () => {
         />
       );
 
-      expect(screen.getByText('⚡ Vibelogging your content...')).toBeInTheDocument();
+      expect(screen.getByTestId('timeline-stream')).toBeInTheDocument();
+      expect(screen.getByText('Processing')).toBeInTheDocument();
     });
 
     it('should show loading spinner and header', () => {
@@ -100,10 +101,10 @@ describe('ProcessingAnimation', () => {
       expect(spinner).toBeInTheDocument();
 
       // Check for header text
-      expect(screen.getByText('⚡ Vibelogging your content...')).toBeInTheDocument();
+      expect(screen.getByText('Processing')).toBeInTheDocument();
     });
 
-    it('should show background particles effects', () => {
+    it('should show processing status line', () => {
       render(
         <ProcessingAnimation
           isVisible={true}
@@ -113,14 +114,14 @@ describe('ProcessingAnimation', () => {
         />
       );
 
-      // Check for particle elements with specific classes
-      const particles = document.querySelectorAll('.animate-pulse, .animate-ping');
-      expect(particles.length).toBeGreaterThan(0);
+      // Check for processing status line
+      const statusLine = screen.getByTestId('processing-now-line');
+      expect(statusLine).toBeInTheDocument();
     });
   });
 
   describe('Component Structure and Visual Elements', () => {
-    it('should display all 12 processing steps', async () => {
+    it('should display processing steps in timeline', async () => {
       render(
         <ProcessingAnimation
           isVisible={true}
@@ -130,30 +131,21 @@ describe('ProcessingAnimation', () => {
         />
       );
 
-      // Wait for steps to be initialized
+      // Wait for steps to be initialized - timeline shows recent steps only
       await waitFor(() => {
-        const expectedSteps = [
-          'Capturing Audio',
-          'Transcribing',
-          'Cleaning',
-          'Expanding',
-          'Structuring',
-          'Formatting',
-          'Optimizing',
-          'Social Ready',
-          'SEO Boost',
-          'RSS Ready',
-          'HTML Perfect',
-          'Final Polish'
-        ];
+        // Check that at least some steps are visible in the timeline
+        const visibleSteps = ['Capturing Audio', 'Transcribing', 'Cleaning', 'Expanding'];
 
-        expectedSteps.forEach(stepTitle => {
-          expect(screen.getByText(stepTitle)).toBeInTheDocument();
+        // At least one step should be visible
+        const hasVisibleStep = visibleSteps.some(stepTitle => {
+          return screen.queryByText(stepTitle) !== null;
         });
+
+        expect(hasVisibleStep).toBe(true);
       });
     });
 
-    it('should show descriptions for all steps', async () => {
+    it('should show descriptions for visible steps', async () => {
       render(
         <ProcessingAnimation
           isVisible={true}
@@ -164,28 +156,24 @@ describe('ProcessingAnimation', () => {
       );
 
       await waitFor(() => {
-        const expectedDescriptions = [
+        // Timeline shows only recent steps, so check for at least some descriptions
+        const visibleDescriptions = [
           'Securing your audio recording',
           'Converting speech to text',
           'Removing noise and artifacts',
           'Enhancing content structure',
-          'Organizing into sections',
-          'Applying blog formatting',
-          'Enhancing readability',
-          'Preparing for social media',
-          'Optimizing for search',
-          'Preparing RSS feed',
-          'Generating clean HTML',
-          'Adding final touches'
         ];
 
-        expectedDescriptions.forEach(description => {
-          expect(screen.getByText(description)).toBeInTheDocument();
+        // At least one description should be visible
+        const hasVisibleDescription = visibleDescriptions.some(description => {
+          return screen.queryByText(description) !== null;
         });
+
+        expect(hasVisibleDescription).toBe(true);
       });
     });
 
-    it('should apply star-wars-crawl class to container', () => {
+    it('should apply timeline-stream testid to container', () => {
       render(
         <ProcessingAnimation
           isVisible={true}
@@ -195,11 +183,11 @@ describe('ProcessingAnimation', () => {
         />
       );
 
-      const crawlContainer = document.querySelector('.star-wars-crawl');
-      expect(crawlContainer).toBeInTheDocument();
+      const timelineStream = screen.getByTestId('timeline-stream');
+      expect(timelineStream).toBeInTheDocument();
     });
 
-    it('should apply crawl-step class to each step', async () => {
+    it('should show timeline steps with proper structure', async () => {
       render(
         <ProcessingAnimation
           isVisible={true}
@@ -210,12 +198,13 @@ describe('ProcessingAnimation', () => {
       );
 
       await waitFor(() => {
-        const crawlSteps = document.querySelectorAll('.crawl-step');
-        expect(crawlSteps.length).toBe(12); // All 12 processing steps
+        // Check that timeline steps exist
+        const timelineSteps = document.querySelectorAll('[data-testid^="timeline-step-"]');
+        expect(timelineSteps.length).toBeGreaterThan(0);
       });
     });
 
-    it('should apply animation delays to steps', async () => {
+    it('should show metallic progress indicator for active step', async () => {
       render(
         <ProcessingAnimation
           isVisible={true}
@@ -226,11 +215,9 @@ describe('ProcessingAnimation', () => {
       );
 
       await waitFor(() => {
-        const crawlSteps = document.querySelectorAll('.crawl-step');
-        crawlSteps.forEach((step, index) => {
-          const expectedDelay = `${index * 0.2}s`;
-          expect(step).toHaveStyle(`animation-delay: ${expectedDelay}`);
-        });
+        // Check for metallic-strike class
+        const metallicStrike = document.querySelector('.metallic-strike');
+        expect(metallicStrike).toBeInTheDocument();
       });
     });
   });
@@ -261,7 +248,7 @@ describe('ProcessingAnimation', () => {
         />
       );
 
-      expect(screen.getByText('⚡ Vibelogging your content...')).toBeInTheDocument();
+      expect(screen.getByText('Processing')).toBeInTheDocument();
 
       rerender(
         <ProcessingAnimation
@@ -272,7 +259,7 @@ describe('ProcessingAnimation', () => {
         />
       );
 
-      expect(screen.getByText('⚡ Vibelogging your content...')).toBeInTheDocument();
+      expect(screen.getByText('Processing')).toBeInTheDocument();
     });
 
     it('should handle missing onAnimationComplete gracefully', () => {
@@ -286,7 +273,7 @@ describe('ProcessingAnimation', () => {
         />
       );
 
-      expect(screen.getByText('⚡ Vibelogging your content...')).toBeInTheDocument();
+      expect(screen.getByText('Processing')).toBeInTheDocument();
     });
   });
 
@@ -301,7 +288,7 @@ describe('ProcessingAnimation', () => {
         />
       );
 
-      expect(screen.getByText('⚡ Vibelogging your content...')).toBeInTheDocument();
+      expect(screen.getByText('Processing')).toBeInTheDocument();
 
       // Make invisible
       rerender(
@@ -314,7 +301,7 @@ describe('ProcessingAnimation', () => {
       );
 
       // Component should not be visible
-      expect(screen.queryByText('⚡ Vibelogging your content...')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('timeline-stream')).not.toBeInTheDocument();
     });
 
     it('should trigger animation when isVisible changes from false to true', async () => {
@@ -327,7 +314,7 @@ describe('ProcessingAnimation', () => {
         />
       );
 
-      expect(screen.queryByText('⚡ Vibelogging your content...')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('timeline-stream')).not.toBeInTheDocument();
 
       rerender(
         <ProcessingAnimation
@@ -338,8 +325,8 @@ describe('ProcessingAnimation', () => {
         />
       );
 
-      expect(screen.getByText('⚡ Vibelogging your content...')).toBeInTheDocument();
-      
+      expect(screen.getByText('Processing')).toBeInTheDocument();
+
       // Steps should be rendered
       await waitFor(() => {
         expect(screen.getByText('Capturing Audio')).toBeInTheDocument();
@@ -350,7 +337,7 @@ describe('ProcessingAnimation', () => {
   describe('Error Handling', () => {
     it('should handle transcription API errors gracefully', async () => {
       const mockErrorTranscribe = vi.fn().mockRejectedValue(new Error('Transcription failed'));
-      
+
       render(
         <ProcessingAnimation
           isVisible={true}
@@ -361,8 +348,8 @@ describe('ProcessingAnimation', () => {
       );
 
       // Component should render despite potential API errors
-      expect(screen.getByText('⚡ Vibelogging your content...')).toBeInTheDocument();
-      
+      expect(screen.getByText('Processing')).toBeInTheDocument();
+
       // Steps should still be visible
       await waitFor(() => {
         expect(screen.getByText('Capturing Audio')).toBeInTheDocument();
@@ -371,7 +358,7 @@ describe('ProcessingAnimation', () => {
 
     it('should handle blog generation API errors gracefully', async () => {
       const mockErrorGenerate = vi.fn().mockRejectedValue(new Error('Blog generation failed'));
-      
+
       render(
         <ProcessingAnimation
           isVisible={true}
@@ -382,17 +369,17 @@ describe('ProcessingAnimation', () => {
       );
 
       // Component should render despite potential API errors
-      expect(screen.getByText('⚡ Vibelogging your content...')).toBeInTheDocument();
-      
-      // Steps should still be visible
+      expect(screen.getByText('Processing')).toBeInTheDocument();
+
+      // Timeline should still be visible
       await waitFor(() => {
-        expect(screen.getByText('Formatting')).toBeInTheDocument();
+        expect(screen.getByTestId('timeline-stream')).toBeInTheDocument();
       });
     });
   });
 
   describe('Visual States and CSS Classes', () => {
-    it('should apply correct opacity classes for different step states', async () => {
+    it('should show different visual states for step progression', async () => {
       render(
         <ProcessingAnimation
           isVisible={true}
@@ -402,11 +389,11 @@ describe('ProcessingAnimation', () => {
         />
       );
 
-      // Check that steps have appropriate opacity classes
+      // Check that steps have text color classes indicating different states
       await waitFor(() => {
-        // Should have some steps with different opacities (active, completed, pending)
-        const opacityElements = document.querySelectorAll('[class*="opacity-"]');
-        expect(opacityElements.length).toBeGreaterThan(0);
+        // Should have slate color classes for step states
+        const slateTextElements = document.querySelectorAll('[class*="text-slate"]');
+        expect(slateTextElements.length).toBeGreaterThan(0);
       });
     });
 
@@ -474,7 +461,7 @@ describe('ProcessingAnimation', () => {
         />
       );
 
-      expect(screen.getByText('⚡ Vibelogging your content...')).toBeInTheDocument();
+      expect(screen.getByText('Processing')).toBeInTheDocument();
 
       rerender(
         <ProcessingAnimation
@@ -486,7 +473,7 @@ describe('ProcessingAnimation', () => {
       );
 
       // Component should handle different recording times
-      expect(screen.getByText('⚡ Vibelogging your content...')).toBeInTheDocument();
+      expect(screen.getByText('Processing')).toBeInTheDocument();
     });
   });
 
@@ -520,9 +507,9 @@ describe('ProcessingAnimation', () => {
       const mainContainer = document.querySelector('.backdrop-blur-xl');
       expect(mainContainer).toBeInTheDocument();
 
-      // Check for perspective container
-      const perspectiveContainer = document.querySelector('.perspective-1000');
-      expect(perspectiveContainer).toBeInTheDocument();
+      // Check for timeline container
+      const timelineStream = screen.getByTestId('timeline-stream');
+      expect(timelineStream).toBeInTheDocument();
     });
 
     it('should have consistent spacing and layout', async () => {
@@ -535,9 +522,9 @@ describe('ProcessingAnimation', () => {
         />
       );
 
-      // Check for space-y classes for consistent spacing
+      // Check for space-y-6 classes for consistent spacing between timeline steps
       await waitFor(() => {
-        const spacedElements = document.querySelectorAll('.space-y-8');
+        const spacedElements = document.querySelectorAll('.space-y-6');
         expect(spacedElements.length).toBeGreaterThan(0);
       });
     });
