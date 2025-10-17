@@ -68,12 +68,28 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
 
   // Handler for "Read More" button
   const handleReadMore = () => {
+    console.log('📖 [READ-MORE] Expanding to full content');
+    console.log('📖 [READ-MORE] Teaser length:', vibelogContent.length);
+    console.log('📖 [READ-MORE] Full length:', fullVibelogContent.length);
+    console.log('📖 [READ-MORE] Are they different?', fullVibelogContent !== vibelogContent);
     setShowingFullContent(true);
   };
 
   // Determine which content to display
   const displayContent = showingFullContent ? fullVibelogContent || vibelogContent : vibelogContent;
   const shouldShowReadMore = isTeaserContent && !showingFullContent && fullVibelogContent && fullVibelogContent !== vibelogContent;
+
+  // Debug logging
+  if (showCompletedUI && process.env.NODE_ENV !== 'production') {
+    console.log('🔍 [MICRECORDER] Content Debug:', {
+      isTeaserContent,
+      showingFullContent,
+      shouldShowReadMore,
+      teaserLength: vibelogContent.length,
+      fullLength: fullVibelogContent.length,
+      areDifferent: fullVibelogContent !== vibelogContent,
+    });
+  }
 
   return (
     <div className="w-full">
