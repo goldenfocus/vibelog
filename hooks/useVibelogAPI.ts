@@ -10,7 +10,10 @@ import {
 
 export interface UseVibelogAPIReturn {
   processTranscription: (audioBlob: Blob, sessionId?: string) => Promise<string>;
-  processVibelogGeneration: (transcription: string) => Promise<TeaserResult>;
+  processVibelogGeneration: (
+    transcription: string,
+    options?: { enableStreaming?: boolean; onStreamChunk?: (chunk: string) => void }
+  ) => Promise<TeaserResult>;
   processCoverImage: (args: {
     vibelogContent: string;
     username?: string;
