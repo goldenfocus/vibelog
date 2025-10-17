@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
+import { config } from '@/lib/config';
 import { rateLimit, tooManyResponse } from '@/lib/rateLimit';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
@@ -82,7 +83,7 @@ export async function POST(request: NextRequest) {
       return tooManyResponse(rl);
     }
 
-    const { transcription } = await request.json();
+    const { transcription, stream } = await request.json();
 
     if (!transcription) {
       return NextResponse.json({ error: 'No transcription provided' }, { status: 400 });
@@ -112,6 +113,78 @@ export async function POST(request: NextRequest) {
       process.env.OPENAI_API_KEY === 'your_openai_api_key_here'
     ) {
       console.log('🧪 Using mock vibelog generation for development/testing');
+
+      // OPTIMIZATION 2: Support streaming for mock responses too
+      if (stream) {
+        const mockContent = `---TEASER---
+What if I told you there's a secret weapon that makes content creation 3-4 times faster, more authentic, and accessible to everyone? The answer might shock you.
+
+Voice technology isn't just changing how we create content—it's revolutionizing the entire creative process. But here's what most people don't realize about what's coming next...
+---FULL---
+# The Future of Voice Technology: Transforming Content Creation
+
+Voice technology is revolutionizing how we create and share content. As we move toward a more connected digital world, the ability to transform spoken words into polished, publishable content represents a fundamental shift in content creation.
+
+## The Natural Evolution of Communication
+
+Speaking is our most natural form of communication. When we remove the friction of typing and formatting, we can focus purely on our ideas and let technology handle the rest. This liberation allows creators to:
+
+- **Express ideas more naturally** without the constraints of a keyboard
+- **Capture inspiration in real-time** wherever they are
+- **Reduce the barrier between thought and publication**
+
+## Why Voice Matters in Content Creation
+
+The implications for creators, writers, and content marketers are profound. We're moving toward a world where your voice becomes your pen, enabling:
+
+### Faster Content Production
+Voice-to-text technology can capture thoughts at the speed of speech, which is typically 3-4 times faster than typing.
+
+### Improved Accessibility
+Voice interfaces make content creation accessible to users with mobility challenges or those who prefer auditory interaction.
+
+### Enhanced Authenticity
+Content created through voice often retains a more conversational, authentic tone that resonates better with audiences.
+
+## The Technology Behind the Magic
+
+Modern voice technology combines several cutting-edge technologies:
+
+- **Advanced speech recognition** powered by neural networks
+- **Natural language processing** for context understanding
+- **AI-driven content optimization** for SEO and readability
+- **Automated formatting and structuring** for professional presentation
+
+## Looking Forward
+
+As voice technology continues to evolve, we can expect even more sophisticated features like real-time fact-checking, automatic citation generation, and multi-language content creation. The future of content creation is not just digital—it's conversational.
+
+*Ready to try voice-powered content creation? Start speaking your ideas into existence today.*`;
+
+        const encoder = new TextEncoder();
+        const readableStream = new ReadableStream({
+          async start(controller) {
+            // Simulate streaming by sending chunks
+            const words = mockContent.split(' ');
+            for (let i = 0; i < words.length; i++) {
+              const chunk = (i === 0 ? '' : ' ') + words[i];
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content: chunk })}\n\n`));
+              await new Promise(resolve => setTimeout(resolve, 30)); // Simulate delay
+            }
+            controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+            controller.close();
+          },
+        });
+
+        return new Response(readableStream, {
+          headers: {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+          },
+        });
+      }
+
       await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API delay
       return NextResponse.json({
         vibelogTeaser:
@@ -168,8 +241,10 @@ As voice technology continues to evolve, we can expect even more sophisticated f
       timeout: 60_000,
     });
 
+    // OPTIMIZATION 2: Enable streaming for real-time content delivery
+    // OPTIMIZATION 4: Use GPT-4o-mini for faster, better, cheaper generation
     const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+      model: config.ai.openai.model, // gpt-4o-mini: 3-4x faster than gpt-3.5-turbo
       messages: [
         {
           role: 'system',
@@ -224,9 +299,40 @@ Remember: Output BOTH sections in the exact format:
       ],
       temperature: 0.7,
       max_tokens: 4000,
+      stream: stream === true, // Enable streaming if requested
     });
 
-    const rawContent = completion.choices[0]?.message?.content || '';
+    // OPTIMIZATION 2: Return streaming response if requested
+    if (stream) {
+      const encoder = new TextEncoder();
+      const readableStream = new ReadableStream({
+        async start(controller) {
+          try {
+            for await (const chunk of completion as any) {
+              const content = chunk.choices[0]?.delta?.content || '';
+              if (content) {
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content })}\n\n`));
+              }
+            }
+            controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+            controller.close();
+          } catch (error) {
+            controller.error(error);
+          }
+        },
+      });
+
+      return new Response(readableStream, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+        },
+      });
+    }
+
+    // Non-streaming response (backward compatible)
+    const rawContent = (completion as any).choices[0]?.message?.content || '';
 
     // Parse the dual-content response
     const teaserMatch = rawContent.match(/---TEASER---\s*([\s\S]*?)---FULL---/);

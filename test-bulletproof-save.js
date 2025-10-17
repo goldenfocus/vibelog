@@ -26,7 +26,7 @@ const testScenarios = [
 
       try {
         // This would normally call the bulletproof save API
-        const response = await fetch('/api/save-vibelog-bulletproof', {
+        const response = await fetch('/api/save-vibelog', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(testData),

@@ -156,6 +156,14 @@ export default function ProcessingAnimation({
           _generateOk = true;
           // Capture the vibelog content for cover generation
           generatedVibelogContent = typeof result === 'string' ? result : '';
+
+          // OPTIMIZATION 1 & 3: Start cover generation immediately after content is ready
+          // Run in background without blocking the main flow
+          if (typeof onCoverComplete === 'function' && generatedVibelogContent) {
+            onCoverComplete(generatedVibelogContent).catch(error => {
+              console.error('Background cover generation failed:', error);
+            });
+          }
         })
         .catch(error => {
           console.error('Vibelog generation failed:', error);
@@ -212,33 +220,9 @@ export default function ProcessingAnimation({
         // Short dwell only; text already prepared at STRUCTURE
         await new Promise(res => setTimeout(res, 350));
       } else if (step.id === 'image') {
-        // Gate on real cover generation if provided
-        // Wait for vibelog content to be available with polling fallback
-        let pollAttempts = 0;
-        const maxPollAttempts = 50; // 5 seconds max
-
-        while (
-          (!generatedVibelogContent || generatedVibelogContent.length === 0) &&
-          pollAttempts < maxPollAttempts
-        ) {
-          await new Promise(res => setTimeout(res, 100));
-          pollAttempts++;
-        }
-
-        const start = performance.now();
-        if (typeof onCoverComplete === 'function') {
-          try {
-            // Pass the generated vibelog content to cover generation
-            await onCoverComplete(generatedVibelogContent);
-          } catch (error) {
-            console.error('Cover generation failed:', error);
-          }
-        }
-        const elapsed = performance.now() - start;
-        const minImage = 1200;
-        if (elapsed < minImage) {
-          await new Promise(res => setTimeout(res, minImage - elapsed));
-        }
+        // OPTIMIZATION 1: Cover generation now runs in background (started in generatePromise.then())
+        // Just show a brief animation for UX, don't block on actual generation
+        await new Promise(res => setTimeout(res, 800));
       } else {
         // Post steps: scale by generation time, keep UX snappy
         const base = Math.min(
@@ -259,7 +243,7 @@ export default function ProcessingAnimation({
     setActiveIndex(steps.length - 1);
     setIsAnimating(false);
     onAnimationComplete?.();
-  }, [createSteps, onTranscribeComplete, onGenerateComplete, onAnimationComplete, recordingTime]);
+  }, [createSteps, onTranscribeComplete, onGenerateComplete, onCoverComplete, onAnimationComplete, recordingTime]);
 
   useEffect(() => {
     if (!isVisible || isAnimating) {
