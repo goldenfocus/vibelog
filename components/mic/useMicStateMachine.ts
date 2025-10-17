@@ -430,7 +430,16 @@ export function useMicStateMachine(
       throw new Error('No transcription data available');
     }
 
-    const teaserResult = await vibelogAPI.processVibelogGeneration(transcriptionData);
+    // OPTIMIZATION 2: Enable streaming for real-time content delivery
+    const teaserResult = await vibelogAPI.processVibelogGeneration(transcriptionData, {
+      enableStreaming: true,
+      onStreamChunk: (chunk: string) => {
+        // Optional: Update UI with streaming chunks in real-time
+        if (DEBUG_MODE) {
+          console.log('📝 Streaming chunk received:', chunk.substring(0, 20) + '...');
+        }
+      }
+    });
     setVibelogContent(teaserResult.content);
     setFullVibelogContent(teaserResult.fullContent || teaserResult.content);
     setIsTeaserContent(teaserResult.isTeaser);

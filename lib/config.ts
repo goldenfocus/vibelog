@@ -20,7 +20,7 @@ export const config = {
   ai: {
     openai: {
       apiKey: env.OPENAI_API_KEY,
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4o-mini', // Upgraded from gpt-3.5-turbo: 3-4x faster, better quality, cheaper
       whisperModel: 'whisper-1',
     },
     anthropic: {

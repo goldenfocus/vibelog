@@ -238,25 +238,105 @@ export function useVibelogAPI(
     }
   };
 
-  const processVibelogGeneration = async (transcriptionData: string): Promise<TeaserResult> => {
+  const processVibelogGeneration = async (
+    transcriptionData: string,
+    options?: { enableStreaming?: boolean; onStreamChunk?: (chunk: string) => void }
+  ): Promise<TeaserResult> => {
     try {
       if (!transcriptionData) {
         console.error('No transcription data available for vibelog generation');
         throw new Error('No transcription data available');
       }
 
+      // OPTIMIZATION 2: Enable streaming for faster perceived performance
+      const enableStreaming = options?.enableStreaming ?? false;
+
       const vibelogResponse = await fetch('/api/generate-vibelog', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ transcription: transcriptionData }),
+        body: JSON.stringify({
+          transcription: transcriptionData,
+          stream: enableStreaming
+        }),
       });
 
       if (!vibelogResponse.ok) {
         await handleAPIError(vibelogResponse);
       }
 
+      // OPTIMIZATION 2: Handle streaming response
+      if (enableStreaming && vibelogResponse.headers.get('content-type')?.includes('text/event-stream')) {
+        const reader = vibelogResponse.body?.getReader();
+        const decoder = new TextDecoder();
+        let fullContent = '';
+
+        if (reader) {
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+
+              const chunk = decoder.decode(value, { stream: true });
+              const lines = chunk.split('\n');
+
+              for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                  const data = line.slice(6);
+                  if (data === '[DONE]') {
+                    break;
+                  }
+                  try {
+                    const parsed = JSON.parse(data);
+                    if (parsed.content) {
+                      fullContent += parsed.content;
+                      options?.onStreamChunk?.(parsed.content);
+                    }
+                  } catch (e) {
+                    // Ignore parse errors
+                  }
+                }
+              }
+            }
+          } finally {
+            reader.releaseLock();
+          }
+        }
+
+        // Parse the streamed content
+        const teaserMatch = fullContent.match(/---TEASER---\s*([\s\S]*?)---FULL---/);
+        const fullMatch = fullContent.match(/---FULL---\s*([\s\S]*?)$/);
+
+        let teaser = '';
+        let vibelogContent = '';
+
+        if (teaserMatch && fullMatch) {
+          teaser = teaserMatch[1].trim();
+          vibelogContent = fullMatch[1].trim();
+        } else {
+          vibelogContent = fullContent;
+          teaser = createTeaserContent(vibelogContent).content;
+        }
+
+        const teaserResult: TeaserResult = {
+          content: teaser,
+          isTeaser: true,
+          fullContent: vibelogContent,
+        };
+
+        // Store the FULL content for cover generation
+        processingDataRef.current.vibelogContentData = vibelogContent;
+
+        if (DEBUG_MODE) {
+          console.log('🎯 [VIBELOG-GEN-STREAM] Teaser length:', teaserResult.content.length);
+          console.log('🎯 [VIBELOG-GEN-STREAM] Full content length:', vibelogContent.length);
+        }
+
+        return teaserResult;
+      }
+
+      // Non-streaming response (backward compatible)
       const { vibelogTeaser, vibelogContent }: VibelogGenerationResponse =
         await vibelogResponse.json();
 

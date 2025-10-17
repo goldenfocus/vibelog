@@ -211,7 +211,7 @@ export function useBulletproofSave() {
         }
       };
 
-      const response = await fetch('/api/save-vibelog-bulletproof', {
+      const response = await fetch('/api/save-vibelog', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
