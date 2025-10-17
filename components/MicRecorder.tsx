@@ -2,6 +2,8 @@
 
 /* eslint-disable @next/next/no-img-element */
 
+import { useState } from 'react';
+
 import AudioPlayer from '@/components/AudioPlayer';
 import Controls from '@/components/mic/Controls';
 import ProcessingAnimation from '@/components/mic/ProcessingAnimation';
@@ -26,6 +28,7 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
     transcription,
     liveTranscript,
     vibelogContent,
+    fullVibelogContent,
     parsedVibelog,
     isTeaserContent,
     isEditing,
@@ -57,8 +60,20 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
     completeProcessing,
   } = useMicStateMachine({ remixContent });
 
+  // State to track whether user wants to see full content
+  const [showingFullContent, setShowingFullContent] = useState(false);
+
   const showRecordingUI = recordingState === 'recording';
   const showCompletedUI = recordingState === 'complete';
+
+  // Handler for "Read More" button
+  const handleReadMore = () => {
+    setShowingFullContent(true);
+  };
+
+  // Determine which content to display
+  const displayContent = showingFullContent ? fullVibelogContent || vibelogContent : vibelogContent;
+  const shouldShowReadMore = isTeaserContent && !showingFullContent && fullVibelogContent && fullVibelogContent !== vibelogContent;
 
   return (
     <div className="w-full">
@@ -145,8 +160,9 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
                 )}
 
                 <VibelogContentRenderer
-                  content={parsedVibelog.body || vibelogContent}
-                  isTeaser={isTeaserContent}
+                  content={parsedVibelog.body || displayContent}
+                  isTeaser={shouldShowReadMore}
+                  onReadMore={handleReadMore}
                 />
               </div>
 
