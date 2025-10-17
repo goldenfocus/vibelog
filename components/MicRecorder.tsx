@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 
 import AudioPlayer from '@/components/AudioPlayer';
 import Controls from '@/components/mic/Controls';
@@ -78,6 +78,25 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
   // Determine which content to display
   const displayContent = showingFullContent ? fullVibelogContent || vibelogContent : vibelogContent;
   const shouldShowReadMore = isTeaserContent && !showingFullContent && fullVibelogContent && fullVibelogContent !== vibelogContent;
+
+  // Parse the displayed content (not just the teaser) to extract title and body
+  const displayParsed = useMemo(() => {
+    const lines = displayContent.split(/\r?\n/);
+    let title: string | null = null;
+    let start = 0;
+
+    for (let i = 0; i < lines.length; i++) {
+      const candidate = lines[i].trim();
+      if (candidate.startsWith('# ')) {
+        title = candidate.replace(/^#\s+/, '').trim();
+        start = i + 1;
+        break;
+      }
+    }
+
+    const body = lines.slice(start).join('\n');
+    return { title, body };
+  }, [displayContent]);
 
   // Debug logging
   if (showCompletedUI && process.env.NODE_ENV !== 'production') {
@@ -156,9 +175,9 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
               </div>
 
               <div className="p-8">
-                {parsedVibelog.title && (
+                {displayParsed.title && (
                   <h1 className="mb-4 bg-gradient-electric bg-clip-text text-3xl font-bold leading-tight text-transparent sm:text-4xl">
-                    {parsedVibelog.title}
+                    {displayParsed.title}
                   </h1>
                 )}
 
@@ -176,7 +195,7 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
                 )}
 
                 <VibelogContentRenderer
-                  content={parsedVibelog.body || displayContent}
+                  content={displayParsed.body || displayContent}
                   isTeaser={shouldShowReadMore}
                   onReadMore={handleReadMore}
                 />
