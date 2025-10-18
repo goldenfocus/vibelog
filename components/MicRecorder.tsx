@@ -72,6 +72,15 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
     console.log('📖 [READ-MORE] Teaser length:', vibelogContent.length);
     console.log('📖 [READ-MORE] Full length:', fullVibelogContent.length);
     console.log('📖 [READ-MORE] Are they different?', fullVibelogContent !== vibelogContent);
+    console.log('📖 [READ-MORE] Is logged in?', isLoggedIn);
+
+    // If not logged in, redirect to sign-in page
+    if (!isLoggedIn) {
+      console.log('📖 [READ-MORE] Redirecting to sign-in...');
+      window.location.href = '/auth/signin?returnTo=' + encodeURIComponent(window.location.pathname);
+      return;
+    }
+
     setShowingFullContent(true);
   };
 
@@ -158,15 +167,16 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
                 </div>
 
                 <PublishActions
-                  content={vibelogContent}
+                  content={displayContent}
+                  title={displayParsed.title || undefined}
                   isLoggedIn={isLoggedIn}
                   isTeaserContent={isTeaserContent}
                   onCopy={() => {
-                    void handleCopy(vibelogContent);
+                    void handleCopy(displayContent);
                   }}
                   onEdit={beginEdit}
                   onShare={() => {
-                    void handleShare(vibelogContent);
+                    void handleShare(displayContent);
                   }}
                   onUpgradePrompt={(message, benefits) =>
                     setUpgradePrompt({ visible: true, message, benefits })
@@ -233,15 +243,16 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
 
                 <div className="p-6 pt-0">
                   <PublishActions
-                    content={vibelogContent}
+                    content={displayContent}
+                    title={displayParsed.title || undefined}
                     isLoggedIn={isLoggedIn}
                     isTeaserContent={isTeaserContent}
                     onCopy={() => {
-                      void handleCopy(vibelogContent);
+                      void handleCopy(displayContent);
                     }}
                     onEdit={beginEdit}
                     onShare={() => {
-                      void handleShare(vibelogContent);
+                      void handleShare(displayContent);
                     }}
                     onUpgradePrompt={(message, benefits) =>
                       setUpgradePrompt({ visible: true, message, benefits })
