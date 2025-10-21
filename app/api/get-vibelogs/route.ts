@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
     const supabase = await createServerSupabaseClient();
 
-    // Fetch published vibelogs with author info
+    // Fetch published vibelogs
     const { data: vibelogs, error } = await supabase
       .from('vibelogs')
       .select(
@@ -28,12 +28,7 @@ export async function GET(request: NextRequest) {
         like_count,
         share_count,
         read_time,
-        user_id,
-        profiles (
-          username,
-          display_name,
-          avatar_url
-        )
+        user_id
       `
       )
       .eq('is_published', true)
@@ -49,27 +44,43 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Get unique user IDs
+    const userIds = [...new Set((vibelogs || []).map((v: any) => v.user_id).filter(Boolean))];
+
+    // Fetch profiles for all users (if any)
+    let profilesMap = new Map();
+    if (userIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url')
+        .in('id', userIds);
+
+      if (profiles) {
+        profiles.forEach((profile: any) => {
+          profilesMap.set(profile.id, profile);
+        });
+      }
+    }
+
     // Transform data to include author info
     const transformedVibelogs = (vibelogs || []).map((vibelog: any) => {
-      // profiles is returned as an array or object depending on relationship
-      const profile = Array.isArray(vibelog.profiles) ? vibelog.profiles[0] : vibelog.profiles;
+      const profile = vibelog.user_id ? profilesMap.get(vibelog.user_id) : null;
 
       return {
         ...vibelog,
-        author:
-          vibelog.user_id && profile
-            ? {
-                username: profile.username || 'user',
-                display_name: profile.display_name || 'Vibelog User',
-                avatar_url: profile.avatar_url || null,
-              }
-            : {
-                username: 'anonymous',
-                display_name: 'Anonymous',
-                avatar_url: null,
-              },
-        // Remove the profiles join data
-        profiles: undefined,
+        author: profile
+          ? {
+              username: profile.username || 'user',
+              display_name: profile.display_name || 'Vibelog User',
+              avatar_url: profile.avatar_url || null,
+            }
+          : {
+              username: 'anonymous',
+              display_name: 'Anonymous',
+              avatar_url: null,
+            },
+        // Remove user_id from response
+        user_id: undefined,
       };
     });
 

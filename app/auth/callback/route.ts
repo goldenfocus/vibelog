@@ -37,7 +37,14 @@ export async function GET(request: NextRequest) {
   try {
     console.log('🔄 [OAuth Callback] Starting code exchange...');
     const requestUrl = new URL(request.url);
-    const response = NextResponse.redirect(new URL('/dashboard', requestUrl.origin));
+
+    // Check for VibeLog claim parameters
+    const claimSessionId = searchParams.get('claim');
+    const returnTo = searchParams.get('returnTo');
+
+    // Default redirect to dashboard
+    let redirectUrl = new URL('/dashboard', requestUrl.origin);
+    const response = NextResponse.redirect(redirectUrl);
 
     // Import cookies
     const { cookies } = await import('next/headers');
@@ -100,11 +107,58 @@ export async function GET(request: NextRequest) {
     console.log(
       '✅ [OAuth Callback] Success! User:',
       data.user?.email,
-      'Redirecting to dashboard...'
+      'Session established'
     );
 
-    // Redirect to dashboard (AuthProvider will cache session)
-    return response;
+    // === HANDLE VIBELOG CLAIMING ===
+    if (claimSessionId && returnTo) {
+      console.log('🔐 [OAuth Callback] Claiming anonymous VibeLog...');
+      try {
+        // Extract public slug from returnTo (/v/[slug])
+        const publicSlug = returnTo.split('/v/')[1];
+
+        if (publicSlug) {
+          // Call claim-vibelog API
+          const claimResponse = await fetch(`${requestUrl.origin}/api/claim-vibelog`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Cookie: response.headers.get('Set-Cookie') || '',
+            },
+            body: JSON.stringify({
+              sessionId: claimSessionId,
+              publicSlug: publicSlug,
+            }),
+          });
+
+          if (claimResponse.ok) {
+            const claimData = await claimResponse.json();
+            console.log('✅ [OAuth Callback] VibeLog claimed successfully!');
+            console.log('📍 [OAuth Callback] New URL:', claimData.newUrl);
+
+            // Redirect to the newly owned VibeLog
+            redirectUrl = new URL(claimData.newUrl, requestUrl.origin);
+            return NextResponse.redirect(redirectUrl);
+          } else {
+            const claimError = await claimResponse.json();
+            console.error('❌ [OAuth Callback] Failed to claim VibeLog:', claimError);
+            // Fall through to redirect to returnTo anyway
+            redirectUrl = new URL(returnTo, requestUrl.origin);
+            return NextResponse.redirect(redirectUrl);
+          }
+        }
+      } catch (claimErr) {
+        console.error('💥 [OAuth Callback] Error claiming VibeLog:', claimErr);
+        // Fall through to normal redirect
+      }
+    }
+
+    // Redirect to dashboard or returnTo (AuthProvider will cache session)
+    if (returnTo && !claimSessionId) {
+      redirectUrl = new URL(returnTo, requestUrl.origin);
+    }
+
+    return NextResponse.redirect(redirectUrl);
   } catch (err) {
     console.error('Callback error:', err);
     return NextResponse.redirect(

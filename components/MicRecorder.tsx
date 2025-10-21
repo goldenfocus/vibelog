@@ -29,7 +29,6 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
     liveTranscript,
     vibelogContent,
     fullVibelogContent,
-    parsedVibelog,
     isTeaserContent,
     isEditing,
     editedContent,
@@ -107,17 +106,18 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
     return { title, body };
   }, [displayContent]);
 
-  // Debug logging
-  if (showCompletedUI && process.env.NODE_ENV !== 'production') {
-    console.log('🔍 [MICRECORDER] Content Debug:', {
-      isTeaserContent,
-      showingFullContent,
-      shouldShowReadMore,
-      teaserLength: vibelogContent.length,
-      fullLength: fullVibelogContent.length,
-      areDifferent: fullVibelogContent !== vibelogContent,
-    });
-  }
+  // Debug logging - disabled to reduce console noise
+  // Uncomment if you need to debug content display issues
+  // if (showCompletedUI && process.env.NODE_ENV !== 'production') {
+  //   console.log('🔍 [MICRECORDER] Content Debug:', {
+  //     isTeaserContent,
+  //     showingFullContent,
+  //     shouldShowReadMore,
+  //     teaserLength: vibelogContent.length,
+  //     fullLength: fullVibelogContent.length,
+  //     areDifferent: fullVibelogContent !== vibelogContent,
+  //   });
+  // }
 
   return (
     <div className="w-full">
@@ -192,13 +192,13 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
                 )}
 
                 {coverImage && (
-                  <div className="mb-6">
+                  <div className="mb-6 overflow-hidden rounded-2xl border border-border/10 shadow-md">
                     <img
                       src={coverImage.url}
                       alt={coverImage.alt}
                       width={coverImage.width}
                       height={coverImage.height}
-                      className="h-auto w-full rounded-2xl border border-border/10 shadow-md"
+                      className="h-auto w-full object-cover"
                       loading="eager"
                     />
                   </div>

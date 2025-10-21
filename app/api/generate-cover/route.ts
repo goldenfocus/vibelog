@@ -1,6 +1,7 @@
 import crypto from 'crypto'
 
 import { NextRequest, NextResponse } from 'next/server'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 import OpenAI from 'openai'
 
 import { styleFromTone, buildImagePrompt, buildAltText, watermarkAndResize } from '@/lib/image'
@@ -30,10 +31,10 @@ export async function POST(req: NextRequest) {
     const { style, label } = styleFromTone(body.tone)
     const prompt = buildImagePrompt(title, body.summary, body.tone)
 
-    // If OpenAI is not configured, return a placeholder
-    if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === 'dummy_key' || process.env.OPENAI_API_KEY === 'your_openai_api_key_here') {
+    // If Gemini is not configured, return a placeholder
+    if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === 'dummy_key' || process.env.GEMINI_API_KEY === 'your_gemini_api_key_here') {
       if (process.env.NODE_ENV !== 'production') {
-        console.log('🖼️ [COVER-GEN] Using placeholder image (no OpenAI API key configured)')
+        console.log('🖼️ [COVER-GEN] Using placeholder image (no Gemini API key configured)')
       }
       const alt = buildAltText(title, label, body.summary)
       return NextResponse.json({
@@ -47,30 +48,107 @@ export async function POST(req: NextRequest) {
       })
     }
 
+    // Detect device from user-agent for adaptive aspect ratio (mobile-first)
+    const userAgent = req.headers.get('user-agent') || ''
+    const isMobile = /iPhone|iPad|iPod|Android|Mobile|webOS|BlackBerry|IEMobile|Opera Mini/i.test(userAgent)
+
+    // Default to 9:16 (mobile-first) since we're "mostly mobile"
+    // Switch to 16:9 for desktop devices
+    const aspectRatio = isMobile ? '9:16' : '16:9'
+    const [targetWidth, targetHeight] = isMobile ? [1080, 1920] : [1920, 1080]
+
+    console.log(`🖼️ [COVER-GEN] Generating image with Gemini 2.5 Flash - Device: ${isMobile ? 'Mobile' : 'Desktop'}, Aspect: ${aspectRatio}`)
+
     let raw: Buffer
+    let useGemini = true
+
+    // Try Gemini first if available
     try {
-      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-      const img = await openai.images.generate({
-        model: 'dall-e-3',
-        prompt,
-        size: '1024x1024',
-        quality: 'standard',
-        response_format: 'b64_json',
+      if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === 'your_gemini_api_key_here') {
+        throw new Error('Gemini API key not configured')
+      }
+
+      const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-image' })
+
+      const result = await model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: {
+          maxOutputTokens: 1290, // Each image is 1290 tokens
+        }
       })
-      const b64 = img.data?.[0]?.b64_json
+
+      const parts = result.response.candidates?.[0]?.content?.parts
+
+      if (!parts || parts.length === 0) {
+        throw new Error('Image generation returned no parts')
+      }
+
+      // Find the image part
+      const imagePart = parts.find(part => part.inlineData)
+
+      if (!imagePart || !imagePart.inlineData) {
+        throw new Error('Image generation returned no image data')
+      }
+
+      const b64 = imagePart.inlineData.data
       if (!b64) {throw new Error('Image generation returned empty data')}
       raw = Buffer.from(b64, 'base64')
-    } catch (err) {
-      console.error('OpenAI image generation error:', err)
-      const alt = buildAltText(title, label, body.summary)
-      return NextResponse.json({ url: '/og-image.png', width: 1200, height: 630, alt, style, prompt, success: true })
+
+      console.log('✅ Image generated successfully with Gemini 2.5 Flash')
+    } catch (geminiErr: any) {
+      console.error('Gemini image generation error:', geminiErr.message)
+
+      // If quota error or API key issue, fall back to DALL-E 3
+      if (geminiErr.message?.includes('quota') || geminiErr.message?.includes('429') || geminiErr.message?.includes('billing')) {
+        console.log('⚠️  Gemini quota/billing issue - falling back to DALL-E 3...')
+        useGemini = false
+      } else {
+        // Other errors, return placeholder
+        const alt = buildAltText(title, label, body.summary)
+        return NextResponse.json({ url: '/og-image.png', width: 1200, height: 630, alt, style, prompt, success: true })
+      }
+    }
+
+    // Fallback to DALL-E 3
+    if (!useGemini) {
+      try {
+        if (!process.env.OPENAI_API_KEY) {
+          throw new Error('OpenAI API key not configured')
+        }
+
+        console.log('🎨 Generating image with DALL-E 3 (fallback)...')
+        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+
+        // DALL-E 3 only supports 1024x1024, 1024x1792, 1792x1024
+        // Map our aspect ratios to DALL-E sizes
+        const dalleSize = isMobile ? '1024x1792' : '1792x1024' // Portrait for mobile, landscape for desktop
+
+        const img = await openai.images.generate({
+          model: 'dall-e-3',
+          prompt,
+          size: dalleSize,
+          quality: 'standard',
+          response_format: 'b64_json',
+        })
+
+        const b64 = img.data?.[0]?.b64_json
+        if (!b64) {throw new Error('DALL-E 3 returned empty data')}
+        raw = Buffer.from(b64, 'base64')
+
+        console.log('✅ Image generated successfully with DALL-E 3')
+      } catch (dalleErr) {
+        console.error('DALL-E 3 generation error:', dalleErr)
+        const alt = buildAltText(title, label, body.summary)
+        return NextResponse.json({ url: '/og-image.png', width: 1200, height: 630, alt, style, prompt, success: true })
+      }
     }
 
     const { buffer, width, height } = await watermarkAndResize({
       image: raw,
       username: body.username,
-      width: 1200,
-      height: 630,
+      width: targetWidth,
+      height: targetHeight,
       title,
       description: body.summary,
       keywords: body.tags || [],
@@ -78,7 +156,7 @@ export async function POST(req: NextRequest) {
 
     const hash = crypto.createHash('sha1').update(title + (body.summary || '')).digest('hex').slice(0, 10)
     const dir = body.postId ? `posts/${body.postId}` : `covers`
-    const key = `${dir}/${slugify(title)}-${hash}-1200x630.jpg`
+    const key = `${dir}/${slugify(title)}-${hash}-${targetWidth}x${targetHeight}.jpg`
 
     let url = `/og-image.png`
     try {

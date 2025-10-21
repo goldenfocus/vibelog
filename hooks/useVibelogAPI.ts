@@ -331,6 +331,12 @@ export function useVibelogAPI(
         // Store the FULL content for cover generation
         processingDataRef.current.vibelogContentData = vibelogContent;
 
+        console.log('💾 [VIBELOG-GEN-STREAM] Stored in processingDataRef:', {
+          length: vibelogContent.length,
+          refHasData: !!processingDataRef.current.vibelogContentData,
+          preview: vibelogContent.substring(0, 100)
+        });
+
         if (DEBUG_MODE) {
           console.log('🎯 [VIBELOG-GEN-STREAM] Teaser length:', teaserResult.content.length);
           console.log('🎯 [VIBELOG-GEN-STREAM] Full content length:', vibelogContent.length);

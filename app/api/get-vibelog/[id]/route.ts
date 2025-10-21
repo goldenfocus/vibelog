@@ -10,7 +10,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const supabase = await createServerSupabaseClient();
 
-    // Fetch the vibelog with author info
+    // Fetch the vibelog
     const { data: vibelog, error } = await supabase
       .from('vibelogs')
       .select(
@@ -28,12 +28,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         read_time,
         user_id,
         is_published,
-        is_public,
-        profiles (
-          username,
-          display_name,
-          avatar_url
-        )
+        is_public
       `
       )
       .eq('id', id)
@@ -69,25 +64,33 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       );
     }
 
-    // Transform data to include author info
-    const profile = Array.isArray(vibelog.profiles) ? vibelog.profiles[0] : vibelog.profiles;
+    // Fetch author profile if vibelog has a user_id
+    let profile = null;
+    if (vibelog.user_id) {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('username, display_name, avatar_url')
+        .eq('id', vibelog.user_id)
+        .single();
 
+      profile = profileData;
+    }
+
+    // Transform data to include author info
     const transformedVibelog = {
       ...vibelog,
-      author:
-        vibelog.user_id && profile
-          ? {
-              username: profile.username || 'user',
-              display_name: profile.display_name || 'Vibelog User',
-              avatar_url: profile.avatar_url || null,
-            }
-          : {
-              username: 'anonymous',
-              display_name: 'Anonymous',
-              avatar_url: null,
-            },
-      // Remove the profiles join data and internal fields
-      profiles: undefined,
+      author: profile
+        ? {
+            username: profile.username || 'user',
+            display_name: profile.display_name || 'Vibelog User',
+            avatar_url: profile.avatar_url || null,
+          }
+        : {
+            username: 'anonymous',
+            display_name: 'Anonymous',
+            avatar_url: null,
+          },
+      // Remove internal fields
       user_id: undefined, // Don't expose user_id to client
       is_published: undefined,
       is_public: undefined,
