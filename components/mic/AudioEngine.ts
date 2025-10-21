@@ -163,17 +163,31 @@ export class AudioEngine {
   stopRecordingAndRelease(): void {
     this.stopRecording();
 
-    // Stop MediaStream tracks to remove browser recording indicator
-    if (this.streamRef) {
-      this.streamRef.getTracks().forEach(track => track.stop());
-      this.streamRef = null;
+    // Safely stop MediaStream tracks to remove browser recording indicator
+    try {
+      if (this.streamRef) {
+        this.streamRef.getTracks().forEach(track => {
+          try {
+            track.stop();
+          } catch {
+            // Ignore errors when stopping tracks
+          }
+        });
+        this.streamRef = null;
+      }
+    } catch {
+      // Ignore stream cleanup errors
     }
 
-    // Close AudioContext
-    if (this.audioContextRef) {
-      this.audioContextRef.close();
+    // Safely close AudioContext
+    try {
+      if (this.audioContextRef && this.audioContextRef.state !== 'closed') {
+        this.audioContextRef.close();
+      }
       this.audioContextRef = null;
       this.analyserRef = null;
+    } catch {
+      // Ignore audio context cleanup errors
     }
   }
 
@@ -258,15 +272,32 @@ export class AudioEngine {
     this.isCleanedUp = true;
     this.stopRecording();
 
-    if (this.streamRef) {
-      this.streamRef.getTracks().forEach(track => track.stop());
-      this.streamRef = null;
+    // Safely stop media stream tracks
+    try {
+      if (this.streamRef) {
+        this.streamRef.getTracks().forEach(track => {
+          try {
+            track.stop();
+          } catch (err) {
+            // Ignore errors when stopping tracks during cleanup
+            // This can happen during navigation/unmount
+          }
+        });
+        this.streamRef = null;
+      }
+    } catch {
+      // Ignore stream cleanup errors
     }
 
-    if (this.audioContextRef) {
-      this.audioContextRef.close();
+    // Safely close audio context
+    try {
+      if (this.audioContextRef && this.audioContextRef.state !== 'closed') {
+        this.audioContextRef.close();
+      }
       this.audioContextRef = null;
       this.analyserRef = null;
+    } catch {
+      // Ignore audio context cleanup errors
     }
 
     if (this.recordingTimer) {

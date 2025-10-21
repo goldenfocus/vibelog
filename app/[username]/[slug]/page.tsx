@@ -17,7 +17,19 @@ interface PageProps {
 async function getVibelog(username: string, slug: string) {
   const supabase = await createServerSupabaseClient();
 
-  // Query vibelog by username + slug
+  // First get the user's ID from their username
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id, username, display_name, avatar_url')
+    .eq('username', username)
+    .single();
+
+  if (!profile) {
+    console.error('User not found:', username);
+    return null;
+  }
+
+  // Query vibelog by user_id + slug
   const { data, error } = await supabase
     .from('vibelogs')
     .select(
@@ -36,16 +48,11 @@ async function getVibelog(username: string, slug: string) {
       read_time,
       word_count,
       tags,
-      user_id,
-      profiles!vibelogs_user_id_fkey (
-        username,
-        display_name,
-        avatar_url
-      )
+      user_id
     `
     )
     .eq('slug', slug)
-    .eq('profiles.username', username)
+    .eq('user_id', profile.id)
     .eq('is_published', true)
     .eq('is_public', true)
     .single();
@@ -57,7 +64,11 @@ async function getVibelog(username: string, slug: string) {
 
   return {
     ...data,
-    author: Array.isArray(data.profiles) ? data.profiles[0] : data.profiles,
+    author: {
+      username: profile.username,
+      display_name: profile.display_name,
+      avatar_url: profile.avatar_url,
+    },
   };
 }
 

@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { createServerSupabaseClient } from '@/lib/supabase';
+import {
+  generatePublicSlug,
+  generateUserSlug,
+  generateVibelogSEO,
+} from '@/lib/seo';
 
 export const runtime = 'nodejs';
 
@@ -69,19 +74,7 @@ function generateSessionId(): string {
   return `anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
 
-function generateSlug(title: string, vibelogId?: string): string {
-  // Create URL-friendly slug from title
-  const baseSlug = title
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '') // Remove special chars
-    .replace(/\s+/g, '-') // Replace spaces with hyphens
-    .replace(/-+/g, '-') // Replace multiple hyphens with single
-    .substring(0, 80); // Limit length
-
-  // Add unique suffix if we have a vibelog ID (for uniqueness)
-  const suffix = vibelogId ? `-${vibelogId.substring(0, 8)}` : '';
-  return `${baseSlug}${suffix}`.substring(0, 100);
-}
+// Removed: Now using centralized utilities from @/lib/seo
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   let requestBody: SaveVibelogRequest | null = null;
@@ -142,20 +135,28 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       data: { user },
     } = await supabase.auth.getUser();
     const userId = user?.id || null;
+    const isAnonymous = !userId;
 
-    // Generate slug from title (temporary slug without ID, will update after insert)
-    const temporarySlug = generateSlug(title);
+    // Generate appropriate slug based on auth status
+    const publicSlug = isAnonymous ? generatePublicSlug(title) : null;
+    const userSlug = userId ? generateUserSlug(title, sessionId) : null;
+
+    // Generate SEO metadata using centralized utility
+    const seoMetadata = generateVibelogSEO(title, fullContent, teaserContent);
 
     // Prepare data object with both teaser and full content
     vibelogData = {
-      user_id: userId, // SECURITY: Only use server-verified userId
-      session_id: sessionId,
+      user_id: userId, // SECURITY: Only use server-verified userId (NULL for anonymous)
+      anonymous_session_id: isAnonymous ? sessionId : null, // Track session for ownership claim
+      session_id: sessionId, // Keep for backward compatibility
       title: title,
-      slug: temporarySlug, // Will be updated with ID suffix after insert
+      slug: userSlug, // User-based slug (NULL for anonymous)
+      public_slug: publicSlug, // Public slug for anonymous posts
       teaser: teaserContent, // Store AI-generated teaser for public preview
-      content: fullContent, // Store full content for logged-in users
+      content: fullContent, // Store full content
       transcription: transcription,
-      cover_image_url: requestBody.coverImage?.url || null,
+      cover_url: requestBody.coverImage?.url || null, // Use new column name
+      cover_image_url: requestBody.coverImage?.url || null, // Keep old for compatibility
       cover_image_alt: requestBody.coverImage?.alt || null,
       cover_image_width: requestBody.coverImage?.width || null,
       cover_image_height: requestBody.coverImage?.height || null,
@@ -167,8 +168,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       word_count: wordCount,
       read_time: readTime,
       tags: ['auto-generated'],
-      is_public: false,
-      is_published: false,
+      seo_title: seoMetadata.title,
+      seo_description: seoMetadata.description,
+      // ALL vibelogs are immediately public and published (TikTok/Medium style feed)
+      is_public: true,
+      is_published: true,
+      published_at: new Date().toISOString(),
       view_count: 0,
       share_count: 0,
       like_count: 0,
@@ -201,16 +206,29 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
       const vibelogId = directResult.id;
 
-      // Update slug with unique ID suffix for guaranteed uniqueness
-      const finalSlug = generateSlug(title, vibelogId);
-      await supabase.from('vibelogs').update({ slug: finalSlug }).eq('id', vibelogId);
+      // Update slug with unique ID suffix for guaranteed uniqueness (for owned posts only)
+      let finalSlug = publicSlug; // Use public slug for anonymous
+      let publicUrl = publicSlug ? `/v/${publicSlug}` : null;
+
+      if (userId) {
+        finalSlug = generateUserSlug(title, vibelogId);
+        await supabase.from('vibelogs').update({ slug: finalSlug }).eq('id', vibelogId);
+        publicUrl = `/@${user?.user_metadata?.username || user?.email?.split('@')[0] || 'user'}/${finalSlug}`;
+      }
 
       console.log('✅ [VIBELOG-SAVE] Direct insert successful:', vibelogId, 'Slug:', finalSlug);
+      console.log('📍 [VIBELOG-SAVE] Public URL:', publicUrl);
+
       return NextResponse.json({
         success: true,
         vibelogId: vibelogId,
         slug: finalSlug,
-        message: 'Vibelog saved successfully',
+        publicUrl: publicUrl,
+        isAnonymous: isAnonymous,
+        sessionId: isAnonymous ? sessionId : undefined, // Return session ID for claim later
+        message: isAnonymous
+          ? 'Vibelog published to community! Sign in to claim ownership.'
+          : 'Vibelog published to community successfully!',
         warnings: warnings.length > 0 ? warnings : undefined,
       });
     } catch (directInsertError) {

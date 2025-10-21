@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 
 import MicRecorder from '@/components/MicRecorder';
 import Navigation from '@/components/Navigation';
+import { OnboardingModal } from '@/components/OnboardingModal';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useI18n } from '@/components/providers/I18nProvider';
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const [vibelogs, setVibelogs] = useState<Array<any>>([]);
   const [loadingVibelogs, setLoadingVibelogs] = useState(true);
+  const [showClaimToast, setShowClaimToast] = useState(false);
 
   // Transfer anonymous vibelogs to user account (background, non-blocking)
   const { transferred, count } = useVibelogTransfer(user?.id);
@@ -31,7 +33,9 @@ export default function DashboardPage() {
       }
 
       const supabase = createClient();
-      const { data, error } = await supabase
+
+      // Fetch vibelogs
+      const { data: vibelogsData, error } = await supabase
         .from('vibelogs')
         .select(
           `
@@ -47,37 +51,61 @@ export default function DashboardPage() {
           like_count,
           share_count,
           read_time,
-          user_id,
-          profiles!vibelogs_user_id_fkey (
-            username,
-            display_name,
-            avatar_url
-          )
+          user_id
         `
         )
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(10);
 
-      if (!error && data) {
-        // Transform data to match VibelogCard interface
-        const transformedData = data.map(v => ({
-          ...v,
-          author: Array.isArray(v.profiles) ? v.profiles[0] : v.profiles,
-        }));
-        setVibelogs(transformedData);
+      if (error) {
+        console.error('Error fetching vibelogs:', error);
+        setLoadingVibelogs(false);
+        return;
       }
+
+      if (!vibelogsData || vibelogsData.length === 0) {
+        setVibelogs([]);
+        setLoadingVibelogs(false);
+        return;
+      }
+
+      // Fetch user's profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('username, display_name, avatar_url')
+        .eq('id', user.id)
+        .single();
+
+      // Transform data to match VibelogCard interface
+      const transformedData = vibelogsData.map(v => ({
+        ...v,
+        author: profile || {
+          username: user.user_metadata?.username || 'user',
+          display_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+          avatar_url: user.user_metadata?.avatar_url || null,
+        },
+      }));
+
+      setVibelogs(transformedData);
       setLoadingVibelogs(false);
     }
 
     fetchVibelogs();
-  }, [user?.id, transferred]); // Refetch when vibelogs are transferred
+  }, [user?.id, user?.email, user?.user_metadata, transferred]); // Refetch when vibelogs are transferred
 
-  // Show optional success message when transfer completes
+  // Show success message when transfer completes
   useEffect(() => {
     if (transferred && count > 0) {
       console.log(`✅ ${count} vibelogs transferred to your account`);
-      // Could show a toast notification here if desired
+      setShowClaimToast(true);
+
+      // Auto-hide toast after 5 seconds
+      const timer = setTimeout(() => {
+        setShowClaimToast(false);
+      }, 5000);
+
+      return () => clearTimeout(timer);
     }
   }, [transferred, count]);
 
@@ -183,6 +211,45 @@ export default function DashboardPage() {
           </div>
         </div>
       </main>
+
+      {/* Claim Success Toast */}
+      {showClaimToast && (
+        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 animate-[toastSlideUp_0.4s_ease-out]">
+          <div className="max-w-md rounded-xl border border-electric/30 bg-card/95 px-6 py-4 shadow-xl backdrop-blur-sm">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-electric/10">
+                <span className="text-2xl">🎉</span>
+              </div>
+              <div>
+                <p className="font-semibold text-foreground">
+                  {count} {count === 1 ? 'Vibelog' : 'Vibelogs'} Claimed!
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Your anonymous content is now linked to your account
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Onboarding Modal */}
+      {user && (
+        <OnboardingModal user={user} onComplete={() => {}} />
+      )}
+
+      <style jsx>{`
+        @keyframes toastSlideUp {
+          from {
+            transform: translate(-50%, 100%);
+            opacity: 0;
+          }
+          to {
+            transform: translate(-50%, 0);
+            opacity: 1;
+          }
+        }
+      `}</style>
     </div>
   );
 }

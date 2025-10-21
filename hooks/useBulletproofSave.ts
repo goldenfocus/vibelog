@@ -23,6 +23,10 @@ interface SaveVibelogData {
 interface SaveResult {
   success: boolean;
   vibelogId?: string;
+  slug?: string;
+  publicUrl?: string;
+  isAnonymous?: boolean;
+  sessionId?: string;
   message: string;
   warnings?: string[];
 }

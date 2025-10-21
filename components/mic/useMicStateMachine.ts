@@ -433,16 +433,17 @@ export function useMicStateMachine(
     // OPTIMIZATION 2: Enable streaming for real-time content delivery
     const teaserResult = await vibelogAPI.processVibelogGeneration(transcriptionData, {
       enableStreaming: true,
-      onStreamChunk: (chunk: string) => {
+      onStreamChunk: (_chunk: string) => {
         // Optional: Update UI with streaming chunks in real-time
-        if (DEBUG_MODE) {
-          console.log('📝 Streaming chunk received:', chunk.substring(0, 20) + '...');
-        }
+        // Streaming logs disabled to reduce console noise
       }
     });
     setVibelogContent(teaserResult.content);
     setFullVibelogContent(teaserResult.fullContent || teaserResult.content);
     setIsTeaserContent(teaserResult.isTeaser);
+
+    // FIX: Set the ref so completeProcessing can access content immediately (before React state updates)
+    vibelogAPI.processingData.current.vibelogContentData = teaserResult.fullContent || teaserResult.content;
 
     return teaserResult.fullContent || teaserResult.content;
   }, [vibelogAPI]);
@@ -473,8 +474,27 @@ export function useMicStateMachine(
   );
 
   const completeProcessing = useCallback(async () => {
+    console.log('🎯 [COMPLETE-PROCESSING] Starting save process...');
+
+    // Debug: Check what's in the ref
+    console.log('🔍 [COMPLETE-PROCESSING] Ref contents:', {
+      refExists: !!vibelogAPI.processingData.current,
+      vibelogContentData: vibelogAPI.processingData.current.vibelogContentData?.substring(0, 100),
+      transcriptionData: vibelogAPI.processingData.current.transcriptionData?.substring(0, 50)
+    });
+
     const contentToSave = vibelogContent || vibelogAPI.processingData.current.vibelogContentData;
+
+    console.log('📝 [COMPLETE-PROCESSING] Content check:', {
+      hasVibelogContent: !!vibelogContent,
+      vibelogContentLength: vibelogContent?.length || 0,
+      hasProcessingData: !!vibelogAPI.processingData.current.vibelogContentData,
+      processingDataLength: vibelogAPI.processingData.current.vibelogContentData?.length || 0,
+      contentLength: contentToSave?.length || 0
+    });
+
     if (!contentToSave) {
+      console.error('❌ [COMPLETE-PROCESSING] No content available to save');
       if (DEBUG_MODE) {
         console.warn('No content available to save after processing');
       }
@@ -485,6 +505,15 @@ export function useMicStateMachine(
 
     try {
       const fullContent = vibelogAPI.processingData.current.vibelogContentData || contentToSave;
+
+      console.log('💾 [COMPLETE-PROCESSING] Calling saveVibelog with:', {
+        contentLength: contentToSave.length,
+        fullContentLength: fullContent.length,
+        hasTranscription: !!transcription,
+        hasCoverImage: !!coverImage,
+        hasAudioData: !!audioData,
+        userId: user?.id || 'anonymous'
+      });
 
       const result = await saveVibelog({
         content: contentToSave,
@@ -544,7 +573,8 @@ export function useMicStateMachine(
     t,
     transcription,
     user?.id,
-    vibelogAPI.processingData,
+    // Note: vibelogAPI.processingData is a ref, not a state value, so it doesn't need to be in deps
+    // Including it causes stale closure issues where the ref data isn't accessible
     vibelogContent,
   ]);
 
