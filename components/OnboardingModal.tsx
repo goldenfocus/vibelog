@@ -201,7 +201,7 @@ export function OnboardingModal({ user, onComplete }: OnboardingModalProps) {
     },
   ];
 
-  const currentStepData = steps[currentStep];
+  const currentStepData = steps[0]; // Single-step onboarding
 
   return (
     <>
