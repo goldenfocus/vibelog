@@ -235,7 +235,7 @@ export default function DashboardPage() {
 
       {/* Onboarding Modal */}
       {user && (
-        <OnboardingModal user={user} onComplete={() => setShowOnboarding(false)} />
+        <OnboardingModal user={user} onComplete={() => {}} />
       )}
 
       <style jsx>{`
