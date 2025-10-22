@@ -436,14 +436,15 @@ export function useMicStateMachine(
       onStreamChunk: (_chunk: string) => {
         // Optional: Update UI with streaming chunks in real-time
         // Streaming logs disabled to reduce console noise
-      }
+      },
     });
     setVibelogContent(teaserResult.content);
     setFullVibelogContent(teaserResult.fullContent || teaserResult.content);
     setIsTeaserContent(teaserResult.isTeaser);
 
     // FIX: Set the ref so completeProcessing can access content immediately (before React state updates)
-    vibelogAPI.processingData.current.vibelogContentData = teaserResult.fullContent || teaserResult.content;
+    vibelogAPI.processingData.current.vibelogContentData =
+      teaserResult.fullContent || teaserResult.content;
 
     return teaserResult.fullContent || teaserResult.content;
   }, [vibelogAPI]);
@@ -480,17 +481,21 @@ export function useMicStateMachine(
     console.log('🔍 [COMPLETE-PROCESSING] Ref contents:', {
       refExists: !!vibelogAPI.processingData.current,
       vibelogContentData: vibelogAPI.processingData.current.vibelogContentData?.substring(0, 100),
-      transcriptionData: vibelogAPI.processingData.current.transcriptionData?.substring(0, 50)
+      transcriptionData: vibelogAPI.processingData.current.transcriptionData?.substring(0, 50),
     });
 
-    const contentToSave = vibelogContent || vibelogAPI.processingData.current.vibelogContentData;
+    // FIX: Use fullVibelogContent as primary source, then fallback to ref
+    const contentToSave =
+      fullVibelogContent || vibelogContent || vibelogAPI.processingData.current.vibelogContentData;
 
     console.log('📝 [COMPLETE-PROCESSING] Content check:', {
+      hasFullVibelogContent: !!fullVibelogContent,
+      fullVibelogContentLength: fullVibelogContent?.length || 0,
       hasVibelogContent: !!vibelogContent,
       vibelogContentLength: vibelogContent?.length || 0,
       hasProcessingData: !!vibelogAPI.processingData.current.vibelogContentData,
       processingDataLength: vibelogAPI.processingData.current.vibelogContentData?.length || 0,
-      contentLength: contentToSave?.length || 0
+      contentLength: contentToSave?.length || 0,
     });
 
     if (!contentToSave) {
@@ -512,7 +517,7 @@ export function useMicStateMachine(
         hasTranscription: !!transcription,
         hasCoverImage: !!coverImage,
         hasAudioData: !!audioData,
-        userId: user?.id || 'anonymous'
+        userId: user?.id || 'anonymous',
       });
 
       const result = await saveVibelog({
@@ -566,6 +571,7 @@ export function useMicStateMachine(
   }, [
     audioData,
     coverImage,
+    fullVibelogContent,
     isTeaserContent,
     recordingTime,
     saveVibelog,
