@@ -35,14 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (typeof window !== 'undefined') {
       const cached = getCachedSession();
       if (cached) {
-        // Debug: Check if we're on Brave
-        const isBrave = !!(navigator as any).brave?.isBrave;
-        if (isBrave) {
-          console.log('🦁 Brave detected - cached user loaded:', cached.email);
-        }
         return cached;
-      } else if ((navigator as any).brave?.isBrave) {
-        console.log('🦁 Brave detected - NO cache found (Shields blocking localStorage?)');
       }
     }
     return null;
