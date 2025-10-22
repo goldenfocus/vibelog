@@ -215,7 +215,8 @@ export default function ProcessingAnimation({
         }
         await generatePromise;
         // Wait for React state updates to process after blog generation
-        await new Promise(res => setTimeout(res, minDwell + 500));
+        // CRITICAL: Need enough time for setState and ref updates to propagate
+        await new Promise(res => setTimeout(res, minDwell + 1500));
       } else if (step.id === 'format') {
         // Short dwell only; text already prepared at STRUCTURE
         await new Promise(res => setTimeout(res, 350));
@@ -243,7 +244,14 @@ export default function ProcessingAnimation({
     setActiveIndex(steps.length - 1);
     setIsAnimating(false);
     onAnimationComplete?.();
-  }, [createSteps, onTranscribeComplete, onGenerateComplete, onCoverComplete, onAnimationComplete, recordingTime]);
+  }, [
+    createSteps,
+    onTranscribeComplete,
+    onGenerateComplete,
+    onCoverComplete,
+    onAnimationComplete,
+    recordingTime,
+  ]);
 
   useEffect(() => {
     if (!isVisible || isAnimating) {
