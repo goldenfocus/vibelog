@@ -1,11 +1,10 @@
 'use client';
 
-import { Clock, Heart, Share2, User, Sparkles, Play, Copy, Download } from 'lucide-react';
+import { Clock, Share2, User, Sparkles, Play, Copy, Download } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { useAuth } from '@/components/providers/AuthProvider';
-import { useI18n } from '@/components/providers/I18nProvider';
 import VibelogContentRenderer from '@/components/VibelogContentRenderer';
 
 interface VibelogAuthor {
@@ -37,7 +36,6 @@ interface VibelogCardProps {
 
 export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
   const { user } = useAuth();
-  const { t } = useI18n();
   const router = useRouter();
   const [copySuccess, setCopySuccess] = useState(false);
 
@@ -47,8 +45,18 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
   const isLoggedIn = !!user;
 
   // Show ONLY first 200 chars of teaser as preview
+  // Remove the title from content (it's usually the first line starting with #)
   const teaserText = vibelog.teaser || vibelog.content;
-  const preview = teaserText.length > 200 ? teaserText.substring(0, 200) + '...' : teaserText;
+  const contentWithoutTitle = teaserText
+    .split('\n')
+    .filter(line => !line.startsWith('# ')) // Remove H1 titles
+    .join('\n')
+    .trim();
+
+  const preview =
+    contentWithoutTitle.length > 200
+      ? contentWithoutTitle.substring(0, 200) + '...'
+      : contentWithoutTitle;
   const displayContent = preview;
   const isTeaser = true; // Always show as teaser in card view
 
