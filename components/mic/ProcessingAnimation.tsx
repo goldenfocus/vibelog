@@ -213,10 +213,11 @@ export default function ProcessingAnimation({
         if (!generatePromise) {
           startGenerate();
         }
+        console.log('⏳ [PROCESSING-ANIMATION] Waiting for generation to complete...');
         await generatePromise;
-        // Wait for React state updates to process after blog generation
-        // CRITICAL: Need enough time for setState and ref updates to propagate
-        await new Promise(res => setTimeout(res, minDwell + 1500));
+        console.log('✅ [PROCESSING-ANIMATION] Generation complete, ref should be set now');
+        // Small UX dwell for smooth animation, but ref is already set synchronously
+        await new Promise(res => setTimeout(res, minDwell));
       } else if (step.id === 'format') {
         // Short dwell only; text already prepared at STRUCTURE
         await new Promise(res => setTimeout(res, 350));

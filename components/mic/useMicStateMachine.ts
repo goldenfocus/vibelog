@@ -430,6 +430,8 @@ export function useMicStateMachine(
       throw new Error('No transcription data available');
     }
 
+    console.log('🚀 [VIBELOG-GEN] Starting generation...');
+
     // OPTIMIZATION 2: Enable streaming for real-time content delivery
     const teaserResult = await vibelogAPI.processVibelogGeneration(transcriptionData, {
       enableStreaming: true,
@@ -438,6 +440,9 @@ export function useMicStateMachine(
         // Streaming logs disabled to reduce console noise
       },
     });
+
+    console.log('✅ [VIBELOG-GEN] Generation complete, setting state...');
+
     setVibelogContent(teaserResult.content);
     setFullVibelogContent(teaserResult.fullContent || teaserResult.content);
     setIsTeaserContent(teaserResult.isTeaser);
@@ -445,6 +450,11 @@ export function useMicStateMachine(
     // FIX: Set the ref so completeProcessing can access content immediately (before React state updates)
     vibelogAPI.processingData.current.vibelogContentData =
       teaserResult.fullContent || teaserResult.content;
+
+    console.log('💾 [VIBELOG-GEN] Content stored in ref:', {
+      refLength: vibelogAPI.processingData.current.vibelogContentData?.length || 0,
+      hasContent: !!vibelogAPI.processingData.current.vibelogContentData,
+    });
 
     return teaserResult.fullContent || teaserResult.content;
   }, [vibelogAPI]);
@@ -475,13 +485,45 @@ export function useMicStateMachine(
   );
 
   const completeProcessing = useCallback(async () => {
-    console.log('🎯 [COMPLETE-PROCESSING] Starting save process...');
+    console.log('🎯 [COMPLETE-PROCESSING] Starting save process at', Date.now());
+
+    // CRITICAL FIX: Wait for content to be available (with timeout)
+    const maxWaitTime = 15000; // 15 seconds max
+    const checkInterval = 100; // Check every 100ms
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < maxWaitTime) {
+      const hasContent =
+        fullVibelogContent ||
+        vibelogContent ||
+        vibelogAPI.processingData.current.vibelogContentData;
+
+      if (hasContent && hasContent.length > 50) {
+        console.log(
+          '✅ [COMPLETE-PROCESSING] Content available after',
+          Date.now() - startTime,
+          'ms'
+        );
+        break;
+      }
+
+      console.log(
+        '⏳ [COMPLETE-PROCESSING] Waiting for content... elapsed:',
+        Date.now() - startTime,
+        'ms'
+      );
+      await new Promise(resolve => setTimeout(resolve, checkInterval));
+    }
 
     // Debug: Check what's in the ref
     console.log('🔍 [COMPLETE-PROCESSING] Ref contents:', {
       refExists: !!vibelogAPI.processingData.current,
-      vibelogContentData: vibelogAPI.processingData.current.vibelogContentData?.substring(0, 100),
-      transcriptionData: vibelogAPI.processingData.current.transcriptionData?.substring(0, 50),
+      vibelogContentDataLength: vibelogAPI.processingData.current.vibelogContentData?.length || 0,
+      vibelogContentDataPreview: vibelogAPI.processingData.current.vibelogContentData?.substring(
+        0,
+        100
+      ),
+      transcriptionDataLength: vibelogAPI.processingData.current.transcriptionData?.length || 0,
     });
 
     // FIX: Use fullVibelogContent as primary source, then fallback to ref
@@ -537,6 +579,22 @@ export function useMicStateMachine(
       });
 
       if (result.success) {
+        // CRITICAL: Store sessionId for anonymous users to claim later
+        if (result.isAnonymous && result.sessionId && typeof window !== 'undefined') {
+          try {
+            // Store in localStorage so we can claim after sign-in
+            const existingSessions = localStorage.getItem('vibelog_anonymous_sessions');
+            const sessions = existingSessions ? JSON.parse(existingSessions) : [];
+            if (!sessions.includes(result.sessionId)) {
+              sessions.push(result.sessionId);
+              localStorage.setItem('vibelog_anonymous_sessions', JSON.stringify(sessions));
+              console.log('💾 [SAVE] Stored anonymous sessionId for claiming:', result.sessionId);
+            }
+          } catch (err) {
+            console.warn('Failed to store sessionId:', err);
+          }
+        }
+
         if (result.warnings?.length) {
           const criticalWarnings = result.warnings.filter((warning: string) => {
             return (
@@ -550,10 +608,10 @@ export function useMicStateMachine(
           if (criticalWarnings.length) {
             showToast(t('components.micRecorder.savedWithWarnings'));
           } else {
-            showToast(t('components.micRecorder.saved'));
+            showToast(result.message || t('components.micRecorder.saved'));
           }
         } else {
-          showToast(t('components.micRecorder.saved'));
+          showToast(result.message || t('components.micRecorder.saved'));
         }
       } else {
         showToast(t('components.micRecorder.saveFallback'));

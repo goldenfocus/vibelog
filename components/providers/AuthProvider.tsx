@@ -74,14 +74,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (sessionError) {
-          // Expected errors when logged out
+          // Expected errors when logged out - don't log these
           if (
             sessionError.message?.includes('Refresh Token') ||
-            sessionError.message?.includes('refresh_token')
+            sessionError.message?.includes('refresh_token') ||
+            sessionError.message?.includes('Not Found')
           ) {
-            // No active session - this is expected when logged out
+            // Silent - this is expected when logged out, not an error
           } else {
-            console.error('Session validation error:', sessionError);
+            // Only log unexpected errors
+            if (process.env.NODE_ENV !== 'production') {
+              console.error('Session validation error:', sessionError);
+            }
             setError(sessionError.message);
           }
           // Clear cache if session is invalid
@@ -132,6 +136,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setCachedSession(session.user);
         setUser(session.user);
         setError(null);
+
+        // CRITICAL: Auto-claim anonymous vibelogs after sign-in
+        if (event === 'SIGNED_IN' && typeof window !== 'undefined') {
+          try {
+            const sessionsJSON = localStorage.getItem('vibelog_anonymous_sessions');
+            if (sessionsJSON) {
+              const sessions = JSON.parse(sessionsJSON);
+              if (Array.isArray(sessions) && sessions.length > 0) {
+                console.log(`🔐 [AUTH] Found ${sessions.length} anonymous sessions to claim`);
+
+                // Claim all anonymous vibelogs
+                for (const sessionId of sessions) {
+                  fetch('/api/claim-vibelog', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionId }),
+                  })
+                    .then(res => res.json())
+                    .then(data => {
+                      if (data.success && data.claimedCount > 0) {
+                        console.log(`✅ [AUTH] Claimed ${data.claimedCount} vibelogs!`);
+                      }
+                    })
+                    .catch(err => console.error('Failed to claim:', err));
+                }
+
+                // Clear claimed sessions
+                localStorage.removeItem('vibelog_anonymous_sessions');
+                console.log('🧹 [AUTH] Cleared claimed sessions');
+              }
+            }
+          } catch (err) {
+            console.warn('Failed to claim vibelogs:', err);
+          }
+        }
       } else {
         clearCachedSession();
         setUser(null);
