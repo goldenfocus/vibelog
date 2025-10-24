@@ -261,7 +261,7 @@ export function useVibelogAPI(
         },
         body: JSON.stringify({
           transcription: transcriptionData,
-          stream: enableStreaming
+          stream: enableStreaming,
         }),
       });
 
@@ -270,7 +270,10 @@ export function useVibelogAPI(
       }
 
       // OPTIMIZATION 2: Handle streaming response
-      if (enableStreaming && vibelogResponse.headers.get('content-type')?.includes('text/event-stream')) {
+      if (
+        enableStreaming &&
+        vibelogResponse.headers.get('content-type')?.includes('text/event-stream')
+      ) {
         const reader = vibelogResponse.body?.getReader();
         const decoder = new TextDecoder();
         let fullContent = '';
@@ -279,7 +282,9 @@ export function useVibelogAPI(
           try {
             while (true) {
               const { done, value } = await reader.read();
-              if (done) break;
+              if (done) {
+                break;
+              }
 
               const chunk = decoder.decode(value, { stream: true });
               const lines = chunk.split('\n');
@@ -296,7 +301,7 @@ export function useVibelogAPI(
                       fullContent += parsed.content;
                       options?.onStreamChunk?.(parsed.content);
                     }
-                  } catch (e) {
+                  } catch {
                     // Ignore parse errors
                   }
                 }
@@ -331,10 +336,10 @@ export function useVibelogAPI(
         // Store the FULL content for cover generation
         processingDataRef.current.vibelogContentData = vibelogContent;
 
-        console.log('💾 [VIBELOG-GEN-STREAM] Stored in processingDataRef:', {
+        console.log('💾 [VIBELOG-GEN-STREAM] Stored in processingDataRef at', Date.now(), {
           length: vibelogContent.length,
           refHasData: !!processingDataRef.current.vibelogContentData,
-          preview: vibelogContent.substring(0, 100)
+          preview: vibelogContent.substring(0, 100),
         });
 
         if (DEBUG_MODE) {
