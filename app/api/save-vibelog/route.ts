@@ -151,8 +151,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       teaser: teaserContent, // Store AI-generated teaser for public preview
       content: fullContent, // Store full content
       transcription: transcription,
-      cover_url: requestBody.coverImage?.url || null, // Use new column name
-      cover_image_url: requestBody.coverImage?.url || null, // Keep old for compatibility
+      cover_image_url: requestBody.coverImage?.url || null,
       cover_image_alt: requestBody.coverImage?.alt || null,
       cover_image_width: requestBody.coverImage?.width || null,
       cover_image_height: requestBody.coverImage?.height || null,
