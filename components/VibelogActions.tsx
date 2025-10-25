@@ -53,7 +53,7 @@ export default function VibelogActions({
     }
 
     // Clean markdown for TTS
-    const cleanContent = content
+    let cleanContent = content
       .replace(/#{1,6}\s/g, '') // Remove headers
       .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
       .replace(/\*(.*?)\*/g, '$1') // Remove italic
@@ -61,6 +61,12 @@ export default function VibelogActions({
       .replace(/`([^`]+)`/g, '$1') // Remove code
       .replace(/\n\s*\n/g, '\n') // Remove extra newlines
       .trim();
+
+    // Truncate to ~500 words to keep TTS generation under 20 seconds
+    const words = cleanContent.split(/\s+/);
+    if (words.length > 500) {
+      cleanContent = words.slice(0, 500).join(' ') + '...';
+    }
 
     await playText(cleanContent, 'shimmer');
   };
@@ -175,7 +181,9 @@ export default function VibelogActions({
           )}
         </div>
 
-        <span className={labelClass}>{isPlaying ? 'Pause' : 'Listen'}</span>
+        <span className={labelClass}>
+          {isLoading ? 'Generating...' : isPlaying ? 'Pause' : 'Listen'}
+        </span>
       </button>
 
       {/* Share Button */}

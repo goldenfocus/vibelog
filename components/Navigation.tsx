@@ -233,7 +233,10 @@ export default function Navigation() {
               <>
                 {/* Mobile: Hamburger menu button */}
                 <button
-                  onClick={() => setIsMobileNavOpen(true)}
+                  onClick={e => {
+                    setIsMobileNavOpen(true);
+                    e.currentTarget.blur(); // Prevent aria-hidden focus warning
+                  }}
                   aria-label="Open navigation menu"
                   className="flex h-10 w-10 items-center justify-center rounded-lg border border-border/40 bg-muted/60 text-foreground lg:hidden"
                 >
@@ -242,7 +245,10 @@ export default function Navigation() {
 
                 {/* Mobile: User avatar button */}
                 <button
-                  onClick={() => setIsMobileUserOpen(true)}
+                  onClick={e => {
+                    setIsMobileUserOpen(true);
+                    e.currentTarget.blur(); // Prevent aria-hidden focus warning
+                  }}
                   aria-label="Open account menu"
                   className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border/40 lg:hidden"
                   style={getAvatarContainerStyle(avatarUrl && !avatarError)}
