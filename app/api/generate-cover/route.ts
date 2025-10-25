@@ -1,128 +1,118 @@
-import crypto from 'crypto'
+import crypto from 'crypto';
 
-import { NextRequest, NextResponse } from 'next/server'
-import { GoogleGenerativeAI } from '@google/generative-ai'
-import OpenAI from 'openai'
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { NextRequest, NextResponse } from 'next/server';
+import OpenAI from 'openai';
 
-import { styleFromTone, buildImagePrompt, buildAltText, watermarkAndResize } from '@/lib/image'
-import { storage } from '@/lib/storage'
+import { styleFromTone, buildImagePrompt, buildAltText, watermarkAndResize } from '@/lib/image';
+import { storage } from '@/lib/storage';
 
-export const runtime = 'nodejs'
+export const runtime = 'nodejs';
 
 type Body = {
-  title: string
-  summary?: string
-  tone?: string
-  username?: string
-  tags?: string[]
-  postId?: string
-}
+  title: string;
+  summary?: string;
+  tone?: string;
+  username?: string;
+  tags?: string[];
+  postId?: string;
+};
 
 function slugify(s: string) {
-  return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 80)
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+    .slice(0, 80);
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as Body
-    const title = (body.title || '').trim()
-    if (!title) {return NextResponse.json({ error: 'Missing title' }, { status: 400 })}
-
-    const { style, label } = styleFromTone(body.tone)
-    const prompt = buildImagePrompt(title, body.summary, body.tone)
-
-    // If Gemini is not configured, return a placeholder
-    if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === 'dummy_key' || process.env.GEMINI_API_KEY === 'your_gemini_api_key_here') {
-      if (process.env.NODE_ENV !== 'production') {
-        console.log('🖼️ [COVER-GEN] Using placeholder image (no Gemini API key configured)')
-      }
-      const alt = buildAltText(title, label, body.summary)
-      return NextResponse.json({
-        url: '/og-image.png',
-        width: 1200,
-        height: 630,
-        alt,
-        style,
-        prompt,
-        success: true
-      })
+    const body = (await req.json()) as Body;
+    const title = (body.title || '').trim();
+    if (!title) {
+      return NextResponse.json({ error: 'Missing title' }, { status: 400 });
     }
 
+    const { style, label } = styleFromTone(body.tone);
+    const prompt = buildImagePrompt(title, body.summary, body.tone);
+
     // Detect device from user-agent for adaptive aspect ratio (mobile-first)
-    const userAgent = req.headers.get('user-agent') || ''
-    const isMobile = /iPhone|iPad|iPod|Android|Mobile|webOS|BlackBerry|IEMobile|Opera Mini/i.test(userAgent)
+    const userAgent = req.headers.get('user-agent') || '';
+    const isMobile = /iPhone|iPad|iPod|Android|Mobile|webOS|BlackBerry|IEMobile|Opera Mini/i.test(
+      userAgent
+    );
 
     // Default to 9:16 (mobile-first) since we're "mostly mobile"
     // Switch to 16:9 for desktop devices
-    const aspectRatio = isMobile ? '9:16' : '16:9'
-    const [targetWidth, targetHeight] = isMobile ? [1080, 1920] : [1920, 1080]
+    const aspectRatio = isMobile ? '9:16' : '16:9';
+    const [targetWidth, targetHeight] = isMobile ? [1080, 1920] : [1920, 1080];
 
-    console.log(`🖼️ [COVER-GEN] Generating image with Gemini 2.5 Flash - Device: ${isMobile ? 'Mobile' : 'Desktop'}, Aspect: ${aspectRatio}`)
+    console.log(
+      `🖼️ [COVER-GEN] Generating image with Gemini 2.5 Flash - Device: ${isMobile ? 'Mobile' : 'Desktop'}, Aspect: ${aspectRatio}`
+    );
 
-    let raw: Buffer
-    let useGemini = true
+    let raw: Buffer;
+    let useGemini = true;
 
     // Try Gemini first if available
     try {
-      if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === 'your_gemini_api_key_here') {
-        throw new Error('Gemini API key not configured')
+      if (
+        !process.env.GEMINI_API_KEY ||
+        process.env.GEMINI_API_KEY === 'your_gemini_api_key_here'
+      ) {
+        throw new Error('Gemini API key not configured');
       }
 
-      const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-image' })
+      const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-image' });
 
       const result = await model.generateContent({
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         generationConfig: {
           maxOutputTokens: 1290, // Each image is 1290 tokens
-        }
-      })
+        },
+      });
 
-      const parts = result.response.candidates?.[0]?.content?.parts
+      const parts = result.response.candidates?.[0]?.content?.parts;
 
       if (!parts || parts.length === 0) {
-        throw new Error('Image generation returned no parts')
+        throw new Error('Image generation returned no parts');
       }
 
       // Find the image part
-      const imagePart = parts.find(part => part.inlineData)
+      const imagePart = parts.find(part => part.inlineData);
 
       if (!imagePart || !imagePart.inlineData) {
-        throw new Error('Image generation returned no image data')
+        throw new Error('Image generation returned no image data');
       }
 
-      const b64 = imagePart.inlineData.data
-      if (!b64) {throw new Error('Image generation returned empty data')}
-      raw = Buffer.from(b64, 'base64')
+      const b64 = imagePart.inlineData.data;
+      if (!b64) {
+        throw new Error('Image generation returned empty data');
+      }
+      raw = Buffer.from(b64, 'base64');
 
-      console.log('✅ Image generated successfully with Gemini 2.5 Flash')
+      console.log('✅ Image generated successfully with Gemini 2.5 Flash');
     } catch (geminiErr: any) {
-      console.error('Gemini image generation error:', geminiErr.message)
-
-      // If quota error or API key issue, fall back to DALL-E 3
-      if (geminiErr.message?.includes('quota') || geminiErr.message?.includes('429') || geminiErr.message?.includes('billing')) {
-        console.log('⚠️  Gemini quota/billing issue - falling back to DALL-E 3...')
-        useGemini = false
-      } else {
-        // Other errors, return placeholder
-        const alt = buildAltText(title, label, body.summary)
-        return NextResponse.json({ url: '/og-image.png', width: 1200, height: 630, alt, style, prompt, success: true })
-      }
+      console.error('Gemini image generation error:', geminiErr.message);
+      console.log('⚠️  Gemini failed - falling back to DALL-E 3...');
+      useGemini = false;
     }
 
     // Fallback to DALL-E 3
     if (!useGemini) {
       try {
         if (!process.env.OPENAI_API_KEY) {
-          throw new Error('OpenAI API key not configured')
+          throw new Error('OpenAI API key not configured');
         }
 
-        console.log('🎨 Generating image with DALL-E 3 (fallback)...')
-        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+        console.log('🎨 Generating image with DALL-E 3 (fallback)...');
+        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
         // DALL-E 3 only supports 1024x1024, 1024x1792, 1792x1024
         // Map our aspect ratios to DALL-E sizes
-        const dalleSize = isMobile ? '1024x1792' : '1792x1024' // Portrait for mobile, landscape for desktop
+        const dalleSize = isMobile ? '1024x1792' : '1792x1024'; // Portrait for mobile, landscape for desktop
 
         const img = await openai.images.generate({
           model: 'dall-e-3',
@@ -130,17 +120,27 @@ export async function POST(req: NextRequest) {
           size: dalleSize,
           quality: 'standard',
           response_format: 'b64_json',
-        })
+        });
 
-        const b64 = img.data?.[0]?.b64_json
-        if (!b64) {throw new Error('DALL-E 3 returned empty data')}
-        raw = Buffer.from(b64, 'base64')
+        const b64 = img.data?.[0]?.b64_json;
+        if (!b64) {
+          throw new Error('DALL-E 3 returned empty data');
+        }
+        raw = Buffer.from(b64, 'base64');
 
-        console.log('✅ Image generated successfully with DALL-E 3')
+        console.log('✅ Image generated successfully with DALL-E 3');
       } catch (dalleErr) {
-        console.error('DALL-E 3 generation error:', dalleErr)
-        const alt = buildAltText(title, label, body.summary)
-        return NextResponse.json({ url: '/og-image.png', width: 1200, height: 630, alt, style, prompt, success: true })
+        console.error('DALL-E 3 generation error:', dalleErr);
+        const alt = buildAltText(title, label, body.summary);
+        return NextResponse.json({
+          url: '/og-image.png',
+          width: 1200,
+          height: 630,
+          alt,
+          style,
+          prompt,
+          success: true,
+        });
       }
     }
 
@@ -152,25 +152,37 @@ export async function POST(req: NextRequest) {
       title,
       description: body.summary,
       keywords: body.tags || [],
-    })
+    });
 
-    const hash = crypto.createHash('sha1').update(title + (body.summary || '')).digest('hex').slice(0, 10)
-    const dir = body.postId ? `posts/${body.postId}` : `covers`
-    const key = `${dir}/${slugify(title)}-${hash}-${targetWidth}x${targetHeight}.jpg`
+    const hash = crypto
+      .createHash('sha1')
+      .update(title + (body.summary || ''))
+      .digest('hex')
+      .slice(0, 10);
+    const dir = body.postId ? `posts/${body.postId}` : `covers`;
+    const key = `${dir}/${slugify(title)}-${hash}-${targetWidth}x${targetHeight}.jpg`;
 
-    let url = `/og-image.png`
+    let url = `/og-image.png`;
     try {
-      const uploaded = await storage.put(key, buffer, 'image/jpeg')
-      url = uploaded?.url || url
+      const uploaded = await storage.put(key, buffer, 'image/jpeg');
+      url = uploaded?.url || url;
     } catch (err) {
-      console.error('Storage upload error:', err)
+      console.error('Storage upload error:', err);
     }
-    const alt = buildAltText(title, label, body.summary)
+    const alt = buildAltText(title, label, body.summary);
 
-    return NextResponse.json({ url, path: key, width, height, alt, style, prompt, success: true })
+    return NextResponse.json({ url, path: key, width, height, alt, style, prompt, success: true });
   } catch (e) {
-    console.error('generate-cover unexpected error', e)
+    console.error('generate-cover unexpected error', e);
     // Soft-fail with placeholder for better UX during MVP
-    return NextResponse.json({ url: '/og-image.png', width: 1200, height: 630, alt: 'Cover image', style: 'cinematic', prompt: 'fallback', success: true })
+    return NextResponse.json({
+      url: '/og-image.png',
+      width: 1200,
+      height: 630,
+      alt: 'Cover image',
+      style: 'cinematic',
+      prompt: 'fallback',
+      success: true,
+    });
   }
 }
