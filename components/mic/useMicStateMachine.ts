@@ -507,11 +507,11 @@ export function useMicStateMachine(
         break;
       }
 
-      console.log(
-        '⏳ [COMPLETE-PROCESSING] Waiting for content... elapsed:',
-        Date.now() - startTime,
-        'ms'
-      );
+      const elapsed = Date.now() - startTime;
+      // Only log every 2 seconds to avoid console spam
+      if (elapsed % 2000 < checkInterval) {
+        console.log('⏳ [COMPLETE-PROCESSING] Waiting for content... elapsed:', elapsed, 'ms');
+      }
       await new Promise(resolve => setTimeout(resolve, checkInterval));
     }
 
