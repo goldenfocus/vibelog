@@ -143,6 +143,7 @@ export default function ProcessingAnimation({
       });
 
     let generatePromise: Promise<any> | null = null;
+    let coverPromise: Promise<any> | null = null;
     let generateStarted = false;
     let generatedVibelogContent: string = '';
     const startGenerate = () => {
@@ -157,11 +158,13 @@ export default function ProcessingAnimation({
           // Capture the vibelog content for cover generation
           generatedVibelogContent = typeof result === 'string' ? result : '';
 
-          // OPTIMIZATION 1 & 3: Start cover generation immediately after content is ready
-          // Run in background without blocking the main flow
+          // Start cover generation immediately after content is ready
+          // Store promise so we can await it during the "image" step
           if (typeof onCoverComplete === 'function' && generatedVibelogContent) {
-            onCoverComplete(generatedVibelogContent).catch(error => {
-              console.error('Background cover generation failed:', error);
+            console.log('🖼️ [PROCESSING-ANIMATION] Starting cover generation...');
+            coverPromise = onCoverComplete(generatedVibelogContent).catch(error => {
+              console.error('Cover generation failed:', error);
+              return null; // Don't block on error
             });
           }
         })
@@ -222,9 +225,14 @@ export default function ProcessingAnimation({
         // Short dwell only; text already prepared at STRUCTURE
         await new Promise(res => setTimeout(res, 350));
       } else if (step.id === 'image') {
-        // OPTIMIZATION 1: Cover generation now runs in background (started in generatePromise.then())
-        // Just show a brief animation for UX, don't block on actual generation
-        await new Promise(res => setTimeout(res, 800));
+        // Wait for cover generation to complete before proceeding
+        if (coverPromise) {
+          console.log('⏳ [PROCESSING-ANIMATION] Waiting for cover generation...');
+          await coverPromise;
+          console.log('✅ [PROCESSING-ANIMATION] Cover generation complete!');
+        }
+        // Small UX dwell for smooth animation
+        await new Promise(res => setTimeout(res, 500));
       } else {
         // Post steps: scale by generation time, keep UX snappy
         const base = Math.min(
