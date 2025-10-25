@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { Mic, Circle } from "lucide-react";
-import React from "react";
+import { Mic, Circle } from 'lucide-react';
+import React from 'react';
 
-import { useI18n } from "@/components/providers/I18nProvider";
+import { useI18n } from '@/components/providers/I18nProvider';
 
-export type RecordingState = "idle" | "recording" | "processing" | "complete";
+export type RecordingState = 'idle' | 'recording' | 'processing' | 'complete';
 
 export interface ControlsProps {
   recordingState: RecordingState;
@@ -28,7 +28,7 @@ export default function Controls({
   onStopRecording,
   onReset,
   disabled = false,
-  className = ""
+  className = '',
 }: ControlsProps) {
   const { t } = useI18n();
 
@@ -56,41 +56,45 @@ export default function Controls({
 
   const getMicButtonContent = () => {
     switch (recordingState) {
-      case "idle":
-        return <Mic className="w-24 h-24" />;
-      case "recording":
-        return <Circle className="w-24 h-24 text-red-500 fill-current animate-pulse" />;
-      case "processing":
-        return <div className="w-24 h-24 border-8 border-current border-t-transparent rounded-full animate-spin" />;
-      case "complete":
-        return <Mic className="w-24 h-24" />;
+      case 'idle':
+        return <Mic className="h-24 w-24" />;
+      case 'recording':
+        return <Circle className="h-24 w-24 animate-pulse fill-current text-red-500" />;
+      case 'processing':
+        return (
+          <div className="h-24 w-24 animate-spin rounded-full border-8 border-current border-t-transparent" />
+        );
+      case 'complete':
+        return <Mic className="h-24 w-24" />;
     }
   };
 
   const getStatusText = () => {
     switch (recordingState) {
-      case "idle":
+      case 'idle':
         return t('recorder.idle');
-      case "recording":
+      case 'recording':
         return t('recorder.recording');
-      case "processing":
+      case 'processing':
         return t('recorder.processing');
-      case "complete":
+      case 'complete':
         return t('recorder.done');
     }
   };
 
   const handleClick = () => {
-    if (disabled) {return;}
-    
+    if (disabled) {
+      return;
+    }
+
     switch (recordingState) {
-      case "recording":
+      case 'recording':
         onStopRecording();
         break;
-      case "complete":
+      case 'complete':
         onReset();
         break;
-      case "idle":
+      case 'idle':
       default:
         onStartRecording();
         break;
@@ -99,42 +103,52 @@ export default function Controls({
 
   return (
     <div className={`w-full ${className}`}>
-      <div className="flex flex-col items-center mb-12">
+      <div className="mb-12 flex flex-col items-center">
         <button
           onClick={handleClick}
-          disabled={disabled || recordingState === "processing"}
+          disabled={disabled || recordingState === 'processing'}
           className={[
-            "mic",
-            recordingState === "recording" ? "is-recording" : "",
-            "w-40 h-40 sm:w-48 sm:h-48 rounded-full",
-            "bg-gradient-electric text-primary-foreground",
-            "transition-electric flex items-center justify-center",
-            "hover:shadow-[0_20px_40px_rgba(97,144,255,0.3)]",
-            "disabled:opacity-70 disabled:cursor-not-allowed",
-            recordingState === "complete" ? "!bg-secondary !text-secondary-foreground shadow-elevated" : ""
-          ].join(" ")}
+            'mic',
+            recordingState === 'recording' ? 'is-recording' : '',
+            'h-40 w-40 rounded-full sm:h-48 sm:w-48',
+            'bg-gradient-electric text-primary-foreground',
+            'transition-electric flex items-center justify-center',
+            'hover:shadow-[0_20px_40px_rgba(97,144,255,0.3)]',
+            'disabled:cursor-not-allowed disabled:opacity-70',
+            recordingState === 'complete'
+              ? '!bg-secondary !text-secondary-foreground shadow-elevated'
+              : '',
+          ].join(' ')}
           data-testid={`mic-button-${recordingState}`}
           aria-label={getStatusText()}
         >
           {getMicButtonContent()}
         </button>
-        
-        <div className="text-center mt-6">
-          <p className="text-muted-foreground text-lg mb-2">
-            {getStatusText()}
-          </p>
-          {recordingState === "recording" && (
+
+        <div className="mt-6 text-center">
+          {recordingState !== 'idle' && (
+            <p className="mb-2 text-lg text-muted-foreground">{getStatusText()}</p>
+          )}
+          {recordingState === 'recording' && (
             <div className="flex flex-col items-center space-y-2">
-              <div className={`text-2xl font-mono font-bold transition-colors ${
-                isNearTimeLimit() ? 'text-red-500' : 'text-foreground'
-              }`} data-testid="recording-timer">
+              <div
+                className={`font-mono text-2xl font-bold transition-colors ${
+                  isNearTimeLimit() ? 'text-red-500' : 'text-foreground'
+                }`}
+                data-testid="recording-timer"
+              >
                 {formatTime(recordingTime)}
               </div>
               <div className="text-sm text-muted-foreground">
-                {t('components.micRecorder.freePlanLimit', { timeLimit: formatTime(getTimeLimit()) })}
+                {t('components.micRecorder.freePlanLimit', {
+                  timeLimit: formatTime(getTimeLimit()),
+                })}
                 {isNearTimeLimit() && !hasReachedTimeLimit() && (
-                  <span className="text-red-500 ml-2" data-testid="time-warning">
-                    ⚠️ {t('components.micRecorder.timeRemaining', { seconds: Math.floor((getTimeLimit() - recordingTime)) })}
+                  <span className="ml-2 text-red-500" data-testid="time-warning">
+                    ⚠️{' '}
+                    {t('components.micRecorder.timeRemaining', {
+                      seconds: Math.floor(getTimeLimit() - recordingTime),
+                    })}
                   </span>
                 )}
               </div>
