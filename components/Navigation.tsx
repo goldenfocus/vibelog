@@ -12,6 +12,7 @@ import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useI18n } from '@/components/providers/I18nProvider';
 import { Button } from '@/components/ui/button';
+import { createClient } from '@/lib/supabase';
 
 export default function Navigation() {
   const pathname = usePathname();
@@ -22,6 +23,7 @@ export default function Navigation() {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false); // Mobile hamburger menu
   const [isMobileUserOpen, setIsMobileUserOpen] = useState(false); // Mobile user menu
   const [avatarError, setAvatarError] = useState(false);
+  const [profile, setProfile] = useState<any>(null);
 
   const navLinks = useMemo(
     () => [
@@ -54,10 +56,35 @@ export default function Navigation() {
     return null;
   }, [user]);
 
+  // Fetch user profile from database
+  useEffect(() => {
+    if (user?.id) {
+      const fetchProfile = async () => {
+        const supabase = createClient();
+        const { data } = await supabase
+          .from('profiles')
+          .select('display_name, username, avatar_url')
+          .eq('id', user.id)
+          .single();
+
+        if (data) {
+          setProfile(data);
+        }
+      };
+      fetchProfile();
+    }
+  }, [user?.id]);
+
   const displayName = useMemo(
-    () => user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Account',
-    [user?.email, user?.user_metadata?.full_name]
+    () =>
+      profile?.display_name ||
+      user?.user_metadata?.full_name ||
+      user?.email?.split('@')[0] ||
+      'Account',
+    [profile?.display_name, user?.email, user?.user_metadata?.full_name]
   );
+
+  const username = profile?.username || null;
 
   const avatarInitial = displayName.charAt(0).toUpperCase();
 
@@ -268,6 +295,7 @@ export default function Navigation() {
           }}
           displayName={displayName}
           email={user.email || ''}
+          username={username}
           avatarUrl={avatarUrl}
           renderAvatarContent={renderAvatarContent}
           getAvatarContainerStyle={getAvatarContainerStyle}
