@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { generatePublicSlug, generateUserSlug, generateVibelogSEO } from '@/lib/seo';
 import { createServerSupabaseClient } from '@/lib/supabase';
-import {
-  generatePublicSlug,
-  generateUserSlug,
-  generateVibelogSEO,
-} from '@/lib/seo';
 
 export const runtime = 'nodejs';
 
@@ -251,7 +247,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         return NextResponse.json({
           success: true, // Still return success because we captured the data
           message: 'Vibelog captured for manual recovery',
-          warnings: [...warnings, 'Stored in failures table - will be recovered manually'],
+          warnings: [
+            ...warnings,
+            'Stored in failures table - will be recovered manually',
+            `DB Error: ${directInsertError.message || JSON.stringify(directInsertError)}`,
+          ],
         });
       } catch (failureLogError) {
         console.error('💀 [VIBELOG-SAVE] CRITICAL: Even failure logging failed:', failureLogError);
