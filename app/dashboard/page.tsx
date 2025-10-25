@@ -21,9 +21,31 @@ export default function DashboardPage() {
   const [vibelogs, setVibelogs] = useState<Array<any>>([]);
   const [loadingVibelogs, setLoadingVibelogs] = useState(true);
   const [showClaimToast, setShowClaimToast] = useState(false);
+  const [profile, setProfile] = useState<any>(null);
 
   // Transfer anonymous vibelogs to user account (background, non-blocking)
   const { transferred, count } = useVibelogTransfer(user?.id);
+
+  // Fetch user's profile
+  useEffect(() => {
+    async function fetchProfile() {
+      if (!user?.id) {
+        return;
+      }
+
+      const supabase = createClient();
+      const { data } = await supabase
+        .from('profiles')
+        .select('display_name, username, avatar_url')
+        .eq('id', user.id)
+        .single();
+
+      if (data) {
+        setProfile(data);
+      }
+    }
+    fetchProfile();
+  }, [user?.id]);
 
   // Fetch user's vibelogs
   useEffect(() => {
@@ -134,7 +156,8 @@ export default function DashboardPage() {
   }
 
   // Render dashboard immediately for authenticated users
-  const displayName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
+  const displayName =
+    profile?.display_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
 
   return (
     <div className="min-h-screen bg-background">
@@ -144,13 +167,12 @@ export default function DashboardPage() {
         <div className="mx-auto max-w-6xl">
           {/* Welcome Section */}
           <div className="mb-12 text-center">
-            <h1 className="mb-4 text-3xl font-bold sm:text-4xl md:text-5xl">
+            <h1 className="mb-6 text-3xl font-bold sm:text-4xl md:text-5xl">
               {t('dashboard.welcome')}{' '}
               <span className="bg-gradient-electric bg-clip-text text-transparent">
                 {displayName}
               </span>
             </h1>
-            <p className="mb-6 text-lg text-muted-foreground">{t('dashboard.subtitle')}</p>
           </div>
 
           {/* Quick Actions */}
@@ -234,9 +256,7 @@ export default function DashboardPage() {
       )}
 
       {/* Onboarding Modal */}
-      {user && (
-        <OnboardingModal user={user} onComplete={() => {}} />
-      )}
+      {user && <OnboardingModal user={user} onComplete={() => {}} />}
 
       <style jsx>{`
         @keyframes toastSlideUp {
