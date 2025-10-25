@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase';
 import { User } from '@supabase/supabase-js';
+import { useState, useEffect } from 'react';
+
+import { createClient } from '@/lib/supabase';
 
 interface OnboardingModalProps {
   user: User;
@@ -132,7 +133,9 @@ export function OnboardingModal({ user, onComplete }: OnboardingModalProps) {
     onComplete();
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   const steps = [
     {
@@ -141,15 +144,15 @@ export function OnboardingModal({ user, onComplete }: OnboardingModalProps) {
       content: (
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
-              Username
-            </label>
+            <label className="mb-2 block text-sm font-medium text-foreground">Username</label>
             <input
               type="text"
               value={username}
-              onChange={(e) => setUsername(e.target.value.toLowerCase())}
+              onChange={e => setUsername(e.target.value.toLowerCase())}
+              onFocus={e => e.target.select()}
+              onClick={e => e.currentTarget.select()}
               placeholder="your-username"
-              className="w-full px-4 py-2 rounded-lg border border-electric/30 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-electric"
+              className="w-full rounded-lg border border-electric/30 bg-background px-4 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-electric"
               maxLength={30}
             />
             <p className="mt-1 text-xs text-muted-foreground">
@@ -161,38 +164,32 @@ export function OnboardingModal({ user, onComplete }: OnboardingModalProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
-              Display Name
-            </label>
+            <label className="mb-2 block text-sm font-medium text-foreground">Display Name</label>
             <input
               type="text"
               value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
+              onChange={e => setDisplayName(e.target.value)}
               placeholder="How should we call you?"
-              className="w-full px-4 py-2 rounded-lg border border-electric/30 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-electric"
+              className="w-full rounded-lg border border-electric/30 bg-background px-4 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-electric"
               maxLength={50}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
-              Bio (optional)
-            </label>
+            <label className="mb-2 block text-sm font-medium text-foreground">Bio (optional)</label>
             <textarea
               value={bio}
-              onChange={(e) => setBio(e.target.value)}
+              onChange={e => setBio(e.target.value)}
               placeholder="Tell the community about yourself..."
-              className="w-full px-4 py-2 rounded-lg border border-electric/30 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-electric resize-none"
+              className="w-full resize-none rounded-lg border border-electric/30 bg-background px-4 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-electric"
               rows={3}
               maxLength={200}
             />
-            <p className="mt-1 text-xs text-muted-foreground text-right">
-              {bio.length}/200
-            </p>
+            <p className="mt-1 text-right text-xs text-muted-foreground">{bio.length}/200</p>
           </div>
 
           {error && (
-            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30">
+            <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3">
               <p className="text-sm text-red-500">{error}</p>
             </div>
           )}
@@ -206,26 +203,21 @@ export function OnboardingModal({ user, onComplete }: OnboardingModalProps) {
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50" onClick={handleSkip} />
+      <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" onClick={handleSkip} />
 
       {/* Modal */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+      <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
-          className="relative max-w-lg w-full bg-card/95 backdrop-blur-xl rounded-2xl border border-electric/30 shadow-2xl shadow-electric/20 p-8 pointer-events-auto"
-          onClick={(e) => e.stopPropagation()}
+          className="pointer-events-auto relative w-full max-w-lg rounded-2xl border border-electric/30 bg-card/95 p-8 shadow-2xl shadow-electric/20 backdrop-blur-xl"
+          onClick={e => e.stopPropagation()}
         >
           {/* Close button */}
           <button
             onClick={handleSkip}
-            className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors"
+            className="absolute right-4 top-4 text-muted-foreground transition-colors hover:text-foreground"
             aria-label="Close"
           >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -238,9 +230,7 @@ export function OnboardingModal({ user, onComplete }: OnboardingModalProps) {
           {/* Content */}
           <div className="space-y-6">
             <div className="text-center">
-              <h2 className="text-3xl font-bold text-foreground mb-2">
-                {currentStepData.title}
-              </h2>
+              <h2 className="mb-2 text-3xl font-bold text-foreground">{currentStepData.title}</h2>
               <p className="text-muted-foreground">{currentStepData.subtitle}</p>
             </div>
 
@@ -250,14 +240,14 @@ export function OnboardingModal({ user, onComplete }: OnboardingModalProps) {
             <div className="flex gap-3 pt-4">
               <button
                 onClick={handleSkip}
-                className="flex-1 px-6 py-3 rounded-xl border border-electric/30 text-foreground hover:bg-electric/10 transition-colors"
+                className="flex-1 rounded-xl border border-electric/30 px-6 py-3 text-foreground transition-colors hover:bg-electric/10"
               >
                 Skip for now
               </button>
               <button
                 onClick={handleSave}
                 disabled={isLoading}
-                className="flex-1 px-6 py-3 rounded-xl bg-electric text-background font-semibold hover:bg-electric/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 rounded-xl bg-electric px-6 py-3 font-semibold text-background transition-colors hover:bg-electric/90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isLoading ? 'Saving...' : 'Complete Setup 🚀'}
               </button>
