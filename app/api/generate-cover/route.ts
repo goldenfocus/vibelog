@@ -1,6 +1,5 @@
 import crypto from 'crypto';
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
@@ -43,105 +42,50 @@ export async function POST(req: NextRequest) {
       userAgent
     );
 
-    // Default to 9:16 (mobile-first) since we're "mostly mobile"
-    // Switch to 16:9 for desktop devices
-    const aspectRatio = isMobile ? '9:16' : '16:9';
+    // DALL-E 3 only supports 1024x1024, 1024x1792, 1792x1024
+    const dalleSize = isMobile ? '1024x1792' : '1792x1024'; // Portrait for mobile, landscape for desktop
     const [targetWidth, targetHeight] = isMobile ? [1080, 1920] : [1920, 1080];
 
     console.log(
-      `🖼️ [COVER-GEN] Generating image with Gemini 2.5 Flash - Device: ${isMobile ? 'Mobile' : 'Desktop'}, Aspect: ${aspectRatio}`
+      `🖼️ [COVER-GEN] Generating image with DALL-E 3 - Device: ${isMobile ? 'Mobile' : 'Desktop'}, Size: ${dalleSize}`
     );
 
+    // Generate image with DALL-E 3
     let raw: Buffer;
-    let useGemini = true;
-
-    // Try Gemini first if available
     try {
-      if (
-        !process.env.GEMINI_API_KEY ||
-        process.env.GEMINI_API_KEY === 'your_gemini_api_key_here'
-      ) {
-        throw new Error('Gemini API key not configured');
+      if (!process.env.OPENAI_API_KEY) {
+        throw new Error('OpenAI API key not configured');
       }
 
-      const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-image' });
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-      const result = await model.generateContent({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: {
-          maxOutputTokens: 1290, // Each image is 1290 tokens
-        },
+      const img = await openai.images.generate({
+        model: 'dall-e-3',
+        prompt,
+        size: dalleSize,
+        quality: 'standard',
+        response_format: 'b64_json',
       });
 
-      const parts = result.response.candidates?.[0]?.content?.parts;
-
-      if (!parts || parts.length === 0) {
-        throw new Error('Image generation returned no parts');
-      }
-
-      // Find the image part
-      const imagePart = parts.find(part => part.inlineData);
-
-      if (!imagePart || !imagePart.inlineData) {
-        throw new Error('Image generation returned no image data');
-      }
-
-      const b64 = imagePart.inlineData.data;
+      const b64 = img.data?.[0]?.b64_json;
       if (!b64) {
-        throw new Error('Image generation returned empty data');
+        throw new Error('DALL-E 3 returned empty data');
       }
       raw = Buffer.from(b64, 'base64');
 
-      console.log('✅ Image generated successfully with Gemini 2.5 Flash');
-    } catch (geminiErr: any) {
-      console.error('Gemini image generation error:', geminiErr.message);
-      console.log('⚠️  Gemini failed - falling back to DALL-E 3...');
-      useGemini = false;
-    }
-
-    // Fallback to DALL-E 3
-    if (!useGemini) {
-      try {
-        if (!process.env.OPENAI_API_KEY) {
-          throw new Error('OpenAI API key not configured');
-        }
-
-        console.log('🎨 Generating image with DALL-E 3 (fallback)...');
-        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-        // DALL-E 3 only supports 1024x1024, 1024x1792, 1792x1024
-        // Map our aspect ratios to DALL-E sizes
-        const dalleSize = isMobile ? '1024x1792' : '1792x1024'; // Portrait for mobile, landscape for desktop
-
-        const img = await openai.images.generate({
-          model: 'dall-e-3',
-          prompt,
-          size: dalleSize,
-          quality: 'standard',
-          response_format: 'b64_json',
-        });
-
-        const b64 = img.data?.[0]?.b64_json;
-        if (!b64) {
-          throw new Error('DALL-E 3 returned empty data');
-        }
-        raw = Buffer.from(b64, 'base64');
-
-        console.log('✅ Image generated successfully with DALL-E 3');
-      } catch (dalleErr) {
-        console.error('DALL-E 3 generation error:', dalleErr);
-        const alt = buildAltText(title, label, body.summary);
-        return NextResponse.json({
-          url: '/og-image.png',
-          width: 1200,
-          height: 630,
-          alt,
-          style,
-          prompt,
-          success: true,
-        });
-      }
+      console.log('✅ Image generated successfully with DALL-E 3');
+    } catch (dalleErr) {
+      console.error('DALL-E 3 generation error:', dalleErr);
+      const alt = buildAltText(title, label, body.summary);
+      return NextResponse.json({
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt,
+        style,
+        prompt,
+        success: true,
+      });
     }
 
     const { buffer, width, height } = await watermarkAndResize({
