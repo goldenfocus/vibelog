@@ -14,6 +14,7 @@ interface AccountSheetProps {
   onOpenChange: (open: boolean) => void;
   displayName: string;
   email: string;
+  username: string | null;
   avatarUrl: string | null;
   renderAvatarContent: (size: 'sm' | 'lg') => React.ReactNode;
   getAvatarContainerStyle: (hasImage: boolean) => React.CSSProperties;
@@ -24,6 +25,7 @@ export function AccountSheet({
   onOpenChange,
   displayName,
   email,
+  username,
   avatarUrl,
   renderAvatarContent,
   getAvatarContainerStyle,
@@ -55,7 +57,8 @@ export function AccountSheet({
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-base font-semibold">{displayName}</p>
-            <p className="truncate text-sm text-muted-foreground">{email}</p>
+            {username && <p className="truncate text-sm font-medium text-electric">@{username}</p>}
+            <p className="truncate text-xs text-muted-foreground">{email}</p>
           </div>
         </div>
       </div>
