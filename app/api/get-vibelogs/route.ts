@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
         id,
         title,
         slug,
+        public_slug,
         teaser,
         content,
         cover_image_url,
