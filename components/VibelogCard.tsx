@@ -16,6 +16,7 @@ interface Vibelog {
   id: string;
   title: string;
   slug?: string | null;
+  public_slug?: string | null; // For anonymous vibelogs
   teaser: string;
   content: string;
   cover_image_url: string | null;
@@ -54,10 +55,19 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
   const isTeaser = true; // Always show as teaser in card view
 
   const handleReadMore = () => {
-    // Use slug-based URL if available (SEO-friendly), otherwise fall back to ID
-    const vibelogPath = vibelog.slug
-      ? `/${vibelog.author.username}/${vibelog.slug}`
-      : `/vibelogs/${vibelog.id}`;
+    // Anonymous vibelogs use /v/{public_slug} route
+    // Authenticated user vibelogs use /{username}/{slug} route
+    const isAnonymous = vibelog.author.username === 'anonymous' || !vibelog.user_id;
+
+    let vibelogPath: string;
+    if (isAnonymous && vibelog.public_slug) {
+      vibelogPath = `/v/${vibelog.public_slug}`;
+    } else if (vibelog.slug) {
+      vibelogPath = `/${vibelog.author.username}/${vibelog.slug}`;
+    } else {
+      // Fallback to old UUID route
+      vibelogPath = `/vibelogs/${vibelog.id}`;
+    }
 
     router.push(vibelogPath);
   };
@@ -81,10 +91,22 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
 
   const handleShare = async () => {
     // Avoid window.location during SSR - build URL client-side only
-    const url =
-      typeof window !== 'undefined'
-        ? `${window.location.origin}/${vibelog.author.username}/${vibelog.slug || vibelog.id}`
-        : '';
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const isAnonymous = vibelog.author.username === 'anonymous' || !vibelog.user_id;
+
+    let path: string;
+    if (isAnonymous && vibelog.public_slug) {
+      path = `/v/${vibelog.public_slug}`;
+    } else if (vibelog.slug) {
+      path = `/${vibelog.author.username}/${vibelog.slug}`;
+    } else {
+      path = `/vibelogs/${vibelog.id}`;
+    }
+
+    const url = `${window.location.origin}${path}`;
 
     if (typeof navigator !== 'undefined' && navigator.share) {
       await navigator.share({ title: vibelog.title, url });
