@@ -80,10 +80,15 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
   };
 
   const handleShare = async () => {
-    const url = `${window.location.origin}/${vibelog.author.username}/${vibelog.slug || vibelog.id}`;
-    if (navigator.share) {
+    // Avoid window.location during SSR - build URL client-side only
+    const url =
+      typeof window !== 'undefined'
+        ? `${window.location.origin}/${vibelog.author.username}/${vibelog.slug || vibelog.id}`
+        : '';
+
+    if (typeof navigator !== 'undefined' && navigator.share) {
       await navigator.share({ title: vibelog.title, url });
-    } else {
+    } else if (typeof navigator !== 'undefined') {
       await navigator.clipboard.writeText(url);
     }
   };
