@@ -1,0 +1,220 @@
+'use client';
+
+import { Copy, Share2, Edit, Download, Sparkles, Play, Pause, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+
+import ExportButton from '@/components/ExportButton';
+import { useAuth } from '@/components/providers/AuthProvider';
+import { useTextToSpeech } from '@/hooks/useTextToSpeech';
+import type { ExportFormat } from '@/lib/export';
+
+interface VibelogActionsProps {
+  vibelogId: string;
+  content: string;
+  title?: string;
+  author?: string;
+  authorId?: string; // User ID of vibelog author
+  onEdit?: () => void;
+  onRemix?: () => void;
+  onCopy?: () => Promise<void> | void;
+  onShare?: () => Promise<void> | void;
+  onExport?: (format: ExportFormat) => void;
+  onUpgradePrompt?: (message: string, benefits: string[]) => void;
+  variant?: 'default' | 'compact'; // compact for cards, default for detail pages
+  className?: string;
+}
+
+export default function VibelogActions({
+  vibelogId,
+  content,
+  title,
+  author,
+  authorId,
+  onEdit,
+  onRemix,
+  onCopy,
+  onShare,
+  onExport,
+  onUpgradePrompt,
+  variant = 'default',
+  className = '',
+}: VibelogActionsProps) {
+  const { user } = useAuth();
+  const [copySuccess, setCopySuccess] = useState(false);
+  const { isPlaying, isLoading, playText, stop, progress } = useTextToSpeech(onUpgradePrompt);
+
+  // Determine if this is user's own vibelog
+  const isOwnVibelog = user?.id && authorId && user.id === authorId;
+
+  const handlePlayClick = async () => {
+    if (isPlaying) {
+      stop();
+      return;
+    }
+
+    // Clean markdown for TTS
+    const cleanContent = content
+      .replace(/#{1,6}\s/g, '') // Remove headers
+      .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
+      .replace(/\*(.*?)\*/g, '$1') // Remove italic
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove links
+      .replace(/`([^`]+)`/g, '$1') // Remove code
+      .replace(/\n\s*\n/g, '\n') // Remove extra newlines
+      .trim();
+
+    await playText(cleanContent, 'shimmer');
+  };
+
+  const handleCopyClick = async () => {
+    try {
+      if (onCopy) {
+        await onCopy();
+      } else {
+        await navigator.clipboard.writeText(content);
+      }
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch (error) {
+      console.error('Copy failed', error);
+    }
+  };
+
+  const handleShareClick = async () => {
+    if (onShare) {
+      await onShare();
+    }
+  };
+
+  const handleEditOrRemix = () => {
+    if (isOwnVibelog && onEdit) {
+      onEdit();
+    } else if (onRemix) {
+      onRemix();
+    }
+  };
+
+  const isCompact = variant === 'compact';
+  const baseButtonClass = isCompact
+    ? 'flex items-center gap-2 rounded-lg border border-border/50 px-3 py-2 text-sm transition-all hover:border-electric/30 hover:bg-electric/5'
+    : 'group flex min-w-[70px] flex-col items-center gap-2 rounded-2xl border border-border/20 bg-muted/20 p-3 transition-all duration-200 hover:scale-105 hover:bg-muted/30 sm:min-w-[80px] sm:p-4';
+
+  const iconClass = isCompact
+    ? 'h-4 w-4'
+    : 'h-5 w-5 text-foreground transition-colors group-hover:text-electric sm:h-6 sm:w-6';
+
+  const labelClass = isCompact
+    ? 'hidden sm:inline'
+    : 'text-xs font-medium text-muted-foreground group-hover:text-foreground';
+
+  const wrapperClass = isCompact
+    ? 'flex flex-wrap items-center gap-3 border-t border-border/30 pt-4'
+    : 'flex justify-center gap-2 sm:gap-3';
+
+  return (
+    <div className={`${wrapperClass} ${className}`} data-testid="vibelog-actions">
+      {/* Edit or Remix Button */}
+      {(onEdit || onRemix) && (
+        <button
+          onClick={handleEditOrRemix}
+          className={
+            isOwnVibelog
+              ? baseButtonClass
+              : `${baseButtonClass} ml-auto flex items-center gap-2 rounded-lg bg-electric/10 px-4 py-2 font-medium text-electric transition-all duration-200 hover:bg-electric hover:text-white`
+          }
+          title={isOwnVibelog ? 'Edit' : 'Remix'}
+          data-testid={isOwnVibelog ? 'edit-button' : 'remix-button'}
+        >
+          {isOwnVibelog ? (
+            <>
+              <Edit className={iconClass} />
+              {isCompact && <span className={labelClass}>Edit</span>}
+              {!isCompact && <span className={labelClass}>Edit</span>}
+            </>
+          ) : (
+            <>
+              <Sparkles className="h-4 w-4" />
+              <span>Remix</span>
+            </>
+          )}
+        </button>
+      )}
+
+      {/* Copy Button */}
+      <button
+        onClick={handleCopyClick}
+        className={baseButtonClass}
+        title={copySuccess ? 'Copied!' : 'Copy'}
+        data-testid="copy-button"
+      >
+        <Copy className={iconClass} />
+        <span className={labelClass}>{copySuccess ? 'Copied!' : 'Copy'}</span>
+      </button>
+
+      {/* Listen Button with TTS */}
+      <button
+        onClick={handlePlayClick}
+        disabled={isLoading}
+        className={`${baseButtonClass} relative ${isCompact ? '' : 'overflow-hidden'}`}
+        title={isPlaying ? 'Pause' : 'Listen'}
+        data-testid="listen-button"
+      >
+        {!isCompact && isPlaying && (
+          <div
+            className="absolute bottom-0 left-0 h-1 bg-electric transition-all duration-100 ease-out"
+            style={{ width: `${progress}%` }}
+          />
+        )}
+
+        <div className="relative flex items-center justify-center">
+          {isLoading ? (
+            <Loader2 className={`${iconClass} animate-spin`} />
+          ) : isPlaying ? (
+            <Pause className={iconClass} />
+          ) : (
+            <Play className={iconClass} />
+          )}
+        </div>
+
+        <span className={labelClass}>{isPlaying ? 'Pause' : 'Listen'}</span>
+      </button>
+
+      {/* Share Button */}
+      {onShare && (
+        <button
+          onClick={handleShareClick}
+          className={baseButtonClass}
+          title="Share"
+          data-testid="share-button"
+        >
+          <Share2 className={iconClass} />
+          <span className={labelClass}>Share</span>
+        </button>
+      )}
+
+      {/* Export Button */}
+      {!isCompact && (
+        <ExportButton content={content} title={title} author={author} onExport={onExport} />
+      )}
+
+      {isCompact && (
+        <button
+          onClick={() => {
+            const blob = new Blob([content], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `vibelog-${vibelogId}.md`;
+            a.click();
+            URL.revokeObjectURL(url);
+          }}
+          className={baseButtonClass}
+          title="Export"
+          data-testid="export-button"
+        >
+          <Download className={iconClass} />
+          <span className={labelClass}>Export</span>
+        </button>
+      )}
+    </div>
+  );
+}

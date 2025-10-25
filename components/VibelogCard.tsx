@@ -1,10 +1,9 @@
 'use client';
 
-import { Clock, Share2, User, Sparkles, Play, Copy, Download } from 'lucide-react';
+import { Clock, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 
-import { useAuth } from '@/components/providers/AuthProvider';
+import VibelogActions from '@/components/VibelogActions';
 import VibelogContentRenderer from '@/components/VibelogContentRenderer';
 
 interface VibelogAuthor {
@@ -26,6 +25,7 @@ interface Vibelog {
   like_count: number;
   share_count: number;
   read_time: number;
+  user_id?: string; // Author's user ID for Edit/Remix logic
   author: VibelogAuthor;
 }
 
@@ -35,14 +35,7 @@ interface VibelogCardProps {
 }
 
 export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
-  const { user } = useAuth();
   const router = useRouter();
-  const [copySuccess, setCopySuccess] = useState(false);
-
-  // NEW UX: Always show teaser as a preview card
-  // User clicks "Read More" to go to full vibelog page
-  // This creates better engagement and SEO (each vibelog gets its own page)
-  const isLoggedIn = !!user;
 
   // Show ONLY first 200 chars of teaser as preview
   // Remove the title from content (it's usually the first line starting with #)
@@ -66,13 +59,11 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
       ? `/${vibelog.author.username}/${vibelog.slug}`
       : `/vibelogs/${vibelog.id}`;
 
-    if (isLoggedIn) {
-      // Logged-in users: go directly to vibelog page
-      router.push(vibelogPath);
-    } else {
-      // Logged-out users: redirect to sign-in with return URL
-      router.push(`/auth/signin?returnTo=${encodeURIComponent(vibelogPath)}`);
-    }
+    router.push(vibelogPath);
+  };
+
+  const handleEdit = () => {
+    router.push(`/vibelogs/${vibelog.id}/edit`);
   };
 
   const handleRemix = () => {
@@ -88,12 +79,6 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
     }
   };
 
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(vibelog.content);
-    setCopySuccess(true);
-    setTimeout(() => setCopySuccess(false), 2000);
-  };
-
   const handleShare = async () => {
     const url = `${window.location.origin}/${vibelog.author.username}/${vibelog.slug || vibelog.id}`;
     if (navigator.share) {
@@ -101,16 +86,6 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
     } else {
       await navigator.clipboard.writeText(url);
     }
-  };
-
-  const handleExport = () => {
-    const blob = new Blob([vibelog.content], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${vibelog.slug || vibelog.id}.md`;
-    a.click();
-    URL.revokeObjectURL(url);
   };
 
   const formatDate = (dateString: string) => {
@@ -187,57 +162,18 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
         />
       </div>
 
-      {/* Actions */}
-      <div className="flex flex-wrap items-center gap-3 border-t border-border/30 pt-4">
-        {/* Listen Button */}
-        <button
-          onClick={handleReadMore}
-          className="flex items-center gap-2 rounded-lg border border-border/50 px-3 py-2 text-sm transition-all hover:border-electric/30 hover:bg-electric/5"
-          title="Listen"
-        >
-          <Play className="h-4 w-4" />
-          <span className="hidden sm:inline">Listen</span>
-        </button>
-
-        {/* Copy Button */}
-        <button
-          onClick={handleCopy}
-          className="flex items-center gap-2 rounded-lg border border-border/50 px-3 py-2 text-sm transition-all hover:border-electric/30 hover:bg-electric/5"
-          title={copySuccess ? 'Copied!' : 'Copy'}
-        >
-          <Copy className="h-4 w-4" />
-          <span className="hidden sm:inline">{copySuccess ? 'Copied!' : 'Copy'}</span>
-        </button>
-
-        {/* Share Button */}
-        <button
-          onClick={handleShare}
-          className="flex items-center gap-2 rounded-lg border border-border/50 px-3 py-2 text-sm transition-all hover:border-electric/30 hover:bg-electric/5"
-          title="Share"
-        >
-          <Share2 className="h-4 w-4" />
-          <span className="hidden sm:inline">Share</span>
-        </button>
-
-        {/* Export Button */}
-        <button
-          onClick={handleExport}
-          className="flex items-center gap-2 rounded-lg border border-border/50 px-3 py-2 text-sm transition-all hover:border-electric/30 hover:bg-electric/5"
-          title="Export"
-        >
-          <Download className="h-4 w-4" />
-          <span className="hidden sm:inline">Export</span>
-        </button>
-
-        {/* Remix Button - Highlighted */}
-        <button
-          onClick={handleRemix}
-          className="ml-auto flex items-center gap-2 rounded-lg bg-electric/10 px-4 py-2 font-medium text-electric transition-all duration-200 hover:bg-electric hover:text-white"
-        >
-          <Sparkles className="h-4 w-4" />
-          <span>Remix</span>
-        </button>
-      </div>
+      {/* Actions - Unified Component */}
+      <VibelogActions
+        vibelogId={vibelog.id}
+        content={vibelog.content}
+        title={vibelog.title}
+        author={vibelog.author.display_name}
+        authorId={vibelog.user_id}
+        onEdit={handleEdit}
+        onRemix={handleRemix}
+        onShare={handleShare}
+        variant="compact"
+      />
     </article>
   );
 }

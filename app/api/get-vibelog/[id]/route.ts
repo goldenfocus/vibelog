@@ -17,6 +17,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         `
         id,
         title,
+        slug,
         teaser,
         content,
         cover_image_url,
