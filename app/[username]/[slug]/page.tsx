@@ -136,6 +136,13 @@ export default async function VibelogPage({ params }: PageProps) {
     notFound();
   }
 
+  // Check if user is authenticated
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const isAuthenticated = !!user;
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -212,9 +219,33 @@ export default async function VibelogPage({ params }: PageProps) {
             </div>
           </div>
 
-          {/* Full Content - No "Read More" CTA on detail page */}
+          {/* Content - Show full for authenticated users, teaser for anonymous */}
           <div className="prose prose-lg max-w-none">
-            <VibelogContentRenderer content={vibelog.content} isTeaser={false} />
+            {isAuthenticated ? (
+              <VibelogContentRenderer content={vibelog.content} isTeaser={false} />
+            ) : (
+              <>
+                <VibelogContentRenderer
+                  content={vibelog.teaser || vibelog.content.substring(0, 500) + '...'}
+                  isTeaser={true}
+                />
+                <div className="mt-8 rounded-2xl border border-electric/30 bg-electric/5 p-6 text-center">
+                  <h3 className="mb-2 text-xl font-bold text-electric">
+                    Sign in to read the full vibelog
+                  </h3>
+                  <p className="mb-4 text-muted-foreground">
+                    Create an account or sign in to access the complete content and join the
+                    community.
+                  </p>
+                  <Link
+                    href="/auth/signin"
+                    className="inline-flex items-center gap-2 rounded-lg bg-electric px-6 py-3 font-medium text-white transition-all duration-200 hover:bg-electric-glow"
+                  >
+                    Sign In
+                  </Link>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Tags */}
