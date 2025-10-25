@@ -56,7 +56,7 @@ export default function DashboardPage() {
 
       const supabase = createClient();
 
-      // Fetch vibelogs
+      // Fetch vibelogs (include user_id for Edit/Remix logic)
       const { data: vibelogsData, error } = await supabase
         .from('vibelogs')
         .select(
@@ -93,19 +93,24 @@ export default function DashboardPage() {
       }
 
       // Fetch user's profile
-      const { data: profile } = await supabase
+      const { data: profileData } = await supabase
         .from('profiles')
         .select('username, display_name, avatar_url')
         .eq('id', user.id)
         .single();
 
       // Transform data to match VibelogCard interface
+      // ALWAYS use database profile as source of truth for avatar
       const transformedData = vibelogsData.map(v => ({
         ...v,
-        author: profile || {
-          username: user.user_metadata?.username || 'user',
-          display_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
-          avatar_url: user.user_metadata?.avatar_url || null,
+        author: {
+          username: profileData?.username || user.user_metadata?.username || 'user',
+          display_name:
+            profileData?.display_name ||
+            user.user_metadata?.full_name ||
+            user.email?.split('@')[0] ||
+            'User',
+          avatar_url: profileData?.avatar_url || null, // Database is source of truth
         },
       }));
 

@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
         `
         id,
         title,
+        slug,
         teaser,
         content,
         cover_image_url,
@@ -48,7 +49,7 @@ export async function GET(request: NextRequest) {
     const userIds = [...new Set((vibelogs || []).map((v: any) => v.user_id).filter(Boolean))];
 
     // Fetch profiles for all users (if any)
-    let profilesMap = new Map();
+    const profilesMap = new Map();
     if (userIds.length > 0) {
       const { data: profiles } = await supabase
         .from('profiles')
@@ -79,8 +80,7 @@ export async function GET(request: NextRequest) {
               display_name: 'Anonymous',
               avatar_url: null,
             },
-        // Remove user_id from response
-        user_id: undefined,
+        // Keep user_id for Edit/Remix logic in VibelogActions component
       };
     });
 
