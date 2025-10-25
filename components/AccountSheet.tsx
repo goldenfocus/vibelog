@@ -82,33 +82,6 @@ export function AccountSheet({
           <Settings className="h-5 w-5" />
           Profile Settings
         </Link>
-
-        <Link
-          href="/about"
-          className="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium text-foreground transition-colors hover:bg-muted/50 active:bg-muted/70"
-          onClick={() => onOpenChange(false)}
-        >
-          <span className="text-xl">ℹ️</span>
-          vibelog.io
-        </Link>
-
-        <Link
-          href="/faq"
-          className="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium text-foreground transition-colors hover:bg-muted/50 active:bg-muted/70"
-          onClick={() => onOpenChange(false)}
-        >
-          <span className="text-xl">❓</span>
-          FAQ
-        </Link>
-
-        <Link
-          href="/pricing"
-          className="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium text-foreground transition-colors hover:bg-muted/50 active:bg-muted/70"
-          onClick={() => onOpenChange(false)}
-        >
-          <span className="text-xl">💎</span>
-          Pricing
-        </Link>
       </div>
 
       {/* Sign Out Button */}
