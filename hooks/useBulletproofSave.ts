@@ -143,14 +143,14 @@ export function useBulletproofSave() {
         }
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(backups));
-        console.log('💾 [BULLETPROOF-SAVE] Local backup stored:', backup.id);
+        console.log('💾 [SAVE] Local backup stored:', backup.id);
         trackSaveMetrics('local_backup_created', {
           backupId: backup.id,
           contentLength: data.content.length,
         });
         return backup.id;
       } catch (error) {
-        console.error('❌ [BULLETPROOF-SAVE] Failed to store local backup:', error);
+        console.error('❌ [SAVE] Failed to store local backup:', error);
         return null;
       }
     },
@@ -166,17 +166,17 @@ export function useBulletproofSave() {
         backup.status = 'completed';
         backup.vibelogId = vibelogId;
         localStorage.setItem(STORAGE_KEY, JSON.stringify(backups));
-        console.log('✅ [BULLETPROOF-SAVE] Backup marked complete:', backupId, '→', vibelogId);
+        console.log('✅ [SAVE] Backup marked complete:', backupId, '→', vibelogId);
       }
     } catch (error) {
-      console.error('❌ [BULLETPROOF-SAVE] Failed to mark backup complete:', error);
+      console.error('❌ [SAVE] Failed to mark backup complete:', error);
     }
   }, []);
 
   // Clean up orphaned storage objects when save fails
   const cleanupOrphanedStorage = useCallback(async (data: SaveVibelogData) => {
     try {
-      console.log('🧹 [BULLETPROOF-SAVE] Cleaning up orphaned storage objects...');
+      console.log('🧹 [SAVE] Cleaning up orphaned storage objects...');
 
       const urlsToDelete: string[] = [];
 
@@ -189,7 +189,7 @@ export function useBulletproofSave() {
       }
 
       if (urlsToDelete.length === 0) {
-        console.log('ℹ️ [BULLETPROOF-SAVE] No storage objects to clean up');
+        console.log('ℹ️ [SAVE] No storage objects to clean up');
         return;
       }
 
@@ -201,16 +201,12 @@ export function useBulletproofSave() {
       });
 
       if (response.ok) {
-        console.log(
-          '✅ [BULLETPROOF-SAVE] Cleaned up orphaned storage:',
-          urlsToDelete.length,
-          'files'
-        );
+        console.log('✅ [SAVE] Cleaned up orphaned storage:', urlsToDelete.length, 'files');
       } else {
-        console.warn('⚠️ [BULLETPROOF-SAVE] Storage cleanup failed, objects may remain orphaned');
+        console.warn('⚠️ [SAVE] Storage cleanup failed, objects may remain orphaned');
       }
     } catch (error) {
-      console.warn('⚠️ [BULLETPROOF-SAVE] Storage cleanup error (non-critical):', error);
+      console.warn('⚠️ [SAVE] Storage cleanup error (non-critical):', error);
       // Non-critical - orphaned files will be cleaned up by periodic maintenance
     }
   }, []);
@@ -245,7 +241,7 @@ export function useBulletproofSave() {
       const startTime = Date.now();
 
       try {
-        console.log(`🚀 [BULLETPROOF-SAVE] Attempt ${attempt}/${MAX_RETRY_ATTEMPTS}`);
+        console.log(`🚀 [SAVE] Attempt ${attempt}/${MAX_RETRY_ATTEMPTS}`);
 
         if (attempt > 1) {
           trackSaveMetrics('retry_attempt', { attempt, backupId });
@@ -289,7 +285,7 @@ export function useBulletproofSave() {
 
         if (result.success) {
           const responseTime = Date.now() - startTime;
-          console.log('🎉 [BULLETPROOF-SAVE] Save successful:', result.vibelogId);
+          console.log('🎉 [SAVE] Save successful:', result.vibelogId);
 
           trackSaveMetrics('save_success', {
             vibelogId: result.vibelogId,
@@ -312,15 +308,12 @@ export function useBulletproofSave() {
           };
         } else {
           // Server returned structured error but may have still captured data
-          console.warn(
-            '⚠️ [BULLETPROOF-SAVE] Server reported issues but may have captured data:',
-            result
-          );
+          console.warn('⚠️ [SAVE] Server reported issues but may have captured data:', result);
 
           if (attempt < MAX_RETRY_ATTEMPTS) {
             // Wait and retry
             const delay = RETRY_DELAY_BASE * Math.pow(2, attempt - 1); // Exponential backoff
-            console.log(`🔄 [BULLETPROOF-SAVE] Retrying in ${delay}ms...`);
+            console.log(`🔄 [SAVE] Retrying in ${delay}ms...`);
 
             await new Promise(resolve => setTimeout(resolve, delay));
             return performSave(data, attempt + 1, backupId);
@@ -331,9 +324,9 @@ export function useBulletproofSave() {
               result.message?.includes('failures table') ||
               result.message?.includes('manual recovery')
             ) {
-              console.log('🧹 [BULLETPROOF-SAVE] Data in failures table - cleaning up storage');
+              console.log('🧹 [SAVE] Data in failures table - cleaning up storage');
               cleanupOrphanedStorage(data).catch(err => {
-                console.warn('⚠️ [BULLETPROOF-SAVE] Cleanup failed (non-critical):', err);
+                console.warn('⚠️ [SAVE] Cleanup failed (non-critical):', err);
               });
             }
 
@@ -350,7 +343,7 @@ export function useBulletproofSave() {
         }
       } catch (networkError) {
         const responseTime = Date.now() - startTime;
-        console.error(`❌ [BULLETPROOF-SAVE] Network error on attempt ${attempt}:`, networkError);
+        console.error(`❌ [SAVE] Network error on attempt ${attempt}:`, networkError);
 
         trackSaveMetrics('network_error', {
           attempt,
@@ -361,7 +354,7 @@ export function useBulletproofSave() {
 
         if (attempt < MAX_RETRY_ATTEMPTS) {
           const delay = RETRY_DELAY_BASE * Math.pow(2, attempt - 1);
-          console.log(`🔄 [BULLETPROOF-SAVE] Network retry in ${delay}ms...`);
+          console.log(`🔄 [SAVE] Network retry in ${delay}ms...`);
 
           await new Promise(resolve => setTimeout(resolve, delay));
           return performSave(data, attempt + 1, backupId);
@@ -375,9 +368,9 @@ export function useBulletproofSave() {
           });
 
           // Clean up orphaned storage objects since save failed
-          console.log('🧹 [BULLETPROOF-SAVE] Save failed - triggering storage cleanup');
+          console.log('🧹 [SAVE] Save failed - triggering storage cleanup');
           cleanupOrphanedStorage(data).catch(err => {
-            console.warn('⚠️ [BULLETPROOF-SAVE] Cleanup failed (non-critical):', err);
+            console.warn('⚠️ [SAVE] Cleanup failed (non-critical):', err);
           });
 
           // Max retries reached - return success because we have local backup
@@ -397,7 +390,7 @@ export function useBulletproofSave() {
     async (data: SaveVibelogData): Promise<SaveResult> => {
       // Prevent concurrent saves
       if (isSaving) {
-        console.log('⏸️ [BULLETPROOF-SAVE] Save already in progress, skipping...');
+        console.log('⏸️ [SAVE] Save already in progress, skipping...');
         return {
           success: true,
           message: 'Save already in progress',
@@ -409,7 +402,7 @@ export function useBulletproofSave() {
       saveAttemptRef.current += 1;
       const currentAttempt = saveAttemptRef.current;
 
-      console.log('🎯 [BULLETPROOF-SAVE] Starting bulletproof save process #', currentAttempt);
+      console.log('🎯 [SAVE] Starting save process #', currentAttempt);
 
       trackSaveMetrics('save_started', {
         attempt: currentAttempt,
@@ -429,16 +422,16 @@ export function useBulletproofSave() {
         // STEP 3: Update status based on result
         if (result.warnings && result.warnings.length > 0) {
           setSaveStatus('warning');
-          console.log('⚠️ [BULLETPROOF-SAVE] Save completed with warnings:', result.warnings);
+          console.log('⚠️ [SAVE] Save completed with warnings:', result.warnings);
         } else {
           setSaveStatus('success');
-          console.log('✅ [BULLETPROOF-SAVE] Save completed successfully');
+          console.log('✅ [SAVE] Save completed successfully');
         }
 
         return result;
       } catch (unexpectedError) {
         // This should never happen due to our error handling, but just in case...
-        console.error('💥 [BULLETPROOF-SAVE] Unexpected error:', unexpectedError);
+        console.error('💥 [SAVE] Unexpected error:', unexpectedError);
 
         setSaveStatus('warning');
         return {
@@ -502,7 +495,7 @@ export function useBulletproofSave() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return backups.filter((b: any) => b.status === 'pending');
     } catch (error) {
-      console.error('❌ [BULLETPROOF-SAVE] Failed to get pending backups:', error);
+      console.error('❌ [SAVE] Failed to get pending backups:', error);
       return [];
     }
   }, []);
@@ -510,7 +503,7 @@ export function useBulletproofSave() {
   // Function to retry pending backups (can be called periodically)
   const retryPendingBackups = useCallback(async () => {
     const pendingBackups = getPendingBackups();
-    console.log(`🔄 [BULLETPROOF-SAVE] Found ${pendingBackups.length} pending backups to retry`);
+    console.log(`🔄 [SAVE] Found ${pendingBackups.length} pending backups to retry`);
 
     for (const backup of pendingBackups.slice(0, 5)) {
       // Limit to 5 at a time
@@ -518,7 +511,7 @@ export function useBulletproofSave() {
         await performSave(backup.data, 1, backup.id);
         await new Promise(resolve => setTimeout(resolve, 500)); // Brief pause between retries
       } catch (error) {
-        console.error('❌ [BULLETPROOF-SAVE] Failed to retry backup:', backup.id, error);
+        console.error('❌ [SAVE] Failed to retry backup:', backup.id, error);
       }
     }
   }, [getPendingBackups, performSave]);
