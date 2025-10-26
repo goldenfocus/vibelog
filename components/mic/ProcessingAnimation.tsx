@@ -143,7 +143,6 @@ export default function ProcessingAnimation({
       });
 
     let generatePromise: Promise<any> | null = null;
-    let coverPromise: Promise<any> | null = null;
     let generateStarted = false;
     let generatedVibelogContent: string = '';
     const startGenerate = () => {
@@ -158,13 +157,12 @@ export default function ProcessingAnimation({
           // Capture the vibelog content for cover generation
           generatedVibelogContent = typeof result === 'string' ? result : '';
 
-          // Start cover generation immediately after content is ready
-          // Store promise so we can await it during the "image" step
+          // Start cover generation in background (performance optimization)
+          // The save function will ensure it's complete before persisting
           if (typeof onCoverComplete === 'function' && generatedVibelogContent) {
-            console.log('🖼️ [PROCESSING-ANIMATION] Starting cover generation...');
-            coverPromise = onCoverComplete(generatedVibelogContent).catch(error => {
-              console.error('Cover generation failed:', error);
-              return null; // Don't block on error
+            console.log('🖼️ [PROCESSING-ANIMATION] Starting cover generation in background...');
+            onCoverComplete(generatedVibelogContent).catch(error => {
+              console.error('Background cover generation failed:', error);
             });
           }
         })
@@ -225,13 +223,7 @@ export default function ProcessingAnimation({
         // Short dwell only; text already prepared at STRUCTURE
         await new Promise(res => setTimeout(res, 350));
       } else if (step.id === 'image') {
-        // Wait for cover generation to complete before proceeding
-        if (coverPromise) {
-          console.log('⏳ [PROCESSING-ANIMATION] Waiting for cover generation...');
-          await coverPromise;
-          console.log('✅ [PROCESSING-ANIMATION] Cover generation complete!');
-        }
-        // Small UX dwell for smooth animation
+        // Just show UX animation - actual cover generation handled by save function
         await new Promise(res => setTimeout(res, 500));
       } else {
         // Post steps: scale by generation time, keep UX snappy

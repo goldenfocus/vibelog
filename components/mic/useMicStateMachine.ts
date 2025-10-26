@@ -553,11 +553,33 @@ export function useMicStateMachine(
     try {
       const fullContent = vibelogAPI.processingData.current.vibelogContentData || contentToSave;
 
+      // CRITICAL: Wait for cover image generation to complete before saving
+      let finalCoverImage = coverImage;
+      if (!finalCoverImage) {
+        console.log('⏳ [COMPLETE-PROCESSING] Cover image not ready, generating now...');
+        try {
+          const generatedCover = await processCoverImage(fullContent);
+          if (generatedCover) {
+            finalCoverImage = generatedCover;
+            console.log('✅ [COMPLETE-PROCESSING] Cover image generated successfully!');
+          } else {
+            console.log('⚠️  [COMPLETE-PROCESSING] Cover image generation returned null');
+          }
+        } catch (error) {
+          console.error('❌ [COMPLETE-PROCESSING] Cover image generation failed:', error);
+          // Continue without cover image - don't block the save
+        }
+      } else {
+        console.log(
+          '✅ [COMPLETE-PROCESSING] Cover image already available from background generation'
+        );
+      }
+
       console.log('💾 [COMPLETE-PROCESSING] Calling saveVibelog with:', {
         contentLength: contentToSave.length,
         fullContentLength: fullContent.length,
         hasTranscription: !!transcription,
-        hasCoverImage: !!coverImage,
+        hasCoverImage: !!finalCoverImage,
         hasAudioData: !!audioData,
         userId: user?.id || 'anonymous',
       });
@@ -566,7 +588,7 @@ export function useMicStateMachine(
         content: contentToSave,
         fullContent,
         transcription: transcription || '',
-        coverImage: coverImage || undefined,
+        coverImage: finalCoverImage || undefined,
         audioData: audioData || undefined,
         userId: user?.id,
         isTeaser: isTeaserContent,
