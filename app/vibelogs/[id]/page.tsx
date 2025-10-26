@@ -192,9 +192,33 @@ export default function VibelogDetailPage() {
               </div>
             </div>
 
-            {/* Full Content */}
+            {/* Content - Show full for authenticated users, teaser for anonymous */}
             <div className="prose prose-invert max-w-none">
-              <VibelogContentRenderer content={vibelog.content} isTeaser={false} />
+              {user ? (
+                <VibelogContentRenderer content={vibelog.content} isTeaser={false} />
+              ) : (
+                <>
+                  <VibelogContentRenderer
+                    content={vibelog.teaser || vibelog.content.substring(0, 500) + '...'}
+                    isTeaser={true}
+                  />
+                  <div className="mt-8 rounded-2xl border border-electric/30 bg-electric/5 p-6 text-center">
+                    <h3 className="mb-2 text-xl font-bold text-electric">
+                      Sign in to read the full vibelog
+                    </h3>
+                    <p className="mb-4 text-muted-foreground">
+                      Create an account or sign in to access the complete content and join the
+                      community.
+                    </p>
+                    <button
+                      onClick={() => router.push('/auth/signin')}
+                      className="inline-flex items-center gap-2 rounded-lg bg-electric px-6 py-3 font-medium text-white transition-all duration-200 hover:bg-electric-glow"
+                    >
+                      Sign In
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </article>
 
