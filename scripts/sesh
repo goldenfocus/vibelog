@@ -1,0 +1,130 @@
+#!/bin/bash
+#
+# Sesh - Session Dashboard for AI Coordination
+#
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
+GRAY='\033[0;90m'
+BOLD='\033[1m'
+NC='\033[0m'
+
+# Repo root
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+TASKS_DIR="$REPO_ROOT/coordination/tasks"
+EVENTS_LOG="$REPO_ROOT/coordination/events.jsonl"
+
+# Header
+echo -e "${BOLD}${CYAN}╔════════════════════════════════════════════════════════════════╗${NC}"
+echo -e "${BOLD}${CYAN}║              VIBELOG AI COORDINATION DASHBOARD                 ║${NC}"
+echo -e "${BOLD}${CYAN}╚════════════════════════════════════════════════════════════════╝${NC}"
+echo ""
+
+# Count tasks
+count_tasks() {
+    find "$TASKS_DIR/$1" -name "*.md" 2>/dev/null | wc -l | tr -d ' '
+}
+
+ready_count=$(count_tasks "ready")
+in_progress_count=$(count_tasks "in-progress")
+review_count=$(count_tasks "review")
+ready_prod_count=$(count_tasks "ready-for-prod")
+backlog_count=$(count_tasks "backlog")
+
+# Status overview
+echo -e "${BOLD}📊 Task Overview${NC}"
+echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo -e "  ${GREEN}✓ Ready for Prod${NC}  : $ready_prod_count tasks"
+echo -e "  ${YELLOW}◉ In Review${NC}       : $review_count tasks"
+echo -e "  ${BLUE}● In Progress${NC}     : $in_progress_count tasks"
+echo -e "  ${CYAN}○ Ready${NC}           : $ready_count tasks"
+echo -e "  ${GRAY}⋯ Backlog${NC}         : $backlog_count tasks"
+echo ""
+
+# Show tasks
+show_tasks() {
+    local status=$1
+    local status_dir=$2
+    local color=$3
+    local symbol=$4
+    local limit=${5:-5}
+
+    local count=$(count_tasks "$status_dir")
+    if [ "$count" -eq 0 ]; then return; fi
+
+    echo -e "${BOLD}$symbol $status ($count)${NC}"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+    local i=0
+    for file in "$TASKS_DIR/$status_dir"/*.md; do
+        if [ ! -f "$file" ]; then continue; fi
+        if [ $i -ge $limit ]; then break; fi
+
+        local id=$(basename "$file" | cut -d'-' -f1)
+        local slug=$(basename "$file" .md | cut -d'-' -f2-)
+        local priority=$(grep "^priority:" "$file" | cut -d' ' -f2)
+        local assignee=$(grep "^assignee:" "$file" | cut -d' ' -f2-)
+
+        local pri_symbol=""
+        case "$priority" in
+            critical) pri_symbol="${RED}🚨${NC}" ;;
+            high) pri_symbol="${YELLOW}⚡${NC}" ;;
+            medium) pri_symbol="${BLUE}◆${NC}" ;;
+            low) pri_symbol="${GRAY}○${NC}" ;;
+        esac
+
+        local assign_display=""
+        if [ "$assignee" != "null" ] && [ ! -z "$assignee" ]; then
+            assign_display=" ${GRAY}→ $assignee${NC}"
+        fi
+
+        echo -e "  ${color}#$id${NC} $pri_symbol $slug$assign_display"
+        i=$((i + 1))
+    done
+    echo ""
+}
+
+show_tasks "${GREEN}Ready for Prod${NC}" "ready-for-prod" "$GREEN" "✓"
+show_tasks "${YELLOW}In Review${NC}" "review" "$YELLOW" "◉"
+show_tasks "${BLUE}In Progress${NC}" "in-progress" "$BLUE" "●"
+show_tasks "${CYAN}Ready${NC}" "ready" "$CYAN" "○" 5
+show_tasks "${GRAY}Backlog${NC}" "backlog" "$GRAY" "⋯" 3
+
+# Recent events
+if [ -f "$EVENTS_LOG" ]; then
+    event_count=$(wc -l < "$EVENTS_LOG" | tr -d ' ')
+    if [ "$event_count" -gt 0 ]; then
+        echo -e "${BOLD}📝 Recent Activity (last 10)${NC}"
+        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+        tail -10 "$EVENTS_LOG" | while IFS= read -r line; do
+            event=$(echo "$line" | grep -o '"event":"[^"]*"' | cut -d'"' -f4)
+            task=$(echo "$line" | grep -o '"task":"[^"]*"' | cut -d'"' -f4)
+            ai=$(echo "$line" | grep -o '"ai":"[^"]*"' | cut -d'"' -f4)
+            ts=$(echo "$line" | grep -o '"ts":"[^"]*"' | cut -d'"' -f4 | cut -d'T' -f2 | cut -d'.' -f1)
+
+            case "$event" in
+                created) echo -e "  ${GREEN}✚${NC} #$task created by ${CYAN}$ai${NC} at $ts" ;;
+                claimed) echo -e "  ${BLUE}▶${NC} #$task claimed by ${CYAN}$ai${NC} at $ts" ;;
+                moved) 
+                    from=$(echo "$line" | grep -o '"from":"[^"]*"' | cut -d'"' -f4)
+                    to=$(echo "$line" | grep -o '"to":"[^"]*"' | cut -d'"' -f4)
+                    echo -e "  ${YELLOW}→${NC} #$task: $from → $to by ${CYAN}$ai${NC} at $ts"
+                    ;;
+                completed) echo -e "  ${GREEN}✓${NC} #$task done by ${CYAN}$ai${NC} at $ts" ;;
+                *) echo -e "  ${GRAY}•${NC} $event #$task by ${CYAN}$ai${NC}" ;;
+            esac
+        done
+        echo ""
+    fi
+fi
+
+echo -e "${GRAY}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${GRAY}💡 Claim: ${NC}git mv coordination/tasks/ready/NNN-slug.md coordination/tasks/in-progress/NNN-slug.md"
+echo -e "${GRAY}📖 Read: go.md${NC}"
+echo ""
