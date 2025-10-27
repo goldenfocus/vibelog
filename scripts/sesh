@@ -1,333 +1,130 @@
-#!/usr/bin/env node
+#!/bin/bash
+#
+# Sesh - Session Dashboard for AI Coordination
+#
 
-/**
- * Golden Focus AI Session Dashboard
- *
- * Shows all active AI sessions, their status, and detects issues.
- *
- * Usage:
- *   ./sesh             - Show active sessions
- *   ./sesh --watch     - Live refresh every 30s
- *   ./sesh --audit     - Show weekly audit
- *   ./sesh --clean     - Remove stale locks (asks confirmation)
- */
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
+GRAY='\033[0;90m'
+BOLD='\033[1m'
+NC='\033[0m'
 
-const fs = require('fs');
-const path = require('path');
+# Repo root
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+TASKS_DIR="$REPO_ROOT/coordination/tasks"
+EVENTS_LOG="$REPO_ROOT/coordination/events.jsonl"
 
-// Configuration
-const LOCK_DIR = path.join(__dirname, '../coordination/active');
-const ARCHIVE_DIR = path.join(__dirname, '../coordination/archive');
-const STALE_THRESHOLD_MS = 20 * 60 * 1000; // 20 minutes
+# Header
+echo -e "${BOLD}${CYAN}╔════════════════════════════════════════════════════════════════╗${NC}"
+echo -e "${BOLD}${CYAN}║              VIBELOG AI COORDINATION DASHBOARD                 ║${NC}"
+echo -e "${BOLD}${CYAN}╚════════════════════════════════════════════════════════════════╝${NC}"
+echo ""
 
-// Colors for terminal output
-const colors = {
-  reset: '\x1b[0m',
-  bright: '\x1b[1m',
-  dim: '\x1b[2m',
-
-  red: '\x1b[31m',
-  green: '\x1b[32m',
-  yellow: '\x1b[33m',
-  blue: '\x1b[34m',
-  magenta: '\x1b[35m',
-  cyan: '\x1b[36m',
-  white: '\x1b[37m',
-};
-
-function colorize(text, color) {
-  return `${colors[color] || ''}${text}${colors.reset}`;
+# Count tasks
+count_tasks() {
+    find "$TASKS_DIR/$1" -name "*.md" 2>/dev/null | wc -l | tr -d ' '
 }
 
-function readLockFiles() {
-  if (!fs.existsSync(LOCK_DIR)) {
-    return [];
-  }
+ready_count=$(count_tasks "ready")
+in_progress_count=$(count_tasks "in-progress")
+review_count=$(count_tasks "review")
+ready_prod_count=$(count_tasks "ready-for-prod")
+backlog_count=$(count_tasks "backlog")
 
-  const files = fs.readdirSync(LOCK_DIR)
-    .filter(f => f.endsWith('.lock') && f !== 'EXAMPLE-DO-NOT-USE.lock');
+# Status overview
+echo -e "${BOLD}📊 Task Overview${NC}"
+echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo -e "  ${GREEN}✓ Ready for Prod${NC}  : $ready_prod_count tasks"
+echo -e "  ${YELLOW}◉ In Review${NC}       : $review_count tasks"
+echo -e "  ${BLUE}● In Progress${NC}     : $in_progress_count tasks"
+echo -e "  ${CYAN}○ Ready${NC}           : $ready_count tasks"
+echo -e "  ${GRAY}⋯ Backlog${NC}         : $backlog_count tasks"
+echo ""
 
-  return files.map(file => {
-    const filePath = path.join(LOCK_DIR, file);
-    try {
-      const content = fs.readFileSync(filePath, 'utf8');
-      return JSON.parse(content);
-    } catch (err) {
-      console.error(`Error reading ${file}:`, err.message);
-      return null;
-    }
-  }).filter(Boolean);
+# Show tasks
+show_tasks() {
+    local status=$1
+    local status_dir=$2
+    local color=$3
+    local symbol=$4
+    local limit=${5:-5}
+
+    local count=$(count_tasks "$status_dir")
+    if [ "$count" -eq 0 ]; then return; fi
+
+    echo -e "${BOLD}$symbol $status ($count)${NC}"
+    echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+    local i=0
+    for file in "$TASKS_DIR/$status_dir"/*.md; do
+        if [ ! -f "$file" ]; then continue; fi
+        if [ $i -ge $limit ]; then break; fi
+
+        local id=$(basename "$file" | cut -d'-' -f1)
+        local slug=$(basename "$file" .md | cut -d'-' -f2-)
+        local priority=$(grep "^priority:" "$file" | cut -d' ' -f2)
+        local assignee=$(grep "^assignee:" "$file" | cut -d' ' -f2-)
+
+        local pri_symbol=""
+        case "$priority" in
+            critical) pri_symbol="${RED}🚨${NC}" ;;
+            high) pri_symbol="${YELLOW}⚡${NC}" ;;
+            medium) pri_symbol="${BLUE}◆${NC}" ;;
+            low) pri_symbol="${GRAY}○${NC}" ;;
+        esac
+
+        local assign_display=""
+        if [ "$assignee" != "null" ] && [ ! -z "$assignee" ]; then
+            assign_display=" ${GRAY}→ $assignee${NC}"
+        fi
+
+        echo -e "  ${color}#$id${NC} $pri_symbol $slug$assign_display"
+        i=$((i + 1))
+    done
+    echo ""
 }
 
-function formatDuration(ms) {
-  const seconds = Math.floor(ms / 1000);
-  const minutes = Math.floor(seconds / 60);
-  const hours = Math.floor(minutes / 60);
+show_tasks "${GREEN}Ready for Prod${NC}" "ready-for-prod" "$GREEN" "✓"
+show_tasks "${YELLOW}In Review${NC}" "review" "$YELLOW" "◉"
+show_tasks "${BLUE}In Progress${NC}" "in-progress" "$BLUE" "●"
+show_tasks "${CYAN}Ready${NC}" "ready" "$CYAN" "○" 5
+show_tasks "${GRAY}Backlog${NC}" "backlog" "$GRAY" "⋯" 3
 
-  if (hours > 0) {
-    return `${hours}h ${minutes % 60}m`;
-  } else if (minutes > 0) {
-    return `${minutes}m`;
-  } else {
-    return `${seconds}s`;
-  }
-}
+# Recent events
+if [ -f "$EVENTS_LOG" ]; then
+    event_count=$(wc -l < "$EVENTS_LOG" | tr -d ' ')
+    if [ "$event_count" -gt 0 ]; then
+        echo -e "${BOLD}📝 Recent Activity (last 10)${NC}"
+        echo -e "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-function getHeartbeatAge(heartbeatStr) {
-  const heartbeat = new Date(heartbeatStr);
-  const now = new Date();
-  return now - heartbeat;
-}
+        tail -10 "$EVENTS_LOG" | while IFS= read -r line; do
+            event=$(echo "$line" | grep -o '"event":"[^"]*"' | cut -d'"' -f4)
+            task=$(echo "$line" | grep -o '"task":"[^"]*"' | cut -d'"' -f4)
+            ai=$(echo "$line" | grep -o '"ai":"[^"]*"' | cut -d'"' -f4)
+            ts=$(echo "$line" | grep -o '"ts":"[^"]*"' | cut -d'"' -f4 | cut -d'T' -f2 | cut -d'.' -f1)
 
-function isStale(heartbeatStr) {
-  return getHeartbeatAge(heartbeatStr) > STALE_THRESHOLD_MS;
-}
+            case "$event" in
+                created) echo -e "  ${GREEN}✚${NC} #$task created by ${CYAN}$ai${NC} at $ts" ;;
+                claimed) echo -e "  ${BLUE}▶${NC} #$task claimed by ${CYAN}$ai${NC} at $ts" ;;
+                moved) 
+                    from=$(echo "$line" | grep -o '"from":"[^"]*"' | cut -d'"' -f4)
+                    to=$(echo "$line" | grep -o '"to":"[^"]*"' | cut -d'"' -f4)
+                    echo -e "  ${YELLOW}→${NC} #$task: $from → $to by ${CYAN}$ai${NC} at $ts"
+                    ;;
+                completed) echo -e "  ${GREEN}✓${NC} #$task done by ${CYAN}$ai${NC} at $ts" ;;
+                *) echo -e "  ${GRAY}•${NC} $event #$task by ${CYAN}$ai${NC}" ;;
+            esac
+        done
+        echo ""
+    fi
+fi
 
-function showActiveSessions() {
-  const locks = readLockFiles();
-
-  console.log('\n' + colorize('🤖 GOLDEN FOCUS AI SESSIONS', 'cyan'));
-  console.log(colorize('═'.repeat(60), 'dim'));
-  console.log(colorize(`Last Updated: ${new Date().toISOString()}`, 'dim'));
-  console.log();
-
-  if (locks.length === 0) {
-    console.log(colorize('  No active sessions', 'dim'));
-    console.log();
-    return;
-  }
-
-  console.log(colorize(`🟢 ACTIVE SESSIONS (${locks.length})`, 'green'));
-  console.log();
-
-  locks.forEach((lock, index) => {
-    const heartbeatAge = getHeartbeatAge(lock.heartbeat_last);
-    const sessionAge = getHeartbeatAge(lock.started_at);
-    const stale = isStale(lock.heartbeat_last);
-
-    // Status indicator
-    let status = '';
-    let statusColor = 'green';
-
-    if (stale) {
-      status = '🟡 STALE';
-      statusColor = 'yellow';
-    } else if (lock.status === 'claiming') {
-      status = '🔵 CLAIMING';
-      statusColor = 'blue';
-    } else if (lock.status === 'active') {
-      status = '🟢 ACTIVE';
-      statusColor = 'green';
-    } else if (lock.status === 'completed') {
-      status = '✅ COMPLETED';
-      statusColor = 'cyan';
-    }
-
-    console.log(colorize(`┌─ Session ${index + 1}: ${lock.session_name}`, 'bright'));
-    console.log(`│  ${colorize('Status:', 'dim')} ${colorize(status, statusColor)}`);
-    console.log(`│  ${colorize('AI Type:', 'dim')} ${lock.ai_type} (${lock.platform})`);
-    console.log(`│  ${colorize('Task:', 'dim')} ${lock.task_number} - ${lock.task}`);
-    console.log(`│  ${colorize('Files:', 'dim')} ${lock.claimed_files.join(', ')}`);
-    console.log(`│  ${colorize('Started:', 'dim')} ${formatDuration(sessionAge)} ago`);
-    console.log(`│  ${colorize('Progress:', 'dim')} ${lock.progress_percent}%`);
-    console.log(`│  ${colorize('Heartbeat:', 'dim')} ${formatDuration(heartbeatAge)} ago`);
-
-    if (lock.notes && lock.notes !== 'None') {
-      console.log(`│  ${colorize('Notes:', 'dim')} ${lock.notes}`);
-    }
-
-    if (stale) {
-      console.log(`│  ${colorize('⚠️  WARNING: Stale heartbeat! AI may have crashed.', 'yellow')}`);
-    }
-
-    console.log('│');
-    console.log(colorize('└' + '─'.repeat(58), 'dim'));
-    console.log();
-  });
-
-  // Check for conflicts
-  const fileMap = new Map();
-  locks.forEach(lock => {
-    lock.claimed_files.forEach(file => {
-      if (!fileMap.has(file)) {
-        fileMap.set(file, []);
-      }
-      fileMap.get(file).push(lock.session_name);
-    });
-  });
-
-  const conflicts = Array.from(fileMap.entries()).filter(([_, sessions]) => sessions.length > 1);
-
-  if (conflicts.length > 0) {
-    console.log(colorize('⚠️  FILE CONFLICTS DETECTED!', 'red'));
-    console.log();
-    conflicts.forEach(([file, sessions]) => {
-      console.log(colorize(`  File: ${file}`, 'red'));
-      console.log(colorize(`  Claimed by: ${sessions.join(', ')}`, 'red'));
-      console.log();
-    });
-  }
-
-  // Summary
-  const staleCount = locks.filter(l => isStale(l.heartbeat_last)).length;
-  const activeCount = locks.filter(l => !isStale(l.heartbeat_last)).length;
-
-  console.log(colorize('📊 SUMMARY', 'cyan'));
-  console.log(colorize('─'.repeat(60), 'dim'));
-  console.log(`  ${colorize('Total Sessions:', 'dim')} ${locks.length}`);
-  console.log(`  ${colorize('Active:', 'dim')} ${colorize(activeCount, 'green')}`);
-  if (staleCount > 0) {
-    console.log(`  ${colorize('Stale:', 'dim')} ${colorize(staleCount, 'yellow')} (may have crashed)`);
-  }
-  if (conflicts.length > 0) {
-    console.log(`  ${colorize('Conflicts:', 'dim')} ${colorize(conflicts.length, 'red')}`);
-  } else {
-    console.log(`  ${colorize('Conflicts:', 'dim')} ${colorize('None ✅', 'green')}`);
-  }
-  console.log();
-}
-
-function showWeeklyAudit() {
-  console.log('\n' + colorize('📊 WEEKLY AUDIT', 'cyan'));
-  console.log(colorize('═'.repeat(60), 'dim'));
-  console.log();
-
-  if (!fs.existsSync(ARCHIVE_DIR)) {
-    console.log(colorize('  No archive data available', 'dim'));
-    console.log();
-    return;
-  }
-
-  // Get last 7 days of archives
-  const today = new Date();
-  const archives = [];
-
-  for (let i = 0; i < 7; i++) {
-    const date = new Date(today);
-    date.setDate(date.getDate() - i);
-    const dateStr = date.toISOString().split('T')[0];
-    const archiveFile = path.join(ARCHIVE_DIR, `${dateStr}.md`);
-
-    if (fs.existsSync(archiveFile)) {
-      archives.push({
-        date: dateStr,
-        content: fs.readFileSync(archiveFile, 'utf8')
-      });
-    }
-  }
-
-  if (archives.length === 0) {
-    console.log(colorize('  No completed sessions this week', 'dim'));
-    console.log();
-    return;
-  }
-
-  // Count completed sessions
-  let totalSessions = 0;
-  let totalMerged = 0;
-  let totalEscalated = 0;
-
-  archives.forEach(archive => {
-    const sessionMatches = archive.content.match(/### Session:/g);
-    const mergedMatches = archive.content.match(/✅ Merged to main/g);
-    const escalatedMatches = archive.content.match(/🚨 Escalated/g);
-
-    totalSessions += sessionMatches ? sessionMatches.length : 0;
-    totalMerged += mergedMatches ? mergedMatches.length : 0;
-    totalEscalated += escalatedMatches ? escalatedMatches.length : 0;
-  });
-
-  const successRate = totalSessions > 0 ? Math.round((totalMerged / totalSessions) * 100) : 0;
-
-  console.log(colorize(`  Period: Last ${archives.length} days`, 'dim'));
-  console.log();
-  console.log(`  ${colorize('✅ Completed:', 'green')} ${totalSessions} tasks`);
-  console.log(`  ${colorize('✅ Auto-Merged:', 'green')} ${totalMerged} tasks`);
-  if (totalEscalated > 0) {
-    console.log(`  ${colorize('🚨 Escalated:', 'yellow')} ${totalEscalated} tasks`);
-  }
-  console.log(`  ${colorize('📈 Success Rate:', 'cyan')} ${successRate}%`);
-  console.log();
-
-  if (successRate < 70) {
-    console.log(colorize('  ⚠️  Success rate is low. Review escalated tasks.', 'yellow'));
-    console.log();
-  }
-}
-
-function cleanStaleLocks() {
-  const locks = readLockFiles();
-  const staleLocks = locks.filter(l => isStale(l.heartbeat_last));
-
-  if (staleLocks.length === 0) {
-    console.log(colorize('\n✅ No stale locks to clean\n', 'green'));
-    return;
-  }
-
-  console.log(colorize(`\n⚠️  Found ${staleLocks.length} stale lock(s):\n`, 'yellow'));
-
-  staleLocks.forEach((lock, index) => {
-    const heartbeatAge = getHeartbeatAge(lock.heartbeat_last);
-    console.log(`  ${index + 1}. ${lock.session_name}`);
-    console.log(`     Task: ${lock.task}`);
-    console.log(`     Last heartbeat: ${formatDuration(heartbeatAge)} ago`);
-    console.log();
-  });
-
-  // Ask for confirmation (simplified, just show instruction)
-  console.log(colorize('To remove stale locks, delete them manually from:', 'dim'));
-  console.log(colorize(`  ${LOCK_DIR}`, 'cyan'));
-  console.log();
-  console.log(colorize('⚠️  Only remove locks if you\'re sure the AI crashed!', 'yellow'));
-  console.log();
-}
-
-function watchSessions() {
-  console.clear();
-  showActiveSessions();
-
-  console.log(colorize('👁️  Watching... (refresh every 30s, Ctrl+C to stop)', 'dim'));
-  console.log();
-
-  setInterval(() => {
-    console.clear();
-    showActiveSessions();
-    console.log(colorize('👁️  Watching... (refresh every 30s, Ctrl+C to stop)', 'dim'));
-    console.log();
-  }, 30000);
-}
-
-// Main
-const args = process.argv.slice(2);
-const command = args[0];
-
-switch (command) {
-  case '--watch':
-    watchSessions();
-    break;
-
-  case '--audit':
-    showWeeklyAudit();
-    break;
-
-  case '--clean':
-    cleanStaleLocks();
-    break;
-
-  case '--help':
-  case '-h':
-    console.log('\n' + colorize('Golden Focus AI Session Dashboard', 'cyan'));
-    console.log();
-    console.log('Usage:');
-    console.log('  ./sesh             Show active sessions');
-    console.log('  ./sesh --watch     Live refresh every 30s');
-    console.log('  ./sesh --audit     Show weekly audit');
-    console.log('  ./sesh --clean     Show stale locks (for manual cleanup)');
-    console.log('  ./sesh --help      Show this help');
-    console.log();
-    break;
-
-  default:
-    showActiveSessions();
-    break;
-}
+echo -e "${GRAY}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${GRAY}💡 Claim: ${NC}git mv coordination/tasks/ready/NNN-slug.md coordination/tasks/in-progress/NNN-slug.md"
+echo -e "${GRAY}📖 Read: go.md${NC}"
+echo ""
