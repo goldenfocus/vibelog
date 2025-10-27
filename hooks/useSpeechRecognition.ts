@@ -35,8 +35,8 @@ export function useSpeechRecognition(
   const recordingState = typeof options === 'string' ? options : options.recordingState;
   const isEditMode = typeof options === 'object' ? options.isEditMode : false;
 
-  // Track user edits separately from speech recognition
-  const userEditedTranscriptRef = useRef<string | null>(null);
+  // Track accumulated final transcript across speech events (persists across edits)
+  const finalTranscriptRef = useRef('');
   const isUserEditingRef = useRef(false);
 
   // Check if Speech Recognition is supported
@@ -57,7 +57,6 @@ export function useSpeechRecognition(
           recognition.lang = 'en-US';
           recognition.maxAlternatives = 1;
 
-          let finalTranscript = '';
           let isBlocked = false; // Track if browser blocked the feature
 
           recognition.onstart = () => {
@@ -71,14 +70,15 @@ export function useSpeechRecognition(
             for (let i = event.resultIndex; i < event.results.length; i++) {
               const transcript = event.results[i][0].transcript;
               if (event.results[i].isFinal) {
-                finalTranscript += transcript + ' ';
+                // Append final results to persisted transcript ref
+                finalTranscriptRef.current += transcript + ' ';
               } else {
                 interimTranscript += transcript;
               }
             }
 
-            // If user has edited transcript, use their version as base
-            const baseTranscript = userEditedTranscriptRef.current || finalTranscript;
+            // Use persisted final transcript as base (includes user edits)
+            const baseTranscript = finalTranscriptRef.current;
 
             // Combine with interim results
             const currentTranscript = (baseTranscript + interimTranscript).trim();
@@ -199,7 +199,7 @@ export function useSpeechRecognition(
 
   const resetTranscript = () => {
     setLiveTranscript('');
-    userEditedTranscriptRef.current = null;
+    finalTranscriptRef.current = '';
     isUserEditingRef.current = false;
     if (speechRecognitionRef.current) {
       try {
@@ -213,9 +213,10 @@ export function useSpeechRecognition(
 
   /**
    * Manually update the transcript (called when user edits during silence)
+   * Updates the persisted transcript so future speech appends correctly
    */
   const updateTranscript = (newTranscript: string) => {
-    userEditedTranscriptRef.current = newTranscript;
+    finalTranscriptRef.current = newTranscript;
     setLiveTranscript(newTranscript);
   };
 
