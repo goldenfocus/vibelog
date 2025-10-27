@@ -13,6 +13,12 @@ interface PublicVibelogContentProps {
     content: string;
     user_id: string | null;
     public_slug: string;
+    audio_url?: string | null;
+    created_at?: string;
+    author?: {
+      username: string;
+      display_name: string;
+    };
   };
 }
 
@@ -67,7 +73,12 @@ export default function PublicVibelogContent({ vibelog }: PublicVibelogContentPr
           vibelogId={vibelog.id}
           content={vibelog.content}
           title={vibelog.title}
+          author={vibelog.author?.display_name}
           authorId={vibelog.user_id || undefined}
+          authorUsername={vibelog.author?.username}
+          vibelogUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/v/${vibelog.public_slug}`}
+          createdAt={vibelog.created_at}
+          audioUrl={vibelog.audio_url || undefined}
           onRemix={handleRemix}
           onShare={handleShare}
           onExport={handleExport}

@@ -64,10 +64,10 @@ export default async function PublicVibelogPage({ params }: PageProps) {
   const { slug } = await params;
   const supabase = await createServerSupabaseClient();
 
-  // Fetch the vibelog by public_slug
+  // Fetch the vibelog by public_slug with author data
   const { data: vibelog, error } = await supabase
     .from('vibelogs')
-    .select('*')
+    .select('*, author:profiles!user_id(username, display_name)')
     .eq('public_slug', slug)
     .single();
 
@@ -146,6 +146,9 @@ export default async function PublicVibelogPage({ params }: PageProps) {
             content: vibelog.content,
             user_id: vibelog.user_id,
             public_slug: vibelog.public_slug,
+            audio_url: vibelog.audio_url,
+            created_at: vibelog.created_at,
+            author: vibelog.author,
           }}
         />
 
