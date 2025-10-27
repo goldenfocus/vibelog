@@ -8,8 +8,47 @@ export interface VibelogExportData {
   title?: string;
   content: string;
   author?: string;
+  authorUsername?: string;
+  vibelogUrl?: string;
   createdAt?: string;
   tags?: string[];
+}
+
+/**
+ * Format the author citation with link
+ */
+function formatAuthorCitation(data: VibelogExportData): {
+  text: string;
+  markdown: string;
+  html: string;
+} {
+  const author = data.author || 'Unknown';
+  const username = data.authorUsername ? `@${data.authorUsername}` : author;
+  const url = data.vibelogUrl || '';
+  const date = data.createdAt
+    ? new Date(data.createdAt).toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      })
+    : '';
+
+  const citationText = `Created by ${username}${date ? ` • Published ${date}` : ''} on vibelog`;
+  const citationMarkdown = url
+    ? `Created by [${username}](${url})${date ? ` • Published ${date}` : ''} on vibelog`
+    : citationText;
+  const citationHtml = url
+    ? `Created by <a href="${url}">${escapeHtml(username)}</a>${date ? ` • Published ${date}` : ''} on vibelog`
+    : citationText;
+
+  return {
+    text: citationText,
+    markdown: citationMarkdown,
+    html: citationHtml,
+  };
 }
 
 /**
@@ -23,15 +62,13 @@ export function exportAsMarkdown(data: VibelogExportData): string {
     lines.push(`# ${data.title}\n`);
   }
 
+  // Author citation
+  const citation = formatAuthorCitation(data);
+  lines.push(`> ${citation.markdown}\n`);
+
   // Metadata
-  if (data.author || data.createdAt || data.tags) {
+  if (data.tags) {
     lines.push('---');
-    if (data.author) {
-      lines.push(`Author: ${data.author}`);
-    }
-    if (data.createdAt) {
-      lines.push(`Date: ${data.createdAt}`);
-    }
     if (data.tags && data.tags.length > 0) {
       lines.push(`Tags: ${data.tags.join(', ')}`);
     }
@@ -49,14 +86,7 @@ export function exportAsMarkdown(data: VibelogExportData): string {
  */
 export function exportAsHTML(data: VibelogExportData): string {
   const title = data.title || 'Vibelog';
-  const author = data.author || '';
-  const date = data.createdAt
-    ? new Date(data.createdAt).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      })
-    : '';
+  const citation = formatAuthorCitation(data);
 
   // Convert markdown-like content to HTML paragraphs
   const contentHtml = data.content
@@ -85,12 +115,21 @@ export function exportAsHTML(data: VibelogExportData): string {
       margin-bottom: 0.5rem;
       color: #111;
     }
-    .meta {
+    .citation {
       color: #666;
       font-size: 0.9rem;
       margin-bottom: 2rem;
-      padding-bottom: 1rem;
-      border-bottom: 1px solid #eee;
+      padding: 1rem;
+      background: #f8f9fa;
+      border-left: 3px solid #007bff;
+      border-radius: 4px;
+    }
+    .citation a {
+      color: #007bff;
+      text-decoration: none;
+    }
+    .citation a:hover {
+      text-decoration: underline;
     }
     p {
       margin-bottom: 1rem;
@@ -114,15 +153,7 @@ export function exportAsHTML(data: VibelogExportData): string {
 <body>
   <article>
     <h1>${escapeHtml(title)}</h1>
-    ${
-      author || date
-        ? `<div class="meta">
-      ${author ? `<span>By ${escapeHtml(author)}</span>` : ''}
-      ${author && date ? ' • ' : ''}
-      ${date ? `<span>${date}</span>` : ''}
-    </div>`
-        : ''
-    }
+    <div class="citation">${citation.html}</div>
     <div class="content">
 ${contentHtml}
     </div>
@@ -150,19 +181,10 @@ export function exportAsText(data: VibelogExportData): string {
     lines.push('');
   }
 
-  if (data.author) {
-    lines.push(`By: ${data.author}`);
-  }
-
-  if (data.createdAt) {
-    lines.push(
-      `Date: ${new Date(data.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`
-    );
-  }
-
-  if (data.author || data.createdAt) {
-    lines.push('');
-  }
+  // Author citation
+  const citation = formatAuthorCitation(data);
+  lines.push(citation.text);
+  lines.push('');
 
   lines.push(data.content);
 
@@ -178,11 +200,16 @@ export function exportAsText(data: VibelogExportData): string {
  * Convert vibelog content to JSON format
  */
 export function exportAsJSON(data: VibelogExportData): string {
+  const citation = formatAuthorCitation(data);
+
   return JSON.stringify(
     {
       title: data.title || null,
       content: data.content,
       author: data.author || null,
+      authorUsername: data.authorUsername || null,
+      vibelogUrl: data.vibelogUrl || null,
+      citation: citation.text,
       createdAt: data.createdAt || null,
       tags: data.tags || [],
       exportedAt: new Date().toISOString(),

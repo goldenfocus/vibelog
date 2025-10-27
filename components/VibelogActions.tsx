@@ -1,7 +1,17 @@
 'use client';
 
-import { Copy, Share2, Edit, Download, Sparkles, Play, Pause, Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import {
+  Copy,
+  Share2,
+  Edit,
+  Sparkles,
+  Play,
+  Pause,
+  Loader2,
+  MoreVertical,
+  Trash2,
+} from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
 
 import ExportButton from '@/components/ExportButton';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -14,7 +24,12 @@ interface VibelogActionsProps {
   title?: string;
   author?: string;
   authorId?: string; // User ID of vibelog author
+  authorUsername?: string;
+  vibelogUrl?: string;
+  createdAt?: string;
+  audioUrl?: string;
   onEdit?: () => void;
+  onDelete?: () => Promise<void> | void;
   onRemix?: () => void;
   onCopy?: () => Promise<void> | void;
   onShare?: () => Promise<void> | void;
@@ -25,12 +40,17 @@ interface VibelogActionsProps {
 }
 
 export default function VibelogActions({
-  vibelogId,
+  vibelogId: _vibelogId,
   content,
   title,
   author,
   authorId,
+  authorUsername,
+  vibelogUrl,
+  createdAt,
+  audioUrl,
   onEdit,
+  onDelete,
   onRemix,
   onCopy,
   onShare,
@@ -41,10 +61,27 @@ export default function VibelogActions({
 }: VibelogActionsProps) {
   const { user } = useAuth();
   const [copySuccess, setCopySuccess] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const { isPlaying, isLoading, playText, stop, progress } = useTextToSpeech(onUpgradePrompt);
 
   // Determine if this is user's own vibelog
   const isOwnVibelog = user?.id && authorId && user.id === authorId;
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    if (isMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isMenuOpen]);
 
   const handlePlayClick = async () => {
     if (isPlaying) {
@@ -99,6 +136,29 @@ export default function VibelogActions({
     }
   };
 
+  const handleEditClick = () => {
+    setIsMenuOpen(false);
+    if (onEdit) {
+      onEdit();
+    }
+  };
+
+  const handleDeleteClick = () => {
+    setIsMenuOpen(false);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    setShowDeleteConfirm(false);
+    if (onDelete) {
+      await onDelete();
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteConfirm(false);
+  };
+
   const isCompact = variant === 'compact';
   const baseButtonClass = isCompact
     ? 'flex items-center gap-2 rounded-lg border border-border/50 px-3 py-2 text-sm transition-all hover:border-electric/30 hover:bg-electric/5'
@@ -117,112 +177,186 @@ export default function VibelogActions({
     : 'flex justify-center gap-2 sm:gap-3';
 
   return (
-    <div className={`${wrapperClass} ${className}`} data-testid="vibelog-actions">
-      {/* Edit or Remix Button */}
-      {(onEdit || onRemix) && (
+    <>
+      <div className={`${wrapperClass} ${className}`} data-testid="vibelog-actions">
+        {/* Owner Menu Dropdown (Edit/Delete) */}
+        {isOwnVibelog && onEdit && onDelete && (
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className={baseButtonClass}
+              title="More options"
+              data-testid="owner-menu-button"
+            >
+              <MoreVertical className={iconClass} />
+              {!isCompact && <span className={labelClass}>Manage</span>}
+            </button>
+
+            {isMenuOpen && (
+              <div className="absolute left-0 top-full z-50 mt-2 w-40 rounded-lg border border-border/50 bg-card/95 shadow-xl backdrop-blur-sm">
+                <div className="p-1">
+                  <button
+                    onClick={handleEditClick}
+                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/50"
+                    data-testid="menu-edit-button"
+                  >
+                    <Edit className="h-4 w-4" />
+                    <span>Edit</span>
+                  </button>
+                  <button
+                    onClick={handleDeleteClick}
+                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
+                    data-testid="menu-delete-button"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    <span>Delete</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Edit or Remix Button (for non-owners or when delete not available) */}
+        {(onEdit || onRemix) && !(isOwnVibelog && onEdit && onDelete) && (
+          <button
+            onClick={handleEditOrRemix}
+            className={
+              isOwnVibelog
+                ? baseButtonClass
+                : `${baseButtonClass} ml-auto flex items-center gap-2 rounded-lg bg-electric/10 px-4 py-2 font-medium text-electric transition-all duration-200 hover:bg-electric hover:text-white`
+            }
+            title={isOwnVibelog ? 'Edit' : 'Remix'}
+            data-testid={isOwnVibelog ? 'edit-button' : 'remix-button'}
+          >
+            {isOwnVibelog ? (
+              <>
+                <Edit className={iconClass} />
+                {isCompact && <span className={labelClass}>Edit</span>}
+                {!isCompact && <span className={labelClass}>Edit</span>}
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-4 w-4" />
+                <span>Remix</span>
+              </>
+            )}
+          </button>
+        )}
+
+        {/* Copy Button */}
         <button
-          onClick={handleEditOrRemix}
-          className={
-            isOwnVibelog
-              ? baseButtonClass
-              : `${baseButtonClass} ml-auto flex items-center gap-2 rounded-lg bg-electric/10 px-4 py-2 font-medium text-electric transition-all duration-200 hover:bg-electric hover:text-white`
-          }
-          title={isOwnVibelog ? 'Edit' : 'Remix'}
-          data-testid={isOwnVibelog ? 'edit-button' : 'remix-button'}
+          onClick={handleCopyClick}
+          className={baseButtonClass}
+          title={copySuccess ? 'Copied!' : 'Copy'}
+          data-testid="copy-button"
         >
-          {isOwnVibelog ? (
-            <>
-              <Edit className={iconClass} />
-              {isCompact && <span className={labelClass}>Edit</span>}
-              {!isCompact && <span className={labelClass}>Edit</span>}
-            </>
-          ) : (
-            <>
-              <Sparkles className="h-4 w-4" />
-              <span>Remix</span>
-            </>
-          )}
+          <Copy className={iconClass} />
+          <span className={labelClass}>{copySuccess ? 'Copied!' : 'Copy'}</span>
         </button>
-      )}
 
-      {/* Copy Button */}
-      <button
-        onClick={handleCopyClick}
-        className={baseButtonClass}
-        title={copySuccess ? 'Copied!' : 'Copy'}
-        data-testid="copy-button"
-      >
-        <Copy className={iconClass} />
-        <span className={labelClass}>{copySuccess ? 'Copied!' : 'Copy'}</span>
-      </button>
+        {/* Listen Button with TTS */}
+        <button
+          onClick={handlePlayClick}
+          disabled={isLoading}
+          className={`${baseButtonClass} relative ${isCompact ? '' : 'overflow-hidden'}`}
+          title={isPlaying ? 'Pause' : 'Listen'}
+          data-testid="listen-button"
+        >
+          {!isCompact && isPlaying && (
+            <div
+              className="absolute bottom-0 left-0 h-1 bg-electric transition-all duration-100 ease-out"
+              style={{ width: `${progress}%` }}
+            />
+          )}
 
-      {/* Listen Button with TTS */}
-      <button
-        onClick={handlePlayClick}
-        disabled={isLoading}
-        className={`${baseButtonClass} relative ${isCompact ? '' : 'overflow-hidden'}`}
-        title={isPlaying ? 'Pause' : 'Listen'}
-        data-testid="listen-button"
-      >
-        {!isCompact && isPlaying && (
-          <div
-            className="absolute bottom-0 left-0 h-1 bg-electric transition-all duration-100 ease-out"
-            style={{ width: `${progress}%` }}
+          <div className="relative flex items-center justify-center">
+            {isLoading ? (
+              <Loader2 className={`${iconClass} animate-spin`} />
+            ) : isPlaying ? (
+              <Pause className={iconClass} />
+            ) : (
+              <Play className={iconClass} />
+            )}
+          </div>
+
+          <span className={labelClass}>
+            {isLoading ? 'Generating...' : isPlaying ? 'Pause' : 'Listen'}
+          </span>
+        </button>
+
+        {/* Share Button */}
+        {onShare && (
+          <button
+            onClick={handleShareClick}
+            className={baseButtonClass}
+            title="Share"
+            data-testid="share-button"
+          >
+            <Share2 className={iconClass} />
+            <span className={labelClass}>Share</span>
+          </button>
+        )}
+
+        {/* Export Button */}
+        {!isCompact && (
+          <ExportButton
+            content={content}
+            title={title}
+            author={author}
+            authorUsername={authorUsername}
+            vibelogUrl={vibelogUrl}
+            createdAt={createdAt}
+            audioUrl={audioUrl}
+            onExport={onExport}
           />
         )}
 
-        <div className="relative flex items-center justify-center">
-          {isLoading ? (
-            <Loader2 className={`${iconClass} animate-spin`} />
-          ) : isPlaying ? (
-            <Pause className={iconClass} />
-          ) : (
-            <Play className={iconClass} />
-          )}
+        {isCompact && (
+          <ExportButton
+            content={content}
+            title={title}
+            author={author}
+            authorUsername={authorUsername}
+            vibelogUrl={vibelogUrl}
+            createdAt={createdAt}
+            audioUrl={audioUrl}
+            onExport={onExport}
+            variant="compact"
+          />
+        )}
+      </div>
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteConfirm && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          data-testid="delete-confirm-dialog"
+        >
+          <div className="w-full max-w-md rounded-xl border border-border/50 bg-card p-6 shadow-2xl">
+            <h3 className="mb-4 text-lg font-semibold text-foreground">Delete VibeLog?</h3>
+            <p className="mb-6 text-sm text-muted-foreground">
+              Are you sure you want to delete this VibeLog? This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={handleCancelDelete}
+                className="rounded-lg border border-border/50 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/50"
+                data-testid="delete-cancel-button"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground transition-colors hover:bg-destructive/90"
+                data-testid="delete-confirm-button"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
         </div>
-
-        <span className={labelClass}>
-          {isLoading ? 'Generating...' : isPlaying ? 'Pause' : 'Listen'}
-        </span>
-      </button>
-
-      {/* Share Button */}
-      {onShare && (
-        <button
-          onClick={handleShareClick}
-          className={baseButtonClass}
-          title="Share"
-          data-testid="share-button"
-        >
-          <Share2 className={iconClass} />
-          <span className={labelClass}>Share</span>
-        </button>
       )}
-
-      {/* Export Button */}
-      {!isCompact && (
-        <ExportButton content={content} title={title} author={author} onExport={onExport} />
-      )}
-
-      {isCompact && (
-        <button
-          onClick={() => {
-            const blob = new Blob([content], { type: 'text/markdown' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `vibelog-${vibelogId}.md`;
-            a.click();
-            URL.revokeObjectURL(url);
-          }}
-          className={baseButtonClass}
-          title="Export"
-          data-testid="export-button"
-        >
-          <Download className={iconClass} />
-          <span className={labelClass}>Export</span>
-        </button>
-      )}
-    </div>
+    </>
   );
 }
