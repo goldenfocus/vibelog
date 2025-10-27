@@ -1,8 +1,11 @@
 import { Metadata } from 'next';
+import Image from 'next/image';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { createServerSupabaseClient } from '@/lib/supabase';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+
+import { createServerSupabaseClient } from '@/lib/supabase';
 
 interface PageProps {
   params: Promise<{
@@ -15,34 +18,36 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params;
   const supabase = await createServerSupabaseClient();
 
-  const { data: vibelog } = await supabase
+  const { data: vibelog, error } = await supabase
     .from('vibelogs')
     .select('seo_title, seo_description, title, cover_url, cover_image_url')
     .eq('public_slug', slug)
     .single();
 
-  if (!vibelog) {
+  // Log error for debugging but return generic metadata instead of "Not Found"
+  if (error || !vibelog) {
+    console.error('Metadata fetch error:', { slug, error });
     return {
-      title: 'VibeLog Not Found',
-      description: 'The requested VibeLog could not be found.',
+      title: 'VibeLog - Voice to Blog',
+      description: 'Read this story on VibeLog',
     };
   }
 
   const coverImage = vibelog.cover_url || vibelog.cover_image_url;
 
   return {
-    title: vibelog.seo_title || vibelog.title,
-    description: vibelog.seo_description,
+    title: vibelog.seo_title || vibelog.title || 'VibeLog',
+    description: vibelog.seo_description || 'Read this story on VibeLog',
     openGraph: {
-      title: vibelog.seo_title || vibelog.title,
-      description: vibelog.seo_description,
+      title: vibelog.seo_title || vibelog.title || 'VibeLog',
+      description: vibelog.seo_description || 'Read this story on VibeLog',
       images: coverImage ? [{ url: coverImage }] : [],
       type: 'article',
     },
     twitter: {
       card: 'summary_large_image',
-      title: vibelog.seo_title || vibelog.title,
-      description: vibelog.seo_description,
+      title: vibelog.seo_title || vibelog.title || 'VibeLog',
+      description: vibelog.seo_description || 'Read this story on VibeLog',
       images: coverImage ? [coverImage] : [],
     },
   };
@@ -60,11 +65,12 @@ export default async function PublicVibelogPage({ params }: PageProps) {
     .single();
 
   if (error || !vibelog) {
+    console.error('Vibelog not found:', { slug, error });
     return (
       <div className="container mx-auto max-w-2xl px-4 py-16">
         <h1 className="mb-4 text-3xl font-bold">VibeLog Not Found</h1>
         <p className="text-muted-foreground">
-          The VibeLog you're looking for doesn't exist or has been removed.
+          The VibeLog you&apos;re looking for doesn&apos;t exist or has been removed.
         </p>
       </div>
     );
@@ -92,17 +98,17 @@ export default async function PublicVibelogPage({ params }: PageProps) {
       {/* Header */}
       <header className="border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto flex h-16 items-center px-4">
-          <a href="/" className="text-xl font-bold">
+          <Link href="/" className="text-xl font-bold">
             vibelog.io
-          </a>
+          </Link>
           <div className="ml-auto">
             {isAnonymous && (
-              <a
+              <Link
                 href="/auth/signin"
                 className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
               >
                 Sign in to create your own
-              </a>
+              </Link>
             )}
           </div>
         </div>
@@ -112,12 +118,14 @@ export default async function PublicVibelogPage({ params }: PageProps) {
       <main className="container mx-auto max-w-3xl px-4 py-12">
         {/* Cover Image */}
         {coverImage && (
-          <div className="mb-8 overflow-hidden rounded-2xl border border-border/10 shadow-lg">
-            <img
+          <div className="relative mb-8 aspect-video overflow-hidden rounded-2xl border border-border/10 shadow-lg">
+            <Image
               src={coverImage}
               alt={vibelog.cover_image_alt || vibelog.title}
-              className="h-auto w-full object-cover"
-              loading="eager"
+              fill
+              className="object-cover"
+              priority
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             />
           </div>
         )}
@@ -142,24 +150,22 @@ export default async function PublicVibelogPage({ params }: PageProps) {
             )}
           </div>
 
-          {/* Content - Show teaser for anonymous posts */}
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {isAnonymous && vibelog.teaser ? vibelog.teaser : vibelog.content}
-          </ReactMarkdown>
+          {/* Content - Always show full content */}
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{vibelog.content}</ReactMarkdown>
 
           {/* CTA for anonymous posts */}
-          {isAnonymous && vibelog.teaser && vibelog.teaser !== vibelog.content && (
+          {false && isAnonymous && vibelog.teaser && vibelog.teaser !== vibelog.content && (
             <div className="mt-12 rounded-2xl border border-border/40 bg-muted/50 p-8 text-center">
               <h3 className="mb-2 text-2xl font-bold">Want to read more?</h3>
               <p className="mb-6 text-muted-foreground">
                 Sign in with Google to continue reading and create your own VibeLog posts
               </p>
-              <a
+              <Link
                 href={`/auth/signin?returnTo=/v/${slug}&claim=${vibelog.anonymous_session_id}`}
                 className="inline-block rounded-lg bg-primary px-6 py-3 font-medium text-primary-foreground hover:bg-primary/90"
               >
                 Continue Reading →
-              </a>
+              </Link>
             </div>
           )}
         </article>
@@ -183,12 +189,12 @@ export default async function PublicVibelogPage({ params }: PageProps) {
               ? 'Create your own VibeLog in seconds'
               : 'Enjoyed this post? Create your own!'}
           </p>
-          <a
+          <Link
             href="/"
             className="inline-block rounded-lg border border-border bg-background px-6 py-3 font-medium hover:bg-muted"
           >
             Try VibeLog Free
-          </a>
+          </Link>
         </div>
       </main>
 
@@ -197,9 +203,9 @@ export default async function PublicVibelogPage({ params }: PageProps) {
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
           <p>
             Powered by{' '}
-            <a href="/" className="font-medium hover:text-foreground">
+            <Link href="/" className="font-medium hover:text-foreground">
               VibeLog
-            </a>{' '}
+            </Link>{' '}
             — Turn your voice into beautiful blog posts
           </p>
         </div>
