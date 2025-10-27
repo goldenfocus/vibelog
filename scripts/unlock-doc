@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# Unlock TODO.md or CURRENT_STATE.md after editing
+# Usage: ./scripts/unlock-doc TODO <your-session-id>
+#        ./scripts/unlock-doc CURRENT_STATE <your-session-id>
+
+DOC=$1
+SESSION_ID=$2
+
+if [ -z "$DOC" ] || [ -z "$SESSION_ID" ]; then
+  echo "❌ Usage: ./scripts/unlock-doc [TODO|CURRENT_STATE] <session-id>"
+  exit 1
+fi
+
+LOCK_FILE="./coordination/active/goldenfocus-$SESSION_ID-editing-$DOC.lock"
+
+if [ ! -f "$LOCK_FILE" ]; then
+  echo "⚠️  No lock file found for $DOC.md (session: $SESSION_ID)"
+  echo "   Lock might have already been released"
+  exit 0
+fi
+
+rm "$LOCK_FILE"
+echo "✅ Unlocked $DOC.md"

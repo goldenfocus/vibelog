@@ -1,0 +1,45 @@
+#!/bin/bash
+
+# Lock TODO.md or CURRENT_STATE.md before editing
+# Usage: ./scripts/lock-doc TODO <your-session-id>
+#        ./scripts/lock-doc CURRENT_STATE <your-session-id>
+
+DOC=$1
+SESSION_ID=$2
+
+if [ -z "$DOC" ] || [ -z "$SESSION_ID" ]; then
+  echo "❌ Usage: ./scripts/lock-doc [TODO|CURRENT_STATE] <session-id>"
+  exit 1
+fi
+
+LOCK_FILE="./coordination/active/goldenfocus-$SESSION_ID-editing-$DOC.lock"
+MAX_WAIT=300  # 5 minutes max wait
+WAIT_TIME=0
+CHECK_INTERVAL=5
+
+# Check if already locked
+while ls ./coordination/active/*-editing-$DOC.lock 2>/dev/null | grep -v "$SESSION_ID" > /dev/null; do
+  if [ $WAIT_TIME -ge $MAX_WAIT ]; then
+    echo "❌ Timeout: $DOC.md still locked after 5 minutes"
+    echo "🔍 Lock file:"
+    ls -lh ./coordination/active/*-editing-$DOC.lock 2>/dev/null
+    echo ""
+    echo "💡 Options:"
+    echo "  1. Wait for other AI to finish"
+    echo "  2. Pick a different task"
+    echo "  3. If lock is stale (>10 min old), remove it manually"
+    exit 1
+  fi
+
+  LOCK_OWNER=$(ls ./coordination/active/*-editing-$DOC.lock 2>/dev/null | head -1 | xargs basename)
+  echo "⏳ Waiting for $DOC.md lock (held by $LOCK_OWNER)... ${WAIT_TIME}s elapsed"
+  sleep $CHECK_INTERVAL
+  WAIT_TIME=$((WAIT_TIME + CHECK_INTERVAL))
+done
+
+# Create lock
+echo "🔒 Locked $DOC.md for editing by $SESSION_ID" > "$LOCK_FILE"
+echo "$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")" >> "$LOCK_FILE"
+
+echo "✅ Lock acquired: $DOC.md"
+echo "⚠️  Remember to run: ./scripts/unlock-doc $DOC $SESSION_ID"
