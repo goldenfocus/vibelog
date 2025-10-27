@@ -1,4 +1,4 @@
-import '@testing-library/jest-dom'
+import '@testing-library/jest-dom';
 
 // Mock next-intl for testing
 vi.mock('@/components/providers/I18nProvider', () => ({
@@ -12,27 +12,32 @@ vi.mock('@/components/providers/I18nProvider', () => ({
         'recorder.done': 'Complete! Tap to start over',
         'components.micRecorder.freePlanLimit': 'Free plan: {timeLimit} limit',
         'components.micRecorder.timeRemaining': '{seconds} seconds remaining',
-      }
-      
-      let result = translations[key] || key
-      
+      };
+
+      let result = translations[key] || key;
+
       // Simple parameter replacement
       if (params) {
         Object.entries(params).forEach(([paramKey, value]) => {
-          result = result.replace(`{${paramKey}}`, String(value))
-        })
+          result = result.replace(`{${paramKey}}`, String(value));
+        });
       }
-      
-      return result
-    }
-  })
-}))
+
+      return result;
+    },
+  }),
+}));
 
 // Mock Lucide React icons
 vi.mock('lucide-react', () => ({
   Mic: vi.fn(() => null),
   Circle: vi.fn(() => null),
-}))
+  Square: vi.fn(() => null),
+  Loader2: vi.fn(() => null),
+  Sparkles: vi.fn(() => null),
+  Send: vi.fn(() => null),
+  AlertTriangle: vi.fn(() => null),
+}));
 
 // Mock Supabase for testing
 vi.mock('@/lib/supabase', () => ({
@@ -48,7 +53,7 @@ vi.mock('@/lib/supabase', () => ({
       getUser: vi.fn().mockResolvedValue({ data: { user: null }, error: null }),
     },
   }),
-}))
+}));
 
 vi.mock('@/lib/supabaseAdmin', () => ({
   createServerAdminClient: vi.fn().mockResolvedValue({
@@ -61,4 +66,4 @@ vi.mock('@/lib/supabaseAdmin', () => ({
     single: vi.fn().mockResolvedValue({ data: null, error: null }),
     maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
   }),
-}))
+}));
