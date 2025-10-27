@@ -1,12 +1,14 @@
 'use client';
 
-import { Clock, Heart, Share2, User, ArrowLeft } from 'lucide-react';
+import { Clock, Heart, User, ArrowLeft } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import Navigation from '@/components/Navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
+import VibelogActions from '@/components/VibelogActions';
 import VibelogContentRenderer from '@/components/VibelogContentRenderer';
+import type { ExportFormat } from '@/lib/export';
 
 interface VibelogAuthor {
   username: string;
@@ -19,6 +21,7 @@ interface Vibelog {
   title: string;
   teaser: string;
   content: string;
+  audio_url?: string | null;
   cover_image_url: string | null;
   created_at: string;
   published_at: string;
@@ -26,7 +29,19 @@ interface Vibelog {
   like_count: number;
   share_count: number;
   read_time: number;
+  user_id?: string;
   author: VibelogAuthor;
+}
+
+// Utility: Strip duplicate title from markdown content
+function stripDuplicateTitle(content: string, title: string): string {
+  // Match first H1 heading
+  const h1Match = content.match(/^#\s+(.+?)$/m);
+  if (h1Match && h1Match[1].trim() === title.trim()) {
+    // Remove the H1 line and any trailing newlines
+    return content.replace(/^#\s+.+?$\n*/m, '').trim();
+  }
+  return content;
 }
 
 export default function VibelogDetailPage() {
@@ -195,7 +210,10 @@ export default function VibelogDetailPage() {
             {/* Content - Show full for authenticated users, teaser for anonymous */}
             <div className="prose prose-invert max-w-none">
               {user ? (
-                <VibelogContentRenderer content={vibelog.content} isTeaser={false} />
+                <VibelogContentRenderer
+                  content={stripDuplicateTitle(vibelog.content, vibelog.title)}
+                  isTeaser={false}
+                />
               ) : (
                 <>
                   <VibelogContentRenderer
@@ -223,18 +241,37 @@ export default function VibelogDetailPage() {
           </article>
 
           {/* Actions Footer */}
-          <div className="flex items-center justify-between border-t border-border/30 pt-8">
-            <div className="flex items-center gap-6">
-              <button className="flex items-center gap-2 text-muted-foreground transition-colors hover:text-electric">
-                <Heart className="h-5 w-5" />
-                <span>Like</span>
-              </button>
-              <button className="flex items-center gap-2 text-muted-foreground transition-colors hover:text-electric">
-                <Share2 className="h-5 w-5" />
-                <span>Share</span>
-              </button>
+          {user && (
+            <div className="mt-8 border-t border-border/30 pt-8">
+              <VibelogActions
+                vibelogId={vibelog.id}
+                content={vibelog.content}
+                title={vibelog.title}
+                author={vibelog.author.display_name}
+                authorId={vibelog.user_id}
+                authorUsername={vibelog.author.username}
+                vibelogUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/vibelogs/${vibelog.id}`}
+                createdAt={vibelog.created_at}
+                audioUrl={vibelog.audio_url || undefined}
+                onShare={async () => {
+                  const url = `${window.location.origin}/vibelogs/${vibelog.id}`;
+                  if (navigator.share) {
+                    await navigator.share({
+                      title: vibelog.title,
+                      text: vibelog.teaser,
+                      url: url,
+                    });
+                  } else {
+                    await navigator.clipboard.writeText(url);
+                  }
+                }}
+                onExport={(format: ExportFormat) => {
+                  console.log('Export as:', format);
+                }}
+                variant="default"
+              />
             </div>
-          </div>
+          )}
         </div>
       </main>
     </div>
