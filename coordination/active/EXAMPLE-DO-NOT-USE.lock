@@ -1,0 +1,20 @@
+{
+  "session_id": "001",
+  "session_name": "goldenfocus-claude-001",
+  "ai_type": "claude-sonnet-4",
+  "platform": "cursor",
+  "started_at": "2025-11-01T10:00:00.000Z",
+  "status": "active",
+  "claimed_files": [
+    "/lib/conversation-engine.ts",
+    "/state/conversation-state.ts"
+  ],
+  "task": "Build conversation state machine",
+  "task_number": "#1",
+  "task_section": "READY",
+  "estimated_duration_minutes": 180,
+  "heartbeat_last": "2025-10-27T04:27:33.663Z",
+  "heartbeat_count": 11,
+  "progress_percent": 50,
+  "notes": "Testing the script"
+}

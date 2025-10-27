@@ -1,0 +1,333 @@
+#!/usr/bin/env node
+
+/**
+ * Golden Focus AI Session Dashboard
+ *
+ * Shows all active AI sessions, their status, and detects issues.
+ *
+ * Usage:
+ *   ./sesh             - Show active sessions
+ *   ./sesh --watch     - Live refresh every 30s
+ *   ./sesh --audit     - Show weekly audit
+ *   ./sesh --clean     - Remove stale locks (asks confirmation)
+ */
+
+const fs = require('fs');
+const path = require('path');
+
+// Configuration
+const LOCK_DIR = path.join(__dirname, '../coordination/active');
+const ARCHIVE_DIR = path.join(__dirname, '../coordination/archive');
+const STALE_THRESHOLD_MS = 20 * 60 * 1000; // 20 minutes
+
+// Colors for terminal output
+const colors = {
+  reset: '\x1b[0m',
+  bright: '\x1b[1m',
+  dim: '\x1b[2m',
+
+  red: '\x1b[31m',
+  green: '\x1b[32m',
+  yellow: '\x1b[33m',
+  blue: '\x1b[34m',
+  magenta: '\x1b[35m',
+  cyan: '\x1b[36m',
+  white: '\x1b[37m',
+};
+
+function colorize(text, color) {
+  return `${colors[color] || ''}${text}${colors.reset}`;
+}
+
+function readLockFiles() {
+  if (!fs.existsSync(LOCK_DIR)) {
+    return [];
+  }
+
+  const files = fs.readdirSync(LOCK_DIR)
+    .filter(f => f.endsWith('.lock') && f !== 'EXAMPLE-DO-NOT-USE.lock');
+
+  return files.map(file => {
+    const filePath = path.join(LOCK_DIR, file);
+    try {
+      const content = fs.readFileSync(filePath, 'utf8');
+      return JSON.parse(content);
+    } catch (err) {
+      console.error(`Error reading ${file}:`, err.message);
+      return null;
+    }
+  }).filter(Boolean);
+}
+
+function formatDuration(ms) {
+  const seconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+
+  if (hours > 0) {
+    return `${hours}h ${minutes % 60}m`;
+  } else if (minutes > 0) {
+    return `${minutes}m`;
+  } else {
+    return `${seconds}s`;
+  }
+}
+
+function getHeartbeatAge(heartbeatStr) {
+  const heartbeat = new Date(heartbeatStr);
+  const now = new Date();
+  return now - heartbeat;
+}
+
+function isStale(heartbeatStr) {
+  return getHeartbeatAge(heartbeatStr) > STALE_THRESHOLD_MS;
+}
+
+function showActiveSessions() {
+  const locks = readLockFiles();
+
+  console.log('\n' + colorize('🤖 GOLDEN FOCUS AI SESSIONS', 'cyan'));
+  console.log(colorize('═'.repeat(60), 'dim'));
+  console.log(colorize(`Last Updated: ${new Date().toISOString()}`, 'dim'));
+  console.log();
+
+  if (locks.length === 0) {
+    console.log(colorize('  No active sessions', 'dim'));
+    console.log();
+    return;
+  }
+
+  console.log(colorize(`🟢 ACTIVE SESSIONS (${locks.length})`, 'green'));
+  console.log();
+
+  locks.forEach((lock, index) => {
+    const heartbeatAge = getHeartbeatAge(lock.heartbeat_last);
+    const sessionAge = getHeartbeatAge(lock.started_at);
+    const stale = isStale(lock.heartbeat_last);
+
+    // Status indicator
+    let status = '';
+    let statusColor = 'green';
+
+    if (stale) {
+      status = '🟡 STALE';
+      statusColor = 'yellow';
+    } else if (lock.status === 'claiming') {
+      status = '🔵 CLAIMING';
+      statusColor = 'blue';
+    } else if (lock.status === 'active') {
+      status = '🟢 ACTIVE';
+      statusColor = 'green';
+    } else if (lock.status === 'completed') {
+      status = '✅ COMPLETED';
+      statusColor = 'cyan';
+    }
+
+    console.log(colorize(`┌─ Session ${index + 1}: ${lock.session_name}`, 'bright'));
+    console.log(`│  ${colorize('Status:', 'dim')} ${colorize(status, statusColor)}`);
+    console.log(`│  ${colorize('AI Type:', 'dim')} ${lock.ai_type} (${lock.platform})`);
+    console.log(`│  ${colorize('Task:', 'dim')} ${lock.task_number} - ${lock.task}`);
+    console.log(`│  ${colorize('Files:', 'dim')} ${lock.claimed_files.join(', ')}`);
+    console.log(`│  ${colorize('Started:', 'dim')} ${formatDuration(sessionAge)} ago`);
+    console.log(`│  ${colorize('Progress:', 'dim')} ${lock.progress_percent}%`);
+    console.log(`│  ${colorize('Heartbeat:', 'dim')} ${formatDuration(heartbeatAge)} ago`);
+
+    if (lock.notes && lock.notes !== 'None') {
+      console.log(`│  ${colorize('Notes:', 'dim')} ${lock.notes}`);
+    }
+
+    if (stale) {
+      console.log(`│  ${colorize('⚠️  WARNING: Stale heartbeat! AI may have crashed.', 'yellow')}`);
+    }
+
+    console.log('│');
+    console.log(colorize('└' + '─'.repeat(58), 'dim'));
+    console.log();
+  });
+
+  // Check for conflicts
+  const fileMap = new Map();
+  locks.forEach(lock => {
+    lock.claimed_files.forEach(file => {
+      if (!fileMap.has(file)) {
+        fileMap.set(file, []);
+      }
+      fileMap.get(file).push(lock.session_name);
+    });
+  });
+
+  const conflicts = Array.from(fileMap.entries()).filter(([_, sessions]) => sessions.length > 1);
+
+  if (conflicts.length > 0) {
+    console.log(colorize('⚠️  FILE CONFLICTS DETECTED!', 'red'));
+    console.log();
+    conflicts.forEach(([file, sessions]) => {
+      console.log(colorize(`  File: ${file}`, 'red'));
+      console.log(colorize(`  Claimed by: ${sessions.join(', ')}`, 'red'));
+      console.log();
+    });
+  }
+
+  // Summary
+  const staleCount = locks.filter(l => isStale(l.heartbeat_last)).length;
+  const activeCount = locks.filter(l => !isStale(l.heartbeat_last)).length;
+
+  console.log(colorize('📊 SUMMARY', 'cyan'));
+  console.log(colorize('─'.repeat(60), 'dim'));
+  console.log(`  ${colorize('Total Sessions:', 'dim')} ${locks.length}`);
+  console.log(`  ${colorize('Active:', 'dim')} ${colorize(activeCount, 'green')}`);
+  if (staleCount > 0) {
+    console.log(`  ${colorize('Stale:', 'dim')} ${colorize(staleCount, 'yellow')} (may have crashed)`);
+  }
+  if (conflicts.length > 0) {
+    console.log(`  ${colorize('Conflicts:', 'dim')} ${colorize(conflicts.length, 'red')}`);
+  } else {
+    console.log(`  ${colorize('Conflicts:', 'dim')} ${colorize('None ✅', 'green')}`);
+  }
+  console.log();
+}
+
+function showWeeklyAudit() {
+  console.log('\n' + colorize('📊 WEEKLY AUDIT', 'cyan'));
+  console.log(colorize('═'.repeat(60), 'dim'));
+  console.log();
+
+  if (!fs.existsSync(ARCHIVE_DIR)) {
+    console.log(colorize('  No archive data available', 'dim'));
+    console.log();
+    return;
+  }
+
+  // Get last 7 days of archives
+  const today = new Date();
+  const archives = [];
+
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(today);
+    date.setDate(date.getDate() - i);
+    const dateStr = date.toISOString().split('T')[0];
+    const archiveFile = path.join(ARCHIVE_DIR, `${dateStr}.md`);
+
+    if (fs.existsSync(archiveFile)) {
+      archives.push({
+        date: dateStr,
+        content: fs.readFileSync(archiveFile, 'utf8')
+      });
+    }
+  }
+
+  if (archives.length === 0) {
+    console.log(colorize('  No completed sessions this week', 'dim'));
+    console.log();
+    return;
+  }
+
+  // Count completed sessions
+  let totalSessions = 0;
+  let totalMerged = 0;
+  let totalEscalated = 0;
+
+  archives.forEach(archive => {
+    const sessionMatches = archive.content.match(/### Session:/g);
+    const mergedMatches = archive.content.match(/✅ Merged to main/g);
+    const escalatedMatches = archive.content.match(/🚨 Escalated/g);
+
+    totalSessions += sessionMatches ? sessionMatches.length : 0;
+    totalMerged += mergedMatches ? mergedMatches.length : 0;
+    totalEscalated += escalatedMatches ? escalatedMatches.length : 0;
+  });
+
+  const successRate = totalSessions > 0 ? Math.round((totalMerged / totalSessions) * 100) : 0;
+
+  console.log(colorize(`  Period: Last ${archives.length} days`, 'dim'));
+  console.log();
+  console.log(`  ${colorize('✅ Completed:', 'green')} ${totalSessions} tasks`);
+  console.log(`  ${colorize('✅ Auto-Merged:', 'green')} ${totalMerged} tasks`);
+  if (totalEscalated > 0) {
+    console.log(`  ${colorize('🚨 Escalated:', 'yellow')} ${totalEscalated} tasks`);
+  }
+  console.log(`  ${colorize('📈 Success Rate:', 'cyan')} ${successRate}%`);
+  console.log();
+
+  if (successRate < 70) {
+    console.log(colorize('  ⚠️  Success rate is low. Review escalated tasks.', 'yellow'));
+    console.log();
+  }
+}
+
+function cleanStaleLocks() {
+  const locks = readLockFiles();
+  const staleLocks = locks.filter(l => isStale(l.heartbeat_last));
+
+  if (staleLocks.length === 0) {
+    console.log(colorize('\n✅ No stale locks to clean\n', 'green'));
+    return;
+  }
+
+  console.log(colorize(`\n⚠️  Found ${staleLocks.length} stale lock(s):\n`, 'yellow'));
+
+  staleLocks.forEach((lock, index) => {
+    const heartbeatAge = getHeartbeatAge(lock.heartbeat_last);
+    console.log(`  ${index + 1}. ${lock.session_name}`);
+    console.log(`     Task: ${lock.task}`);
+    console.log(`     Last heartbeat: ${formatDuration(heartbeatAge)} ago`);
+    console.log();
+  });
+
+  // Ask for confirmation (simplified, just show instruction)
+  console.log(colorize('To remove stale locks, delete them manually from:', 'dim'));
+  console.log(colorize(`  ${LOCK_DIR}`, 'cyan'));
+  console.log();
+  console.log(colorize('⚠️  Only remove locks if you\'re sure the AI crashed!', 'yellow'));
+  console.log();
+}
+
+function watchSessions() {
+  console.clear();
+  showActiveSessions();
+
+  console.log(colorize('👁️  Watching... (refresh every 30s, Ctrl+C to stop)', 'dim'));
+  console.log();
+
+  setInterval(() => {
+    console.clear();
+    showActiveSessions();
+    console.log(colorize('👁️  Watching... (refresh every 30s, Ctrl+C to stop)', 'dim'));
+    console.log();
+  }, 30000);
+}
+
+// Main
+const args = process.argv.slice(2);
+const command = args[0];
+
+switch (command) {
+  case '--watch':
+    watchSessions();
+    break;
+
+  case '--audit':
+    showWeeklyAudit();
+    break;
+
+  case '--clean':
+    cleanStaleLocks();
+    break;
+
+  case '--help':
+  case '-h':
+    console.log('\n' + colorize('Golden Focus AI Session Dashboard', 'cyan'));
+    console.log();
+    console.log('Usage:');
+    console.log('  ./sesh             Show active sessions');
+    console.log('  ./sesh --watch     Live refresh every 30s');
+    console.log('  ./sesh --audit     Show weekly audit');
+    console.log('  ./sesh --clean     Show stale locks (for manual cleanup)');
+    console.log('  ./sesh --help      Show this help');
+    console.log();
+    break;
+
+  default:
+    showActiveSessions();
+    break;
+}
