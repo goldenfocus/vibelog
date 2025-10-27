@@ -50,10 +50,16 @@ export default function PublicVibelogContent({ vibelog }: PublicVibelogContentPr
     // Export handled by ExportButton component
   };
 
+  // Remove duplicate title from content if it starts with the same title
+  const contentWithoutDuplicateTitle = vibelog.content.replace(
+    new RegExp(`^#\\s+${vibelog.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\n`, 'i'),
+    ''
+  );
+
   return (
     <div>
       {/* Content with beautiful formatting */}
-      <VibelogContentRenderer content={vibelog.content} />
+      <VibelogContentRenderer content={contentWithoutDuplicateTitle} />
 
       {/* Action Buttons */}
       <div className="mt-12 border-t border-border/40 pt-8">
