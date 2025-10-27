@@ -10,6 +10,7 @@ import { useAudioPlayback } from '@/hooks/useAudioPlayback';
 import { useBulletproofSave } from '@/hooks/useBulletproofSave';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useVibelogAPI } from '@/hooks/useVibelogAPI';
+import { useVoiceActivityDetection } from '@/hooks/useVoiceActivityDetection';
 import type { CoverImage, ToastState, UpgradePromptState } from '@/types/micRecorder';
 
 interface AttributionDetails {
@@ -25,6 +26,7 @@ interface UseMicStateMachineReturn {
   recordingTime: number;
   transcription: string;
   liveTranscript: string;
+  canEditLive: boolean; // Can edit live transcript during recording (silence detected)
   vibelogContent: string;
   fullVibelogContent: string;
   parsedVibelog: { title: string | null; body: string };
@@ -52,6 +54,7 @@ interface UseMicStateMachineReturn {
   setEditedContent: (content: string) => void;
   handleTranscriptUpgradeGate: () => void;
   updateTranscript: (newTranscription: string) => void;
+  updateLiveTranscript: (newTranscript: string) => void; // Update live transcript during recording
   setUpgradePrompt: (next: UpgradePromptState) => void;
   clearUpgradePrompt: () => void;
 
@@ -177,7 +180,19 @@ export function useMicStateMachine(
     resetAudioEngine,
   } = useAudioEngine(showToast, () => setRecordingState('processing'));
 
-  const speechRecognition = useSpeechRecognition(recordingState);
+  // Voice Activity Detection - detects silence to enable editing
+  const { canEdit: canEditLive } = useVoiceActivityDetection({
+    audioLevels,
+    isRecording: recordingState === 'recording',
+    silenceThreshold: 0.2, // 20% of max volume
+    silenceDebounceMs: 2000, // 2 seconds of silence
+    voiceDebounceMs: 500, // 0.5 seconds of voice to exit edit mode
+  });
+
+  const speechRecognition = useSpeechRecognition({
+    recordingState,
+    isEditMode: canEditLive,
+  });
   const audioPlayback = useAudioPlayback(audioBlob);
   const vibelogAPI = useVibelogAPI(setUpgradePrompt);
   const { saveVibelog } = useBulletproofSave();
@@ -648,11 +663,13 @@ export function useMicStateMachine(
     setTimeout(() => {
       setRecordingState('complete');
     }, 300);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     audioData,
     coverImage,
     fullVibelogContent,
     isTeaserContent,
+    processCoverImage,
     recordingTime,
     saveVibelog,
     showToast,
@@ -691,6 +708,7 @@ export function useMicStateMachine(
     recordingTime,
     transcription,
     liveTranscript: speechRecognition.liveTranscript,
+    canEditLive,
     vibelogContent,
     fullVibelogContent,
     parsedVibelog,
@@ -716,6 +734,7 @@ export function useMicStateMachine(
     setEditedContent,
     handleTranscriptUpgradeGate,
     updateTranscript,
+    updateLiveTranscript: speechRecognition.updateTranscript,
     setUpgradePrompt,
     clearUpgradePrompt: () => setUpgradePrompt({ visible: false, message: '', benefits: [] }),
     processTranscription,

@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { Copy, Edit, X, Check } from "lucide-react";
-import React, { useState } from "react";
+import { Copy, Edit, X, Check } from 'lucide-react';
+import React, { useState } from 'react';
 
-import { useI18n } from "@/components/providers/I18nProvider";
+import { useI18n } from '@/components/providers/I18nProvider';
 
 export interface TranscriptionPanelProps {
   transcription: string;
@@ -13,7 +13,9 @@ export interface TranscriptionPanelProps {
   onCopy: (content: string) => void;
   onEdit?: () => void;
   onTranscriptUpdate?: (newTranscription: string) => void;
+  onLiveTranscriptEdit?: (newTranscript: string) => void;
   isLoggedIn?: boolean;
+  canEditLive?: boolean; // Can edit transcript during recording (silence detected)
 }
 
 interface EditModalProps {
@@ -26,38 +28,40 @@ interface EditModalProps {
 const EditModal: React.FC<EditModalProps> = ({ content, isOpen, onSave, onCancel }) => {
   const [editedContent, setEditedContent] = useState(content);
 
-  if (!isOpen) {return null;}
+  if (!isOpen) {
+    return null;
+  }
 
   const handleSave = () => {
     onSave(editedContent);
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-card/95 backdrop-blur-sm border border-border/50 rounded-2xl p-6 shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="flex items-center justify-between mb-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-border/50 bg-card/95 p-6 shadow-2xl backdrop-blur-sm">
+        <div className="mb-6 flex items-center justify-between">
           <h3 className="text-xl font-bold text-foreground">Edit Your Transcript</h3>
           <div className="flex gap-2">
             <button
               onClick={handleSave}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-electric hover:opacity-90 text-white font-semibold rounded-xl transition-all duration-200"
+              className="flex items-center gap-2 rounded-xl bg-gradient-electric px-4 py-2 font-semibold text-white transition-all duration-200 hover:opacity-90"
             >
-              <Check className="w-4 h-4" />
+              <Check className="h-4 w-4" />
               Save
             </button>
             <button
               onClick={onCancel}
-              className="text-muted-foreground hover:text-foreground transition-colors p-2"
+              className="p-2 text-muted-foreground transition-colors hover:text-foreground"
             >
-              <X className="w-5 h-5" />
+              <X className="h-5 w-5" />
             </button>
           </div>
         </div>
         <div className="flex-1 overflow-hidden">
           <textarea
             value={editedContent}
-            onChange={(e) => setEditedContent(e.target.value)}
-            className="w-full h-full resize-none bg-background/50 backdrop-blur-sm border border-border/30 rounded-xl p-4 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-electric/20 focus:border-electric transition-colors"
+            onChange={e => setEditedContent(e.target.value)}
+            className="h-full w-full resize-none rounded-xl border border-border/30 bg-background/50 p-4 text-foreground placeholder-muted-foreground backdrop-blur-sm transition-colors focus:border-electric focus:outline-none focus:ring-2 focus:ring-electric/20"
             placeholder="Edit your transcript content..."
             data-testid="transcript-edit-textarea"
           />
@@ -79,7 +83,9 @@ export default function TranscriptionPanel({
   onCopy,
   onEdit,
   onTranscriptUpdate,
-  isLoggedIn = false
+  onLiveTranscriptEdit,
+  isLoggedIn = false,
+  canEditLive = false,
 }: TranscriptionPanelProps) {
   const { t } = useI18n();
   const [isEditing, setIsEditing] = useState(false);
@@ -115,21 +121,36 @@ export default function TranscriptionPanel({
     <>
       {/* Live transcript during recording */}
       {isRecording && liveTranscript && (
-        <div 
-          className="bg-card/50 backdrop-blur-sm rounded-2xl p-6 border border-border/30 mb-8"
+        <div
+          className="mb-8 rounded-2xl border border-border/30 bg-card/50 p-6 backdrop-blur-sm"
           data-testid="live-transcript-panel"
         >
-          <div className="mb-3">
+          <div className="mb-3 flex items-center justify-between">
             <h3 className="text-lg font-semibold text-foreground">
               {t('components.micRecorder.liveTranscript')}
             </h3>
+            {canEditLive && (
+              <div className="flex items-center gap-2 rounded-lg bg-electric/10 px-3 py-1.5 text-sm font-medium text-electric">
+                <Edit className="h-4 w-4" />
+                Edit Mode
+              </div>
+            )}
           </div>
-          <p 
-            className="text-lg leading-relaxed typing-cursor"
-            data-testid="live-transcript-text"
-          >
-            {liveTranscript}
-          </p>
+
+          {canEditLive && onLiveTranscriptEdit ? (
+            <textarea
+              value={liveTranscript}
+              onChange={e => onLiveTranscriptEdit(e.target.value)}
+              className="min-h-[120px] w-full resize-none rounded-xl border-2 border-electric/30 bg-background/50 p-4 text-lg leading-relaxed text-foreground placeholder-muted-foreground backdrop-blur-sm transition-all focus:border-electric focus:outline-none focus:ring-2 focus:ring-electric/50"
+              placeholder="Your transcript appears here... (editable during silence)"
+              data-testid="live-transcript-edit-textarea"
+            />
+          ) : (
+            <p className="typing-cursor text-lg leading-relaxed" data-testid="live-transcript-text">
+              {liveTranscript}
+            </p>
+          )}
+
           <div className="mt-4 flex justify-between text-sm text-muted-foreground">
             <span data-testid="live-transcript-char-count">
               Characters: {getCharacterCount(liveTranscript)}
@@ -143,33 +164,33 @@ export default function TranscriptionPanel({
 
       {/* Completed transcription */}
       {transcription && isComplete && (
-        <div 
-          className="bg-card rounded-2xl border border-border/20 p-6"
+        <div
+          className="rounded-2xl border border-border/20 bg-card p-6"
           data-testid="completed-transcript-panel"
         >
-          <div className="flex items-center justify-between mb-4">
+          <div className="mb-4 flex items-center justify-between">
             <h3 className="text-lg font-semibold">{t('recorder.originalTranscription')}</h3>
             <div className="flex gap-2">
               <button
                 onClick={handleEdit}
-                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-muted/50 hover:bg-muted rounded-lg transition-colors"
+                className="inline-flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-1.5 text-sm transition-colors hover:bg-muted"
                 data-testid="edit-transcript-button"
               >
-                <Edit className="w-4 h-4" />
+                <Edit className="h-4 w-4" />
                 {t('actions.edit')}
               </button>
               <button
                 onClick={() => onCopy(transcription)}
-                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-muted/50 hover:bg-muted rounded-lg transition-colors"
+                className="inline-flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-1.5 text-sm transition-colors hover:bg-muted"
                 data-testid="copy-transcript-button"
               >
-                <Copy className="w-4 h-4" />
+                <Copy className="h-4 w-4" />
                 {t('actions.copy')}
               </button>
             </div>
           </div>
-          <p 
-            className="text-muted-foreground leading-relaxed"
+          <p
+            className="leading-relaxed text-muted-foreground"
             data-testid="completed-transcript-text"
           >
             {transcription}
@@ -187,13 +208,13 @@ export default function TranscriptionPanel({
 
       {/* Empty state when no transcription - only show after user has tried recording */}
       {!isRecording && !transcription && isComplete && (
-        <div 
-          className="bg-card/30 rounded-2xl border border-border/10 p-8 text-center"
+        <div
+          className="rounded-2xl border border-border/10 bg-card/30 p-8 text-center"
           data-testid="empty-transcript-panel"
         >
           <div className="text-muted-foreground/60">
-            <div className="text-4xl mb-3">📝</div>
-            <p className="text-lg font-medium mb-2">No transcription yet</p>
+            <div className="mb-3 text-4xl">📝</div>
+            <p className="mb-2 text-lg font-medium">No transcription yet</p>
             <p className="text-sm">Try recording again or check your microphone</p>
           </div>
         </div>
