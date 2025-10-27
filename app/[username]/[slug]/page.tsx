@@ -1,9 +1,9 @@
-import { Clock, Heart, Share2, User, Sparkles, ArrowLeft } from 'lucide-react';
+import { Clock, Heart, Share2, User, ArrowLeft } from 'lucide-react';
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-import VibelogContentRenderer from '@/components/VibelogContentRenderer';
+import PublicVibelogContent from '@/components/PublicVibelogContent';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
 interface PageProps {
@@ -39,6 +39,7 @@ async function getVibelog(username: string, slug: string) {
       slug,
       content,
       teaser,
+      audio_url,
       cover_image_url,
       created_at,
       published_at,
@@ -48,7 +49,8 @@ async function getVibelog(username: string, slug: string) {
       read_time,
       word_count,
       tags,
-      user_id
+      user_id,
+      public_slug
     `
     )
     .eq('slug', slug)
@@ -136,13 +138,6 @@ export default async function VibelogPage({ params }: PageProps) {
     notFound();
   }
 
-  // Check if user is authenticated
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const isAuthenticated = !!user;
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -219,34 +214,19 @@ export default async function VibelogPage({ params }: PageProps) {
             </div>
           </div>
 
-          {/* Content - Show full for authenticated users, teaser for anonymous */}
-          <div className="prose prose-lg max-w-none">
-            {isAuthenticated ? (
-              <VibelogContentRenderer content={vibelog.content} isTeaser={false} />
-            ) : (
-              <>
-                <VibelogContentRenderer
-                  content={vibelog.teaser || vibelog.content.substring(0, 500) + '...'}
-                  isTeaser={true}
-                />
-                <div className="mt-8 rounded-2xl border border-electric/30 bg-electric/5 p-6 text-center">
-                  <h3 className="mb-2 text-xl font-bold text-electric">
-                    Sign in to read the full vibelog
-                  </h3>
-                  <p className="mb-4 text-muted-foreground">
-                    Create an account or sign in to access the complete content and join the
-                    community.
-                  </p>
-                  <Link
-                    href="/auth/signin"
-                    className="inline-flex items-center gap-2 rounded-lg bg-electric px-6 py-3 font-medium text-white transition-all duration-200 hover:bg-electric-glow"
-                  >
-                    Sign In
-                  </Link>
-                </div>
-              </>
-            )}
-          </div>
+          {/* Content with full action buttons */}
+          <PublicVibelogContent
+            vibelog={{
+              id: vibelog.id,
+              title: vibelog.title,
+              content: vibelog.content,
+              user_id: vibelog.user_id,
+              public_slug: vibelog.public_slug || vibelog.slug,
+              audio_url: vibelog.audio_url,
+              created_at: vibelog.created_at,
+              author: vibelog.author,
+            }}
+          />
 
           {/* Tags */}
           {vibelog.tags && vibelog.tags.length > 0 && (
@@ -261,22 +241,6 @@ export default async function VibelogPage({ params }: PageProps) {
               ))}
             </div>
           )}
-
-          {/* Action buttons */}
-          <div className="mt-8 flex flex-wrap gap-4 border-t border-border/30 pt-6">
-            <button className="flex items-center gap-2 rounded-lg border border-electric/30 px-4 py-2 font-medium text-electric transition-all duration-200 hover:bg-electric hover:text-white">
-              <Heart className="h-4 w-4" />
-              Like
-            </button>
-            <button className="flex items-center gap-2 rounded-lg border border-electric/30 px-4 py-2 font-medium text-electric transition-all duration-200 hover:bg-electric hover:text-white">
-              <Share2 className="h-4 w-4" />
-              Share
-            </button>
-            <button className="flex items-center gap-2 rounded-lg bg-electric/10 px-4 py-2 font-medium text-electric transition-all duration-200 hover:bg-electric hover:text-white">
-              <Sparkles className="h-4 w-4" />
-              Remix
-            </button>
-          </div>
         </article>
 
         {/* Author bio section */}
