@@ -27,9 +27,9 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
     recordingTime,
     transcription,
     liveTranscript,
+    canEditLive,
     vibelogContent,
     fullVibelogContent,
-    parsedVibelog,
     isTeaserContent,
     isEditing,
     editedContent,
@@ -52,6 +52,7 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
     setEditedContent,
     handleTranscriptUpgradeGate,
     updateTranscript,
+    updateLiveTranscript,
     setUpgradePrompt,
     clearUpgradePrompt,
     processTranscription,
@@ -77,7 +78,8 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
     // If not logged in, redirect to sign-in page
     if (!isLoggedIn) {
       console.log('📖 [READ-MORE] Redirecting to sign-in...');
-      window.location.href = '/auth/signin?returnTo=' + encodeURIComponent(window.location.pathname);
+      window.location.href =
+        '/auth/signin?returnTo=' + encodeURIComponent(window.location.pathname);
       return;
     }
 
@@ -86,7 +88,11 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
 
   // Determine which content to display
   const displayContent = showingFullContent ? fullVibelogContent || vibelogContent : vibelogContent;
-  const shouldShowReadMore = isTeaserContent && !showingFullContent && fullVibelogContent && fullVibelogContent !== vibelogContent;
+  const shouldShowReadMore =
+    isTeaserContent &&
+    !showingFullContent &&
+    fullVibelogContent &&
+    fullVibelogContent !== vibelogContent;
 
   // Parse the displayed content (not just the teaser) to extract title and body
   const displayParsed = useMemo(() => {
@@ -136,11 +142,13 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
         liveTranscript={liveTranscript}
         isRecording={showRecordingUI}
         isComplete={showCompletedUI}
+        canEditLive={canEditLive}
         onCopy={content => {
           void handleCopy(content);
         }}
         onEdit={handleTranscriptUpgradeGate}
         onTranscriptUpdate={updateTranscript}
+        onLiveTranscriptEdit={updateLiveTranscript}
         isLoggedIn={isLoggedIn}
       />
 

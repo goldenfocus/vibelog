@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
-import { RecordingState } from "@/components/mic/Controls";
-import { useI18n } from "@/components/providers/I18nProvider";
+import { RecordingState } from '@/components/mic/Controls';
+import { useI18n } from '@/components/providers/I18nProvider';
 
 // Extend Window interface for webkitSpeechRecognition
 declare global {
@@ -15,25 +15,40 @@ export interface UseSpeechRecognitionReturn {
   liveTranscript: string;
   isSupported: boolean;
   resetTranscript: () => void;
+  updateTranscript: (newTranscript: string) => void;
+}
+
+export interface UseSpeechRecognitionOptions {
+  recordingState: RecordingState;
+  /** Is user currently in edit mode (editing transcript) */
+  isEditMode?: boolean;
 }
 
 export function useSpeechRecognition(
-  recordingState: RecordingState
+  options: RecordingState | UseSpeechRecognitionOptions
 ): UseSpeechRecognitionReturn {
   const { t } = useI18n();
-  const [liveTranscript, setLiveTranscript] = useState("");
+  const [liveTranscript, setLiveTranscript] = useState('');
   const speechRecognitionRef = useRef<any>(null);
 
+  // Parse options (backwards compatible)
+  const recordingState = typeof options === 'string' ? options : options.recordingState;
+  const isEditMode = typeof options === 'object' ? options.isEditMode : false;
+
+  // Track user edits separately from speech recognition
+  const userEditedTranscriptRef = useRef<string | null>(null);
+  const isUserEditingRef = useRef(false);
+
   // Check if Speech Recognition is supported
-  const isSupported = typeof window !== 'undefined' && 
-    !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+  const isSupported =
+    typeof window !== 'undefined' && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 
   // Real-time speech recognition with better browser support
   useEffect(() => {
-    if (recordingState === "recording") {
+    if (recordingState === 'recording') {
       // Check for Speech Recognition API support
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      
+
       if (SpeechRecognition) {
         try {
           const recognition = new SpeechRecognition();
@@ -41,18 +56,18 @@ export function useSpeechRecognition(
           recognition.interimResults = true;
           recognition.lang = 'en-US';
           recognition.maxAlternatives = 1;
-          
+
           let finalTranscript = '';
           let isBlocked = false; // Track if browser blocked the feature
-          
+
           recognition.onstart = () => {
             // Speech recognition started
             setLiveTranscript(t('components.micRecorder.listening'));
           };
-          
+
           recognition.onresult = (event: any) => {
             let interimTranscript = '';
-            
+
             for (let i = event.resultIndex; i < event.results.length; i++) {
               const transcript = event.results[i][0].transcript;
               if (event.results[i].isFinal) {
@@ -61,17 +76,22 @@ export function useSpeechRecognition(
                 interimTranscript += transcript;
               }
             }
-            
-            // Combine final and interim results
-            const currentTranscript = (finalTranscript + interimTranscript).trim();
-            if (currentTranscript) {
+
+            // If user has edited transcript, use their version as base
+            const baseTranscript = userEditedTranscriptRef.current || finalTranscript;
+
+            // Combine with interim results
+            const currentTranscript = (baseTranscript + interimTranscript).trim();
+
+            // Only update if user is not currently editing
+            if (currentTranscript && !isUserEditingRef.current) {
               setLiveTranscript(currentTranscript);
             }
           };
-          
+
           recognition.onerror = (event: any) => {
             // Speech recognition error
-            
+
             // Handle different error types - but DON'T retry for blocked cases
             if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
               isBlocked = true;
@@ -84,10 +104,14 @@ export function useSpeechRecognition(
               // Only retry for no-speech, not for blocked cases
               if (!isBlocked) {
                 setTimeout(() => {
-                  if (recordingState === "recording" && speechRecognitionRef.current && !isBlocked) {
+                  if (
+                    recordingState === 'recording' &&
+                    speechRecognitionRef.current &&
+                    !isBlocked
+                  ) {
                     try {
                       speechRecognitionRef.current.start();
-                    } catch (e) {
+                    } catch {
                       // Could not restart after no-speech
                       setLiveTranscript(t('components.micRecorder.recordingUnavailable'));
                     }
@@ -102,7 +126,7 @@ export function useSpeechRecognition(
               setLiveTranscript(t('components.micRecorder.recordingUnavailable'));
             }
           };
-          
+
           recognition.onend = () => {
             // Speech recognition ended
             // DON'T restart if blocked - just leave it in a stable state
@@ -110,25 +134,29 @@ export function useSpeechRecognition(
               setLiveTranscript(t('components.micRecorder.recordingBlockedByBrowser'));
               return;
             }
-            
+
             // Only restart for normal end events, not blocked ones
-            if (recordingState === "recording" && speechRecognitionRef.current && !isBlocked) {
+            if (recordingState === 'recording' && speechRecognitionRef.current && !isBlocked) {
               setTimeout(() => {
                 try {
-                  if (recordingState === "recording" && speechRecognitionRef.current && !isBlocked) {
+                  if (
+                    recordingState === 'recording' &&
+                    speechRecognitionRef.current &&
+                    !isBlocked
+                  ) {
                     speechRecognitionRef.current.start();
                   }
-                } catch (e) {
+                } catch {
                   // Could not restart recognition
                   setLiveTranscript(t('components.micRecorder.recordingUnavailable'));
                 }
               }, 1000);
             }
           };
-          
+
           speechRecognitionRef.current = recognition;
           recognition.start();
-        } catch (error) {
+        } catch {
           // Speech recognition initialization error
           setLiveTranscript('Recording...\n(live transcript unavailable)');
         }
@@ -142,21 +170,21 @@ export function useSpeechRecognition(
       if (speechRecognitionRef.current) {
         try {
           speechRecognitionRef.current.stop();
-        } catch (e) {
+        } catch {
           // Error stopping recognition
         }
         speechRecognitionRef.current = null;
       }
-      if (recordingState === "idle") {
+      if (recordingState === 'idle') {
         setLiveTranscript('');
       }
     }
-    
+
     return () => {
       if (speechRecognitionRef.current) {
         try {
           speechRecognitionRef.current.stop();
-        } catch (e) {
+        } catch {
           // Cleanup recognition error
         }
         speechRecognitionRef.current = null;
@@ -164,21 +192,37 @@ export function useSpeechRecognition(
     };
   }, [recordingState, t]);
 
+  // Track edit mode state changes
+  useEffect(() => {
+    isUserEditingRef.current = isEditMode || false;
+  }, [isEditMode]);
+
   const resetTranscript = () => {
     setLiveTranscript('');
+    userEditedTranscriptRef.current = null;
+    isUserEditingRef.current = false;
     if (speechRecognitionRef.current) {
       try {
         speechRecognitionRef.current.stop();
-      } catch (e) {
+      } catch {
         // Error stopping recognition
       }
       speechRecognitionRef.current = null;
     }
   };
 
+  /**
+   * Manually update the transcript (called when user edits during silence)
+   */
+  const updateTranscript = (newTranscript: string) => {
+    userEditedTranscriptRef.current = newTranscript;
+    setLiveTranscript(newTranscript);
+  };
+
   return {
     liveTranscript,
     isSupported,
     resetTranscript,
+    updateTranscript,
   };
 }
