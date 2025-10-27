@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
+import Navigation from '@/components/Navigation';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
 interface PageProps {
@@ -102,27 +103,10 @@ export default async function PublicVibelogPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto flex h-16 items-center px-4">
-          <Link href="/" className="text-xl font-bold">
-            vibelog.io
-          </Link>
-          <div className="ml-auto">
-            {isAnonymous && (
-              <Link
-                href="/auth/signin"
-                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-              >
-                Sign in to create your own
-              </Link>
-            )}
-          </div>
-        </div>
-      </header>
+      <Navigation />
 
       {/* Main content */}
-      <main className="container mx-auto max-w-3xl px-4 py-12">
+      <main className="container mx-auto max-w-3xl px-4 pb-12 pt-24">
         {/* Cover Image */}
         {coverImage && (
           <div className="relative mb-8 aspect-video overflow-hidden rounded-2xl border border-border/10 shadow-lg">
