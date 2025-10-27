@@ -2,10 +2,9 @@ import { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 
 import Navigation from '@/components/Navigation';
+import PublicVibelogContent from '@/components/PublicVibelogContent';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
 interface PageProps {
@@ -121,45 +120,34 @@ export default async function PublicVibelogPage({ params }: PageProps) {
           </div>
         )}
 
-        {/* Article */}
-        <article className="prose prose-lg dark:prose-invert max-w-none">
-          {/* Title */}
-          <h1 className="mb-2 bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-4xl font-bold leading-tight text-transparent dark:from-blue-400 dark:to-violet-400">
-            {vibelog.title}
-          </h1>
+        {/* Title */}
+        <h1 className="mb-2 bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-4xl font-bold leading-tight text-transparent dark:from-blue-400 dark:to-violet-400">
+          {vibelog.title}
+        </h1>
 
-          {/* Meta */}
-          <div className="mb-8 flex items-center gap-4 text-sm text-muted-foreground">
-            <span>{vibelog.read_time} min read</span>
-            <span>•</span>
-            <span>{vibelog.word_count} words</span>
-            {vibelog.view_count > 0 && (
-              <>
-                <span>•</span>
-                <span>{vibelog.view_count} views</span>
-              </>
-            )}
-          </div>
-
-          {/* Content - Always show full content */}
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{vibelog.content}</ReactMarkdown>
-
-          {/* CTA for anonymous posts */}
-          {false && isAnonymous && vibelog.teaser && vibelog.teaser !== vibelog.content && (
-            <div className="mt-12 rounded-2xl border border-border/40 bg-muted/50 p-8 text-center">
-              <h3 className="mb-2 text-2xl font-bold">Want to read more?</h3>
-              <p className="mb-6 text-muted-foreground">
-                Sign in with Google to continue reading and create your own VibeLog stories
-              </p>
-              <Link
-                href={`/auth/signin?returnTo=/v/${slug}&claim=${vibelog.anonymous_session_id}`}
-                className="inline-block rounded-lg bg-primary px-6 py-3 font-medium text-primary-foreground hover:bg-primary/90"
-              >
-                Continue Reading →
-              </Link>
-            </div>
+        {/* Meta */}
+        <div className="mb-8 flex items-center gap-4 text-sm text-muted-foreground">
+          <span>{vibelog.read_time} min read</span>
+          <span>•</span>
+          <span>{vibelog.word_count} words</span>
+          {vibelog.view_count > 0 && (
+            <>
+              <span>•</span>
+              <span>{vibelog.view_count} views</span>
+            </>
           )}
-        </article>
+        </div>
+
+        {/* Content with formatting + action buttons */}
+        <PublicVibelogContent
+          vibelog={{
+            id: vibelog.id,
+            title: vibelog.title,
+            content: vibelog.content,
+            user_id: vibelog.user_id,
+            public_slug: vibelog.public_slug,
+          }}
+        />
 
         {/* Audio player if available */}
         {vibelog.audio_url && (
