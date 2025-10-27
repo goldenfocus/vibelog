@@ -1,0 +1,67 @@
+#!/usr/bin/env node
+
+/**
+ * Golden Focus Heartbeat Updater
+ *
+ * Updates heartbeat timestamp in lock file.
+ * Safe, atomic, handles errors gracefully.
+ *
+ * Usage:
+ *   ./scripts/heartbeat goldenfocus-claude-001 45
+ *   ./scripts/heartbeat goldenfocus-claude-001 45 "Working on state transitions"
+ *
+ * Args:
+ *   1. Session name (without .lock extension)
+ *   2. Progress percent (0-100)
+ *   3. Notes (optional)
+ */
+
+const fs = require('fs');
+const path = require('path');
+
+// Args
+const sessionName = process.argv[2];
+const progressPercent = parseInt(process.argv[3] || '0', 10);
+const notes = process.argv[4] || '';
+
+if (!sessionName) {
+  console.error('❌ Error: Session name required');
+  console.error('Usage: ./scripts/heartbeat goldenfocus-claude-001 45 "Optional notes"');
+  process.exit(1);
+}
+
+const lockFile = path.join(__dirname, '../coordination/active', `${sessionName}.lock`);
+
+// Check file exists
+if (!fs.existsSync(lockFile)) {
+  console.error(`❌ Error: Lock file not found: ${lockFile}`);
+  console.error('Make sure you created your lock file first.');
+  process.exit(1);
+}
+
+try {
+  // Read lock file
+  const lockData = JSON.parse(fs.readFileSync(lockFile, 'utf8'));
+
+  // Update fields
+  lockData.heartbeat_last = new Date().toISOString();
+  lockData.heartbeat_count = (lockData.heartbeat_count || 0) + 1;
+  lockData.progress_percent = Math.min(100, Math.max(0, progressPercent));
+
+  if (notes) {
+    lockData.notes = notes;
+  }
+
+  // Write back (atomic write via temp file)
+  const tempFile = `${lockFile}.tmp`;
+  fs.writeFileSync(tempFile, JSON.stringify(lockData, null, 2), 'utf8');
+  fs.renameSync(tempFile, lockFile); // Atomic on Unix systems
+
+  // Success output
+  const timestamp = new Date().toLocaleTimeString();
+  console.log(`✅ [${timestamp}] Heartbeat #${lockData.heartbeat_count}: ${progressPercent}% ${notes ? `- ${notes}` : ''}`);
+
+} catch (err) {
+  console.error('❌ Error updating heartbeat:', err.message);
+  process.exit(1);
+}

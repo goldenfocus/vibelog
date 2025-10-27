@@ -1,0 +1,55 @@
+#!/bin/bash
+
+# Golden Focus Document Lock Helper
+#
+# Locks TODO.md or CURRENT_STATE.md for editing
+#
+# Usage:
+#   ./scripts/lock-doc TODO goldenfocus-claude-001
+#   ./scripts/lock-doc CURRENT_STATE goldenfocus-claude-001
+
+DOC_NAME=$1
+SESSION_NAME=$2
+
+if [ -z "$DOC_NAME" ] || [ -z "$SESSION_NAME" ]; then
+  echo "❌ Error: Missing arguments"
+  echo "Usage: ./scripts/lock-doc TODO goldenfocus-claude-001"
+  echo "       ./scripts/lock-doc CURRENT_STATE goldenfocus-claude-001"
+  exit 1
+fi
+
+# Validate doc name
+if [ "$DOC_NAME" != "TODO" ] && [ "$DOC_NAME" != "CURRENT_STATE" ]; then
+  echo "❌ Error: Invalid document name. Use TODO or CURRENT_STATE"
+  exit 1
+fi
+
+LOCK_DIR="coordination/active"
+LOCK_FILE="${LOCK_DIR}/${SESSION_NAME}-editing-${DOC_NAME}.lock"
+
+# Check if already locked by someone else
+for existing_lock in ${LOCK_DIR}/*-editing-${DOC_NAME}.lock; do
+  if [ -f "$existing_lock" ] && [ "$existing_lock" != "$LOCK_FILE" ]; then
+    echo "⏳ ${DOC_NAME}.md is locked by another AI: $(basename $existing_lock)"
+    echo "Waiting for lock to be released..."
+
+    # Wait up to 5 minutes
+    for i in {1..60}; do
+      sleep 5
+      if [ ! -f "$existing_lock" ]; then
+        echo "✅ Lock released, proceeding..."
+        break
+      fi
+      if [ $i -eq 60 ]; then
+        echo "❌ Timeout: Lock not released after 5 minutes"
+        echo "Lock may be stale. Run: rm $existing_lock"
+        exit 1
+      fi
+    done
+  fi
+done
+
+# Create lock
+touch "$LOCK_FILE"
+echo "🔒 Locked ${DOC_NAME}.md for editing (session: $SESSION_NAME)"
+echo "Remember to run: ./scripts/unlock-doc $DOC_NAME $SESSION_NAME"
