@@ -1,6 +1,6 @@
 'use client';
 
-import { Download, FileText, Code, FileJson } from 'lucide-react';
+import { Download, FileText, Code, FileJson, Music } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 
 import {
@@ -15,7 +15,12 @@ export interface ExportButtonProps {
   content: string;
   title?: string;
   author?: string;
+  authorUsername?: string;
+  vibelogUrl?: string;
+  createdAt?: string;
+  audioUrl?: string;
   onExport?: (format: ExportFormat) => void;
+  variant?: 'default' | 'compact';
   className?: string;
 }
 
@@ -34,7 +39,12 @@ export default function ExportButton({
   content,
   title,
   author,
+  authorUsername,
+  vibelogUrl,
+  createdAt,
+  audioUrl,
   onExport,
+  variant = 'default',
   className = '',
 }: ExportButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -59,7 +69,9 @@ export default function ExportButton({
       title,
       content,
       author,
-      createdAt: new Date().toISOString(),
+      authorUsername,
+      vibelogUrl,
+      createdAt: createdAt || new Date().toISOString(),
     };
 
     const exported = exportContent(data, format);
@@ -75,19 +87,47 @@ export default function ExportButton({
     setIsOpen(false);
   };
 
+  const handleAudioDownload = () => {
+    if (!audioUrl) {
+      return;
+    }
+
+    // Create a temporary anchor element to trigger download
+    const link = document.createElement('a');
+    link.href = audioUrl;
+    link.download = `${title ? title.toLowerCase().replace(/\s+/g, '-') : 'vibelog'}-audio.webm`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // Close dropdown
+    setIsOpen(false);
+  };
+
+  const isCompact = variant === 'compact';
+  const buttonClass = isCompact
+    ? 'flex items-center gap-2 rounded-lg border border-border/50 px-3 py-2 text-sm transition-all hover:border-electric/30 hover:bg-electric/5'
+    : 'group flex min-w-[70px] flex-col items-center gap-2 rounded-2xl border border-border/20 bg-muted/20 p-3 transition-all duration-200 hover:scale-105 hover:bg-muted/30 sm:min-w-[80px] sm:p-4';
+
+  const iconClass = isCompact
+    ? 'h-4 w-4'
+    : 'h-5 w-5 text-foreground transition-colors group-hover:text-electric sm:h-6 sm:w-6';
+
+  const labelClass = isCompact
+    ? 'hidden sm:inline'
+    : 'text-xs font-medium text-muted-foreground group-hover:text-foreground';
+
   return (
     <div className={`relative ${className}`} ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="group flex min-w-[70px] flex-col items-center gap-2 rounded-2xl border border-border/20 bg-muted/20 p-3 transition-all duration-200 hover:scale-105 hover:bg-muted/30 sm:min-w-[80px] sm:p-4"
+        className={buttonClass}
         data-testid="export-button"
         aria-expanded={isOpen}
         aria-haspopup="true"
       >
-        <Download className="h-5 w-5 text-foreground transition-colors group-hover:text-electric sm:h-6 sm:w-6" />
-        <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">
-          Export
-        </span>
+        <Download className={iconClass} />
+        <span className={labelClass}>Export</span>
       </button>
 
       {isOpen && (
@@ -113,6 +153,22 @@ export default function ExportButton({
                 </span>
               </button>
             ))}
+
+            {/* Audio Download Option */}
+            {audioUrl && (
+              <>
+                <div className="my-2 border-t border-border/30" />
+                <button
+                  onClick={handleAudioDownload}
+                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted/50 active:bg-muted/70"
+                  data-testid="export-audio"
+                >
+                  <Music className="h-4 w-4 text-muted-foreground" />
+                  <span>Audio</span>
+                  <span className="ml-auto text-xs text-muted-foreground">.webm</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
