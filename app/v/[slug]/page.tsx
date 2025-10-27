@@ -28,26 +28,33 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (error || !vibelog) {
     console.error('Metadata fetch error:', { slug, error });
     return {
-      title: 'VibeLog - Voice to Blog',
-      description: 'Read this story on VibeLog',
+      title: 'VibeLog - Turn Your Voice Into Stories',
+      description: 'Share your story with the world on VibeLog',
     };
   }
 
   const coverImage = vibelog.cover_url || vibelog.cover_image_url;
 
+  // Create unique metadata per vibelog
+  const fallbackDescription =
+    vibelog.seo_description ||
+    (vibelog.title
+      ? `Read "${vibelog.title}" on VibeLog`
+      : 'Share your story with the world on VibeLog');
+
   return {
-    title: vibelog.seo_title || vibelog.title || 'VibeLog',
-    description: vibelog.seo_description || 'Read this story on VibeLog',
+    title: `${vibelog.title} | VibeLog`,
+    description: fallbackDescription,
     openGraph: {
-      title: vibelog.seo_title || vibelog.title || 'VibeLog',
-      description: vibelog.seo_description || 'Read this story on VibeLog',
+      title: vibelog.title,
+      description: fallbackDescription,
       images: coverImage ? [{ url: coverImage }] : [],
       type: 'article',
     },
     twitter: {
       card: 'summary_large_image',
-      title: vibelog.seo_title || vibelog.title || 'VibeLog',
-      description: vibelog.seo_description || 'Read this story on VibeLog',
+      title: vibelog.title,
+      description: fallbackDescription,
       images: coverImage ? [coverImage] : [],
     },
   };
@@ -158,7 +165,7 @@ export default async function PublicVibelogPage({ params }: PageProps) {
             <div className="mt-12 rounded-2xl border border-border/40 bg-muted/50 p-8 text-center">
               <h3 className="mb-2 text-2xl font-bold">Want to read more?</h3>
               <p className="mb-6 text-muted-foreground">
-                Sign in with Google to continue reading and create your own VibeLog posts
+                Sign in with Google to continue reading and create your own VibeLog stories
               </p>
               <Link
                 href={`/auth/signin?returnTo=/v/${slug}&claim=${vibelog.anonymous_session_id}`}
@@ -206,7 +213,7 @@ export default async function PublicVibelogPage({ params }: PageProps) {
             <Link href="/" className="font-medium hover:text-foreground">
               VibeLog
             </Link>{' '}
-            — Turn your voice into beautiful blog posts
+            — Turn your voice into beautiful stories
           </p>
         </div>
       </footer>

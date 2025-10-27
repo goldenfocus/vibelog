@@ -18,9 +18,9 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: 'Vibe → Share Everywhere | vibelog.io',
   description:
-    'Transform your voice into polished blog content in seconds. Create and publish content naturally with AI-powered voice-to-blog technology.',
+    'Transform your voice into polished stories in seconds. Create and publish content naturally with AI-powered voice technology.',
   keywords:
-    'voice to blog, AI content creation, voice blogging, speech to text, content creation, blog generator',
+    'voice stories, AI content creation, voice recording, speech to text, content creation, story generator',
   authors: [{ name: 'vibelog.io' }],
   creator: 'vibelog.io',
   publisher: 'vibelog.io',
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Vibe → Share Everywhere | vibelog.io',
     description:
-      'Transform your voice into polished blog content in seconds. Create and publish content naturally with AI-powered voice-to-blog technology.',
+      'Transform your voice into polished stories in seconds. Create and publish content naturally with AI-powered voice technology.',
     url: 'https://vibelog.io',
     siteName: 'vibelog.io',
     type: 'website',
@@ -46,7 +46,7 @@ export const metadata: Metadata = {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'vibelog.io - Voice to Blog Platform',
+        alt: 'vibelog.io - Turn Your Voice Into Stories',
       },
     ],
   },
@@ -54,7 +54,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Vibe → Share Everywhere | vibelog.io',
     description:
-      'Transform your voice into polished blog content in seconds. Create and publish content naturally with AI-powered voice-to-blog technology.',
+      'Transform your voice into polished stories in seconds. Create and publish content naturally with AI-powered voice technology.',
     images: ['/twitter-image.png'],
     creator: '@vibelog_io',
   },
