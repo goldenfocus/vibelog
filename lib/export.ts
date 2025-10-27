@@ -22,9 +22,9 @@ function formatAuthorCitation(data: VibelogExportData): {
   markdown: string;
   html: string;
 } {
-  const author = data.author || 'Unknown';
-  const username = data.authorUsername ? `@${data.authorUsername}` : author;
+  const username = data.authorUsername ? `@${data.authorUsername}` : data.author || 'Unknown';
   const url = data.vibelogUrl || '';
+  const displayUrl = url ? url.replace(/^https?:\/\//, '') : '';
   const date = data.createdAt
     ? new Date(data.createdAt).toLocaleString('en-US', {
         year: 'numeric',
@@ -36,12 +36,16 @@ function formatAuthorCitation(data: VibelogExportData): {
       })
     : '';
 
-  const citationText = `Created by ${username}${date ? ` • Published ${date}` : ''} on vibelog`;
+  const citationText = url
+    ? `Created by ${username}${date ? ` • Published ${date}` : ''} • ${displayUrl} • VibeLog`
+    : `Created by ${username}${date ? ` • Published ${date}` : ''} • VibeLog`;
+
   const citationMarkdown = url
-    ? `Created by [${username}](${url})${date ? ` • Published ${date}` : ''} on vibelog`
+    ? `Created by [${username}](${url})${date ? ` • Published ${date}` : ''} • [${displayUrl}](${url}) • VibeLog`
     : citationText;
+
   const citationHtml = url
-    ? `Created by <a href="${url}">${escapeHtml(username)}</a>${date ? ` • Published ${date}` : ''} on vibelog`
+    ? `Created by <a href="${url}">${escapeHtml(username)}</a>${date ? ` • Published ${date}` : ''} • <a href="${url}">${escapeHtml(displayUrl)}</a> • VibeLog`
     : citationText;
 
   return {
