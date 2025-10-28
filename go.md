@@ -4,6 +4,20 @@
 
 ---
 
+## 📚 CRITICAL: Required Reading Before Coding
+
+**Before claiming any task, read these documents in order:**
+
+1. **[branding.md](./branding.md)** - Brand identity, voice, values (2 min)
+2. **[living-web-2026.md](./living-web-2026.md)** - Complete vision & philosophy (5 min)
+3. **[DEVELOPMENT_GUIDELINES.md](./DEVELOPMENT_GUIDELINES.md)** - Code standards (3 min)
+
+These aren't bureaucracy — they're the **soul of what we're building**.
+
+You're not building "features" — you're building a living web that can feel.
+
+---
+
 ## 📋 Quick Start
 
 ### 1. View the Dashboard
