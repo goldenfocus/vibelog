@@ -46,21 +46,42 @@ export function AccountSheet({
 
   return (
     <AppSheet open={open} onOpenChange={onOpenChange} title="Account">
-      {/* Profile Card */}
+      {/* Profile Card - Click to view public profile */}
       <div className="shrink-0 border-b border-border px-4 py-4">
-        <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/30 p-3">
+        <Link
+          href={username ? `/@${username}` : '/dashboard'}
+          onClick={() => onOpenChange(false)}
+          className="group flex items-center gap-3 rounded-xl border border-border bg-muted/30 p-3 transition-all duration-200 hover:scale-[1.02] hover:border-electric/50 hover:bg-muted/50 hover:shadow-lg active:scale-[0.98]"
+        >
           <div
-            className="relative flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-border/40"
+            className="relative flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-border/40 transition-all duration-200 group-hover:border-electric/50"
             style={getAvatarContainerStyle(!!avatarUrl)}
           >
             {renderAvatarContent('lg')}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-base font-semibold">{displayName}</p>
-            {username && <p className="truncate text-sm font-medium text-electric">@{username}</p>}
+            <p className="truncate text-base font-semibold transition-colors group-hover:text-electric">
+              {displayName}
+            </p>
+            {username && (
+              <p className="truncate text-sm font-medium text-electric transition-opacity group-hover:opacity-80">
+                @{username}
+              </p>
+            )}
             <p className="truncate text-xs text-muted-foreground">{email}</p>
           </div>
-        </div>
+          {/* Subtle indicator on hover */}
+          <div className="flex-shrink-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+            <svg
+              className="h-5 w-5 text-electric"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
+        </Link>
       </div>
 
       {/* Menu Items */}
