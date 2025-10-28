@@ -73,14 +73,7 @@ export default async function PublicVibelogPage({ params }: PageProps) {
 
   if (error || !vibelog) {
     console.error('Vibelog not found:', { slug, error });
-    return (
-      <div className="container mx-auto max-w-2xl px-4 py-16">
-        <h1 className="mb-4 text-3xl font-bold">VibeLog Not Found</h1>
-        <p className="text-muted-foreground">
-          The VibeLog you&apos;re looking for doesn&apos;t exist or has been removed.
-        </p>
-      </div>
-    );
+    notFound(); // Use custom branded 404 page
   }
 
   // Check if this post has been claimed and should redirect
