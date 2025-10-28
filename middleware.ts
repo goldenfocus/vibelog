@@ -36,6 +36,16 @@ export function middleware(req: NextRequest) {
     }
   }
 
+  // Redirect /v/slug to /@anonymous/slug (301 permanent redirect)
+  if (pathname.startsWith('/v/')) {
+    const slug = pathname.slice(3); // Remove '/v/'
+    if (slug) {
+      const url = req.nextUrl.clone();
+      url.pathname = `/@anonymous/${slug}`;
+      return NextResponse.redirect(url, 301);
+    }
+  }
+
   // Redirect /username to /@username (301 permanent redirect)
   // Only redirect if:
   // 1. Path starts with / but NOT with /@
@@ -66,6 +76,7 @@ export const config = {
     '/transcript-lab/:path*',
     '/processing-lab/:path*',
     '/publish-lab/:path*',
+    '/v/:path*',
     '/:username',
     '/:username/:slug',
   ],
