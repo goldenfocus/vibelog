@@ -50,7 +50,7 @@ export default function CreatorCard({
 
   return (
     <Link
-      href={`/${username}`}
+      href={`/@${username}`}
       target="_blank"
       rel="noopener noreferrer"
       className="group block"

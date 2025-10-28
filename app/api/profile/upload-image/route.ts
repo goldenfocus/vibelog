@@ -112,9 +112,18 @@ export async function POST(request: NextRequest) {
       .eq('id', user.id);
 
     if (dbError) {
-      console.error('Profile update failed:', dbError);
-      // Image is uploaded but profile update failed - that's ok, return the URL
+      console.error('❌ Profile update failed:', dbError);
+      return NextResponse.json(
+        {
+          error: 'Failed to update profile',
+          message: dbError.message,
+          details: dbError,
+        },
+        { status: 500 }
+      );
     }
+
+    console.log('✅ Profile updated in database');
 
     return NextResponse.json({
       url: publicUrl,

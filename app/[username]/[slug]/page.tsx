@@ -17,11 +17,14 @@ interface PageProps {
 async function getVibelog(username: string, slug: string) {
   const supabase = await createServerSupabaseClient();
 
+  // Normalize username (strip @ if present, since URLs have @ but DB doesn't)
+  const normalizedUsername = username.startsWith('@') ? username.slice(1) : username;
+
   // First get the user's ID from their username
   const { data: profile } = await supabase
     .from('profiles')
     .select('id, username, display_name, avatar_url')
-    .eq('username', username)
+    .eq('username', normalizedUsername)
     .single();
 
   if (!profile) {
@@ -85,6 +88,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
+  // Normalize username for consistent URLs
+  const normalizedUsername = username.startsWith('@') ? username.slice(1) : username;
+
   // Extract first paragraph for description
   const description =
     vibelog.teaser ||
@@ -92,21 +98,21 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       .split('\n\n')
       .find(p => p.trim() && !p.startsWith('#'))
       ?.substring(0, 160) ||
-    `Read ${vibelog.title} by @${username} on VibeLog`;
+    `Read ${vibelog.title} by @${normalizedUsername} on VibeLog`;
 
   const imageUrl = vibelog.cover_image_url || 'https://vibelog.io/og-image.png';
 
   return {
-    title: `${vibelog.title} | @${username} on VibeLog`,
+    title: `${vibelog.title} | @${normalizedUsername} on VibeLog`,
     description,
     keywords: vibelog.tags?.join(', ') || 'vibelog, voice content, audio to text',
-    authors: [{ name: vibelog.author.display_name || username }],
+    authors: [{ name: vibelog.author.display_name || normalizedUsername }],
     openGraph: {
       title: vibelog.title,
       description,
       type: 'article',
       publishedTime: vibelog.published_at,
-      authors: [vibelog.author.display_name || username],
+      authors: [vibelog.author.display_name || normalizedUsername],
       images: [
         {
           url: imageUrl,
@@ -115,17 +121,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
           alt: vibelog.title,
         },
       ],
-      url: `https://vibelog.io/${username}/${slug}`,
+      url: `https://vibelog.io/@${normalizedUsername}/${slug}`,
     },
     twitter: {
       card: 'summary_large_image',
       title: vibelog.title,
       description,
       images: [imageUrl],
-      creator: `@${username}`,
+      creator: `@${normalizedUsername}`,
     },
     alternates: {
-      canonical: `https://vibelog.io/${username}/${slug}`,
+      canonical: `https://vibelog.io/@${normalizedUsername}/${slug}`,
     },
   };
 }
@@ -137,6 +143,9 @@ export default async function VibelogPage({ params }: PageProps) {
   if (!vibelog) {
     notFound();
   }
+
+  // Normalize username for consistent URLs
+  const normalizedUsername = username.startsWith('@') ? username.slice(1) : username;
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -194,7 +203,7 @@ export default async function VibelogPage({ params }: PageProps) {
               <div>
                 <p className="font-medium text-foreground">{vibelog.author.display_name}</p>
                 <p className="text-sm text-muted-foreground">
-                  @{username} · {formatDate(vibelog.published_at)}
+                  @{normalizedUsername} · {formatDate(vibelog.published_at)}
                 </p>
               </div>
             </div>
@@ -260,9 +269,9 @@ export default async function VibelogPage({ params }: PageProps) {
             )}
             <div className="flex-1">
               <p className="font-medium text-foreground">{vibelog.author.display_name}</p>
-              <p className="text-sm text-muted-foreground">@{username}</p>
+              <p className="text-sm text-muted-foreground">@{normalizedUsername}</p>
               <Link
-                href={`/${username}`}
+                href={`/@${normalizedUsername}`}
                 className="mt-2 inline-block text-sm font-medium text-electric hover:underline"
               >
                 View all vibelogs →
