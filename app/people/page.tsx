@@ -7,6 +7,12 @@ import CreatorCard from '@/components/CreatorCard';
 import Navigation from '@/components/Navigation';
 import { createClient } from '@/lib/supabase';
 
+interface Vibelog {
+  id: string;
+  title: string;
+  slug: string;
+}
+
 interface Creator {
   id: string;
   username: string;
@@ -17,6 +23,7 @@ interface Creator {
   total_shares: number;
   created_at: string;
   subscription_tier: string;
+  vibelogs?: Vibelog[]; // Latest vibelogs for enhanced search
 }
 
 type SortOption = 'recent' | 'popular' | 'active';
@@ -25,7 +32,7 @@ export default function PeoplePage() {
   const [creators, setCreators] = useState<Creator[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<SortOption>('popular');
+  const [sortBy, setSortBy] = useState<SortOption>('active');
 
   useEffect(() => {
     fetchCreators();
@@ -36,8 +43,8 @@ export default function PeoplePage() {
       setLoading(true);
       const supabase = createClient();
 
-      // Fetch public profiles with their vibelog stats
-      let query = supabase
+      // Fetch public profiles with their stats
+      let profileQuery = supabase
         .from('profiles')
         .select(
           `
@@ -57,21 +64,54 @@ export default function PeoplePage() {
 
       // Apply sorting
       if (sortBy === 'recent') {
-        query = query.order('created_at', { ascending: false });
+        profileQuery = profileQuery.order('created_at', { ascending: false });
       } else if (sortBy === 'popular') {
-        query = query.order('total_views', { ascending: false });
+        profileQuery = profileQuery.order('total_views', { ascending: false });
       } else if (sortBy === 'active') {
-        query = query.order('total_vibelogs', { ascending: false });
+        profileQuery = profileQuery.order('total_vibelogs', { ascending: false });
       }
 
-      const { data, error } = await query.limit(50);
+      const { data: profiles, error: profileError } = await profileQuery.limit(50);
 
-      if (error) {
-        console.error('Error fetching creators:', error);
+      if (profileError) {
+        console.error('Error fetching creators:', profileError);
         return;
       }
 
-      setCreators(data || []);
+      if (!profiles || profiles.length === 0) {
+        setCreators([]);
+        return;
+      }
+
+      // Fetch latest 3 vibelogs for each creator (for enhanced search)
+      const userIds = profiles.map(p => p.id);
+      const { data: vibelogs } = await supabase
+        .from('vibelogs')
+        .select('id, title, slug, user_id')
+        .in('user_id', userIds)
+        .order('created_at', { ascending: false })
+        .limit(150); // Fetch up to 3 per user (50 users × 3)
+
+      // Group vibelogs by user_id
+      const vibelogsByUser = new Map<string, Vibelog[]>();
+      vibelogs?.forEach(v => {
+        if (!vibelogsByUser.has(v.user_id)) {
+          vibelogsByUser.set(v.user_id, []);
+        }
+        const userVibelogs = vibelogsByUser.get(v.user_id)!;
+        if (userVibelogs.length < 3) {
+          // Only keep latest 3
+          userVibelogs.push({ id: v.id, title: v.title, slug: v.slug });
+        }
+      });
+
+      // Merge vibelogs into creators
+      const creatorsWithVibelogs = profiles.map(profile => ({
+        ...profile,
+        vibelogs: vibelogsByUser.get(profile.id) || [],
+      }));
+
+      setCreators(creatorsWithVibelogs);
     } catch (error) {
       console.error('Error:', error);
     } finally {
@@ -79,12 +119,15 @@ export default function PeoplePage() {
     }
   }
 
-  // Filter creators by search query
-  const filteredCreators = creators.filter(
-    creator =>
-      creator.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      creator.display_name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Enhanced search: username, display name, and vibelog titles
+  const filteredCreators = creators.filter(creator => {
+    const query = searchQuery.toLowerCase();
+    const matchesUsername = creator.username?.toLowerCase().includes(query);
+    const matchesDisplayName = creator.display_name?.toLowerCase().includes(query);
+    const matchesVibelogTitle = creator.vibelogs?.some(v => v.title?.toLowerCase().includes(query));
+
+    return matchesUsername || matchesDisplayName || matchesVibelogTitle;
+  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -113,7 +156,7 @@ export default function PeoplePage() {
               <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="Search creators..."
+                placeholder="Search creators, vibelogs..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 className="w-full rounded-lg border border-border/50 bg-muted/30 py-2 pl-10 pr-4 text-sm transition-all focus:border-electric/50 focus:outline-none focus:ring-2 focus:ring-electric/20"
