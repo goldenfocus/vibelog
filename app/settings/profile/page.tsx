@@ -1,10 +1,11 @@
 'use client';
 
-import { Camera, Loader2, Save, X } from 'lucide-react';
+import { Loader2, Save, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import Navigation from '@/components/Navigation';
+import { ImageUploadZone } from '@/components/profile/ImageUploadZone';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useI18n } from '@/components/providers/I18nProvider';
 import { Button } from '@/components/ui/button';
@@ -113,51 +114,41 @@ export default function ProfileSettingsPage() {
             </p>
           </div>
 
-          {/* Header Image Section */}
-          <div className="mb-8 overflow-hidden rounded-2xl border border-border/50">
-            <div
-              className="relative h-48 bg-cover bg-center sm:h-64"
-              style={{
-                backgroundImage: headerImage
-                  ? `url(${headerImage})`
-                  : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              }}
-            >
-              <div className="absolute inset-0 bg-black/20" />
-              <Button
-                variant="outline"
-                size="sm"
-                className="absolute bottom-4 right-4 backdrop-blur-sm"
-              >
-                <Camera className="mr-2 h-4 w-4" />
-                Change Header
-              </Button>
-            </div>
+          {/* Profile Images Section */}
+          <div className="mb-8 overflow-hidden rounded-2xl border border-border/50 bg-card/30 backdrop-blur-sm">
+            <div className="space-y-6 p-6">
+              {/* Header Image Upload */}
+              <div className="space-y-3">
+                <Label className="text-base font-semibold">Header Image</Label>
+                <ImageUploadZone
+                  type="header"
+                  currentImage={headerImage}
+                  onUploadComplete={url => setHeaderImage(url)}
+                />
+              </div>
 
-            {/* Avatar */}
-            <div className="relative -mt-16 px-6">
-              <div className="relative inline-block">
-                <div className="h-32 w-32 overflow-hidden rounded-full border-4 border-background bg-card">
-                  {avatarUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-gradient-electric text-4xl font-bold text-white">
-                      {displayName?.[0] || username?.[0] || '?'}
-                    </div>
-                  )}
+              {/* Avatar Upload */}
+              <div className="space-y-3">
+                <Label className="text-base font-semibold">Profile Picture</Label>
+                <div className="grid gap-6 md:grid-cols-[200px_1fr]">
+                  <ImageUploadZone
+                    type="avatar"
+                    currentImage={avatarUrl}
+                    onUploadComplete={url => setAvatarUrl(url)}
+                  />
+                  <div className="flex items-center">
+                    <p className="text-sm text-muted-foreground">
+                      Your profile picture appears on your vibelogs and profile page. A square image
+                      works best and will be displayed as a circle.
+                    </p>
+                  </div>
                 </div>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="absolute bottom-0 right-0 h-10 w-10 rounded-full"
-                >
-                  <Camera className="h-4 w-4" />
-                </Button>
               </div>
             </div>
+          </div>
 
-            {/* Form */}
+          {/* Profile Info Section */}
+          <div className="mb-8 overflow-hidden rounded-2xl border border-border/50 bg-card/30 backdrop-blur-sm">
             <div className="space-y-6 p-6">
               {/* Message */}
               {message && (
@@ -219,34 +210,6 @@ export default function ProfileSettingsPage() {
                   maxLength={500}
                 />
                 <p className="text-sm text-muted-foreground">{bio.length}/500 characters</p>
-              </div>
-
-              {/* Avatar URL */}
-              <div className="space-y-2">
-                <Label htmlFor="avatarUrl">Avatar URL</Label>
-                <Input
-                  id="avatarUrl"
-                  value={avatarUrl}
-                  onChange={e => setAvatarUrl(e.target.value)}
-                  placeholder="https://example.com/avatar.jpg"
-                  type="url"
-                />
-                <p className="text-sm text-muted-foreground">Direct link to your profile picture</p>
-              </div>
-
-              {/* Header Image URL */}
-              <div className="space-y-2">
-                <Label htmlFor="headerImage">Header Image URL</Label>
-                <Input
-                  id="headerImage"
-                  value={headerImage}
-                  onChange={e => setHeaderImage(e.target.value)}
-                  placeholder="https://example.com/header.jpg"
-                  type="url"
-                />
-                <p className="text-sm text-muted-foreground">
-                  Direct link to your header banner image
-                </p>
               </div>
 
               {/* Account Info (Read-only) */}
