@@ -204,7 +204,11 @@ export default function DashboardPage() {
               <h2 className="text-2xl font-bold text-foreground">Your Vibelogs</h2>
               {vibelogs.length > 0 && (
                 <Button
-                  onClick={() => router.push(`/${user.user_metadata?.username || 'profile'}`)}
+                  onClick={() =>
+                    router.push(
+                      `/@${profile?.username || user.user_metadata?.username || 'profile'}`
+                    )
+                  }
                   variant="outline"
                   size="sm"
                 >
