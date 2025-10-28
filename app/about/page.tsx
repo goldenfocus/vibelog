@@ -1,6 +1,7 @@
 'use client';
 
 import { Heart, MessageCircle, Share, User } from 'lucide-react';
+import Link from 'next/link';
 
 import Navigation from '@/components/Navigation';
 import { useI18n } from '@/components/providers/I18nProvider';
@@ -159,12 +160,12 @@ export default function About() {
               </div>
               <h3 className="mb-1 text-xl font-bold">Yang</h3>
               <p className="mb-2 text-muted-foreground">Founder</p>
-              <a
-                href="/vibeyang"
+              <Link
+                href="/@vibeyang"
                 className="text-electric transition-colors hover:text-electric-glow"
               >
                 @vibeyang
-              </a>
+              </Link>
             </div>
 
             {/* Engagement Stats */}
