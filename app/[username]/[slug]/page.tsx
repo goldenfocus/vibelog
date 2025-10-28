@@ -13,12 +13,36 @@ interface PageProps {
   }>;
 }
 
+// Reserved paths that should not be treated as usernames
+const RESERVED_PATHS = [
+  'about',
+  'api',
+  'auth',
+  'community',
+  'dashboard',
+  'faq',
+  'people',
+  'pricing',
+  'settings',
+  'v',
+  'vibelogs',
+  'mic-lab',
+  'transcript-lab',
+  'processing-lab',
+  'publish-lab',
+];
+
 // Fetch vibelog data (server-side)
 async function getVibelog(username: string, slug: string) {
   const supabase = await createServerSupabaseClient();
 
   // Normalize username (strip @ if present, since URLs have @ but DB doesn't)
   const normalizedUsername = username.startsWith('@') ? username.slice(1) : username;
+
+  // Reject reserved paths to prevent matching /api/*, /about/*, etc.
+  if (RESERVED_PATHS.includes(normalizedUsername)) {
+    return null;
+  }
 
   // First get the user's ID from their username
   const { data: profile } = await supabase
