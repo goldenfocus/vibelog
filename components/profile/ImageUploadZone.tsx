@@ -1,6 +1,7 @@
 'use client';
 
 import { Upload, X, Loader2, Check } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useCallback, useState, useRef } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -28,6 +29,7 @@ export function ImageUploadZone({
   type,
   className,
 }: ImageUploadZoneProps) {
+  const router = useRouter();
   const [isDragging, setIsDragging] = useState(false);
   const [preview, setPreview] = useState<string | null>(currentImage || null);
   const [uploading, setUploading] = useState(false);
@@ -83,6 +85,9 @@ export function ImageUploadZone({
         setUploadSuccess(true);
         onUploadComplete(data.url);
 
+        // Force refresh to invalidate caches and update Navigation avatar
+        router.refresh();
+
         // Clear success indicator after animation
         setTimeout(() => {
           setUploadSuccess(false);
@@ -95,7 +100,7 @@ export function ImageUploadZone({
         setUploading(false);
       }
     },
-    [type, onUploadComplete, currentImage]
+    [type, onUploadComplete, currentImage, router]
   );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {

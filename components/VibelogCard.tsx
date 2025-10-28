@@ -63,7 +63,7 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
     if (isAnonymous && vibelog.public_slug) {
       vibelogPath = `/v/${vibelog.public_slug}`;
     } else if (vibelog.slug) {
-      vibelogPath = `/${vibelog.author.username}/${vibelog.slug}`;
+      vibelogPath = `/@${vibelog.author.username}/${vibelog.slug}`;
     } else {
       // Fallback to old UUID route
       vibelogPath = `/vibelogs/${vibelog.id}`;
@@ -101,7 +101,7 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
     if (isAnonymous && vibelog.public_slug) {
       path = `/v/${vibelog.public_slug}`;
     } else if (vibelog.slug) {
-      path = `/${vibelog.author.username}/${vibelog.slug}`;
+      path = `/@${vibelog.author.username}/${vibelog.slug}`;
     } else {
       path = `/vibelogs/${vibelog.id}`;
     }

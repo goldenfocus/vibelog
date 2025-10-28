@@ -43,6 +43,12 @@ export default function Navigation() {
       return null;
     }
 
+    // Prioritize database profile avatar (source of truth)
+    if (profile?.avatar_url && typeof profile.avatar_url === 'string') {
+      return profile.avatar_url;
+    }
+
+    // Fallback to OAuth provider avatars
     const avatar_url = user.user_metadata?.avatar_url;
     const picture = user.user_metadata?.picture;
 
@@ -52,9 +58,9 @@ export default function Navigation() {
     if (typeof picture === 'string' && picture) {
       return picture;
     }
-    // No avatar - will use initials (no need to log)
+    // No avatar - will use initials
     return null;
-  }, [user]);
+  }, [user, profile?.avatar_url]);
 
   // Fetch user profile from database
   useEffect(() => {
