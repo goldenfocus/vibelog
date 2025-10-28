@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 
 import CreatorCard from '@/components/CreatorCard';
 import Navigation from '@/components/Navigation';
-import { createBrowserSupabaseClient } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase';
 
 interface Creator {
   id: string;
@@ -34,7 +34,7 @@ export default function PeoplePage() {
   async function fetchCreators() {
     try {
       setLoading(true);
-      const supabase = createBrowserSupabaseClient();
+      const supabase = createClient();
 
       // Fetch public profiles with their vibelog stats
       let query = supabase
