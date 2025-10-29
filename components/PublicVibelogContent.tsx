@@ -32,7 +32,17 @@ export default function PublicVibelogContent({ vibelog }: PublicVibelogContentPr
   };
 
   const handleShare = async () => {
-    const shareUrl = `${window.location.origin}/v/${vibelog.public_slug}`;
+    // Only access window.location in browser
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    // Determine the correct share URL based on whether it's anonymous or not
+    const isAnonymous = !vibelog.user_id;
+    const shareUrl = isAnonymous
+      ? `${window.location.origin}/@anonymous/${vibelog.public_slug}`
+      : `${window.location.origin}/@${vibelog.author?.username}/${vibelog.public_slug}`;
+
     const shareData = {
       title: vibelog.title,
       text: `Check out "${vibelog.title}" on VibeLog`,
@@ -76,7 +86,13 @@ export default function PublicVibelogContent({ vibelog }: PublicVibelogContentPr
           author={vibelog.author?.display_name}
           authorId={vibelog.user_id || undefined}
           authorUsername={vibelog.author?.username}
-          vibelogUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/v/${vibelog.public_slug}`}
+          vibelogUrl={
+            typeof window !== 'undefined'
+              ? !vibelog.user_id
+                ? `${window.location.origin}/@anonymous/${vibelog.public_slug}`
+                : `${window.location.origin}/@${vibelog.author?.username}/${vibelog.public_slug}`
+              : ''
+          }
           createdAt={vibelog.created_at}
           audioUrl={vibelog.audio_url || undefined}
           onRemix={handleRemix}

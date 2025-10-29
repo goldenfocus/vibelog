@@ -48,6 +48,55 @@ async function getVibelog(username: string, slug: string) {
     return null;
   }
 
+  // Handle anonymous vibelogs (unclaimed vibelogs without user_id)
+  if (normalizedUsername === 'anonymous') {
+    console.log('👻 Querying anonymous vibelog by public_slug:', slug);
+    const { data, error } = await supabase
+      .from('vibelogs')
+      .select(
+        `
+        id,
+        title,
+        slug,
+        content,
+        teaser,
+        audio_url,
+        cover_image_url,
+        created_at,
+        published_at,
+        view_count,
+        like_count,
+        share_count,
+        read_time,
+        word_count,
+        tags,
+        user_id,
+        public_slug
+      `
+      )
+      .eq('public_slug', slug)
+      .is('user_id', null)
+      .eq('is_published', true)
+      .eq('is_public', true)
+      .single();
+
+    console.log('📄 Anonymous vibelog query result:', { data: data?.title, error });
+
+    if (error || !data) {
+      console.error('❌ Anonymous vibelog not found:', { public_slug: slug, error });
+      return null;
+    }
+
+    return {
+      ...data,
+      author: {
+        username: 'anonymous',
+        display_name: 'Anonymous',
+        avatar_url: null,
+      },
+    };
+  }
+
   // First get the user's ID from their username
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
