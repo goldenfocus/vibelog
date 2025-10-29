@@ -36,27 +36,34 @@ const RESERVED_PATHS = [
 async function getVibelog(username: string, slug: string) {
   const supabase = await createServerSupabaseClient();
 
+  console.log('🔍 getVibelog called:', { username, slug });
+
   // Normalize username (strip @ if present, since URLs have @ but DB doesn't)
   const normalizedUsername = username.startsWith('@') ? username.slice(1) : username;
+  console.log('📝 Normalized username:', normalizedUsername);
 
   // Reject reserved paths to prevent matching /api/*, /about/*, etc.
   if (RESERVED_PATHS.includes(normalizedUsername)) {
+    console.log('❌ Reserved path rejected:', normalizedUsername);
     return null;
   }
 
   // First get the user's ID from their username
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('id, username, display_name, avatar_url')
     .eq('username', normalizedUsername)
     .single();
 
+  console.log('👤 Profile lookup result:', { profile, profileError });
+
   if (!profile) {
-    console.error('User not found:', username);
+    console.error('❌ User not found:', username, profileError);
     return null;
   }
 
   // Query vibelog by user_id + slug
+  console.log('🔎 Querying vibelog:', { slug, userId: profile.id });
   const { data, error } = await supabase
     .from('vibelogs')
     .select(
@@ -86,8 +93,10 @@ async function getVibelog(username: string, slug: string) {
     .eq('is_public', true)
     .single();
 
+  console.log('📄 Vibelog query result:', { data: data?.title, error });
+
   if (error || !data) {
-    console.error('Vibelog not found:', error);
+    console.error('❌ Vibelog not found:', { slug, userId: profile.id, error });
     return null;
   }
 

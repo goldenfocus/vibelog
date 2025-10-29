@@ -55,13 +55,13 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
   const isTeaser = true; // Always show as teaser in card view
 
   const handleReadMore = () => {
-    // Anonymous vibelogs use /v/{public_slug} route
-    // Authenticated user vibelogs use /{username}/{slug} route
+    // Anonymous vibelogs use /@anonymous/{public_slug} route
+    // Authenticated user vibelogs use /@{username}/{slug} route
     const isAnonymous = vibelog.author.username === 'anonymous' || !vibelog.user_id;
 
     let vibelogPath: string;
     if (isAnonymous && vibelog.public_slug) {
-      vibelogPath = `/v/${vibelog.public_slug}`;
+      vibelogPath = `/@anonymous/${vibelog.public_slug}`;
     } else if (vibelog.slug) {
       vibelogPath = `/@${vibelog.author.username}/${vibelog.slug}`;
     } else {
@@ -99,7 +99,7 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
 
     let path: string;
     if (isAnonymous && vibelog.public_slug) {
-      path = `/v/${vibelog.public_slug}`;
+      path = `/@anonymous/${vibelog.public_slug}`;
     } else if (vibelog.slug) {
       path = `/@${vibelog.author.username}/${vibelog.slug}`;
     } else {
