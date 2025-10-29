@@ -79,5 +79,7 @@ export const config = {
     '/v/:path*',
     '/:username',
     '/:username/:slug',
+    '/@:username',
+    '/@:username/:slug',
   ],
 };
