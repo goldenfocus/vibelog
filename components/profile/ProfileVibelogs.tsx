@@ -31,6 +31,8 @@ export function ProfileVibelogs({
   // Add author info to each vibelog for the card
   const vibelogsWithAuthor = vibelogs.map(vibelog => ({
     ...vibelog,
+    teaser: vibelog.teaser || vibelog.content, // Ensure teaser is always present
+    cover_image_url: vibelog.cover_image_url ?? null, // Ensure it's null, not undefined
     author: {
       username,
       display_name: displayName,
