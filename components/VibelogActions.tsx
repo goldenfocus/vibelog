@@ -66,6 +66,11 @@ export default function VibelogActions({
   const menuRef = useRef<HTMLDivElement>(null);
   const { isPlaying, isLoading, playText, stop, progress } = useTextToSpeech(onUpgradePrompt);
 
+  // Audio playback state for original audio
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const [audioProgress, setAudioProgress] = useState(0);
+
   // Determine if this is user's own vibelog
   const isOwnVibelog = user?.id && authorId && user.id === authorId;
 
@@ -83,7 +88,50 @@ export default function VibelogActions({
     }
   }, [isMenuOpen]);
 
+  // Set up audio element for original audio playback
+  useEffect(() => {
+    if (audioUrl && !audioRef.current) {
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
+
+      audio.addEventListener('play', () => setIsAudioPlaying(true));
+      audio.addEventListener('pause', () => setIsAudioPlaying(false));
+      audio.addEventListener('ended', () => {
+        setIsAudioPlaying(false);
+        setAudioProgress(0);
+      });
+      audio.addEventListener('timeupdate', () => {
+        if (audio.duration > 0) {
+          setAudioProgress((audio.currentTime / audio.duration) * 100);
+        }
+      });
+
+      // Preload audio for instant playback
+      audio.preload = 'auto';
+
+      return () => {
+        audio.pause();
+        audio.src = '';
+      };
+    }
+  }, [audioUrl]);
+
   const handlePlayClick = async () => {
+    // If original audio is available, use it instead of TTS
+    if (audioUrl && audioRef.current) {
+      if (isAudioPlaying) {
+        audioRef.current.pause();
+      } else {
+        try {
+          await audioRef.current.play();
+        } catch (error) {
+          console.error('Audio playback failed:', error);
+        }
+      }
+      return;
+    }
+
+    // Fall back to TTS if no original audio
     if (isPlaying) {
       stop();
       return;
@@ -255,25 +303,25 @@ export default function VibelogActions({
           <span className={labelClass}>{copySuccess ? 'Copied!' : 'Copy'}</span>
         </button>
 
-        {/* Listen Button with TTS */}
+        {/* Listen Button with original audio or TTS */}
         <button
           onClick={handlePlayClick}
           disabled={isLoading}
           className={`${baseButtonClass} relative ${isCompact ? '' : 'overflow-hidden'}`}
-          title={isPlaying ? 'Pause' : 'Listen'}
+          title={isAudioPlaying || isPlaying ? 'Pause' : 'Listen'}
           data-testid="listen-button"
         >
-          {!isCompact && isPlaying && (
+          {!isCompact && (isPlaying || isAudioPlaying) && (
             <div
               className="absolute bottom-0 left-0 h-1 bg-electric transition-all duration-100 ease-out"
-              style={{ width: `${progress}%` }}
+              style={{ width: `${audioUrl ? audioProgress : progress}%` }}
             />
           )}
 
           <div className="relative flex items-center justify-center">
             {isLoading ? (
               <Loader2 className={`${iconClass} animate-spin`} />
-            ) : isPlaying ? (
+            ) : isAudioPlaying || isPlaying ? (
               <Pause className={iconClass} />
             ) : (
               <Play className={iconClass} />
@@ -281,7 +329,7 @@ export default function VibelogActions({
           </div>
 
           <span className={labelClass}>
-            {isLoading ? 'Generating...' : isPlaying ? 'Pause' : 'Listen'}
+            {isLoading ? 'Generating...' : isAudioPlaying || isPlaying ? 'Pause' : 'Listen'}
           </span>
         </button>
 

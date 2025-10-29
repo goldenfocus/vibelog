@@ -3,10 +3,9 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-import { createServerSupabaseClient } from '@/lib/supabase';
-
 import { ProfileVibelogs } from '@/components/profile/ProfileVibelogs';
 import { SocialLinks } from '@/components/profile/SocialLinks';
+import { createServerSupabaseClient } from '@/lib/supabase';
 
 interface PageProps {
   params: Promise<{
@@ -20,6 +19,44 @@ async function getProfile(username: string) {
 
   // Normalize username (strip @ if present)
   const normalizedUsername = username.startsWith('@') ? username.slice(1) : username;
+
+  // Handle anonymous profile (unclaimed vibelogs)
+  if (normalizedUsername === 'anonymous') {
+    // Get aggregate stats for anonymous vibelogs
+    const { data: vibelogs } = await supabase
+      .from('vibelogs')
+      .select('id, view_count')
+      .is('user_id', null)
+      .eq('is_published', true)
+      .eq('is_public', true);
+
+    const totalVibelogs = vibelogs?.length || 0;
+    const totalViews = vibelogs?.reduce((sum, v) => sum + (v.view_count || 0), 0) || 0;
+
+    return {
+      id: 'anonymous',
+      username: 'anonymous',
+      display_name: 'Anonymous',
+      full_name: null,
+      bio: 'Unclaimed vibelogs created before signing in. Sign in to claim your vibelogs!',
+      avatar_url: null,
+      header_image: null,
+      twitter_url: null,
+      instagram_url: null,
+      linkedin_url: null,
+      github_url: null,
+      youtube_url: null,
+      tiktok_url: null,
+      facebook_url: null,
+      threads_url: null,
+      website_url: null,
+      total_vibelogs: totalVibelogs,
+      total_views: totalViews,
+      total_shares: 0,
+      created_at: new Date().toISOString(),
+      is_public: true,
+    };
+  }
 
   // Fetch profile data
   const { data: profile, error } = await supabase
@@ -68,6 +105,44 @@ async function getProfile(username: string) {
 // Fetch user's published vibelogs
 async function getVibelogs(userId: string) {
   const supabase = await createServerSupabaseClient();
+
+  // Handle anonymous vibelogs (unclaimed vibelogs)
+  if (userId === 'anonymous') {
+    const { data: vibelogs, error } = await supabase
+      .from('vibelogs')
+      .select(
+        `
+        id,
+        title,
+        slug,
+        content,
+        teaser,
+        audio_url,
+        audio_duration,
+        cover_image_url,
+        created_at,
+        published_at,
+        view_count,
+        like_count,
+        share_count,
+        read_time,
+        word_count,
+        tags,
+        public_slug
+      `
+      )
+      .is('user_id', null)
+      .eq('is_published', true)
+      .eq('is_public', true)
+      .order('published_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching anonymous vibelogs:', error);
+      return [];
+    }
+
+    return vibelogs || [];
+  }
 
   const { data: vibelogs, error } = await supabase
     .from('vibelogs')
