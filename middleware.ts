@@ -49,7 +49,7 @@ export function middleware(req: NextRequest) {
   // Rewrite /@username to /username internally (browser shows @, Next.js routes without @)
   if (pathname.startsWith('/@')) {
     const url = req.nextUrl.clone();
-    url.pathname = pathname.slice(1); // Strip @ for Next.js routing
+    url.pathname = pathname.replace(/^\/@/, '/'); // Replace /@ with /
     return NextResponse.rewrite(url);
   }
 
