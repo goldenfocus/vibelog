@@ -237,7 +237,7 @@ export default function ProfileSettingsPage() {
                   Add your social media profiles. Just paste the URL and we&apos;ll handle the rest.
                 </p>
               </div>
-              <SocialLinksEditor socialLinks={socialLinks} onChange={setSocialLinks} />
+              <SocialLinksEditor initialLinks={socialLinks} onChange={setSocialLinks} />
             </div>
           </div>
 
