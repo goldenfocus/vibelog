@@ -16,15 +16,19 @@ interface VibelogAuthor {
 interface Vibelog {
   id: string;
   title: string;
+  slug?: string | null;
+  public_slug?: string | null;
   teaser: string;
   content: string;
   cover_image_url: string | null;
+  audio_url?: string | null;
   created_at: string;
   published_at: string;
   view_count: number;
   like_count: number;
   share_count: number;
   read_time: number;
+  user_id?: string;
   author: VibelogAuthor;
 }
 

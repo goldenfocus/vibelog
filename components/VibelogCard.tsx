@@ -20,6 +20,7 @@ interface Vibelog {
   teaser: string;
   content: string;
   cover_image_url: string | null;
+  audio_url?: string | null; // Original audio recording
   created_at: string;
   published_at: string;
   view_count: number;
@@ -196,6 +197,9 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
         title={vibelog.title}
         author={vibelog.author.display_name}
         authorId={vibelog.user_id}
+        authorUsername={vibelog.author.username}
+        audioUrl={vibelog.audio_url || undefined}
+        createdAt={vibelog.created_at}
         onEdit={handleEdit}
         onRemix={handleRemix}
         onShare={handleShare}
