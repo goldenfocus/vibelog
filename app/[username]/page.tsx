@@ -353,6 +353,7 @@ export default async function ProfilePage({ params }: PageProps) {
             vibelogs={vibelogs}
             username={profile.username}
             displayName={displayName}
+            avatarUrl={profile.avatar_url}
           />
         </div>
       </div>

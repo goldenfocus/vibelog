@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 
 import Navigation from '@/components/Navigation';
 import { ImageUploadZone } from '@/components/profile/ImageUploadZone';
+import { SocialLinksEditor } from '@/components/profile/SocialLinksEditor';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useI18n } from '@/components/providers/I18nProvider';
 import { Button } from '@/components/ui/button';
@@ -27,6 +28,7 @@ export default function ProfileSettingsPage() {
   const [bio, setBio] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [headerImage, setHeaderImage] = useState('');
+  const [socialLinks, setSocialLinks] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -45,6 +47,17 @@ export default function ProfileSettingsPage() {
       setBio((profile.bio as string) || '');
       setAvatarUrl((profile.avatar_url as string) || '');
       setHeaderImage((profile.header_image as string) || '');
+      setSocialLinks({
+        twitter_url: (profile.twitter_url as string) || '',
+        instagram_url: (profile.instagram_url as string) || '',
+        linkedin_url: (profile.linkedin_url as string) || '',
+        github_url: (profile.github_url as string) || '',
+        youtube_url: (profile.youtube_url as string) || '',
+        tiktok_url: (profile.tiktok_url as string) || '',
+        facebook_url: (profile.facebook_url as string) || '',
+        threads_url: (profile.threads_url as string) || '',
+        website_url: (profile.website_url as string) || '',
+      });
     }
   }, [profile]);
 
@@ -65,6 +78,7 @@ export default function ProfileSettingsPage() {
           bio,
           avatar_url: avatarUrl,
           header_image: headerImage,
+          ...socialLinks,
           updated_at: new Date().toISOString(),
         })
         .eq('id', user.id);
@@ -211,7 +225,25 @@ export default function ProfileSettingsPage() {
                 />
                 <p className="text-sm text-muted-foreground">{bio.length}/500 characters</p>
               </div>
+            </div>
+          </div>
 
+          {/* Social Links Section */}
+          <div className="mb-8 overflow-hidden rounded-2xl border border-border/50 bg-card/30 backdrop-blur-sm">
+            <div className="space-y-6 p-6">
+              <div>
+                <h2 className="mb-2 text-xl font-semibold">Social Links</h2>
+                <p className="text-sm text-muted-foreground">
+                  Add your social media profiles. Just paste the URL and we&apos;ll handle the rest.
+                </p>
+              </div>
+              <SocialLinksEditor socialLinks={socialLinks} onChange={setSocialLinks} />
+            </div>
+          </div>
+
+          {/* Account Info and Save Button Section */}
+          <div className="mb-8 overflow-hidden rounded-2xl border border-border/50 bg-card/30 backdrop-blur-sm">
+            <div className="space-y-6 p-6">
               {/* Account Info (Read-only) */}
               <div className="rounded-lg border border-border/50 bg-card/50 p-4">
                 <h3 className="mb-2 font-semibold">Account Information</h3>
