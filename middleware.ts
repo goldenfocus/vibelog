@@ -46,6 +46,13 @@ export function middleware(req: NextRequest) {
     }
   }
 
+  // Rewrite /@username to /username internally (browser shows @, Next.js routes without @)
+  if (pathname.startsWith('/@')) {
+    const url = req.nextUrl.clone();
+    url.pathname = pathname.slice(1); // Strip @ for Next.js routing
+    return NextResponse.rewrite(url);
+  }
+
   // Redirect /username to /@username (301 permanent redirect)
   // Only redirect if:
   // 1. Path starts with / but NOT with /@
