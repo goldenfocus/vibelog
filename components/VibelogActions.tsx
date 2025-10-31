@@ -11,7 +11,6 @@ import {
   MoreVertical,
   Trash2,
   Heart,
-  Twitter,
 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 
@@ -104,20 +103,6 @@ export default function VibelogActions({
         });
     }
   }, [user?.id, vibelogId]);
-
-  // Check if user has Twitter connected (for owner only) - Playwright method (FREE)
-  useEffect(() => {
-    if (isOwnVibelog && user?.id) {
-      fetch('/api/twitter/status-playwright')
-        .then(res => res.json())
-        .then(data => {
-          setTwitterConnected(data.connected || false);
-        })
-        .catch(() => {
-          setTwitterConnected(false);
-        });
-    }
-  }, [isOwnVibelog, user?.id]);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -277,59 +262,6 @@ export default function VibelogActions({
   const handleShareClick = async () => {
     if (onShare) {
       await onShare();
-    }
-  };
-
-  const handlePublishToTwitter = async () => {
-    if (!vibelogUrl) {
-      toast.error('Vibelog URL not available');
-      return;
-    }
-
-    setIsPublishingToTwitter(true);
-    try {
-      // Use FREE Playwright method
-      const response = await fetch('/api/twitter/publish-playwright', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          vibelogId: _vibelogId,
-          url: vibelogUrl,
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to publish to Twitter');
-      }
-
-      const data = await response.json();
-      if (data.threadUrl) {
-        toast.success('Published to Twitter! (FREE)', {
-          action: {
-            label: 'View Tweet',
-            onClick: () => window.open(data.threadUrl, '_blank'),
-          },
-        });
-      } else {
-        toast.success('Published to Twitter! (FREE)');
-      }
-    } catch (error) {
-      console.error('Twitter publish error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to publish to Twitter';
-      
-      if (errorMessage.includes('credentials') || errorMessage.includes('not found')) {
-        toast.error('Twitter not connected. Please connect your account in settings.', {
-          action: {
-            label: 'Connect',
-            onClick: () => window.location.href = '/settings/profile',
-          },
-        });
-      } else {
-        toast.error(errorMessage);
-      }
-    } finally {
-      setIsPublishingToTwitter(false);
     }
   };
 
@@ -521,26 +453,6 @@ export default function VibelogActions({
             {isLoading ? 'Generating...' : isAudioPlaying || isPlaying ? 'Pause' : 'Listen'}
           </span>
         </button>
-
-        {/* Publish to Twitter Button (owner only, if connected) */}
-        {isOwnVibelog && twitterConnected && (
-          <button
-            onClick={handlePublishToTwitter}
-            disabled={isPublishingToTwitter}
-            className={baseButtonClass}
-            title="Publish to Twitter (FREE)"
-            data-testid="publish-twitter-button"
-          >
-            {isPublishingToTwitter ? (
-              <Loader2 className={`${iconClass} animate-spin`} />
-            ) : (
-              <Twitter className={iconClass} />
-            )}
-            <span className={labelClass}>
-              {isPublishingToTwitter ? 'Publishing...' : 'Tweet'}
-            </span>
-          </button>
-        )}
 
         {/* Like Button */}
         <button
