@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import sharp from 'sharp';
 
+import { getFilterById } from '@/lib/image-filters';
 import { VIBELOGS_BUCKET } from '@/lib/storage';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
@@ -37,6 +38,7 @@ export async function POST(request: NextRequest) {
     const file = formData.get('image') as File;
     const imageType = formData.get('type') as string; // 'avatar' or 'header'
     const cropDataString = formData.get('cropData') as string | null;
+    const filterId = (formData.get('filterId') as string) || 'original';
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
@@ -125,13 +127,40 @@ export async function POST(request: NextRequest) {
         });
       }
 
+      // Apply filter if not original
+      const filter = getFilterById(filterId);
+      if (filter.sharp) {
+        const { modulate, tint, grayscale, linear } = filter.sharp;
+
+        // Apply grayscale first if specified
+        if (grayscale) {
+          sharpImage = sharpImage.grayscale();
+        }
+
+        // Apply modulation (brightness, saturation, hue)
+        if (modulate) {
+          sharpImage = sharpImage.modulate(modulate);
+        }
+
+        // Apply tint (color overlay)
+        if (tint) {
+          sharpImage = sharpImage.tint(tint);
+        }
+
+        // Apply linear adjustment (contrast)
+        if (linear) {
+          sharpImage = sharpImage.linear(linear.a, linear.b);
+        }
+      }
+
       // Convert to WebP for better compression (quality 90)
       buffer = await sharpImage.webp({ quality: 90 }).toBuffer();
 
       console.log(
         `✨ Image processed:`,
         `${(buffer.length / 1024).toFixed(1)}KB`,
-        cropData ? `(cropped ${cropData.width}x${cropData.height})` : ''
+        cropData ? `(cropped ${cropData.width}x${cropData.height})` : '',
+        filterId !== 'original' ? `filter: ${filter.name}` : ''
       );
     } catch (error) {
       console.error('Image processing failed:', error);

@@ -4,16 +4,17 @@ import { useState, useCallback } from 'react';
 import Cropper, { Area } from 'react-easy-crop';
 
 import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Slider } from '@/components/ui/slider';
+import { IMAGE_FILTERS, type ImageFilter } from '@/lib/image-filters';
+import { cn } from '@/lib/utils';
 
 interface ImageCropModalProps {
   open: boolean;
   onClose: () => void;
   imageSrc: string;
   aspectRatio: number; // e.g., 1 for square (avatar), 3 for header
-  onCropComplete: (croppedAreaPixels: Area) => void;
+  onCropComplete: (croppedAreaPixels: Area, filterId: string) => void;
   type: 'avatar' | 'header';
 }
 
@@ -32,6 +33,7 @@ export function ImageCropModal({
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
+  const [selectedFilter, setSelectedFilter] = useState<ImageFilter>(IMAGE_FILTERS[0]);
 
   const onCropChange = useCallback((crop: { x: number; y: number }) => {
     setCrop(crop);
@@ -47,7 +49,7 @@ export function ImageCropModal({
 
   const handleConfirm = () => {
     if (croppedAreaPixels) {
-      onCropComplete(croppedAreaPixels);
+      onCropComplete(croppedAreaPixels, selectedFilter.id);
       onClose();
     }
   };
@@ -55,6 +57,7 @@ export function ImageCropModal({
   const handleReset = () => {
     setCrop({ x: 0, y: 0 });
     setZoom(1);
+    setSelectedFilter(IMAGE_FILTERS[0]);
   };
 
   return (
@@ -90,8 +93,51 @@ export function ImageCropModal({
                 border: '2px solid hsl(217 92% 65%)',
                 boxShadow: '0 0 20px hsl(217 92% 65% / 0.3)',
               },
+              mediaStyle: {
+                filter: selectedFilter.cssFilter,
+                transition: 'filter 0.3s ease',
+              },
             }}
           />
+        </div>
+
+        {/* Filter Picker */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">Filter</span>
+            <span className="font-medium">{selectedFilter.name}</span>
+          </div>
+          <div className="relative">
+            <div className="scrollbar-thin flex gap-2 overflow-x-auto pb-2">
+              {IMAGE_FILTERS.map(filter => (
+                <button
+                  key={filter.id}
+                  onClick={() => setSelectedFilter(filter)}
+                  className={cn(
+                    'group relative flex-shrink-0 overflow-hidden rounded-lg border-2 transition-all',
+                    selectedFilter.id === filter.id
+                      ? 'border-electric shadow-lg shadow-electric/20'
+                      : 'border-border/50 hover:border-electric/50'
+                  )}
+                >
+                  {/* Filter thumbnail preview */}
+                  <div className="relative h-16 w-16">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={imageSrc}
+                      alt={filter.name}
+                      className="h-full w-full object-cover"
+                      style={{ filter: filter.cssFilter }}
+                    />
+                    {/* Overlay with filter name */}
+                    <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/60 to-transparent p-1 opacity-0 transition-opacity group-hover:opacity-100">
+                      <span className="text-[10px] font-medium text-white">{filter.name}</span>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Zoom Control */}
