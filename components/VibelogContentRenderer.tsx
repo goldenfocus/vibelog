@@ -1,9 +1,12 @@
 'use client';
 
+import { ChevronDown } from 'lucide-react';
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeSanitize from 'rehype-sanitize';
 import remarkGfm from 'remark-gfm';
+
+import { useAuth } from '@/components/providers/AuthProvider';
 
 interface VibelogContentRendererProps {
   content: string;
@@ -18,6 +21,8 @@ export default function VibelogContentRenderer({
   onReadMore,
   showCTA = true, // Default to true for backward compatibility
 }: VibelogContentRendererProps) {
+  const { user } = useAuth();
+  const isLoggedIn = !!user;
   return (
     <article className="max-w-none">
       {/* Render sanitized markdown content with enhanced styling */}
@@ -125,26 +130,40 @@ export default function VibelogContentRenderer({
 
       {/* Read More CTA - Only show for anonymous users */}
       {isTeaser && onReadMore && showCTA && (
-        <div className="mt-8 rounded-2xl border border-electric/20 bg-gradient-to-r from-electric/5 via-electric/10 to-transparent p-6 backdrop-blur-sm">
-          <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-electric/10">
-              <span className="text-2xl">📖</span>
+        <>
+          {!isLoggedIn ? (
+            // Full CTA for anonymous users
+            <div className="mt-8 rounded-2xl border border-electric/20 bg-gradient-to-r from-electric/5 via-electric/10 to-transparent p-6 backdrop-blur-sm">
+              <div className="flex items-start gap-4">
+                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-electric/10">
+                  <span className="text-2xl">📖</span>
+                </div>
+                <div className="flex-1">
+                  <h4 className="mb-2 text-lg font-semibold text-electric">Continue Reading</h4>
+                  <p className="mb-4 leading-relaxed text-muted-foreground">
+                    Read the full vibelog, engage with the community, and share your thoughts.
+                  </p>
+                  <button
+                    onClick={onReadMore}
+                    className="inline-flex items-center gap-2 rounded-lg bg-electric px-4 py-2 font-medium text-white transition-colors duration-200 hover:bg-electric-glow"
+                  >
+                    Read More
+                    <span className="text-sm">→</span>
+                  </button>
+                </div>
+              </div>
             </div>
-            <div className="flex-1">
-              <h4 className="mb-2 text-lg font-semibold text-electric">Continue Reading</h4>
-              <p className="mb-4 leading-relaxed text-muted-foreground">
-                Read the full vibelog, engage with the community, and share your thoughts.
-              </p>
-              <button
-                onClick={onReadMore}
-                className="inline-flex items-center gap-2 rounded-lg bg-electric px-4 py-2 font-medium text-white transition-colors duration-200 hover:bg-electric-glow"
-              >
-                Read More
-                <span className="text-sm">→</span>
-              </button>
-            </div>
-          </div>
-        </div>
+          ) : (
+            // Subtle icon for logged-in users
+            <button
+              onClick={onReadMore}
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg border border-border/30 bg-background/50 px-4 py-3 text-sm font-medium text-muted-foreground transition-all hover:border-electric/50 hover:bg-electric/5 hover:text-electric"
+            >
+              <ChevronDown className="h-4 w-4" />
+              <span>Read more</span>
+            </button>
+          )}
+        </>
       )}
     </article>
   );
