@@ -26,12 +26,7 @@ export function ZoomableImage({
   rounded = false,
 }: ZoomableImageProps) {
   return (
-    <Zoom
-      classDialog="custom-zoom-overlay"
-      zoomMargin={40}
-      wrapElement="div"
-      wrapStyle={{ display: 'block' }}
-    >
+    <Zoom classDialog="custom-zoom-overlay" zoomMargin={40}>
       <div
         className={cn(
           'relative cursor-zoom-in transition-transform hover:scale-[1.02]',
