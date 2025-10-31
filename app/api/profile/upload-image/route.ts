@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
+import sharp from 'sharp';
 
 import { VIBELOGS_BUCKET } from '@/lib/storage';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60; // 1 minute
+
+interface CropData {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
 
 /**
  * POST /api/profile/upload-image
@@ -28,6 +36,7 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const file = formData.get('image') as File;
     const imageType = formData.get('type') as string; // 'avatar' or 'header'
+    const cropDataString = formData.get('cropData') as string | null;
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
@@ -35,6 +44,17 @@ export async function POST(request: NextRequest) {
 
     if (!imageType || !['avatar', 'header'].includes(imageType)) {
       return NextResponse.json({ error: 'Invalid image type' }, { status: 400 });
+    }
+
+    // Parse crop data if provided
+    let cropData: CropData | null = null;
+    if (cropDataString) {
+      try {
+        cropData = JSON.parse(cropDataString) as CropData;
+      } catch (error) {
+        console.error('Failed to parse crop data:', error);
+        return NextResponse.json({ error: 'Invalid crop data' }, { status: 400 });
+      }
     }
 
     // Validate file size (max 10MB for images)
@@ -68,18 +88,70 @@ export async function POST(request: NextRequest) {
     console.log(
       `📸 Uploading ${imageType} image:`,
       storagePath,
-      `(${(file.size / 1024 / 1024).toFixed(2)}MB)`
+      `(${(file.size / 1024 / 1024).toFixed(2)}MB)`,
+      cropData ? 'with crop' : 'no crop'
     );
 
     // Convert File to ArrayBuffer then Buffer
     const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    let buffer = Buffer.from(arrayBuffer);
+
+    // Process image with sharp (crop if needed, optimize)
+    try {
+      let sharpImage = sharp(buffer);
+
+      // Apply crop if provided
+      if (cropData) {
+        sharpImage = sharpImage.extract({
+          left: Math.round(cropData.x),
+          top: Math.round(cropData.y),
+          width: Math.round(cropData.width),
+          height: Math.round(cropData.height),
+        });
+      }
+
+      // Resize and optimize based on image type
+      if (imageType === 'avatar') {
+        // Avatar: resize to 400x400, high quality
+        sharpImage = sharpImage.resize(400, 400, {
+          fit: 'cover',
+          position: 'center',
+        });
+      } else {
+        // Header: resize to max width 1200, maintain aspect ratio
+        sharpImage = sharpImage.resize(1200, null, {
+          fit: 'inside',
+          withoutEnlargement: true,
+        });
+      }
+
+      // Convert to WebP for better compression (quality 90)
+      buffer = await sharpImage.webp({ quality: 90 }).toBuffer();
+
+      console.log(
+        `✨ Image processed:`,
+        `${(buffer.length / 1024).toFixed(1)}KB`,
+        cropData ? `(cropped ${cropData.width}x${cropData.height})` : ''
+      );
+    } catch (error) {
+      console.error('Image processing failed:', error);
+      return NextResponse.json(
+        {
+          error: 'Image processing failed',
+          message: error instanceof Error ? error.message : 'Unknown error',
+        },
+        { status: 500 }
+      );
+    }
+
+    // Update storage path to use .webp extension
+    const webpStoragePath = `${user.id}/profile/${imageType}-${timestamp}.webp`;
 
     // Upload to Supabase Storage
     const { error: uploadError } = await supabase.storage
       .from(VIBELOGS_BUCKET)
-      .upload(storagePath, buffer, {
-        contentType: normalizedFileType,
+      .upload(webpStoragePath, buffer, {
+        contentType: 'image/webp',
         upsert: false,
         cacheControl: '31536000', // 1 year cache
       });
@@ -95,7 +167,7 @@ export async function POST(request: NextRequest) {
     // Get public URL
     const {
       data: { publicUrl },
-    } = supabase.storage.from(VIBELOGS_BUCKET).getPublicUrl(storagePath);
+    } = supabase.storage.from(VIBELOGS_BUCKET).getPublicUrl(webpStoragePath);
 
     console.log('✅ Upload successful:', publicUrl);
 
@@ -127,7 +199,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       url: publicUrl,
-      storagePath,
+      storagePath: webpStoragePath,
       success: true,
     });
   } catch (error) {

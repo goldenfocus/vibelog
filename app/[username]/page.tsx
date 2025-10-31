@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 
 import { ProfileVibelogs } from '@/components/profile/ProfileVibelogs';
 import { SocialLinks } from '@/components/profile/SocialLinks';
+import { ZoomableImage } from '@/components/profile/ZoomableImage';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
 interface PageProps {
@@ -245,12 +246,15 @@ export default async function ProfilePage({ params }: PageProps) {
       <div className="relative">
         {/* Header Image */}
         {profile.header_image && (
-          <div
-            className="h-48 bg-gradient-to-b from-surface-elevated to-background bg-cover bg-center sm:h-64 md:h-80"
-            style={{
-              backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.5)), url(${profile.header_image})`,
-            }}
-          />
+          <div className="group relative h-48 overflow-hidden sm:h-64 md:h-80">
+            <ZoomableImage
+              src={profile.header_image}
+              alt={`${displayName}'s header image`}
+              className="h-full w-full object-cover"
+              wrapperClassName="h-full"
+            />
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/30 to-black/50" />
+          </div>
         )}
         {!profile.header_image && (
           <div className="h-48 bg-gradient-to-br from-electric/20 via-background to-background sm:h-64 md:h-80" />
@@ -264,10 +268,11 @@ export default async function ProfilePage({ params }: PageProps) {
               <div className="relative">
                 <div className="bg-surface h-32 w-32 overflow-hidden rounded-full border-4 border-background shadow-xl sm:h-40 sm:w-40">
                   {profile.avatar_url ? (
-                    <img
+                    <ZoomableImage
                       src={profile.avatar_url}
                       alt={displayName}
                       className="h-full w-full object-cover"
+                      rounded={true}
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-electric/30 to-electric/10">

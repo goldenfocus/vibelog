@@ -3,7 +3,9 @@
 import { Upload, X, Loader2, Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useState, useRef } from 'react';
+import { Area } from 'react-easy-crop';
 
+import { ImageCropModal } from '@/components/profile/ImageCropModal';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -37,37 +39,52 @@ export function ImageUploadZone({
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFile = useCallback(
-    async (file: File) => {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        setError('Please upload an image file');
+  // Crop modal state
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [imageSrc, setImageSrc] = useState<string>('');
+
+  const handleFile = useCallback((file: File) => {
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setError('Please upload an image file');
+      return;
+    }
+
+    // Validate file size (10MB)
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      setError('Image must be less than 10MB');
+      return;
+    }
+
+    setError(null);
+    setSelectedFile(file);
+
+    // Create image URL for cropper
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImageSrc(reader.result as string);
+      setShowCropModal(true);
+    };
+    reader.readAsDataURL(file);
+  }, []);
+
+  const handleCropComplete = useCallback(
+    async (croppedAreaPixels: Area) => {
+      if (!selectedFile) {
         return;
       }
 
-      // Validate file size (10MB)
-      const maxSize = 10 * 1024 * 1024;
-      if (file.size > maxSize) {
-        setError('Image must be less than 10MB');
-        return;
-      }
-
-      setError(null);
       setUploading(true);
       setUploadSuccess(false);
 
-      // Create preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-
       try {
-        // Upload to API
+        // Upload to API with crop data
         const formData = new FormData();
-        formData.append('image', file);
+        formData.append('image', selectedFile);
         formData.append('type', type);
+        formData.append('cropData', JSON.stringify(croppedAreaPixels));
 
         const response = await fetch('/api/profile/upload-image', {
           method: 'POST',
@@ -81,7 +98,8 @@ export function ImageUploadZone({
 
         const data = await response.json();
 
-        // Success!
+        // Success! Show preview
+        setPreview(data.url);
         setUploadSuccess(true);
         onUploadComplete(data.url);
 
@@ -98,9 +116,11 @@ export function ImageUploadZone({
         setPreview(currentImage || null);
       } finally {
         setUploading(false);
+        setSelectedFile(null);
+        setImageSrc('');
       }
     },
-    [type, onUploadComplete, currentImage, router]
+    [selectedFile, type, onUploadComplete, currentImage, router]
   );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -271,6 +291,20 @@ export function ImageUploadZone({
           JPG, PNG, WebP or GIF. Max 10MB. {isAvatar ? 'Square' : 'Wide format'} recommended.
         </p>
       )}
+
+      {/* Crop Modal */}
+      <ImageCropModal
+        open={showCropModal}
+        onClose={() => {
+          setShowCropModal(false);
+          setSelectedFile(null);
+          setImageSrc('');
+        }}
+        imageSrc={imageSrc}
+        aspectRatio={type === 'avatar' ? 1 : 3}
+        onCropComplete={handleCropComplete}
+        type={type}
+      />
     </div>
   );
 }
