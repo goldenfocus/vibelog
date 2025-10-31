@@ -82,10 +82,33 @@ export default function VibelogActions({
   // Determine if this is user's own vibelog
   const isOwnVibelog = user?.id && authorId && user.id === authorId;
 
-  // Check if user has liked this vibelog (only if logged in)
+  // Sync like count and liked state when props change (e.g., when parent re-fetches data)
+  useEffect(() => {
+    setLikeCount(initialLikeCount);
+    setIsLiked(initialIsLiked);
+  }, [initialLikeCount, initialIsLiked, vibelogId]);
+
+  // Fetch current like status and count from API (only if logged in)
   useEffect(() => {
     if (user?.id && vibelogId) {
-      // Check like status from API
+      // Fetch current vibelog data to get accurate like_count
+      fetch(`/api/get-vibelog/${vibelogId}`)
+        .then(res => {
+          if (res.ok) {
+            return res.json();
+          }
+          return null;
+        })
+        .then(data => {
+          if (data?.vibelog?.like_count !== undefined) {
+            setLikeCount(data.vibelog.like_count);
+          }
+        })
+        .catch(() => {
+          // Ignore errors - fall back to prop value
+        });
+
+      // Check if user has liked this vibelog
       fetch(`/api/like-vibelog/${vibelogId}`, { method: 'GET' })
         .then(res => {
           if (res.ok) {
