@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
       // Apply filter if not original
       const filter = getFilterById(filterId);
       if (filter.sharp) {
-        const { modulate, tint, grayscale, linear } = filter.sharp;
+        const { modulate, grayscale, linear } = filter.sharp;
 
         // Apply grayscale first if specified
         if (grayscale) {
@@ -140,11 +140,6 @@ export async function POST(request: NextRequest) {
         // Apply modulation (brightness, saturation, hue)
         if (modulate) {
           sharpImage = sharpImage.modulate(modulate);
-        }
-
-        // Apply tint (color overlay)
-        if (tint) {
-          sharpImage = sharpImage.tint(tint);
         }
 
         // Apply linear adjustment (contrast)
