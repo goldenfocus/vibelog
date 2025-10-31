@@ -316,6 +316,8 @@ export default async function VibelogPage({ params }: PageProps) {
               id: vibelog.id,
               title: vibelog.title,
               content: vibelog.content,
+              teaser: vibelog.teaser,
+              cover_image_url: vibelog.cover_image_url,
               user_id: vibelog.user_id,
               public_slug: vibelog.public_slug || vibelog.slug,
               audio_url: vibelog.audio_url,

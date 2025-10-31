@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import VibelogActions from '@/components/VibelogActions';
 import VibelogContentRenderer from '@/components/VibelogContentRenderer';
+import VibelogEditModalFull from '@/components/VibelogEditModalFull';
 
 interface VibelogAuthor {
   username: string;
@@ -42,6 +43,7 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
   const router = useRouter();
   const { user } = useAuth(); // Check if user is logged in
   const isLoggedIn = !!user;
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Defer date formatting to client side to avoid hydration mismatch
   const [formattedDate, setFormattedDate] = useState<string>('');
@@ -105,7 +107,7 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
   };
 
   const handleEdit = () => {
-    router.push(`/vibelogs/${vibelog.id}/edit`);
+    setIsEditModalOpen(true);
   };
 
   const handleRemix = () => {
@@ -225,6 +227,25 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
           variant="compact"
         />
       </div>
+
+      {/* Edit Modal */}
+      {isEditModalOpen && (
+        <VibelogEditModalFull
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            router.refresh(); // Refresh to show updated content
+          }}
+          vibelog={{
+            id: vibelog.id,
+            title: vibelog.title,
+            content: vibelog.content,
+            teaser: vibelog.teaser,
+            cover_image_url: vibelog.cover_image_url,
+            cover_image_alt: vibelog.title,
+          }}
+        />
+      )}
     </article>
   );
 }
