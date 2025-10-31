@@ -2,9 +2,11 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 import VibelogActions from '@/components/VibelogActions';
 import VibelogContentRenderer from '@/components/VibelogContentRenderer';
+import VibelogEditModalFull from '@/components/VibelogEditModalFull';
 import type { ExportFormat } from '@/lib/export';
 
 interface PublicVibelogContentProps {
@@ -12,6 +14,8 @@ interface PublicVibelogContentProps {
     id: string;
     title: string;
     content: string;
+    teaser?: string;
+    cover_image_url?: string | null;
     user_id: string | null;
     public_slug: string;
     audio_url?: string | null;
@@ -25,6 +29,8 @@ interface PublicVibelogContentProps {
 
 export default function PublicVibelogContent({ vibelog }: PublicVibelogContentProps) {
   const router = useRouter();
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
   // Initialize with a placeholder URL to prevent hydration mismatch
   // Will be updated in useEffect with actual window.location.origin
   const [vibelogUrl, setVibelogUrl] = useState<string>(() => {
@@ -42,6 +48,29 @@ export default function PublicVibelogContent({ vibelog }: PublicVibelogContentPr
       : `${window.location.origin}/@${vibelog.author?.username}/${vibelog.public_slug}`;
     setVibelogUrl(url);
   }, [vibelog.user_id, vibelog.public_slug, vibelog.author?.username]);
+
+  const handleEdit = () => {
+    setIsEditModalOpen(true);
+  };
+
+  const handleDelete = async () => {
+    try {
+      const response = await fetch(`/api/delete-vibelog/${vibelog.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete vibelog');
+      }
+
+      toast.success('Vibelog deleted successfully');
+      // Redirect to dashboard after deletion
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast.error('Failed to delete vibelog');
+    }
+  };
 
   const handleRemix = () => {
     // Redirect to homepage with remix content
@@ -107,12 +136,33 @@ export default function PublicVibelogContent({ vibelog }: PublicVibelogContentPr
           vibelogUrl={vibelogUrl}
           createdAt={vibelog.created_at}
           audioUrl={vibelog.audio_url || undefined}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
           onRemix={handleRemix}
           onShare={handleShare}
           onExport={handleExport}
           variant="default"
         />
       </div>
+
+      {/* Edit Modal */}
+      {isEditModalOpen && (
+        <VibelogEditModalFull
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            router.refresh(); // Refresh to show updated content
+          }}
+          vibelog={{
+            id: vibelog.id,
+            title: vibelog.title,
+            content: vibelog.content,
+            teaser: vibelog.teaser,
+            cover_image_url: vibelog.cover_image_url,
+            cover_image_alt: vibelog.title,
+          }}
+        />
+      )}
     </div>
   );
 }

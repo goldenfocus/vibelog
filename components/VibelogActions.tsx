@@ -89,10 +89,17 @@ export default function VibelogActions({
   }, [isMenuOpen]);
 
   // Set up audio element for original audio playback
+  // Preload audio when audioUrl is available for instant playback
   useEffect(() => {
     if (audioUrl && !audioRef.current) {
       const audio = new Audio(audioUrl);
       audioRef.current = audio;
+
+      // Preload the audio for instant playback
+      audio.preload = 'auto';
+
+      // Start loading the audio immediately
+      audio.load();
 
       audio.addEventListener('play', () => setIsAudioPlaying(true));
       audio.addEventListener('pause', () => setIsAudioPlaying(false));
@@ -106,6 +113,11 @@ export default function VibelogActions({
         }
       });
 
+      // Listen for when audio is ready to play (preload complete)
+      audio.addEventListener('canplaythrough', () => {
+        console.log('✅ Audio preloaded and ready to play');
+      });
+
       return () => {
         audio.pause();
         audio.src = '';
@@ -115,17 +127,66 @@ export default function VibelogActions({
 
   const handlePlayClick = async () => {
     // If original audio is available, use it instead of TTS
-    if (audioUrl && audioRef.current) {
-      if (isAudioPlaying) {
-        audioRef.current.pause();
-      } else {
-        try {
-          await audioRef.current.play();
-        } catch (error) {
-          console.error('Audio playback failed:', error);
-        }
+    if (audioUrl) {
+      // If audio element doesn't exist yet, create it first
+      if (!audioRef.current) {
+        const audio = new Audio(audioUrl);
+        audio.preload = 'auto';
+        audioRef.current = audio;
+
+        // Set up event listeners
+        audio.addEventListener('play', () => setIsAudioPlaying(true));
+        audio.addEventListener('pause', () => setIsAudioPlaying(false));
+        audio.addEventListener('ended', () => {
+          setIsAudioPlaying(false);
+          setAudioProgress(0);
+        });
+        audio.addEventListener('timeupdate', () => {
+          if (audio.duration > 0) {
+            setAudioProgress((audio.currentTime / audio.duration) * 100);
+          }
+        });
+
+        // Load the audio
+        audio.load();
       }
-      return;
+
+      // Use the audio element
+      if (audioRef.current) {
+        if (isAudioPlaying) {
+          audioRef.current.pause();
+        } else {
+          try {
+            // Wait for audio to be ready if it's still loading
+            if (audioRef.current.readyState < 2) {
+              // HAVE_CURRENT_DATA
+              await new Promise<void>((resolve, reject) => {
+                const timeout = setTimeout(() => reject(new Error('Audio load timeout')), 5000);
+                audioRef.current!.addEventListener(
+                  'canplaythrough',
+                  () => {
+                    clearTimeout(timeout);
+                    resolve();
+                  },
+                  { once: true }
+                );
+                audioRef.current!.addEventListener(
+                  'error',
+                  e => {
+                    clearTimeout(timeout);
+                    reject(e);
+                  },
+                  { once: true }
+                );
+              });
+            }
+            await audioRef.current.play();
+          } catch (error) {
+            console.error('Audio playback failed:', error);
+          }
+        }
+        return;
+      }
     }
 
     // Fall back to TTS if no original audio
