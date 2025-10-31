@@ -226,9 +226,6 @@ export default async function VibelogPage({ params }: PageProps) {
     notFound();
   }
 
-  // Normalize username for consistent URLs
-  const normalizedUsername = username.startsWith('@') ? username.slice(1) : username;
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -285,7 +282,7 @@ export default async function VibelogPage({ params }: PageProps) {
               <div>
                 <p className="font-medium text-foreground">{vibelog.author.display_name}</p>
                 <p className="text-sm text-muted-foreground">
-                  @{normalizedUsername} · {formatDate(vibelog.published_at)}
+                  @{vibelog.author.username} · {formatDate(vibelog.published_at)}
                 </p>
               </div>
             </div>
@@ -351,9 +348,9 @@ export default async function VibelogPage({ params }: PageProps) {
             )}
             <div className="flex-1">
               <p className="font-medium text-foreground">{vibelog.author.display_name}</p>
-              <p className="text-sm text-muted-foreground">@{normalizedUsername}</p>
+              <p className="text-sm text-muted-foreground">@{vibelog.author.username}</p>
               <Link
-                href={`/@${normalizedUsername}`}
+                href={`/@${vibelog.author.username}`}
                 className="mt-2 inline-block text-sm font-medium text-electric hover:underline"
               >
                 View all vibelogs →
