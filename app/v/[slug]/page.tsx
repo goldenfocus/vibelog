@@ -1,3 +1,4 @@
+import { User } from 'lucide-react';
 import { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -5,6 +6,7 @@ import { notFound, redirect } from 'next/navigation';
 
 import Navigation from '@/components/Navigation';
 import PublicVibelogContent from '@/components/PublicVibelogContent';
+import { formatFullDate } from '@/lib/date-utils';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
 interface PageProps {
@@ -143,8 +145,44 @@ export default async function PublicVibelogPage({ params }: PageProps) {
           {vibelogWithAuthor.title}
         </h1>
 
+        {/* Author & Meta */}
+        {vibelogWithAuthor.author && !isAnonymous && (
+          <div className="mb-6 flex items-center gap-3 border-b border-border/30 pb-6">
+            <Link
+              href={`/@${vibelogWithAuthor.author.username}`}
+              className="flex items-center gap-3 transition-opacity hover:opacity-80"
+            >
+              {vibelogWithAuthor.author.avatar_url ? (
+                <img
+                  src={vibelogWithAuthor.author.avatar_url}
+                  alt={vibelogWithAuthor.author.display_name}
+                  className="h-12 w-12 rounded-full border-2 border-electric/20"
+                />
+              ) : (
+                <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-electric/20 bg-electric/10">
+                  <User className="h-6 w-6 text-electric" />
+                </div>
+              )}
+              <div>
+                <p className="font-medium text-foreground transition-colors hover:text-electric">
+                  {vibelogWithAuthor.author.display_name}
+                </p>
+                <p className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+                  @{vibelogWithAuthor.author.username}
+                </p>
+              </div>
+            </Link>
+          </div>
+        )}
+
         {/* Meta */}
         <div className="mb-8 flex items-center gap-4 text-sm text-muted-foreground">
+          {vibelogWithAuthor.published_at && (
+            <>
+              <span>{formatFullDate(vibelogWithAuthor.published_at)}</span>
+              <span>•</span>
+            </>
+          )}
           <span>{vibelogWithAuthor.read_time} min read</span>
           <span>•</span>
           <span>{vibelogWithAuthor.word_count} words</span>
