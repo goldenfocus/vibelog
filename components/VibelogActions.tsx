@@ -16,6 +16,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 
 import ExportButton from '@/components/ExportButton';
+import LikersPopover from '@/components/LikersPopover';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useTextToSpeech } from '@/hooks/useTextToSpeech';
 import type { ExportFormat } from '@/lib/export';
@@ -546,20 +547,22 @@ export default function VibelogActions({
         </button>
 
         {/* Like Button */}
-        <button
-          onClick={handleLikeClick}
-          disabled={isLiking}
-          className={`${baseButtonClass} ${isLiked ? 'text-red-500 hover:text-red-600' : ''}`}
-          title={user ? (isLiked ? 'Unlike' : 'Like') : 'Sign in to like'}
-          data-testid="like-button"
-        >
-          {isLiking ? (
-            <Loader2 className={`${iconClass} animate-spin`} />
-          ) : (
-            <Heart className={iconClass} fill={isLiked ? 'currentColor' : 'none'} />
-          )}
-          <span className={labelClass}>{isLiking ? '...' : likeCount}</span>
-        </button>
+        <LikersPopover vibelogId={vibelogId} likeCount={likeCount}>
+          <button
+            onClick={handleLikeClick}
+            disabled={isLiking}
+            className={`${baseButtonClass} ${isLiked ? 'text-red-500 hover:text-red-600' : ''}`}
+            title={user ? (isLiked ? 'Unlike' : 'Like') : 'Sign in to like'}
+            data-testid="like-button"
+          >
+            {isLiking ? (
+              <Loader2 className={`${iconClass} animate-spin`} />
+            ) : (
+              <Heart className={iconClass} fill={isLiked ? 'currentColor' : 'none'} />
+            )}
+            <span className={labelClass}>{isLiking ? '...' : likeCount}</span>
+          </button>
+        </LikersPopover>
 
         {/* Share Button */}
         {onShare && (
