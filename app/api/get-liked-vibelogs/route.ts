@@ -47,33 +47,33 @@ export async function GET(request: NextRequest) {
 
     if (likesError) {
       console.error('Error fetching liked vibelogs:', likesError);
-      return NextResponse.json(
-        { error: 'Failed to fetch liked vibelogs' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Failed to fetch liked vibelogs' }, { status: 500 });
     }
 
     // Transform data to include author info
-    const vibelogs = likes?.map(l => l.vibelogs).filter(Boolean) || [];
+    interface VibelogWithUserId {
+      user_id?: string;
+      id?: string;
+      title?: string;
+      slug?: string;
+      [key: string]: unknown;
+    }
+    
+    // Flatten vibelogs from likes and filter out nulls
+    const vibelogs = (likes?.map(l => l.vibelogs).filter(Boolean) || []) as unknown as VibelogWithUserId[];
 
-    if (vibelogs.length > 0 && vibelogs[0].user_id) {
+    if (vibelogs.length > 0 && vibelogs[0]?.user_id) {
       // Fetch author profiles
-      interface VibelogWithUserId {
-        user_id?: string;
-        [key: string]: unknown;
-      }
-      const userIds = [...new Set(vibelogs.map((v: VibelogWithUserId) => v.user_id).filter(Boolean))];
+      const userIds = [...new Set(vibelogs.map(v => v.user_id).filter(Boolean))] as string[];
       const { data: profiles } = await supabase
         .from('profiles')
         .select('id, username, display_name, avatar_url')
         .in('id', userIds);
 
-      const profilesMap = new Map(
-        profiles?.map(p => [p.id, p]) || []
-      );
+      const profilesMap = new Map(profiles?.map(p => [p.id, p]) || []);
 
       // Add author info to vibelogs
-      const vibelogsWithAuthors = vibelogs.map((v: VibelogWithUserId) => {
+      const vibelogsWithAuthors = vibelogs.map(v => {
         const profile = v.user_id ? profilesMap.get(v.user_id) : null;
         return {
           ...v,
@@ -105,10 +105,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching liked vibelogs:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
-
