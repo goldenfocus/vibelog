@@ -106,9 +106,6 @@ export default function VibelogActions({
         }
       });
 
-      // Preload audio for instant playback
-      audio.preload = 'auto';
-
       return () => {
         audio.pause();
         audio.src = '';
