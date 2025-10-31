@@ -307,22 +307,40 @@ export default function VibelogActions({
       return;
     }
 
+    // Store original values for rollback if needed
+    const originalLikedState = isLiked;
+    const originalLikeCount = likeCount;
+
+    // Optimistic update - update UI immediately
+    const newLikedState = !isLiked;
+    const newLikeCount = newLikedState ? likeCount + 1 : Math.max(0, likeCount - 1);
+
+    setIsLiked(newLikedState);
+    setLikeCount(newLikeCount);
     setIsLiking(true);
+
     try {
-      const method = isLiked ? 'DELETE' : 'POST';
+      const method = newLikedState ? 'POST' : 'DELETE';
       const response = await fetch(`/api/like-vibelog/${vibelogId}`, {
         method,
       });
 
       if (!response.ok) {
+        // Revert optimistic update on error
+        setIsLiked(originalLikedState);
+        setLikeCount(originalLikeCount);
         throw new Error('Failed to toggle like');
       }
 
       const data = await response.json();
-      setIsLiked(data.liked);
-      setLikeCount(data.like_count);
+      // Update with server response (source of truth)
+      setIsLiked(data.liked ?? newLikedState);
+      setLikeCount(data.like_count ?? newLikeCount);
     } catch (error) {
       console.error('Error toggling like:', error);
+      // Revert on error using original values
+      setIsLiked(originalLikedState);
+      setLikeCount(originalLikeCount);
     } finally {
       setIsLiking(false);
     }
@@ -467,9 +485,7 @@ export default function VibelogActions({
           ) : (
             <Heart className={iconClass} fill={isLiked ? 'currentColor' : 'none'} />
           )}
-          <span className={labelClass}>
-            {isLiking ? '...' : likeCount}
-          </span>
+          <span className={labelClass}>{isLiking ? '...' : likeCount}</span>
         </button>
 
         {/* Share Button */}
