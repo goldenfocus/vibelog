@@ -132,6 +132,12 @@ export async function POST(request: NextRequest) {
       if (filter.sharp) {
         const { modulate, grayscale, linear } = filter.sharp;
 
+        // Ensure we're in RGB color space before applying color filters
+        // This prevents Sharp from optimizing to grayscale during resize
+        if (modulate || linear) {
+          sharpImage = sharpImage.toColorspace('srgb');
+        }
+
         // Apply grayscale first if specified
         if (grayscale) {
           sharpImage = sharpImage.grayscale();
