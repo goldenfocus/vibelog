@@ -112,42 +112,10 @@ export function useAudioPlayback(audioBlob: Blob | null): UseAudioPlaybackReturn
       const url = URL.createObjectURL(audioBlob);
       setAudioUrl(url);
 
-      // Force load metadata to get real duration
-      // Use multiple approaches to ensure duration loads
-      const loadDuration = async () => {
-        if (!audioRef.current) {
-          return;
-        }
-
-        // Approach 1: Force load and wait for metadata
+      // Load metadata to get duration (handled by handleLoadedMetadata callback)
+      if (audioRef.current) {
         audioRef.current.load();
-
-        // Approach 2: Create temporary audio element to get duration
-        const tempAudio = new Audio(url);
-        tempAudio.preload = 'metadata';
-
-        try {
-          await new Promise((resolve, reject) => {
-            const timeout = setTimeout(() => reject(new Error('Timeout')), 5000);
-            tempAudio.addEventListener(
-              'loadedmetadata',
-              () => {
-                clearTimeout(timeout);
-                if (tempAudio.duration && isFinite(tempAudio.duration) && tempAudio.duration > 0) {
-                  setDuration(tempAudio.duration);
-                }
-                resolve(undefined);
-              },
-              { once: true }
-            );
-            tempAudio.addEventListener('error', reject, { once: true });
-          });
-        } catch (error) {
-          console.warn('Could not preload audio duration:', error);
-        }
-      };
-
-      loadDuration();
+      }
 
       return () => {
         URL.revokeObjectURL(url);
