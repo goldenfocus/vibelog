@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import PublicVibelogContent from '@/components/PublicVibelogContent';
+import { ViewTrackingPixel } from '@/components/ViewTrackingPixel';
 import { formatFullDate } from '@/lib/date-utils';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
@@ -229,6 +230,8 @@ export default async function VibelogPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* View tracking pixel - client component ensures it renders */}
+      <ViewTrackingPixel vibelogId={vibelog.id} />
       <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Back button */}
         <Link

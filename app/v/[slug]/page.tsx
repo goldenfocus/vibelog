@@ -5,6 +5,7 @@ import { notFound, redirect } from 'next/navigation';
 
 import Navigation from '@/components/Navigation';
 import PublicVibelogContent from '@/components/PublicVibelogContent';
+import { ViewTrackingPixel } from '@/components/ViewTrackingPixel';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
 interface PageProps {
@@ -86,14 +87,8 @@ export default async function PublicVibelogPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* View tracking pixel - browsers ALWAYS load images, guaranteed to work */}
-      <img
-        src={`/api/track-view/${vibelog.id}`}
-        alt=""
-        width={1}
-        height={1}
-        style={{ position: 'absolute', visibility: 'hidden', pointerEvents: 'none' }}
-      />
+      {/* View tracking pixel - client component ensures it renders */}
+      <ViewTrackingPixel vibelogId={vibelog.id} />
 
       <Navigation />
 
