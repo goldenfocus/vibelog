@@ -59,9 +59,10 @@ const PLATFORM_PATTERNS = {
   },
   youtube: {
     domains: ['youtube.com', 'youtu.be'],
-    baseUrl: 'https://youtube.com/',
+    baseUrl: 'https://www.youtube.com/',
+    // Capture format prefix (c/, channel/, user/, @) in group 1, username in group 2
     regex:
-      /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:c\/|channel\/|user\/|@)?([a-zA-Z0-9_-]+)|youtu\.be\/([a-zA-Z0-9_-]+))/,
+      /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/((?:c\/|channel\/|user\/|@)?)([a-zA-Z0-9_-]+)|youtu\.be\/([a-zA-Z0-9_-]+))/,
     icon: 'Youtube',
     label: 'YouTube',
     color: 'hover:text-[#FF0000]',
@@ -138,6 +139,16 @@ export function parseSocialUrl(
   // Try to extract username from URL
   const match = input.match(pattern.regex);
   if (match) {
+    // Special handling for YouTube to preserve format prefix (@, c/, channel/, user/)
+    if (platform === 'youtube') {
+      const formatPrefix = match[1] || ''; // Could be '@', 'c/', 'channel/', 'user/', or ''
+      const username = match[2] || match[3]; // Username from main domain or youtu.be
+      if (username) {
+        return `${pattern.baseUrl}${formatPrefix}${username}`;
+      }
+    }
+
+    // Default handling for other platforms
     const username = match[1] || match[2]; // Some regexes have multiple capture groups
     if (username) {
       return `${pattern.baseUrl}${username}`;
@@ -145,8 +156,15 @@ export function parseSocialUrl(
   }
 
   // If no match, treat as username
-  // Remove @ symbol if present
-  let username = input.replace(/^@/, '');
+  // For YouTube, preserve @ if present, otherwise add it (modern format default)
+  let username: string;
+  if (platform === 'youtube') {
+    // Keep @ if present, add if missing (modern YouTube format)
+    username = input.startsWith('@') ? input : `@${input}`;
+  } else {
+    // Other platforms: remove @ symbol if present
+    username = input.replace(/^@/, '');
+  }
 
   // Remove any remaining URL parts
   username = username
@@ -156,7 +174,9 @@ export function parseSocialUrl(
     .trim();
 
   // Validate username (basic alphanumeric + common social media chars)
-  if (!/^[a-zA-Z0-9_.-]+$/.test(username)) {
+  // For YouTube, allow @ at the start
+  const usernamePattern = platform === 'youtube' ? /^@?[a-zA-Z0-9_.-]+$/ : /^[a-zA-Z0-9_.-]+$/;
+  if (!usernamePattern.test(username)) {
     return null;
   }
 
