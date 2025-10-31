@@ -46,7 +46,7 @@ const nextConfig: NextConfig = {
       // Remove 'unsafe-eval' in production
       `script-src ${scriptSrc}`,
       "img-src 'self' data: blob: https:",
-      "font-src 'self' data: https://fonts.googleapis.com https://fonts.gstatic.com",
+      "font-src 'self' data: https://fonts.googleapis.com https://fonts.gstatic.com https://r2cdn.perplexity.ai",
       // API egress targets
       "connect-src 'self' https://api.openai.com https://*.supabase.co https://*.supabase.in https://vercel.live",
       "media-src 'self' data: blob:",
