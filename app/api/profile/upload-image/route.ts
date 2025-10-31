@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
 
     // Convert File to ArrayBuffer then Buffer
     const arrayBuffer = await file.arrayBuffer();
-    let buffer = Buffer.from(arrayBuffer);
+    let buffer: Buffer = Buffer.from(arrayBuffer);
 
     // Process image with sharp (crop if needed, optimize)
     try {
