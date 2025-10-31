@@ -12,7 +12,8 @@ import {
   Trash2,
   Heart,
 } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 
 import ExportButton from '@/components/ExportButton';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -72,6 +73,7 @@ export default function VibelogActions({
   const [likeCount, setLikeCount] = useState(initialLikeCount);
   const [isLiking, setIsLiking] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const lastLikeRequestRef = useRef<Promise<void> | null>(null);
   const { isPlaying, isLoading, playText, stop, progress } = useTextToSpeech(onUpgradePrompt);
 
   // Audio playback state for original audio
@@ -88,44 +90,47 @@ export default function VibelogActions({
     setIsLiked(initialIsLiked);
   }, [initialLikeCount, initialIsLiked, vibelogId]);
 
-  // Fetch current like status and count from API (only if logged in)
+  // Fetch current like status and count from API in a single coordinated request
   useEffect(() => {
-    if (user?.id && vibelogId) {
-      // Fetch current vibelog data to get accurate like_count
-      fetch(`/api/get-vibelog/${vibelogId}`)
-        .then(res => {
-          if (res.ok) {
-            return res.json();
-          }
-          return null;
-        })
-        .then(data => {
-          if (data?.vibelog?.like_count !== undefined) {
-            setLikeCount(data.vibelog.like_count);
-          }
-        })
-        .catch(() => {
-          // Ignore errors - fall back to prop value
-        });
+    if (vibelogId) {
+      let mounted = true;
 
-      // Check if user has liked this vibelog
+      // Single API call that returns both isLiked and like_count
       fetch(`/api/like-vibelog/${vibelogId}`, { method: 'GET' })
         .then(res => {
+          if (!mounted) {
+            return null;
+          }
           if (res.ok) {
             return res.json();
           }
           return null;
         })
         .then(data => {
-          if (data?.isLiked !== undefined) {
+          if (!mounted || !data) {
+            return;
+          }
+
+          // Update both state values atomically from single response
+          if (data.isLiked !== undefined) {
             setIsLiked(data.isLiked);
           }
+          if (data.like_count !== undefined) {
+            setLikeCount(data.like_count);
+          }
         })
-        .catch(() => {
-          // Ignore errors - user might not be logged in or vibelog might not exist
+        .catch(err => {
+          // Silent fail - use prop values as fallback
+          if (process.env.NODE_ENV !== 'production') {
+            console.warn('Failed to fetch like status:', err);
+          }
         });
+
+      return () => {
+        mounted = false;
+      };
     }
-  }, [user?.id, vibelogId]);
+  }, [vibelogId, user?.id]);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -319,14 +324,17 @@ export default function VibelogActions({
     setShowDeleteConfirm(false);
   };
 
-  const handleLikeClick = async () => {
+  const handleLikeClick = useCallback(async () => {
     if (!user) {
-      // Redirect to sign in
-      window.location.href = '/auth/signin';
+      toast.error('Please sign in to like vibelogs');
+      setTimeout(() => {
+        window.location.href = '/auth/signin';
+      }, 1000);
       return;
     }
 
-    if (isLiking) {
+    // Prevent rapid clicking - wait for previous request to complete
+    if (isLiking || lastLikeRequestRef.current) {
       return;
     }
 
@@ -342,32 +350,56 @@ export default function VibelogActions({
     setLikeCount(newLikeCount);
     setIsLiking(true);
 
-    try {
-      const method = newLikedState ? 'POST' : 'DELETE';
-      const response = await fetch(`/api/like-vibelog/${vibelogId}`, {
-        method,
-      });
+    // Create and track the request promise
+    const likeRequest = (async () => {
+      try {
+        const method = newLikedState ? 'POST' : 'DELETE';
+        const response = await fetch(`/api/like-vibelog/${vibelogId}`, {
+          method,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
 
-      if (!response.ok) {
-        // Revert optimistic update on error
+        const data = await response.json();
+
+        if (!response.ok) {
+          // Revert optimistic update on error
+          setIsLiked(originalLikedState);
+          setLikeCount(originalLikeCount);
+
+          // Show user-friendly error message
+          if (response.status === 401) {
+            toast.error('Please sign in to like vibelogs');
+          } else if (response.status === 404) {
+            toast.error('Vibelog not found');
+          } else {
+            toast.error(data.error || 'Failed to update like');
+          }
+          return;
+        }
+
+        // Update with server response (source of truth)
+        setIsLiked(data.liked ?? newLikedState);
+        setLikeCount(data.like_count ?? newLikeCount);
+
+        // Show subtle feedback only on errors (no toast spam on success)
+        // Instagram/Twitter style - just the animation is feedback enough
+      } catch (error) {
+        console.error('Error toggling like:', error);
+        // Revert on error using original values
         setIsLiked(originalLikedState);
         setLikeCount(originalLikeCount);
-        throw new Error('Failed to toggle like');
+        toast.error('Network error. Please try again.');
+      } finally {
+        setIsLiking(false);
+        lastLikeRequestRef.current = null;
       }
+    })();
 
-      const data = await response.json();
-      // Update with server response (source of truth)
-      setIsLiked(data.liked ?? newLikedState);
-      setLikeCount(data.like_count ?? newLikeCount);
-    } catch (error) {
-      console.error('Error toggling like:', error);
-      // Revert on error using original values
-      setIsLiked(originalLikedState);
-      setLikeCount(originalLikeCount);
-    } finally {
-      setIsLiking(false);
-    }
-  };
+    lastLikeRequestRef.current = likeRequest;
+    await likeRequest;
+  }, [user, isLiking, isLiked, likeCount, vibelogId]);
 
   const isCompact = variant === 'compact';
   const baseButtonClass = isCompact
