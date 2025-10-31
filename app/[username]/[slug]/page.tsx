@@ -229,6 +229,14 @@ export default async function VibelogPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* View tracking pixel - browsers ALWAYS load images, guaranteed to work */}
+      <img
+        src={`/api/track-view/${vibelog.id}`}
+        alt=""
+        width={1}
+        height={1}
+        style={{ position: 'absolute', visibility: 'hidden', pointerEvents: 'none' }}
+      />
       <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Back button */}
         <Link
