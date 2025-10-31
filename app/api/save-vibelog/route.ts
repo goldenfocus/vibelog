@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import OpenAI from 'openai';
 
 import { generatePublicSlug, generateUserSlug, generateVibelogSEO } from '@/lib/seo';
+import { storeTTSAudio, hashTTSContent } from '@/lib/storage';
 import { createServerSupabaseClient } from '@/lib/supabase';
+import { createServerAdminClient } from '@/lib/supabaseAdmin';
 
 export const runtime = 'nodejs';
 
@@ -213,6 +216,111 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
       console.log('✅ [VIBELOG-SAVE] Direct insert successful:', vibelogId, 'Slug:', finalSlug);
       console.log('📍 [VIBELOG-SAVE] Public URL:', publicUrl);
+
+      // === STEP 4: GENERATE TTS AUDIO IN BACKGROUND (if no audio provided) ===
+      // Generate TTS audio automatically for instant playback
+      if (!vibelogData.audio_url && fullContent) {
+        // Fire and forget - don't block the response
+        (async () => {
+          try {
+            console.log('🎙️ [VIBELOG-SAVE] Generating TTS audio in background...');
+
+            // Clean content for TTS (remove markdown)
+            const cleanContent = fullContent
+              .replace(/#{1,6}\s/g, '') // Remove headers
+              .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
+              .replace(/\*(.*?)\*/g, '$1') // Remove italic
+              .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove links
+              .replace(/`([^`]+)`/g, '$1') // Remove code
+              .replace(/\n\s*\n/g, '\n') // Remove extra newlines
+              .trim();
+
+            // Truncate if too long (OpenAI TTS has 4096 char limit)
+            const ttsText =
+              cleanContent.length > 4000 ? cleanContent.substring(0, 4000) + '...' : cleanContent;
+
+            if (!ttsText || ttsText.length < 10) {
+              console.log('⚠️ [VIBELOG-SAVE] Content too short for TTS, skipping');
+              return;
+            }
+
+            // Generate cache key
+            const contentHash = hashTTSContent(ttsText, 'shimmer');
+            const adminSupabase = await createServerAdminClient();
+
+            // Check cache first
+            const { data: cachedEntry } = await adminSupabase
+              .from('tts_cache')
+              .select('audio_url')
+              .eq('content_hash', contentHash)
+              .single();
+
+            let audioUrl: string | null = null;
+
+            if (cachedEntry?.audio_url) {
+              // Use cached audio
+              audioUrl = cachedEntry.audio_url;
+              console.log('✅ [VIBELOG-SAVE] Using cached TTS audio');
+            } else if (
+              process.env.OPENAI_API_KEY &&
+              process.env.OPENAI_API_KEY !== 'dummy_key' &&
+              process.env.OPENAI_API_KEY !== 'your_openai_api_key_here'
+            ) {
+              // Generate new TTS
+              const openai = new OpenAI({
+                apiKey: process.env.OPENAI_API_KEY,
+                timeout: 60_000,
+              });
+
+              const mp3 = await openai.audio.speech.create({
+                model: 'tts-1',
+                voice: 'shimmer',
+                input: ttsText,
+                response_format: 'mp3',
+              });
+
+              const audioBuffer = Buffer.from(await mp3.arrayBuffer());
+
+              // Store in cache and get URL
+              audioUrl = await storeTTSAudio(contentHash, audioBuffer);
+
+              // Save to cache table
+              await adminSupabase.from('tts_cache').upsert(
+                {
+                  content_hash: contentHash,
+                  text_content: ttsText,
+                  voice: 'shimmer',
+                  audio_url: audioUrl,
+                  audio_size_bytes: audioBuffer.length,
+                  last_accessed_at: new Date().toISOString(),
+                  access_count: 1,
+                },
+                {
+                  onConflict: 'content_hash',
+                }
+              );
+
+              console.log('✅ [VIBELOG-SAVE] TTS audio generated and cached');
+            }
+
+            // Update vibelog with audio URL
+            if (audioUrl) {
+              await adminSupabase
+                .from('vibelogs')
+                .update({
+                  audio_url: audioUrl,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', vibelogId);
+
+              console.log('✅ [VIBELOG-SAVE] Audio URL saved to vibelog');
+            }
+          } catch (error) {
+            // Don't fail the save if TTS generation fails
+            console.error('⚠️ [VIBELOG-SAVE] TTS generation failed (non-critical):', error);
+          }
+        })();
+      }
 
       return NextResponse.json({
         success: true,
