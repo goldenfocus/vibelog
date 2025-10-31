@@ -3,6 +3,7 @@
 import { Clock, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
+import { useAuth } from '@/components/providers/AuthProvider';
 import VibelogActions from '@/components/VibelogActions';
 import VibelogContentRenderer from '@/components/VibelogContentRenderer';
 
@@ -38,6 +39,8 @@ interface VibelogCardProps {
 
 export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
   const router = useRouter();
+  const { user } = useAuth(); // Check if user is logged in
+  const isLoggedIn = !!user;
 
   // Show ONLY first 200 chars of teaser as preview
   // Remove the title from content (it's usually the first line starting with #)
@@ -137,7 +140,12 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
   };
 
   return (
-    <article className="group relative rounded-2xl border border-border/50 bg-gradient-to-br from-background via-background to-background/50 p-6 transition-all duration-300 hover:border-electric/30 hover:shadow-lg hover:shadow-electric/5">
+    <article
+      className={`group relative rounded-2xl border border-border/50 bg-gradient-to-br from-background via-background to-background/50 p-6 transition-all duration-300 hover:border-electric/30 hover:shadow-lg hover:shadow-electric/5 ${
+        isLoggedIn ? 'cursor-pointer' : ''
+      }`}
+      onClick={isLoggedIn ? handleReadMore : undefined}
+    >
       {/* Cover Image */}
       {vibelog.cover_image_url && (
         <div className="mb-4 overflow-hidden rounded-xl">
@@ -187,24 +195,27 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
           content={displayContent}
           isTeaser={isTeaser}
           onReadMore={handleReadMore}
+          showCTA={!isLoggedIn} // Only show CTA for anonymous users
         />
       </div>
 
-      {/* Actions - Unified Component */}
-      <VibelogActions
-        vibelogId={vibelog.id}
-        content={vibelog.content}
-        title={vibelog.title}
-        author={vibelog.author.display_name}
-        authorId={vibelog.user_id}
-        authorUsername={vibelog.author.username}
-        audioUrl={vibelog.audio_url || undefined}
-        createdAt={vibelog.created_at}
-        onEdit={handleEdit}
-        onRemix={handleRemix}
-        onShare={handleShare}
-        variant="compact"
-      />
+      {/* Actions - Unified Component - Stop click propagation */}
+      <div onClick={e => e.stopPropagation()}>
+        <VibelogActions
+          vibelogId={vibelog.id}
+          content={vibelog.content}
+          title={vibelog.title}
+          author={vibelog.author.display_name}
+          authorId={vibelog.user_id}
+          authorUsername={vibelog.author.username}
+          audioUrl={vibelog.audio_url || undefined}
+          createdAt={vibelog.created_at}
+          onEdit={handleEdit}
+          onRemix={handleRemix}
+          onShare={handleShare}
+          variant="compact"
+        />
+      </div>
     </article>
   );
 }

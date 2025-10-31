@@ -9,12 +9,14 @@ interface VibelogContentRendererProps {
   content: string;
   isTeaser?: boolean;
   onReadMore?: () => void;
+  showCTA?: boolean; // Control whether to show CTA (only for anonymous users)
 }
 
 export default function VibelogContentRenderer({
   content,
   isTeaser = false,
   onReadMore,
+  showCTA = true, // Default to true for backward compatibility
 }: VibelogContentRendererProps) {
   return (
     <article className="max-w-none">
@@ -121,8 +123,8 @@ export default function VibelogContentRenderer({
         {content}
       </ReactMarkdown>
 
-      {/* Read More CTA - Show when viewing teaser content */}
-      {isTeaser && onReadMore && (
+      {/* Read More CTA - Only show for anonymous users */}
+      {isTeaser && onReadMore && showCTA && (
         <div className="mt-8 rounded-2xl border border-electric/20 bg-gradient-to-r from-electric/5 via-electric/10 to-transparent p-6 backdrop-blur-sm">
           <div className="flex items-start gap-4">
             <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-electric/10">

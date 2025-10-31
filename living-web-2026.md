@@ -10,8 +10,8 @@ Before touching any code, read these documents in order:
 
 1. **`branding.md`** - Brand identity, voice, and values
 2. **`living-web-2026.md`** (this file) - The complete vision and philosophy
-3. **`go.md`** - AI coordination system and task workflow
-4. **Architecture docs** in `/docs` - Technical foundation
+3. **`engineering.md`** - Development standards and code quality
+4. **`pivot.md`** - Current product strategy and roadmap
 
 These aren't just docs — they're the soul of what we're building.
 
@@ -428,6 +428,6 @@ Every commit matters. Every feature should ask: _"Does this help the web feel al
 If yes, build it with love.
 If no, question it deeply.
 
-Now go read `go.md` and claim your first task.
+Now explore the codebase with Cursor 2.0 and build something amazing.
 
 Let's vibe it. 🌌

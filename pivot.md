@@ -480,7 +480,7 @@ CREATE TABLE vibelog_edit_history (
 
 ### Internal Docs
 
-- `vision.md` - Long-term product vision (still relevant, execution changed)
+- `living-web-2026.md` - Long-term product vision and philosophy
 - `branding.md` - Voice, tone, terminology (update "vibelog" → "convo")
 - `engineering.md` - Technical standards (add voice/AI sections)
 - `api.md` - API design patterns (add conversational API endpoints)
