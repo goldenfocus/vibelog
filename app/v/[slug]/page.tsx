@@ -174,7 +174,7 @@ export default async function PublicVibelogPage({ params }: PageProps) {
         {vibelogWithAuthor.audio_url && (
           <div className="mt-12">
             <h3 className="mb-4 text-lg font-semibold">Listen to this VibeLog</h3>
-            <audio controls className="w-full">
+            <audio controls className="w-full" preload="auto">
               <source src={vibelogWithAuthor.audio_url} type="audio/webm" />
               <source src={vibelogWithAuthor.audio_url} type="audio/mp3" />
               Your browser does not support the audio element.
