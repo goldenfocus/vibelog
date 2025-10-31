@@ -530,7 +530,7 @@ export default function VibelogActions({
         {/* Like Button */}
         <button
           onClick={handleLikeClick}
-          disabled={isLiking || !user}
+          disabled={isLiking}
           className={`${baseButtonClass} ${isLiked ? 'text-red-500 hover:text-red-600' : ''}`}
           title={user ? (isLiked ? 'Unlike' : 'Like') : 'Sign in to like'}
           data-testid="like-button"
