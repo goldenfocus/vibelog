@@ -16,11 +16,6 @@ export interface ImageFilter {
       saturation?: number;
       hue?: number;
     };
-    tint?: {
-      r: number;
-      g: number;
-      b: number;
-    };
     grayscale?: boolean;
     linear?: {
       a: number;
@@ -46,11 +41,11 @@ export const IMAGE_FILTERS: ImageFilter[] = [
       modulate: {
         brightness: 0.95,
         saturation: 0.85,
+        hue: 15,
       },
-      tint: {
-        r: 255,
-        g: 245,
-        b: 220,
+      linear: {
+        a: 0.9,
+        b: 0,
       },
     },
   },
@@ -78,10 +73,9 @@ export const IMAGE_FILTERS: ImageFilter[] = [
         saturation: 1.1,
         hue: -5,
       },
-      tint: {
-        r: 240,
-        g: 248,
-        b: 255,
+      linear: {
+        a: 1.05,
+        b: 0,
       },
     },
   },
@@ -95,11 +89,6 @@ export const IMAGE_FILTERS: ImageFilter[] = [
         brightness: 1.05,
         saturation: 1.2,
         hue: 5,
-      },
-      tint: {
-        r: 255,
-        g: 250,
-        b: 235,
       },
     },
   },
