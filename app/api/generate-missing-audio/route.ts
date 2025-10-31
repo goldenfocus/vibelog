@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-import { storeTTSAudio, hashTTSContent } from '@/lib/storage';
+import { storeTTSAudio } from '@/lib/storage';
 import { createServerAdminClient } from '@/lib/supabaseAdmin';
+import { hashTTSContent } from '@/lib/utils';
 
 export const runtime = 'nodejs';
 

@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
 import { generatePublicSlug, generateUserSlug, generateVibelogSEO } from '@/lib/seo';
-import { storeTTSAudio, hashTTSContent } from '@/lib/storage';
+import { storeTTSAudio } from '@/lib/storage';
 import { createServerSupabaseClient } from '@/lib/supabase';
 import { createServerAdminClient } from '@/lib/supabaseAdmin';
+import { hashTTSContent } from '@/lib/utils';
 
 export const runtime = 'nodejs';
 
