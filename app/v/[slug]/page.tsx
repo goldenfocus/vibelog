@@ -5,8 +5,8 @@ import { notFound, redirect } from 'next/navigation';
 
 import Navigation from '@/components/Navigation';
 import PublicVibelogContent from '@/components/PublicVibelogContent';
+import { ViewTracker } from '@/components/ViewTracker';
 import { createServerSupabaseClient } from '@/lib/supabase';
-import { createServerAdminClient } from '@/lib/supabaseAdmin';
 
 interface PageProps {
   params: Promise<{
@@ -82,27 +82,14 @@ export default async function PublicVibelogPage({ params }: PageProps) {
     redirect(vibelog.redirect_to);
   }
 
-  // Increment view count using admin client (service role) to bypass RLS
-  // Await this in server component to ensure it executes
-  try {
-    const adminSupabase = await createServerAdminClient();
-    const { error: rpcError } = await adminSupabase.rpc('increment_vibelog_view_count', {
-      p_vibelog_id: vibelog.id,
-    });
-    if (rpcError) {
-      console.error('Failed to increment view count:', rpcError);
-    } else {
-      console.log(`📊 View count incremented for ${slug}`);
-    }
-  } catch (error) {
-    console.error('Failed to increment view count (exception):', error);
-  }
-
   const coverImage = vibelog.cover_url || vibelog.cover_image_url;
   const isAnonymous = !vibelog.user_id;
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Client-side view tracking */}
+      <ViewTracker vibelogId={vibelog.id} />
+
       <Navigation />
 
       {/* Main content */}
