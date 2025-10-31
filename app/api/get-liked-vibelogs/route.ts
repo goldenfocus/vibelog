@@ -60,8 +60,8 @@ export async function GET(request: NextRequest) {
     }
     
     // Flatten vibelogs from likes and filter out nulls
+    // Use double cast through unknown to fix TypeScript nested array type error
     const vibelogs = (likes?.map(l => l.vibelogs).filter(Boolean) || []) as unknown as VibelogWithUserId[];
-
     if (vibelogs.length > 0 && vibelogs[0]?.user_id) {
       // Fetch author profiles
       const userIds = [...new Set(vibelogs.map(v => v.user_id).filter(Boolean))] as string[];

@@ -468,7 +468,7 @@ export default function VibelogActions({
             <Heart className={iconClass} fill={isLiked ? 'currentColor' : 'none'} />
           )}
           <span className={labelClass}>
-            {isLiking ? '...' : likeCount > 0 ? likeCount : 'Like'}
+            {isLiking ? '...' : likeCount}
           </span>
         </button>
 
