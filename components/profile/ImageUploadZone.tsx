@@ -71,7 +71,7 @@ export function ImageUploadZone({
   }, []);
 
   const handleCropComplete = useCallback(
-    async (croppedAreaPixels: Area) => {
+    async (croppedAreaPixels: Area, filterId: string) => {
       if (!selectedFile) {
         return;
       }
@@ -80,11 +80,12 @@ export function ImageUploadZone({
       setUploadSuccess(false);
 
       try {
-        // Upload to API with crop data
+        // Upload to API with crop data and filter
         const formData = new FormData();
         formData.append('image', selectedFile);
         formData.append('type', type);
         formData.append('cropData', JSON.stringify(croppedAreaPixels));
+        formData.append('filterId', filterId);
 
         const response = await fetch('/api/profile/upload-image', {
           method: 'POST',
