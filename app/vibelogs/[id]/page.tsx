@@ -8,6 +8,7 @@ import Navigation from '@/components/Navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import VibelogActions from '@/components/VibelogActions';
 import VibelogContentRenderer from '@/components/VibelogContentRenderer';
+import { formatFullDate } from '@/lib/date-utils';
 import type { ExportFormat } from '@/lib/export';
 
 interface VibelogAuthor {
@@ -92,15 +93,6 @@ export default function VibelogDetailPage() {
       router.push(`/auth/signin?returnTo=/vibelogs/${vibelogId}`);
     }
   }, [authLoading, user, error, router, vibelogId]);
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
 
   if (loading || authLoading) {
     return (
@@ -193,7 +185,7 @@ export default function VibelogDetailPage() {
               </div>
 
               <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                <span>{formatDate(vibelog.published_at)}</span>
+                <span>{formatFullDate(vibelog.published_at)}</span>
                 <span>·</span>
                 <div className="flex items-center gap-1">
                   <Clock className="h-4 w-4" />

@@ -6,6 +6,7 @@ import { notFound } from 'next/navigation';
 import { ProfileVibelogs } from '@/components/profile/ProfileVibelogs';
 import { SocialLinks } from '@/components/profile/SocialLinks';
 import { ZoomableImage } from '@/components/profile/ZoomableImage';
+import { formatMonthYear } from '@/lib/date-utils';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
 interface PageProps {
@@ -222,10 +223,7 @@ export default async function ProfilePage({ params }: PageProps) {
   const vibelogs = await getVibelogs(profile.id);
 
   const displayName = profile.display_name || profile.username;
-  const joinDate = new Date(profile.created_at).toLocaleDateString('en-US', {
-    month: 'long',
-    year: 'numeric',
-  });
+  const joinDate = formatMonthYear(profile.created_at);
 
   return (
     <div className="min-h-screen bg-background">

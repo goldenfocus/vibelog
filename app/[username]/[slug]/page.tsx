@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import PublicVibelogContent from '@/components/PublicVibelogContent';
+import { formatFullDate } from '@/lib/date-utils';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
 interface PageProps {
@@ -226,15 +227,6 @@ export default async function VibelogPage({ params }: PageProps) {
     notFound();
   }
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
-
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
@@ -282,7 +274,7 @@ export default async function VibelogPage({ params }: PageProps) {
               <div>
                 <p className="font-medium text-foreground">{vibelog.author.display_name}</p>
                 <p className="text-sm text-muted-foreground">
-                  @{vibelog.author.username} · {formatDate(vibelog.published_at)}
+                  @{vibelog.author.username} · {formatFullDate(vibelog.published_at)}
                 </p>
               </div>
             </div>
