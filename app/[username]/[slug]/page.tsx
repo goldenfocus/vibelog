@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 
 import Navigation from '@/components/Navigation';
 import PublicVibelogContent from '@/components/PublicVibelogContent';
+import VibelogEditButton from '@/components/VibelogEditButton';
 import { formatFullDate } from '@/lib/date-utils';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
@@ -280,18 +281,31 @@ export default async function VibelogPage({ params }: PageProps) {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                <span>{vibelog.read_time} min read</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Heart className="h-4 w-4" />
-                <span>{vibelog.like_count}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Share2 className="h-4 w-4" />
-                <span>{vibelog.share_count}</span>
+            <div className="flex items-center gap-4">
+              <VibelogEditButton
+                vibelog={{
+                  id: vibelog.id,
+                  title: vibelog.title,
+                  content: vibelog.content,
+                  teaser: vibelog.teaser,
+                  cover_image_url: vibelog.cover_image_url,
+                  cover_image_alt: vibelog.title,
+                  user_id: vibelog.user_id,
+                }}
+              />
+              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  <span>{vibelog.read_time} min read</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Heart className="h-4 w-4" />
+                  <span>{vibelog.like_count}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Share2 className="h-4 w-4" />
+                  <span>{vibelog.share_count}</span>
+                </div>
               </div>
             </div>
           </div>
