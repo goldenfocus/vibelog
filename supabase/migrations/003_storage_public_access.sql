@@ -6,13 +6,21 @@ insert into storage.buckets (id, name, public)
 values ('vibelogs', 'vibelogs', true)
 on conflict (id) do update set public = true;
 
+-- Drop existing policies if they exist (safe to re-run)
+drop policy if exists "Public read access for vibelogs" on storage.objects;
+drop policy if exists "Authenticated users can upload to own folder" on storage.objects;
+drop policy if exists "Users can update own files" on storage.objects;
+drop policy if exists "Users can delete own files" on storage.objects;
+drop policy if exists "Public read access for tts-audio" on storage.objects;
+drop policy if exists "Service role can manage TTS files" on storage.objects;
+
 -- Allow public read access to vibelogs bucket
-create policy if not exists "Public read access for vibelogs"
+create policy "Public read access for vibelogs"
 on storage.objects for select
 using (bucket_id = 'vibelogs');
 
 -- Allow authenticated users to upload to their own folder
-create policy if not exists "Authenticated users can upload to own folder"
+create policy "Authenticated users can upload to own folder"
 on storage.objects for insert
 to authenticated
 with check (
@@ -21,7 +29,7 @@ with check (
 );
 
 -- Allow users to update their own files
-create policy if not exists "Users can update own files"
+create policy "Users can update own files"
 on storage.objects for update
 to authenticated
 using (
@@ -34,7 +42,7 @@ with check (
 );
 
 -- Allow users to delete their own files
-create policy if not exists "Users can delete own files"
+create policy "Users can delete own files"
 on storage.objects for delete
 to authenticated
 using (
@@ -48,12 +56,12 @@ values ('tts-audio', 'tts-audio', true)
 on conflict (id) do update set public = true;
 
 -- Allow public read access to TTS bucket
-create policy if not exists "Public read access for tts-audio"
+create policy "Public read access for tts-audio"
 on storage.objects for select
 using (bucket_id = 'tts-audio');
 
 -- Only service role can manage TTS cache
-create policy if not exists "Service role can manage TTS files"
+create policy "Service role can manage TTS files"
 on storage.objects for all
 to service_role
 using (bucket_id = 'tts-audio')
