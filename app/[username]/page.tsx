@@ -1,8 +1,8 @@
-import { Calendar, Eye, FileText, ArrowLeft } from 'lucide-react';
+import { Calendar, Eye, FileText } from 'lucide-react';
 import { Metadata } from 'next';
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
+import Navigation from '@/components/Navigation';
 import { ProfileVibelogs } from '@/components/profile/ProfileVibelogs';
 import { SocialLinks } from '@/components/profile/SocialLinks';
 import { ZoomableImage } from '@/components/profile/ZoomableImage';
@@ -227,18 +227,7 @@ export default async function ProfilePage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Back button */}
-      <div className="border-b border-border/50">
-        <div className="mx-auto max-w-5xl px-4 py-3">
-          <Link
-            href="/community"
-            className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Community
-          </Link>
-        </div>
-      </div>
+      <Navigation />
 
       {/* Profile Header */}
       <div className="relative">

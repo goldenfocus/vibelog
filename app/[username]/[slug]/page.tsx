@@ -1,8 +1,9 @@
-import { Clock, Heart, Share2, User, ArrowLeft } from 'lucide-react';
+import { Clock, Heart, Share2, User } from 'lucide-react';
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
+import Navigation from '@/components/Navigation';
 import PublicVibelogContent from '@/components/PublicVibelogContent';
 import { formatFullDate } from '@/lib/date-utils';
 import { createServerSupabaseClient } from '@/lib/supabase';
@@ -237,16 +238,9 @@ export default async function VibelogPage({ params }: PageProps) {
         height={1}
         style={{ position: 'absolute', visibility: 'hidden', pointerEvents: 'none' }}
       />
-      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* Back button */}
-        <Link
-          href="/"
-          className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-electric"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Home
-        </Link>
+      <Navigation />
 
+      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Vibelog article */}
         <article className="rounded-2xl border border-border/50 bg-gradient-to-br from-background via-background to-background/50 p-6 sm:p-8">
           {/* Cover Image */}
