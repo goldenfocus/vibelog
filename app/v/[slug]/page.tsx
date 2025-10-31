@@ -81,14 +81,14 @@ export default async function PublicVibelogPage({ params }: PageProps) {
     redirect(vibelog.redirect_to);
   }
 
-  // Increment view count (fire and forget)
-  supabase
-    .from('vibelogs')
-    .update({ view_count: vibelog.view_count + 1 })
-    .eq('id', vibelog.id)
-    .then(() => {
-      console.log(`📊 View count incremented for ${slug}`);
-    });
+  // Increment view count using database function (bypasses RLS)
+  // Await this in server component to ensure it executes
+  try {
+    await supabase.rpc('increment_vibelog_view_count', { p_vibelog_id: vibelog.id });
+    console.log(`📊 View count incremented for ${slug}`);
+  } catch (error) {
+    console.error('Failed to increment view count:', error);
+  }
 
   const coverImage = vibelog.cover_url || vibelog.cover_image_url;
   const isAnonymous = !vibelog.user_id;
