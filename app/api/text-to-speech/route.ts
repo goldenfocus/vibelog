@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
 import { rateLimit, tooManyResponse } from '@/lib/rateLimit';
+import { storeTTSAudio, TTS_BUCKET, extractTTSPathFromUrl } from '@/lib/storage';
 import { createServerSupabaseClient } from '@/lib/supabase';
+import { createServerAdminClient } from '@/lib/supabaseAdmin';
+import { hashTTSContent } from '@/lib/utils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,31 +16,37 @@ export async function POST(request: NextRequest) {
 
     // Limits: logged-in 10000 per hour; anonymous 10000 per day
     const isDev = process.env.NODE_ENV !== 'production';
-    const baseOpts = userId ? { limit: 10000, window: '1 h' as const } : { limit: 10000, window: '24 h' as const };
+    const baseOpts = userId
+      ? { limit: 10000, window: '1 h' as const }
+      : { limit: 10000, window: '24 h' as const };
     const opts = isDev ? { limit: 10000, window: '15 m' as const } : baseOpts;
     const rl = await rateLimit(request, 'text-to-speech', opts, userId || undefined);
 
     if (!rl.success) {
       if (!userId) {
-        return NextResponse.json({
-          error: 'Daily limit reached',
-          message: 'You\'ve used your 10000 free text-to-speech generations today. Sign in with Google to get 10000 per hour!',
-          upgrade: {
-            action: 'Sign in with Google',
-            benefits: [
-              '10000 requests per hour (vs 10000 per day)',
-              'Higher quality voice synthesis',
-              'Multiple voice options',
-              'Faster processing priority'
-            ]
+        return NextResponse.json(
+          {
+            error: 'Daily limit reached',
+            message:
+              "You've used your 10000 free text-to-speech generations today. Sign in with Google to get 10000 per hour!",
+            upgrade: {
+              action: 'Sign in with Google',
+              benefits: [
+                '10000 requests per hour (vs 10000 per day)',
+                'Higher quality voice synthesis',
+                'Multiple voice options',
+                'Faster processing priority',
+              ],
+            },
+            ...rl,
           },
-          ...rl
-        }, {
-          status: 429,
-          headers: {
-            'Retry-After': String(Math.ceil(((rl.reset || 0) - Date.now()) / 1000))
+          {
+            status: 429,
+            headers: {
+              'Retry-After': String(Math.ceil(((rl.reset || 0) - Date.now()) / 1000)),
+            },
           }
-        });
+        );
       }
       return tooManyResponse(rl);
     }
@@ -50,35 +59,133 @@ export async function POST(request: NextRequest) {
 
     // Validate text length (OpenAI TTS has a 4096 character limit)
     if (text.length > 4000) {
-      return NextResponse.json({
-        error: 'Text too long',
-        message: 'Text must be under 4000 characters for text-to-speech conversion'
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: 'Text too long',
+          message: 'Text must be under 4000 characters for text-to-speech conversion',
+        },
+        { status: 400 }
+      );
+    }
+
+    // Generate cache key (hash of text + voice)
+    const contentHash = hashTTSContent(text, voice);
+    const adminSupabase = await createServerAdminClient();
+
+    // Check cache first
+    const { data: cachedEntry } = await adminSupabase
+      .from('tts_cache')
+      .select('audio_url, audio_size_bytes')
+      .eq('content_hash', contentHash)
+      .single();
+
+    if (cachedEntry?.audio_url) {
+      // Cache hit! Increment access count and return cached audio
+      await adminSupabase.rpc('increment_tts_cache_access', {
+        p_content_hash: contentHash,
+      });
+
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('✅ TTS cache hit for hash:', contentHash.substring(0, 8) + '...');
+      }
+
+      // Fetch cached audio from storage and return it
+      try {
+        // Extract storage path from cached URL
+        const storagePath = extractTTSPathFromUrl(cachedEntry.audio_url);
+
+        const { data: audioData, error: downloadError } = await adminSupabase.storage
+          .from(TTS_BUCKET)
+          .download(storagePath);
+
+        if (downloadError || !audioData) {
+          // Cache entry exists but file missing - regenerate
+          console.warn('Cached audio file missing, regenerating:', downloadError);
+        } else {
+          const audioBuffer = Buffer.from(await audioData.arrayBuffer());
+          return new NextResponse(audioBuffer, {
+            headers: {
+              'Content-Type': 'audio/mpeg',
+              'Content-Length': audioBuffer.length.toString(),
+              'Cache-Control': 'public, max-age=31536000', // Cache for 1 year (immutable)
+              'X-TTS-Cache': 'hit',
+            },
+          });
+        }
+      } catch (error) {
+        // Fallback: regenerate if download fails
+        console.warn('Failed to fetch cached audio, regenerating:', error);
+      }
     }
 
     if (process.env.NODE_ENV !== 'production') {
-      console.log('Generating TTS for text:', text.substring(0, 100) + '...', 'with voice:', voice);
+      console.log(
+        '🔄 TTS cache miss, generating for text:',
+        text.substring(0, 100) + '...',
+        'with voice:',
+        voice
+      );
     }
 
     // Check if we have a real API key, otherwise return mock response
-    if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === 'dummy_key' || process.env.OPENAI_API_KEY === 'your_openai_api_key_here') {
+    if (
+      !process.env.OPENAI_API_KEY ||
+      process.env.OPENAI_API_KEY === 'dummy_key' ||
+      process.env.OPENAI_API_KEY === 'your_openai_api_key_here'
+    ) {
       console.log('🧪 Using mock TTS response for development/testing');
 
       // Return a small silent audio file as mock
       const mockAudioData = new Uint8Array([
         // Minimal WAV file header for silence (44 bytes + minimal data)
-        0x52, 0x49, 0x46, 0x46, // "RIFF"
-        0x28, 0x00, 0x00, 0x00, // File size - 8
-        0x57, 0x41, 0x56, 0x45, // "WAVE"
-        0x66, 0x6D, 0x74, 0x20, // "fmt "
-        0x10, 0x00, 0x00, 0x00, // Subchunk1Size
-        0x01, 0x00, 0x01, 0x00, // AudioFormat, NumChannels
-        0x44, 0xAC, 0x00, 0x00, // SampleRate (44100)
-        0x88, 0x58, 0x01, 0x00, // ByteRate
-        0x02, 0x00, 0x10, 0x00, // BlockAlign, BitsPerSample
-        0x64, 0x61, 0x74, 0x61, // "data"
-        0x04, 0x00, 0x00, 0x00, // Data size
-        0x00, 0x00, 0x00, 0x00  // Silence data
+        0x52,
+        0x49,
+        0x46,
+        0x46, // "RIFF"
+        0x28,
+        0x00,
+        0x00,
+        0x00, // File size - 8
+        0x57,
+        0x41,
+        0x56,
+        0x45, // "WAVE"
+        0x66,
+        0x6d,
+        0x74,
+        0x20, // "fmt "
+        0x10,
+        0x00,
+        0x00,
+        0x00, // Subchunk1Size
+        0x01,
+        0x00,
+        0x01,
+        0x00, // AudioFormat, NumChannels
+        0x44,
+        0xac,
+        0x00,
+        0x00, // SampleRate (44100)
+        0x88,
+        0x58,
+        0x01,
+        0x00, // ByteRate
+        0x02,
+        0x00,
+        0x10,
+        0x00, // BlockAlign, BitsPerSample
+        0x64,
+        0x61,
+        0x74,
+        0x61, // "data"
+        0x04,
+        0x00,
+        0x00,
+        0x00, // Data size
+        0x00,
+        0x00,
+        0x00,
+        0x00, // Silence data
       ]);
 
       return new NextResponse(mockAudioData, {
@@ -109,14 +216,44 @@ export async function POST(request: NextRequest) {
       console.log('TTS generation completed, audio size:', audioBuffer.length, 'bytes');
     }
 
+    // Store in cache and storage for future use
+    try {
+      // Store audio file in Supabase storage
+      const audioUrl = await storeTTSAudio(contentHash, audioBuffer);
+
+      // Save to cache table
+      await adminSupabase.from('tts_cache').upsert(
+        {
+          content_hash: contentHash,
+          text_content: text,
+          voice: voice,
+          audio_url: audioUrl,
+          audio_size_bytes: audioBuffer.length,
+          last_accessed_at: new Date().toISOString(),
+          access_count: 1,
+        },
+        {
+          onConflict: 'content_hash',
+          // If already exists, update URL and size (shouldn't happen with hash, but safe)
+        }
+      );
+
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('💾 TTS cached successfully:', audioUrl);
+      }
+    } catch (cacheError) {
+      // Don't fail the request if caching fails - still return the audio
+      console.error('Failed to cache TTS audio:', cacheError);
+    }
+
     return new NextResponse(audioBuffer, {
       headers: {
         'Content-Type': 'audio/mpeg',
         'Content-Length': audioBuffer.length.toString(),
         'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
+        'X-TTS-Cache': 'miss',
       },
     });
-
   } catch (error) {
     console.error('TTS generation error:', error);
 
@@ -136,14 +273,11 @@ export async function POST(request: NextRequest) {
         console.error('Detailed TTS error:', {
           message: error.message,
           name: error.name,
-          stack: error.stack
+          stack: error.stack,
         });
       }
     }
 
-    return NextResponse.json(
-      { error: errorMessage },
-      { status: statusCode }
-    );
+    return NextResponse.json({ error: errorMessage }, { status: statusCode });
   }
 }

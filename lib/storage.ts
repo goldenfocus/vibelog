@@ -175,3 +175,74 @@ export function getCategoryFromMimeType(mimeType: string): FileCategory {
 
   throw new Error(`Unsupported mime type: ${mimeType}`);
 }
+
+/**
+ * TTS Storage Bucket
+ */
+export const TTS_BUCKET = 'tts-audio';
+
+/**
+ * Generate storage path for TTS audio file
+ * Uses hash-based directory structure to avoid too many files in one folder
+ * Format: tts/{hash[0:2]}/{hash[2:4]}/{hash}.mp3
+ */
+export function generateTTSPath(contentHash: string): string {
+  // Use first 2 chars and next 2 chars as subdirectories for better organization
+  const dir1 = contentHash.substring(0, 2);
+  const dir2 = contentHash.substring(2, 4);
+  return `tts/${dir1}/${dir2}/${contentHash}.mp3`;
+}
+
+/**
+ * Store TTS audio file in Supabase storage
+ */
+export async function storeTTSAudio(contentHash: string, audioBuffer: Buffer): Promise<string> {
+  const supabase = await createServerAdminClient();
+  const storagePath = generateTTSPath(contentHash);
+
+  const { error } = await supabase.storage.from(TTS_BUCKET).upload(storagePath, audioBuffer, {
+    contentType: 'audio/mpeg',
+    upsert: true, // Overwrite if exists (shouldn't happen with hash, but safe)
+  });
+
+  if (error) {
+    console.error('Failed to store TTS audio:', error);
+    throw new Error(`TTS storage failed: ${error.message}`);
+  }
+
+  // Return public URL
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (supabaseUrl) {
+    return `${supabaseUrl}/storage/v1/object/public/${TTS_BUCKET}/${storagePath}`;
+  }
+
+  return storagePath;
+}
+
+/**
+ * Get public URL for TTS audio file
+ */
+export function getTTSPublicUrl(contentHash: string): string {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (supabaseUrl) {
+    const storagePath = generateTTSPath(contentHash);
+    return `${supabaseUrl}/storage/v1/object/public/${TTS_BUCKET}/${storagePath}`;
+  }
+  const storagePath = generateTTSPath(contentHash);
+  return `/${TTS_BUCKET}/${storagePath}`;
+}
+
+/**
+ * Extract storage path from TTS public URL
+ * Converts: {supabase_url}/storage/v1/object/public/{bucket}/{path} → {path}
+ */
+export function extractTTSPathFromUrl(publicUrl: string): string {
+  // URL format: {supabase_url}/storage/v1/object/public/{bucket}/{path}
+  const parts = publicUrl.split('/');
+  const publicIndex = parts.indexOf('public');
+  if (publicIndex === -1) {
+    throw new Error('Invalid TTS public URL format');
+  }
+  // Skip bucket name (next element after 'public') and get the rest as path
+  return parts.slice(publicIndex + 2).join('/');
+}
