@@ -102,6 +102,16 @@ export async function POST(request: NextRequest) {
     try {
       let sharpImage = sharp(buffer);
 
+      // Get filter early to check if we need color processing
+      const filter = getFilterById(filterId);
+      const needsColorProcessing = filter.sharp && (filter.sharp.modulate || filter.sharp.linear);
+
+      // Ensure RGB colorspace BEFORE any processing if we'll apply color filters
+      // This prevents Sharp from optimizing to grayscale during subsequent operations
+      if (needsColorProcessing) {
+        sharpImage = sharpImage.toColorspace('srgb');
+      }
+
       // Apply crop if provided
       if (cropData) {
         sharpImage = sharpImage.extract({
@@ -128,15 +138,8 @@ export async function POST(request: NextRequest) {
       }
 
       // Apply filter if not original
-      const filter = getFilterById(filterId);
       if (filter.sharp) {
         const { modulate, grayscale, linear } = filter.sharp;
-
-        // Ensure we're in RGB color space before applying color filters
-        // This prevents Sharp from optimizing to grayscale during resize
-        if (modulate || linear) {
-          sharpImage = sharpImage.toColorspace('srgb');
-        }
 
         // Apply grayscale first if specified
         if (grayscale) {
