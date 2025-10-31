@@ -368,6 +368,15 @@ export default function VibelogActions({
           setIsLiked(originalLikedState);
           setLikeCount(originalLikeCount);
 
+          // Log detailed error for debugging
+          console.error('Like request failed:', {
+            status: response.status,
+            statusText: response.statusText,
+            data,
+            vibelogId,
+            method,
+          });
+
           // Show user-friendly error message
           if (response.status === 401) {
             toast.error('Please sign in to like vibelogs');
@@ -382,6 +391,15 @@ export default function VibelogActions({
         // Update with server response (source of truth)
         setIsLiked(data.liked ?? newLikedState);
         setLikeCount(data.like_count ?? newLikeCount);
+
+        // Log success for debugging
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('Like updated successfully:', {
+            vibelogId,
+            liked: data.liked,
+            likeCount: data.like_count,
+          });
+        }
 
         // Show subtle feedback only on errors (no toast spam on success)
         // Instagram/Twitter style - just the animation is feedback enough
