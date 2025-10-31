@@ -262,7 +262,10 @@ export default async function VibelogPage({ params }: PageProps) {
 
           {/* Author & Meta */}
           <div className="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-border/30 pb-6">
-            <div className="flex items-center gap-3">
+            <Link
+              href={`/@${vibelog.author.username}`}
+              className="flex items-center gap-3 transition-opacity hover:opacity-80"
+            >
               {vibelog.author.avatar_url ? (
                 <img
                   src={vibelog.author.avatar_url}
@@ -275,12 +278,14 @@ export default async function VibelogPage({ params }: PageProps) {
                 </div>
               )}
               <div>
-                <p className="font-medium text-foreground">{vibelog.author.display_name}</p>
-                <p className="text-sm text-muted-foreground">
+                <p className="font-medium text-foreground transition-colors hover:text-electric">
+                  {vibelog.author.display_name}
+                </p>
+                <p className="text-sm text-muted-foreground transition-colors hover:text-foreground">
                   @{vibelog.author.username} · {formatFullDate(vibelog.published_at)}
                 </p>
               </div>
-            </div>
+            </Link>
             <div className="flex items-center gap-4">
               <VibelogEditButton
                 vibelog={{
@@ -344,7 +349,10 @@ export default async function VibelogPage({ params }: PageProps) {
         {/* Author bio section */}
         <div className="mt-8 rounded-2xl border border-border/50 bg-gradient-to-br from-background via-background to-background/50 p-6">
           <h3 className="mb-4 text-xl font-semibold text-foreground">About the Author</h3>
-          <div className="flex items-start gap-4">
+          <Link
+            href={`/@${vibelog.author.username}`}
+            className="flex items-start gap-4 transition-opacity hover:opacity-80"
+          >
             {vibelog.author.avatar_url ? (
               <img
                 src={vibelog.author.avatar_url}
@@ -357,16 +365,17 @@ export default async function VibelogPage({ params }: PageProps) {
               </div>
             )}
             <div className="flex-1">
-              <p className="font-medium text-foreground">{vibelog.author.display_name}</p>
-              <p className="text-sm text-muted-foreground">@{vibelog.author.username}</p>
-              <Link
-                href={`/@${vibelog.author.username}`}
-                className="mt-2 inline-block text-sm font-medium text-electric hover:underline"
-              >
+              <p className="font-medium text-foreground transition-colors hover:text-electric">
+                {vibelog.author.display_name}
+              </p>
+              <p className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+                @{vibelog.author.username}
+              </p>
+              <span className="mt-2 inline-block text-sm font-medium text-electric">
                 View all vibelogs →
-              </Link>
+              </span>
             </div>
-          </div>
+          </Link>
         </div>
       </div>
 
