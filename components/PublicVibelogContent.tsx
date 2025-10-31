@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 import VibelogActions from '@/components/VibelogActions';
 import VibelogContentRenderer from '@/components/VibelogContentRenderer';
@@ -24,6 +25,16 @@ interface PublicVibelogContentProps {
 
 export default function PublicVibelogContent({ vibelog }: PublicVibelogContentProps) {
   const router = useRouter();
+  const [vibelogUrl, setVibelogUrl] = useState<string>('');
+
+  // Set vibelog URL after mount to avoid hydration mismatch
+  useEffect(() => {
+    const isAnonymous = !vibelog.user_id;
+    const url = isAnonymous
+      ? `${window.location.origin}/@anonymous/${vibelog.public_slug}`
+      : `${window.location.origin}/@${vibelog.author?.username}/${vibelog.public_slug}`;
+    setVibelogUrl(url);
+  }, [vibelog.user_id, vibelog.public_slug, vibelog.author?.username]);
 
   const handleRemix = () => {
     // Redirect to homepage with remix content
@@ -86,13 +97,7 @@ export default function PublicVibelogContent({ vibelog }: PublicVibelogContentPr
           author={vibelog.author?.display_name}
           authorId={vibelog.user_id || undefined}
           authorUsername={vibelog.author?.username}
-          vibelogUrl={
-            typeof window !== 'undefined'
-              ? !vibelog.user_id
-                ? `${window.location.origin}/@anonymous/${vibelog.public_slug}`
-                : `${window.location.origin}/@${vibelog.author?.username}/${vibelog.public_slug}`
-              : ''
-          }
+          vibelogUrl={vibelogUrl}
           createdAt={vibelog.created_at}
           audioUrl={vibelog.audio_url || undefined}
           onRemix={handleRemix}
