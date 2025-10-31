@@ -15,19 +15,19 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // Increment view count using admin client (fire and forget)
     const adminSupabase = await createServerAdminClient();
     // Fire and forget - don't wait for response
-    adminSupabase
-      .rpc('increment_vibelog_view_count', {
-        p_vibelog_id: id,
-      })
-      .then(({ error }) => {
+    (async () => {
+      try {
+        const { error } = await adminSupabase.rpc('increment_vibelog_view_count', {
+          p_vibelog_id: id,
+        });
         if (error) {
           console.error('❌ Failed to increment view count:', error);
         }
-      })
-      .catch(error => {
+      } catch (error) {
         // Log error but don't fail the request
         console.error('❌ Exception incrementing view count:', error);
-      });
+      }
+    })();
 
     // Return 1x1 transparent PNG pixel
     return new Response(PIXEL, {
