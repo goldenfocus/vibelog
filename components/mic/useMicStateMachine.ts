@@ -8,6 +8,7 @@ import { useI18n } from '@/components/providers/I18nProvider';
 import { useAudioEngine } from '@/hooks/useAudioEngine';
 import { useAudioPlayback } from '@/hooks/useAudioPlayback';
 import { useBulletproofSave } from '@/hooks/useBulletproofSave';
+import { useProfile } from '@/hooks/useProfile';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useVibelogAPI } from '@/hooks/useVibelogAPI';
 import { useVoiceActivityDetection } from '@/hooks/useVoiceActivityDetection';
@@ -82,17 +83,20 @@ function normaliseUsername(raw?: string | null): string | null {
 
 function buildAttribution(
   isLoggedIn: boolean,
-  user: ReturnType<typeof useAuth>['user']
+  user: ReturnType<typeof useAuth>['user'],
+  profileUsername?: string | null
 ): AttributionDetails {
-  const metadata = user?.user_metadata ?? {};
+  // Use profile username if available (current), otherwise fallback to user_metadata
   const slug =
-    normaliseUsername(metadata.username) ||
-    normaliseUsername(metadata.user_name) ||
-    normaliseUsername(metadata.preferred_username) ||
-    normaliseUsername((user?.email || '').split('@')[0]);
+    profileUsername ||
+    (user?.user_metadata?.username && normaliseUsername(user.user_metadata.username)) ||
+    (user?.user_metadata?.user_name && normaliseUsername(user.user_metadata.user_name)) ||
+    (user?.user_metadata?.preferred_username &&
+      normaliseUsername(user.user_metadata.preferred_username)) ||
+    (user?.email && normaliseUsername(user.email.split('@')[0]));
 
   const handle = slug ? `@${slug}` : '@vibelog_creator';
-  const profileUrl = slug ? `https://vibelog.io/${slug}` : 'https://vibelog.io';
+  const profileUrl = slug ? `https://vibelog.io/@${slug}` : 'https://vibelog.io';
 
   if (isLoggedIn && slug) {
     return {
@@ -139,6 +143,7 @@ export function useMicStateMachine(
   const { remixContent } = options;
   const { t } = useI18n();
   const { user } = useAuth();
+  const { profile } = useProfile(user?.id);
   const isLoggedIn = Boolean(user);
 
   const [recordingState, setRecordingState] = useState<RecordingState>('idle');
@@ -197,7 +202,11 @@ export function useMicStateMachine(
   const vibelogAPI = useVibelogAPI(setUpgradePrompt);
   const { saveVibelog } = useBulletproofSave();
 
-  const attribution = useMemo(() => buildAttribution(isLoggedIn, user), [isLoggedIn, user]);
+  // Use current profile username (not cached user_metadata) for attribution
+  const attribution = useMemo(
+    () => buildAttribution(isLoggedIn, user, profile?.username),
+    [isLoggedIn, user, profile?.username]
+  );
 
   const parsedVibelog = useMemo(() => splitTitleFromMarkdown(vibelogContent), [vibelogContent]);
 

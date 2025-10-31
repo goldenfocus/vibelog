@@ -64,10 +64,10 @@ export default async function PublicVibelogPage({ params }: PageProps) {
   const { slug } = await params;
   const supabase = await createServerSupabaseClient();
 
-  // Fetch the vibelog by public_slug with author data
+  // Fetch the vibelog by public_slug
   const { data: vibelog, error } = await supabase
     .from('vibelogs')
-    .select('*, author:profiles!user_id(username, display_name)')
+    .select('*')
     .eq('public_slug', slug)
     .single();
 
@@ -76,19 +76,44 @@ export default async function PublicVibelogPage({ params }: PageProps) {
     notFound(); // Use custom branded 404 page
   }
 
+  // Fetch author data separately to ensure we get current username
+  // This ensures we always get the latest username even if it was changed
+  let author = null;
+  if (vibelog.user_id) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('username, display_name, avatar_url')
+      .eq('id', vibelog.user_id)
+      .single();
+
+    if (profile) {
+      author = {
+        username: profile.username,
+        display_name: profile.display_name,
+        avatar_url: profile.avatar_url,
+      };
+    }
+  }
+
+  // Attach author data to vibelog
+  const vibelogWithAuthor = {
+    ...vibelog,
+    author,
+  };
+
   // Check if this post has been claimed and should redirect
   if (vibelog.redirect_to) {
     redirect(vibelog.redirect_to);
   }
 
-  const coverImage = vibelog.cover_url || vibelog.cover_image_url;
-  const isAnonymous = !vibelog.user_id;
+  const coverImage = vibelogWithAuthor.cover_url || vibelogWithAuthor.cover_image_url;
+  const isAnonymous = !vibelogWithAuthor.user_id;
 
   return (
     <div className="min-h-screen bg-background">
       {/* View tracking pixel - browsers ALWAYS load images, guaranteed to work */}
       <img
-        src={`/api/track-view/${vibelog.id}`}
+        src={`/api/track-view/${vibelogWithAuthor.id}`}
         alt=""
         width={1}
         height={1}
@@ -104,7 +129,7 @@ export default async function PublicVibelogPage({ params }: PageProps) {
           <div className="relative mb-8 aspect-video overflow-hidden rounded-2xl border border-border/10 shadow-lg">
             <Image
               src={coverImage}
-              alt={vibelog.cover_image_alt || vibelog.title}
+              alt={vibelogWithAuthor.cover_image_alt || vibelogWithAuthor.title}
               fill
               className="object-cover"
               priority
@@ -115,18 +140,18 @@ export default async function PublicVibelogPage({ params }: PageProps) {
 
         {/* Title */}
         <h1 className="mb-2 bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-4xl font-bold leading-tight text-transparent dark:from-blue-400 dark:to-violet-400">
-          {vibelog.title}
+          {vibelogWithAuthor.title}
         </h1>
 
         {/* Meta */}
         <div className="mb-8 flex items-center gap-4 text-sm text-muted-foreground">
-          <span>{vibelog.read_time} min read</span>
+          <span>{vibelogWithAuthor.read_time} min read</span>
           <span>•</span>
-          <span>{vibelog.word_count} words</span>
-          {vibelog.view_count > 0 && (
+          <span>{vibelogWithAuthor.word_count} words</span>
+          {vibelogWithAuthor.view_count > 0 && (
             <>
               <span>•</span>
-              <span>{vibelog.view_count} views</span>
+              <span>{vibelogWithAuthor.view_count} views</span>
             </>
           )}
         </div>
@@ -134,24 +159,24 @@ export default async function PublicVibelogPage({ params }: PageProps) {
         {/* Content with formatting + action buttons */}
         <PublicVibelogContent
           vibelog={{
-            id: vibelog.id,
-            title: vibelog.title,
-            content: vibelog.content,
-            user_id: vibelog.user_id,
-            public_slug: vibelog.public_slug,
-            audio_url: vibelog.audio_url,
-            created_at: vibelog.created_at,
-            author: vibelog.author,
+            id: vibelogWithAuthor.id,
+            title: vibelogWithAuthor.title,
+            content: vibelogWithAuthor.content,
+            user_id: vibelogWithAuthor.user_id,
+            public_slug: vibelogWithAuthor.public_slug,
+            audio_url: vibelogWithAuthor.audio_url,
+            created_at: vibelogWithAuthor.created_at,
+            author: vibelogWithAuthor.author,
           }}
         />
 
         {/* Audio player if available */}
-        {vibelog.audio_url && (
+        {vibelogWithAuthor.audio_url && (
           <div className="mt-12">
             <h3 className="mb-4 text-lg font-semibold">Listen to this VibeLog</h3>
             <audio controls className="w-full">
-              <source src={vibelog.audio_url} type="audio/webm" />
-              <source src={vibelog.audio_url} type="audio/mp3" />
+              <source src={vibelogWithAuthor.audio_url} type="audio/webm" />
+              <source src={vibelogWithAuthor.audio_url} type="audio/mp3" />
               Your browser does not support the audio element.
             </audio>
           </div>
