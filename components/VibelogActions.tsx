@@ -10,6 +10,8 @@ import {
   Loader2,
   MoreVertical,
   Trash2,
+  Heart,
+  Twitter,
 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 
@@ -28,6 +30,8 @@ interface VibelogActionsProps {
   vibelogUrl?: string;
   createdAt?: string;
   audioUrl?: string;
+  likeCount?: number; // Initial like count
+  isLiked?: boolean; // Initial liked state
   onEdit?: () => void;
   onDelete?: () => Promise<void> | void;
   onRemix?: () => void;
@@ -40,7 +44,7 @@ interface VibelogActionsProps {
 }
 
 export default function VibelogActions({
-  vibelogId: _vibelogId,
+  vibelogId,
   content,
   title,
   author,
@@ -49,6 +53,8 @@ export default function VibelogActions({
   vibelogUrl,
   createdAt,
   audioUrl,
+  likeCount: initialLikeCount = 0,
+  isLiked: initialIsLiked = false,
   onEdit,
   onDelete,
   onRemix,
@@ -63,6 +69,9 @@ export default function VibelogActions({
   const [copySuccess, setCopySuccess] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isLiked, setIsLiked] = useState(initialIsLiked);
+  const [likeCount, setLikeCount] = useState(initialLikeCount);
+  const [isLiking, setIsLiking] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { isPlaying, isLoading, playText, stop, progress } = useTextToSpeech(onUpgradePrompt);
 
@@ -73,6 +82,42 @@ export default function VibelogActions({
 
   // Determine if this is user's own vibelog
   const isOwnVibelog = user?.id && authorId && user.id === authorId;
+
+  // Check if user has liked this vibelog (only if logged in)
+  useEffect(() => {
+    if (user?.id && vibelogId) {
+      // Check like status from API
+      fetch(`/api/like-vibelog/${vibelogId}`, { method: 'GET' })
+        .then(res => {
+          if (res.ok) {
+            return res.json();
+          }
+          return null;
+        })
+        .then(data => {
+          if (data?.isLiked !== undefined) {
+            setIsLiked(data.isLiked);
+          }
+        })
+        .catch(() => {
+          // Ignore errors - user might not be logged in or vibelog might not exist
+        });
+    }
+  }, [user?.id, vibelogId]);
+
+  // Check if user has Twitter connected (for owner only) - Playwright method (FREE)
+  useEffect(() => {
+    if (isOwnVibelog && user?.id) {
+      fetch('/api/twitter/status-playwright')
+        .then(res => res.json())
+        .then(data => {
+          setTwitterConnected(data.connected || false);
+        })
+        .catch(() => {
+          setTwitterConnected(false);
+        });
+    }
+  }, [isOwnVibelog, user?.id]);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -212,7 +257,7 @@ export default function VibelogActions({
     }
 
     // Pass vibelogId so audio can be saved for future users
-    await playText(cleanContent, 'shimmer', _vibelogId);
+    await playText(cleanContent, 'shimmer', vibelogId);
   };
 
   const handleCopyClick = async () => {
@@ -232,6 +277,59 @@ export default function VibelogActions({
   const handleShareClick = async () => {
     if (onShare) {
       await onShare();
+    }
+  };
+
+  const handlePublishToTwitter = async () => {
+    if (!vibelogUrl) {
+      toast.error('Vibelog URL not available');
+      return;
+    }
+
+    setIsPublishingToTwitter(true);
+    try {
+      // Use FREE Playwright method
+      const response = await fetch('/api/twitter/publish-playwright', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          vibelogId: _vibelogId,
+          url: vibelogUrl,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to publish to Twitter');
+      }
+
+      const data = await response.json();
+      if (data.threadUrl) {
+        toast.success('Published to Twitter! (FREE)', {
+          action: {
+            label: 'View Tweet',
+            onClick: () => window.open(data.threadUrl, '_blank'),
+          },
+        });
+      } else {
+        toast.success('Published to Twitter! (FREE)');
+      }
+    } catch (error) {
+      console.error('Twitter publish error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to publish to Twitter';
+      
+      if (errorMessage.includes('credentials') || errorMessage.includes('not found')) {
+        toast.error('Twitter not connected. Please connect your account in settings.', {
+          action: {
+            label: 'Connect',
+            onClick: () => window.location.href = '/settings/profile',
+          },
+        });
+      } else {
+        toast.error(errorMessage);
+      }
+    } finally {
+      setIsPublishingToTwitter(false);
     }
   };
 
@@ -264,6 +362,38 @@ export default function VibelogActions({
 
   const handleCancelDelete = () => {
     setShowDeleteConfirm(false);
+  };
+
+  const handleLikeClick = async () => {
+    if (!user) {
+      // Redirect to sign in
+      window.location.href = '/auth/signin';
+      return;
+    }
+
+    if (isLiking) {
+      return;
+    }
+
+    setIsLiking(true);
+    try {
+      const method = isLiked ? 'DELETE' : 'POST';
+      const response = await fetch(`/api/like-vibelog/${vibelogId}`, {
+        method,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to toggle like');
+      }
+
+      const data = await response.json();
+      setIsLiked(data.liked);
+      setLikeCount(data.like_count);
+    } catch (error) {
+      console.error('Error toggling like:', error);
+    } finally {
+      setIsLiking(false);
+    }
   };
 
   const isCompact = variant === 'compact';
@@ -389,6 +519,44 @@ export default function VibelogActions({
 
           <span className={labelClass}>
             {isLoading ? 'Generating...' : isAudioPlaying || isPlaying ? 'Pause' : 'Listen'}
+          </span>
+        </button>
+
+        {/* Publish to Twitter Button (owner only, if connected) */}
+        {isOwnVibelog && twitterConnected && (
+          <button
+            onClick={handlePublishToTwitter}
+            disabled={isPublishingToTwitter}
+            className={baseButtonClass}
+            title="Publish to Twitter (FREE)"
+            data-testid="publish-twitter-button"
+          >
+            {isPublishingToTwitter ? (
+              <Loader2 className={`${iconClass} animate-spin`} />
+            ) : (
+              <Twitter className={iconClass} />
+            )}
+            <span className={labelClass}>
+              {isPublishingToTwitter ? 'Publishing...' : 'Tweet'}
+            </span>
+          </button>
+        )}
+
+        {/* Like Button */}
+        <button
+          onClick={handleLikeClick}
+          disabled={isLiking || !user}
+          className={`${baseButtonClass} ${isLiked ? 'text-red-500 hover:text-red-600' : ''}`}
+          title={user ? (isLiked ? 'Unlike' : 'Like') : 'Sign in to like'}
+          data-testid="like-button"
+        >
+          {isLiking ? (
+            <Loader2 className={`${iconClass} animate-spin`} />
+          ) : (
+            <Heart className={iconClass} fill={isLiked ? 'currentColor' : 'none'} />
+          )}
+          <span className={labelClass}>
+            {isLiking ? '...' : likeCount > 0 ? likeCount : 'Like'}
           </span>
         </button>
 

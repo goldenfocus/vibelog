@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import Navigation from '@/components/Navigation';
 import { ImageUploadZone } from '@/components/profile/ImageUploadZone';
 import { SocialLinksEditor } from '@/components/profile/SocialLinksEditor';
+import TwitterPasswordConnection from '@/components/settings/TwitterPasswordConnection';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useI18n } from '@/components/providers/I18nProvider';
 import { Button } from '@/components/ui/button';
@@ -31,6 +32,10 @@ export default function ProfileSettingsPage() {
   const [socialLinks, setSocialLinks] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  
+  // Twitter connection status (Playwright method - FREE)
+  const twitterConnected = !!profile?.twitter_username && !!profile?.twitter_password_encrypted;
+  const twitterUsername = profile?.twitter_username as string | null | undefined;
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -225,6 +230,16 @@ export default function ProfileSettingsPage() {
                 />
                 <p className="text-sm text-muted-foreground">{bio.length}/500 characters</p>
               </div>
+            </div>
+          </div>
+
+          {/* Twitter Integration Section (FREE - Playwright) */}
+          <div className="mb-8 overflow-hidden rounded-2xl border border-border/50 bg-card/30 backdrop-blur-sm">
+            <div className="p-6">
+              <TwitterPasswordConnection
+                twitterConnected={twitterConnected}
+                twitterUsername={twitterUsername}
+              />
             </div>
           </div>
 

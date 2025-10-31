@@ -23,6 +23,7 @@ interface Creator {
   total_shares: number;
   created_at: string;
   subscription_tier: string;
+  totalLikes?: number; // Total likes from all vibelogs
   vibelogs?: Vibelog[]; // Latest vibelogs for enhanced search
 }
 
@@ -83,8 +84,23 @@ export default function PeoplePage() {
         return;
       }
 
-      // Fetch latest 3 vibelogs for each creator (for enhanced search)
+      // Calculate total likes per creator from their vibelogs
       const userIds = profiles.map(p => p.id);
+      const { data: vibelogStats } = await supabase
+        .from('vibelogs')
+        .select('user_id, like_count')
+        .in('user_id', userIds)
+        .eq('is_published', true);
+
+      // Aggregate likes per user
+      const likesByUser = new Map<string, number>();
+      vibelogStats?.forEach(v => {
+        if (v.user_id) {
+          likesByUser.set(v.user_id, (likesByUser.get(v.user_id) || 0) + (v.like_count || 0));
+        }
+      });
+
+      // Fetch latest 3 vibelogs for each creator (for enhanced search)
       const { data: vibelogs } = await supabase
         .from('vibelogs')
         .select('id, title, slug, user_id')
@@ -105,10 +121,11 @@ export default function PeoplePage() {
         }
       });
 
-      // Merge vibelogs into creators
+      // Merge vibelogs and likes into creators
       const creatorsWithVibelogs = profiles.map(profile => ({
         ...profile,
         vibelogs: vibelogsByUser.get(profile.id) || [],
+        totalLikes: likesByUser.get(profile.id) || 0,
       }));
 
       setCreators(creatorsWithVibelogs);
@@ -226,7 +243,7 @@ export default function PeoplePage() {
                   avatarUrl={creator.avatar_url}
                   totalVibelogs={creator.total_vibelogs}
                   totalViews={creator.total_views}
-                  totalLikes={0} // TODO: Add likes from vibelogs aggregate
+                  totalLikes={creator.totalLikes || 0}
                   totalRemixes={0} // TODO: Add remixes when implemented
                   joinedDate={creator.created_at}
                   subscriptionTier={creator.subscription_tier}

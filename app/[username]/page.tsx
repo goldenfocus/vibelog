@@ -3,6 +3,7 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
 import Navigation from '@/components/Navigation';
+import { LikedVibelogs } from '@/components/profile/LikedVibelogs';
 import { ProfileVibelogs } from '@/components/profile/ProfileVibelogs';
 import { SocialLinks } from '@/components/profile/SocialLinks';
 import { ZoomableImage } from '@/components/profile/ZoomableImage';
@@ -347,6 +348,13 @@ export default async function ProfilePage({ params }: PageProps) {
             displayName={displayName}
             avatarUrl={profile.avatar_url}
           />
+        </div>
+      </div>
+
+      {/* Liked Vibelogs Section */}
+      <div className="border-t border-border/50 bg-gradient-to-b from-surface-subtle to-background">
+        <div className="mx-auto max-w-5xl px-4 py-12">
+          <LikedVibelogs userId={profile.id} />
         </div>
       </div>
     </div>
