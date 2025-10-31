@@ -44,6 +44,7 @@ export default function VibelogEditModalFull({
   const [isRegeneratingImage, setIsRegeneratingImage] = useState(false);
 
   // Text editing state
+  const [title, setTitle] = useState(vibelog.title);
   const [content, setContent] = useState(vibelog.content);
   const [teaser, setTeaser] = useState(vibelog.teaser || '');
   const [tone, setTone] = useState<string>('');
@@ -115,7 +116,7 @@ export default function VibelogEditModalFull({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: vibelog.title,
+          title: title || vibelog.title,
           summary: teaser || content.substring(0, 200),
           tone: prompt || 'cinematic',
           postId: vibelog.id,
@@ -181,6 +182,7 @@ export default function VibelogEditModalFull({
     try {
       const payload: {
         vibelogId: string;
+        title?: string;
         content: string;
         teaser?: string;
         coverImage?: {
@@ -194,6 +196,10 @@ export default function VibelogEditModalFull({
         content,
       };
 
+      if (title !== vibelog.title) {
+        payload.title = title;
+      }
+
       if (teaser) {
         payload.teaser = teaser;
       }
@@ -201,7 +207,7 @@ export default function VibelogEditModalFull({
       if (coverImage && coverImage !== vibelog.cover_image_url) {
         payload.coverImage = {
           url: coverImage,
-          alt: vibelog.cover_image_alt || vibelog.title,
+          alt: vibelog.cover_image_alt || title || vibelog.title,
           width: 1920,
           height: 1080,
         };
@@ -273,6 +279,20 @@ export default function VibelogEditModalFull({
           {activeTab === 'text' ? (
             <div className="space-y-6">
               {/* Manual Edit */}
+              <div>
+                <Label htmlFor="title" className="mb-2 block">
+                  Title
+                </Label>
+                <input
+                  id="title"
+                  type="text"
+                  value={title}
+                  onChange={e => setTitle(e.target.value)}
+                  className="w-full rounded-lg border border-border/30 bg-background/50 px-4 py-3 text-lg font-semibold text-foreground placeholder-muted-foreground transition-colors focus:border-electric focus:outline-none focus:ring-2 focus:ring-electric/20"
+                  placeholder="Enter vibelog title..."
+                />
+              </div>
+
               <div>
                 <Label htmlFor="content" className="mb-2 block">
                   Content (Markdown)
