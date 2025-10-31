@@ -75,7 +75,7 @@ export default function PublicVibelogContent({ vibelog }: PublicVibelogContentPr
   return (
     <div>
       {/* Content with beautiful formatting */}
-      <VibelogContentRenderer content={contentWithoutDuplicateTitle} />
+      <VibelogContentRenderer content={contentWithoutDuplicateTitle} showCTA={false} />
 
       {/* Action Buttons */}
       <div className="mt-12 border-t border-border/40 pt-8">
