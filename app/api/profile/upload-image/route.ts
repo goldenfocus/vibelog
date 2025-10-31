@@ -157,8 +157,20 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Convert to WebP for better compression (quality 90)
-      buffer = await sharpImage.webp({ quality: 90 }).toBuffer();
+      // Force sRGB colorspace again before WebP conversion to preserve colors
+      // This is critical because WebP encoding can strip color information
+      if (needsColorProcessing) {
+        sharpImage = sharpImage.toColorspace('srgb');
+      }
+
+      // Convert to WebP with full chroma subsampling to preserve colors
+      // chromaSubsampling '4:4:4' prevents color loss (default '4:2:0' strips colors)
+      buffer = await sharpImage
+        .webp({
+          quality: 90,
+          chromaSubsampling: '4:4:4', // Critical for preserving hue shifts!
+        })
+        .toBuffer();
 
       console.log(
         `✨ Image processed:`,
