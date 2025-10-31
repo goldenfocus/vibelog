@@ -2,6 +2,7 @@
 
 import { Clock, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 import { useAuth } from '@/components/providers/AuthProvider';
 import VibelogActions from '@/components/VibelogActions';
@@ -41,6 +42,33 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
   const router = useRouter();
   const { user } = useAuth(); // Check if user is logged in
   const isLoggedIn = !!user;
+
+  // Defer date formatting to client side to avoid hydration mismatch
+  const [formattedDate, setFormattedDate] = useState<string>('');
+
+  useEffect(() => {
+    const formatDate = (dateString: string) => {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMs / 3600000);
+      const diffDays = Math.floor(diffMs / 86400000);
+
+      if (diffMins < 60) {
+        return `${diffMins}m ago`;
+      }
+      if (diffHours < 24) {
+        return `${diffHours}h ago`;
+      }
+      if (diffDays < 7) {
+        return `${diffDays}d ago`;
+      }
+      return date.toLocaleDateString();
+    };
+
+    setFormattedDate(formatDate(vibelog.published_at));
+  }, [vibelog.published_at]);
 
   // Show ONLY first 200 chars of teaser as preview
   // Remove the title from content (it's usually the first line starting with #)
@@ -119,26 +147,6 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 60) {
-      return `${diffMins}m ago`;
-    }
-    if (diffHours < 24) {
-      return `${diffHours}h ago`;
-    }
-    if (diffDays < 7) {
-      return `${diffDays}d ago`;
-    }
-    return date.toLocaleDateString();
-  };
-
   return (
     <article
       className={`group relative rounded-2xl border border-border/50 bg-gradient-to-br from-background via-background to-background/50 p-6 transition-all duration-300 hover:border-electric/30 hover:shadow-lg hover:shadow-electric/5 ${
@@ -174,7 +182,8 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
           <div>
             <p className="font-medium text-foreground">{vibelog.author.display_name}</p>
             <p className="text-sm text-muted-foreground">
-              @{vibelog.author.username} · {formatDate(vibelog.published_at)}
+              @{vibelog.author.username}
+              {formattedDate && ` · ${formattedDate}`}
             </p>
           </div>
         </div>

@@ -30,25 +30,12 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
  * - Browser-specific handling
  */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  // Initialize with cache immediately (synchronous)
-  const [user, setUser] = useState<User | null>(() => {
-    if (typeof window !== 'undefined') {
-      const cached = getCachedSession();
-      if (cached) {
-        return cached;
-      }
-    }
-    return null;
-  });
+  // Initialize as null to avoid hydration mismatch
+  // Cache will be loaded in useEffect after mount
+  const [user, setUser] = useState<User | null>(null);
 
-  // Start with loading=false if cache exists, true otherwise
-  const [loading, setLoading] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const hasCache = getCachedSession() !== null;
-      return !hasCache; // false if cache exists, true if no cache
-    }
-    return true;
-  });
+  // Start with loading=true, will be updated after cache check
+  const [loading, setLoading] = useState(true);
 
   const [error, setError] = useState<string | null>(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -60,6 +47,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true;
     hasMountedRef.current = true;
+
+    // ====== CHECK CACHE FIRST (SYNCHRONOUS) ======
+    const cachedUser = getCachedSession();
+    if (cachedUser) {
+      setUser(cachedUser);
+      setLoading(false); // Show UI immediately with cached user
+    }
 
     // ====== BACKGROUND VALIDATION ======
     const validateSession = async () => {

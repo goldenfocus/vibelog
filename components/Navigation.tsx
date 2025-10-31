@@ -24,6 +24,12 @@ export default function Navigation() {
   const [isMobileUserOpen, setIsMobileUserOpen] = useState(false); // Mobile user menu
   const [avatarError, setAvatarError] = useState(false);
   const [profile, setProfile] = useState<any>(null);
+  const [mounted, setMounted] = useState(false);
+
+  // Prevent hydration mismatch by only rendering user-specific UI after mount
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const navLinks = useMemo(
     () => [
@@ -110,11 +116,7 @@ export default function Navigation() {
           className="h-full w-full rounded-full object-cover"
           referrerPolicy="no-referrer"
           onError={() => {
-            console.log('Avatar image failed to load:', avatarUrl);
             setAvatarError(true);
-          }}
-          onLoad={() => {
-            console.log('Avatar image loaded successfully:', avatarUrl);
           }}
         />
       );
@@ -225,70 +227,86 @@ export default function Navigation() {
           </div>
 
           <div className="flex items-center gap-3">
-            {!user && !loading && (
-              <div className="hidden lg:block">
-                <LanguageSwitcher
-                  currentLanguage={locale}
-                  onLanguageChange={setLocale}
-                  compact={true}
-                />
-              </div>
-            )}
-
-            {user ? (
+            {/* Show loading state or placeholder during SSR/initial hydration */}
+            {!mounted || loading ? (
               <>
-                {/* Mobile: Hamburger menu button */}
                 <button
-                  onClick={e => {
-                    setIsMobileNavOpen(true);
-                    e.currentTarget.blur(); // Prevent aria-hidden focus warning
-                  }}
-                  aria-label="Open navigation menu"
+                  disabled
+                  aria-label="Loading navigation"
                   className="flex h-10 w-10 items-center justify-center rounded-lg border border-border/40 bg-muted/60 text-foreground lg:hidden"
                 >
                   <Menu className="h-5 w-5" />
                 </button>
-
-                {/* Mobile: User avatar button */}
-                <button
-                  onClick={e => {
-                    setIsMobileUserOpen(true);
-                    e.currentTarget.blur(); // Prevent aria-hidden focus warning
-                  }}
-                  aria-label="Open account menu"
-                  className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border/40 lg:hidden"
-                  style={getAvatarContainerStyle(avatarUrl && !avatarError)}
-                >
-                  {renderAvatarContent('sm')}
-                </button>
-
-                {/* Desktop: Avatar button */}
-                <button
-                  data-nav-trigger
-                  onClick={() => setIsMenuOpen(prev => !prev)}
-                  aria-label={t('navigation.accountMenu')}
-                  aria-expanded={isMenuOpen}
-                  aria-haspopup="true"
-                  className="relative hidden h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border/40 transition-all duration-200 hover:ring-2 hover:ring-primary/50 lg:flex"
-                  style={getAvatarContainerStyle(avatarUrl && !avatarError)}
-                >
-                  {renderAvatarContent('sm')}
-                </button>
+                <div className="h-10 w-20 animate-pulse rounded-lg bg-muted/60" />
               </>
             ) : (
               <>
-                {/* Not logged in: Show hamburger + sign in button */}
-                <button
-                  onClick={() => setIsMobileNavOpen(true)}
-                  aria-label="Open navigation menu"
-                  className="flex h-10 w-10 items-center justify-center rounded-lg border border-border/40 bg-muted/60 text-foreground lg:hidden"
-                >
-                  <Menu className="h-5 w-5" />
-                </button>
+                {!user && (
+                  <div className="hidden lg:block">
+                    <LanguageSwitcher
+                      currentLanguage={locale}
+                      onLanguageChange={setLocale}
+                      compact={true}
+                    />
+                  </div>
+                )}
 
-                <Button asChild className="bg-gradient-electric text-white hover:opacity-90">
-                  <Link href="/auth/signin">{t('auth.signIn')}</Link>
-                </Button>
+                {user ? (
+                  <>
+                    {/* Mobile: Hamburger menu button */}
+                    <button
+                      onClick={e => {
+                        setIsMobileNavOpen(true);
+                        e.currentTarget.blur(); // Prevent aria-hidden focus warning
+                      }}
+                      aria-label="Open navigation menu"
+                      className="flex h-10 w-10 items-center justify-center rounded-lg border border-border/40 bg-muted/60 text-foreground lg:hidden"
+                    >
+                      <Menu className="h-5 w-5" />
+                    </button>
+
+                    {/* Mobile: User avatar button */}
+                    <button
+                      onClick={e => {
+                        setIsMobileUserOpen(true);
+                        e.currentTarget.blur(); // Prevent aria-hidden focus warning
+                      }}
+                      aria-label="Open account menu"
+                      className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border/40 lg:hidden"
+                      style={getAvatarContainerStyle(avatarUrl && !avatarError)}
+                    >
+                      {renderAvatarContent('sm')}
+                    </button>
+
+                    {/* Desktop: Avatar button */}
+                    <button
+                      data-nav-trigger
+                      onClick={() => setIsMenuOpen(prev => !prev)}
+                      aria-label={t('navigation.accountMenu')}
+                      aria-expanded={isMenuOpen}
+                      aria-haspopup="true"
+                      className="relative hidden h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border/40 transition-all duration-200 hover:ring-2 hover:ring-primary/50 lg:flex"
+                      style={getAvatarContainerStyle(avatarUrl && !avatarError)}
+                    >
+                      {renderAvatarContent('sm')}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    {/* Not logged in: Show hamburger + sign in button */}
+                    <button
+                      onClick={() => setIsMobileNavOpen(true)}
+                      aria-label="Open navigation menu"
+                      className="flex h-10 w-10 items-center justify-center rounded-lg border border-border/40 bg-muted/60 text-foreground lg:hidden"
+                    >
+                      <Menu className="h-5 w-5" />
+                    </button>
+
+                    <Button asChild className="bg-gradient-electric text-white hover:opacity-90">
+                      <Link href="/auth/signin">{t('auth.signIn')}</Link>
+                    </Button>
+                  </>
+                )}
               </>
             )}
           </div>
@@ -298,7 +316,7 @@ export default function Navigation() {
       {mobileNavMenu}
 
       {/* Account Sheet for mobile and desktop */}
-      {user && (
+      {mounted && user && (
         <AccountSheet
           open={isMobileUserOpen || isMenuOpen}
           onOpenChange={open => {

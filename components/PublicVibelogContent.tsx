@@ -25,9 +25,16 @@ interface PublicVibelogContentProps {
 
 export default function PublicVibelogContent({ vibelog }: PublicVibelogContentProps) {
   const router = useRouter();
-  const [vibelogUrl, setVibelogUrl] = useState<string>('');
+  // Initialize with a placeholder URL to prevent hydration mismatch
+  // Will be updated in useEffect with actual window.location.origin
+  const [vibelogUrl, setVibelogUrl] = useState<string>(() => {
+    const isAnonymous = !vibelog.user_id;
+    return isAnonymous
+      ? `/@anonymous/${vibelog.public_slug}`
+      : `/@${vibelog.author?.username}/${vibelog.public_slug}`;
+  });
 
-  // Set vibelog URL after mount to avoid hydration mismatch
+  // Set full vibelog URL after mount to avoid hydration mismatch
   useEffect(() => {
     const isAnonymous = !vibelog.user_id;
     const url = isAnonymous
