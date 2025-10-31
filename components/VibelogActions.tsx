@@ -211,7 +211,8 @@ export default function VibelogActions({
       cleanContent = words.slice(0, 500).join(' ') + '...';
     }
 
-    await playText(cleanContent, 'shimmer');
+    // Pass vibelogId so audio can be saved for future users
+    await playText(cleanContent, 'shimmer', _vibelogId);
   };
 
   const handleCopyClick = async () => {

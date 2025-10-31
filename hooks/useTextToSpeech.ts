@@ -4,13 +4,16 @@ export interface UseTextToSpeechReturn {
   isPlaying: boolean;
   isLoading: boolean;
   error: string | null;
-  playText: (text: string, voice?: string) => Promise<void>;
+  playText: (text: string, voice?: string, vibelogId?: string) => Promise<void>;
   stop: () => void;
   progress: number;
   duration: number;
 }
 
-export function useTextToSpeech(onUpgradePrompt?: (message: string, benefits: string[]) => void, onEnded?: () => void): UseTextToSpeechReturn {
+export function useTextToSpeech(
+  onUpgradePrompt?: (message: string, benefits: string[]) => void,
+  onEnded?: () => void
+): UseTextToSpeechReturn {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +61,7 @@ export function useTextToSpeech(onUpgradePrompt?: (message: string, benefits: st
     }
   };
 
-  const playText = async (text: string, voice = 'shimmer') => {
+  const playText = async (text: string, voice = 'shimmer', vibelogId?: string) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -67,13 +70,13 @@ export function useTextToSpeech(onUpgradePrompt?: (message: string, benefits: st
       // Clean up any existing audio
       cleanup();
 
-      // Generate TTS audio
+      // Generate TTS audio (pass vibelogId so it can be saved for future users)
       const response = await fetch('/api/text-to-speech', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ text, voice }),
+        body: JSON.stringify({ text, voice, vibelogId }),
       });
 
       if (!response.ok) {
@@ -87,12 +90,14 @@ export function useTextToSpeech(onUpgradePrompt?: (message: string, benefits: st
               );
               return;
             }
-          } catch (jsonError) {
+          } catch {
             // Fall through to generic error handling
           }
         }
 
-        const errorData = await response.json().catch(() => ({ error: 'Failed to generate speech' }));
+        const errorData = await response
+          .json()
+          .catch(() => ({ error: 'Failed to generate speech' }));
         throw new Error(errorData.error || `HTTP ${response.status}`);
       }
 
@@ -113,7 +118,6 @@ export function useTextToSpeech(onUpgradePrompt?: (message: string, benefits: st
       // Start playing
       await audio.play();
       setIsPlaying(true);
-
     } catch (error) {
       console.error('TTS playback error:', error);
       setError(error instanceof Error ? error.message : 'Failed to play speech');
@@ -134,7 +138,10 @@ export function useTextToSpeech(onUpgradePrompt?: (message: string, benefits: st
 
   // Cleanup on unmount
   useEffect(() => {
-    return cleanup;
+    return () => {
+      cleanup();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return {

@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
       return tooManyResponse(rl);
     }
 
-    const { text, voice = 'shimmer' } = await request.json();
+    const { text, voice = 'shimmer', vibelogId } = await request.json();
 
     if (!text) {
       return NextResponse.json({ error: 'Text content is required' }, { status: 400 });
@@ -84,6 +84,34 @@ export async function POST(request: NextRequest) {
       await adminSupabase.rpc('increment_tts_cache_access', {
         p_content_hash: contentHash,
       });
+
+      // If vibelogId is provided and vibelog doesn't have audio_url yet, save it
+      if (vibelogId && cachedEntry.audio_url) {
+        try {
+          // Check if vibelog exists and doesn't have audio_url
+          const { data: vibelog } = await adminSupabase
+            .from('vibelogs')
+            .select('id, audio_url')
+            .eq('id', vibelogId)
+            .single();
+
+          if (vibelog && !vibelog.audio_url) {
+            // Save audio_url to vibelog for future users
+            await adminSupabase
+              .from('vibelogs')
+              .update({
+                audio_url: cachedEntry.audio_url,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', vibelogId);
+
+            console.log(`💾 [TTS] Saved cached audio_url to vibelog ${vibelogId} for future use`);
+          }
+        } catch (error) {
+          // Don't fail the request if saving to vibelog fails
+          console.error('Failed to save cached audio_url to vibelog:', error);
+        }
+      }
 
       if (process.env.NODE_ENV !== 'production') {
         console.log('✅ TTS cache hit for hash:', contentHash.substring(0, 8) + '...');
@@ -217,9 +245,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Store in cache and storage for future use
+    let audioUrl: string | null = null;
     try {
       // Store audio file in Supabase storage
-      const audioUrl = await storeTTSAudio(contentHash, audioBuffer);
+      audioUrl = await storeTTSAudio(contentHash, audioBuffer);
 
       // Save to cache table
       await adminSupabase.from('tts_cache').upsert(
@@ -237,6 +266,34 @@ export async function POST(request: NextRequest) {
           // If already exists, update URL and size (shouldn't happen with hash, but safe)
         }
       );
+
+      // If vibelogId is provided and vibelog doesn't have audio_url yet, save it
+      if (vibelogId && audioUrl) {
+        try {
+          // Check if vibelog exists and doesn't have audio_url
+          const { data: vibelog } = await adminSupabase
+            .from('vibelogs')
+            .select('id, audio_url')
+            .eq('id', vibelogId)
+            .single();
+
+          if (vibelog && !vibelog.audio_url) {
+            // Save audio_url to vibelog for future users
+            await adminSupabase
+              .from('vibelogs')
+              .update({
+                audio_url: audioUrl,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', vibelogId);
+
+            console.log(`💾 [TTS] Saved audio_url to vibelog ${vibelogId} for future use`);
+          }
+        } catch (error) {
+          // Don't fail the request if saving to vibelog fails
+          console.error('Failed to save audio_url to vibelog:', error);
+        }
+      }
 
       if (process.env.NODE_ENV !== 'production') {
         console.log('💾 TTS cached successfully:', audioUrl);
