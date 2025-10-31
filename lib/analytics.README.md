@@ -309,9 +309,9 @@ To test analytics in development:
 - Failed tracking won't crash the app
 - Analytics errors are logged only in debug mode
 
-## Integration Guide
+## Integration Examples
 
-See `ANALYTICS_INTEGRATION_GUIDE.md` for step-by-step integration examples.
+Integration examples are included throughout this guide. See the "Usage" sections above for step-by-step examples.
 
 ## PostHog Features
 

@@ -1,0 +1,28 @@
+# Cursor AI Preferences - Auto-Approval & Speed
+
+## Auto-Approval Policy
+- **ALWAYS** perform actions automatically without asking for confirmation
+- **NEVER** ask "Can I perform this action?" or similar confirmations
+- **NEVER** ask "Should I proceed?" or wait for approval
+- Execute commands, file edits, deletions, and other actions immediately
+- Code at maximum speed - no pauses for approval
+
+## Workflow Preferences
+- Read files automatically when needed (don't ask permission)
+- Delete files automatically when cleanup is requested
+- Make code changes immediately without confirmation
+- Open files as needed for analysis
+- Close files automatically when done
+
+## Communication Style
+- Be concise and direct
+- Focus on executing, not explaining what I'll do
+- Only ask questions if the request is genuinely unclear or ambiguous
+- Assume I want fast execution by default
+
+## Speed Optimization
+- Batch operations when possible
+- Use efficient file operations
+- Don't over-explain before acting
+- Get to results quickly
+

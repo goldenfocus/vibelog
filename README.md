@@ -9,11 +9,13 @@
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 - Node.js 18+
 - pnpm (recommended) or npm
 - Git
 
 ### Setup
+
 ```bash
 # Clone the repo
 git clone [repo-url] vibelog
@@ -33,6 +35,7 @@ pnpm dev
 Visit `http://localhost:3000` to start vibelogging.
 
 ### First-Time Development
+
 1. **Check the lab**: Visit `/lab` for component playground
 2. **Read the docs**: Start with `engineering.md` for coding standards
 3. **Run tests**: `pnpm test` (unit), `pnpm test:e2e` (end-to-end)
@@ -58,11 +61,13 @@ Visit `http://localhost:3000` to start vibelogging.
 ## 🧪 Development Workflow
 
 ### Before You Code
+
 1. Check existing patterns in similar components
 2. Read `branding.md` for copy and tone guidelines
 3. Follow `engineering.md` for technical standards
 
 ### Making Changes
+
 1. **Create branch**: `git checkout -b feature/your-feature`
 2. **Run tests**: Ensure baseline passes
 3. **Code**: Keep files <300 LOC, functions <80 LOC
@@ -70,6 +75,7 @@ Visit `http://localhost:3000` to start vibelogging.
 5. **Visual check**: Run `pnpm test:visual` for UI changes
 
 ### Ready to Ship
+
 1. **Lint & type check**: `pnpm lint && pnpm typecheck`
 2. **All tests green**: `pnpm test:all`
 3. **Create PR**: Follow template in `.github/pull_request_template.md`
@@ -116,20 +122,25 @@ pnpm db:studio        # Open Prisma Studio
 ## 📚 Documentation
 
 ### Core Guides
-- **[Vision](./vision.md)** — Product roadmap, success metrics, and strategic direction
+
+- **[Pivot](./pivot.md)** — Current product strategy and roadmap
+- **[Living Web 2026](./living-web-2026.md)** — Long-term vision and philosophy
 - **[Engineering](./engineering.md)** — Development standards, testing, and code quality
 - **[Branding](./branding.md)** — Voice, tone, microcopy, and competitive positioning
 
 ### Technical Implementation
+
 - **[API Design](./api.md)** — REST patterns, security, and error handling
 - **[Monitoring](./monitoring.md)** — SLOs, analytics, alerting, and observability
 - **[Deployment](./deployment.md)** — CI/CD, infrastructure, and disaster recovery
 
 ### Workflow Guides
+
 - **[Refactor Guide](./refactor.md)** — Safe component refactoring with visual regression
 - **[Commit Guide](./commit.md)** — Git workflow and PR process
 
 ### Quick Reference
+
 - **Copy Guidelines**: See `branding.md` sections 4-5 for microcopy patterns
 - **Error Messages**: See `api.md` error codes + `branding.md` section 5
 - **Performance Targets**: See `monitoring.md` SLOs + `engineering.md` section 1
@@ -140,7 +151,7 @@ pnpm db:studio        # Open Prisma Studio
 ## 🚨 Need Help?
 
 - **Bugs**: Create an issue with reproduction steps
-- **Features**: Check `vision.md` roadmap first
+- **Features**: Check `pivot.md` roadmap first
 - **Code Questions**: Ask in team chat or PR comments
 - **Setup Issues**: Check this README and `engineering.md`
 
@@ -157,4 +168,3 @@ pnpm db:studio        # Open Prisma Studio
 ---
 
 **Made with ❤️ by the VibeLog team**
-

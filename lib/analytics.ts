@@ -138,12 +138,12 @@ export interface CoverImageStartedProps {
 
 export interface CoverImageGeneratedProps {
   processingTime: number;
-  provider: 'gemini' | 'dalle' | 'stable-diffusion';
+  provider: 'dalle' | 'stable-diffusion';
 }
 
 export interface CoverImageFailedProps {
   error: string;
-  provider: 'gemini' | 'dalle' | 'stable-diffusion';
+  provider: 'dalle' | 'stable-diffusion';
 }
 
 export interface VibelogSavedProps {
