@@ -16,11 +16,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     } = await supabase.auth.getUser();
 
     // Get vibelog with like count
-    const { data: vibelog } = await supabase
+    const { data: vibelog, error: vibelogError } = await supabase
       .from('vibelogs')
       .select('like_count')
       .eq('id', vibelogId)
-      .single();
+      .maybeSingle();
+
+    if (vibelogError || !vibelog) {
+      console.error('Error fetching vibelog for like status:', vibelogError);
+      return NextResponse.json({ isLiked: false, like_count: 0 }, { status: 200 });
+    }
 
     if (!user) {
       return NextResponse.json({
@@ -59,8 +64,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     } = await supabase.auth.getUser();
 
     if (!user) {
+      console.warn('Like attempt without authentication:', vibelogId);
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    console.log('Like attempt:', { userId: user.id, vibelogId });
 
     // Verify vibelog exists
     const { data: vibelog, error: vibelogError } = await supabase
@@ -70,6 +78,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       .maybeSingle();
 
     if (vibelogError || !vibelog) {
+      console.error('Vibelog not found for like:', { vibelogId, error: vibelogError });
       return NextResponse.json({ error: 'Vibelog not found' }, { status: 404 });
     }
 
@@ -101,6 +110,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       // Check if it's a unique constraint violation (race condition)
       if (likeError.code === '23505') {
         // Unique violation - already liked, return success
+        console.log('Race condition detected, like already exists:', {
+          userId: user.id,
+          vibelogId,
+        });
         return NextResponse.json({
           success: true,
           liked: true,
@@ -109,12 +122,20 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         });
       }
 
-      console.error('Failed to like vibelog:', likeError);
+      console.error('Failed to like vibelog:', {
+        userId: user.id,
+        vibelogId,
+        error: likeError,
+        code: likeError.code,
+        message: likeError.message,
+      });
       return NextResponse.json(
         { error: 'Failed to like vibelog', details: likeError.message },
         { status: 500 }
       );
     }
+
+    console.log('Like successfully inserted:', { userId: user.id, vibelogId });
 
     // Wait for database trigger to update like_count
     await waitForTrigger();
