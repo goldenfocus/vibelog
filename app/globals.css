@@ -236,3 +236,14 @@ All colors MUST be HSL.
     transform: translateY(0);
   }
 }
+
+/* Image zoom overlay customization (react-medium-image-zoom) */
+.custom-zoom-overlay [data-rmiz-modal-overlay] {
+  background-color: hsl(0 0% 6% / 0.95) !important;
+  backdrop-filter: blur(8px);
+}
+
+.custom-zoom-overlay [data-rmiz-modal-img] {
+  border-radius: 1rem;
+  box-shadow: 0 20px 60px hsl(217 92% 65% / 0.2);
+}

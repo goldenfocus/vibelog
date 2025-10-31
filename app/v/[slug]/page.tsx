@@ -86,28 +86,13 @@ export default async function PublicVibelogPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Client-side view tracking - inline script for reliability */}
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `
-            (function() {
-              fetch('/api/increment-view', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ vibelogId: '${vibelog.id}' })
-              })
-              .then(res => res.json())
-              .then(data => {
-                if (data.success) {
-                  console.log('✅ View counted successfully');
-                } else {
-                  console.error('❌ View count failed:', data.error);
-                }
-              })
-              .catch(err => console.error('❌ Network error tracking view:', err));
-            })();
-          `,
-        }}
+      {/* View tracking pixel - browsers ALWAYS load images, guaranteed to work */}
+      <img
+        src={`/api/track-view/${vibelog.id}`}
+        alt=""
+        width={1}
+        height={1}
+        style={{ position: 'absolute', visibility: 'hidden' }}
       />
 
       <Navigation />
