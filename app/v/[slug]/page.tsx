@@ -5,7 +5,6 @@ import { notFound, redirect } from 'next/navigation';
 
 import Navigation from '@/components/Navigation';
 import PublicVibelogContent from '@/components/PublicVibelogContent';
-import { ViewTracker } from '@/components/ViewTracker';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
 interface PageProps {
@@ -87,8 +86,29 @@ export default async function PublicVibelogPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Client-side view tracking */}
-      <ViewTracker vibelogId={vibelog.id} />
+      {/* Client-side view tracking - inline script for reliability */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `
+            (function() {
+              fetch('/api/increment-view', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ vibelogId: '${vibelog.id}' })
+              })
+              .then(res => res.json())
+              .then(data => {
+                if (data.success) {
+                  console.log('✅ View counted successfully');
+                } else {
+                  console.error('❌ View count failed:', data.error);
+                }
+              })
+              .catch(err => console.error('❌ Network error tracking view:', err));
+            })();
+          `,
+        }}
+      />
 
       <Navigation />
 
