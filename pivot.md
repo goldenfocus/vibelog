@@ -1,7 +1,7 @@
 # 🎙️ THE GREAT PIVOT: Conversational VibeLog
 
 **Date**: October 26, 2025
-**Decision**: Pivot from "voice-to-blog with manual publishing" to "conversational AI publishing assistant"
+**Decision**: Pivot from "voice-to-publish with manual publishing" to "conversational AI publishing assistant"
 
 ---
 
@@ -60,11 +60,11 @@ VIBELOG (text + voice): "Boom! You're live. Here are your links..."
 
 ## 🎯 The New North Star
 
-**Old Tagline**: "Voice-to-blog that turns your thoughts into beautiful posts—instantly"
+**Old Tagline**: "Voice-to-content that turns your thoughts into beautiful posts—instantly"
 
 **New Tagline**: "Your AI publishing assistant that speaks your language"
 
-**Product Category**: Not a "voice-to-blog tool" - we're a **conversational publishing platform**
+**Product Category**: \*We're a **conversational publishing platform**
 
 ---
 
@@ -457,7 +457,6 @@ CREATE TABLE vibelog_edit_history (
 1. **Automation before quality**: Planned auto-posting before content was good enough
 2. **Button-first thinking**: Designed UI with buttons instead of conversation
 3. **Feature parity trap**: Tried to match Buffer/Hootsuite instead of reinventing
-4. **Boring positioning**: "Voice-to-blog" is commoditized, not unique
 
 ### What We Got Right
 

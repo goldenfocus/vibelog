@@ -1,6 +1,6 @@
 # VibeLog 🎤
 
-> Voice-to-blog that turns your thoughts into beautiful posts—instantly.
+> Vibe-to-publish that turns your thoughts into beautiful posts—instantly.
 
 **Speak your vibe. Publish everywhere.**
 
@@ -113,7 +113,7 @@ pnpm db:studio        # Open Prisma Studio
 
 - **Voice Recording** — Browser-based audio capture
 - **AI Transcription** — Speech-to-text with polishing
-- **Multi-Format Output** — Blog posts, tweets, LinkedIn posts
+- **Multi-Format Output** — Vibelog posts, tweets, LinkedI, TikTok, WhatsApp Stories, etc
 - **Real-time Preview** — See your content as you speak
 - **One-Click Publishing** — Export to multiple platforms
 
