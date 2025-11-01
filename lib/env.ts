@@ -18,6 +18,7 @@ const envSchema = z.object({
   // AI Services
   OPENAI_API_KEY: z.string().min(1, 'OPENAI_API_KEY is required'),
   ANTHROPIC_API_KEY: z.string().optional(),
+  ELEVENLABS_API_KEY: z.string().optional(),
 
   // External Services
   RESEND_API_KEY: z.string().optional(),

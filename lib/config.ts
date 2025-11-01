@@ -26,6 +26,10 @@ export const config = {
     anthropic: {
       apiKey: env.ANTHROPIC_API_KEY,
     },
+    elevenlabs: {
+      apiKey: env.ELEVENLABS_API_KEY,
+      apiUrl: 'https://api.elevenlabs.io/v1',
+    },
   },
 
   // Rate limiting
