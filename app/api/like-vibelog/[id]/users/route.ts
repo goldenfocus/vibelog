@@ -36,9 +36,29 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'Failed to fetch likers' }, { status: 500 });
     }
 
+    // Log total likes fetched before filtering
+    const totalLikes = (likes || []).length;
+    console.log('Fetched likes from database:', { vibelogId, totalLikes });
+
+    // Check for likes with missing profile data
+    const likesWithoutProfiles = (likes || []).filter(like => !like.profiles);
+    if (likesWithoutProfiles.length > 0) {
+      console.error('Found likes with missing profile data:', {
+        vibelogId,
+        count: likesWithoutProfiles.length,
+        likes: likesWithoutProfiles,
+      });
+    }
+
     // Transform the data to a cleaner format
     const likers = (likes || [])
-      .filter(like => like.profiles) // Filter out any likes without profile data
+      .filter(like => {
+        if (!like.profiles) {
+          console.warn('Filtering out like with no profile data:', like);
+          return false;
+        }
+        return true;
+      })
       .map(like => {
         // Supabase returns profile as an object when using foreign key relation
         const profile = like.profiles as any;
