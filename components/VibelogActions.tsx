@@ -325,6 +325,15 @@ export default function VibelogActions({
     setShowDeleteConfirm(false);
   };
 
+  // Callback to update like count when LikersPopover fetches fresh data
+  const handleCountUpdate = useCallback(
+    (newCount: number) => {
+      console.log('Updating like count from likers popover:', { oldCount: likeCount, newCount });
+      setLikeCount(newCount);
+    },
+    [likeCount]
+  );
+
   const handleLikeClick = useCallback(async () => {
     if (!user) {
       toast.error('Please sign in to like vibelogs');
@@ -547,7 +556,11 @@ export default function VibelogActions({
         </button>
 
         {/* Like Button */}
-        <LikersPopover vibelogId={vibelogId} likeCount={likeCount}>
+        <LikersPopover
+          vibelogId={vibelogId}
+          likeCount={likeCount}
+          onCountUpdate={handleCountUpdate}
+        >
           <button
             onClick={handleLikeClick}
             disabled={isLiking}
