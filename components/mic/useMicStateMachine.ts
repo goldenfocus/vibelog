@@ -512,7 +512,7 @@ export function useMicStateMachine(
     console.log('🎯 [COMPLETE-PROCESSING] Starting save process at', Date.now());
 
     // CRITICAL FIX: Wait for content to be available (with timeout)
-    const maxWaitTime = 15000; // 15 seconds max
+    const maxWaitTime = 30000; // 30 seconds max (increased for slow connections)
     const checkInterval = 100; // Check every 100ms
     const startTime = Date.now();
 

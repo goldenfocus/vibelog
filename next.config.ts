@@ -49,7 +49,7 @@ const nextConfig: NextConfig = {
       "font-src 'self' data: https://fonts.googleapis.com https://fonts.gstatic.com https://r2cdn.perplexity.ai",
       // API egress targets
       "connect-src 'self' https://api.openai.com https://*.supabase.co https://*.supabase.in https://vercel.live",
-      "media-src 'self' data: blob:",
+      "media-src 'self' data: blob: https://*.supabase.co https://*.supabase.in",
       "object-src 'none'",
       "form-action 'self'",
       // Upgrade insecure requests when behind HTTPS
