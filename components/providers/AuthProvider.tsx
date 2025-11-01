@@ -173,9 +173,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     });
 
+    // ====== CROSS-TAB SYNC VIA STORAGE EVENTS ======
+    // Listen for localStorage changes in other tabs
+    const handleStorageChange = (e: StorageEvent) => {
+      // Only respond to changes in our session cache key
+      if (e.key === 'vibelog_session_cache') {
+        if (e.newValue) {
+          // Session was updated in another tab - refresh our state
+          const cachedUser = getCachedSession();
+          if (cachedUser) {
+            console.log('🔄 [AUTH] Session updated in another tab, syncing...');
+            setUser(cachedUser);
+            setLoading(false);
+          }
+        } else if (e.oldValue && !e.newValue) {
+          // Session was cleared in another tab - sign out here too
+          console.log('🚪 [AUTH] Signed out in another tab, syncing...');
+          setUser(null);
+          setLoading(false);
+        }
+      }
+    };
+
+    // Register storage event listener for cross-tab sync
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage', handleStorageChange);
+    }
+
     return () => {
       mounted = false;
       subscription.unsubscribe();
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('storage', handleStorageChange);
+      }
     };
   }, [supabase, router]);
 
