@@ -51,8 +51,6 @@ export default function CreatorCard({
   return (
     <Link
       href={`/@${username}`}
-      target="_blank"
-      rel="noopener noreferrer"
       className="group block"
       style={{
         animation: `fadeInUp 0.5s ease-out ${index * 0.1}s both`,
