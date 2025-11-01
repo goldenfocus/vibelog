@@ -51,9 +51,28 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         };
       });
 
+    // Verify count matches vibelog.like_count for data integrity
+    const { data: vibelog } = await supabase
+      .from('vibelogs')
+      .select('like_count')
+      .eq('id', vibelogId)
+      .maybeSingle();
+
+    const actualCount = likers.length;
+    const vibelogCount = vibelog?.like_count || 0;
+
+    if (actualCount !== vibelogCount) {
+      console.warn('Like count mismatch detected in likers API:', {
+        vibelogId,
+        actualLikers: actualCount,
+        vibelogCount,
+      });
+    }
+
     return NextResponse.json({
       likers,
-      total: likers.length,
+      total: actualCount, // Use actual count from likes table (source of truth)
+      vibelog_count: vibelogCount, // Also return vibelog's count for debugging
     });
   } catch (error) {
     console.error('Error fetching vibelog likers:', error);

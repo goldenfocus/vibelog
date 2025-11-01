@@ -15,15 +15,30 @@ interface LikersPopoverProps {
   vibelogId: string;
   likeCount: number;
   children: React.ReactNode;
+  onCountUpdate?: (newCount: number) => void; // Callback to update parent's count
 }
 
-export default function LikersPopover({ vibelogId, likeCount, children }: LikersPopoverProps) {
+export default function LikersPopover({
+  vibelogId,
+  likeCount,
+  children,
+  onCountUpdate,
+}: LikersPopoverProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [likers, setLikers] = useState<Liker[]>([]);
+  const [actualCount, setActualCount] = useState(likeCount); // Track actual count from API
   const [isLoading, setIsLoading] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Update actualCount when likeCount prop changes (from parent updates)
+  useEffect(() => {
+    if (!hasLoaded) {
+      // Only update if we haven't fetched actual data yet
+      setActualCount(likeCount);
+    }
+  }, [likeCount, hasLoaded]);
 
   // Close popover when clicking outside
   useEffect(() => {
@@ -41,7 +56,7 @@ export default function LikersPopover({ vibelogId, likeCount, children }: Likers
 
   // Fetch likers when popover opens (only if not already loaded)
   useEffect(() => {
-    if (isOpen && !hasLoaded && likeCount > 0) {
+    if (isOpen && !hasLoaded && actualCount > 0) {
       setIsLoading(true);
       fetch(`/api/like-vibelog/${vibelogId}/users`)
         .then(res => {
@@ -51,8 +66,22 @@ export default function LikersPopover({ vibelogId, likeCount, children }: Likers
           throw new Error('Failed to fetch likers');
         })
         .then(data => {
-          setLikers(data.likers || []);
+          const fetchedLikers = data.likers || [];
+          const fetchedCount = data.total || fetchedLikers.length;
+
+          setLikers(fetchedLikers);
+          setActualCount(fetchedCount);
           setHasLoaded(true);
+
+          // Sync count with parent if it's different
+          if (fetchedCount !== likeCount) {
+            console.warn('Like count mismatch detected:', {
+              propCount: likeCount,
+              actualCount: fetchedCount,
+              vibelogId,
+            });
+            onCountUpdate?.(fetchedCount);
+          }
         })
         .catch(err => {
           console.error('Error fetching likers:', err);
@@ -61,7 +90,7 @@ export default function LikersPopover({ vibelogId, likeCount, children }: Likers
           setIsLoading(false);
         });
     }
-  }, [isOpen, hasLoaded, vibelogId, likeCount]);
+  }, [isOpen, hasLoaded, vibelogId, actualCount, likeCount, onCountUpdate]);
 
   const handleMouseEnter = () => {
     // Clear any pending close timeout
@@ -71,7 +100,7 @@ export default function LikersPopover({ vibelogId, likeCount, children }: Likers
     }
 
     // Only show on desktop (hover devices) and if there are likes
-    if (likeCount > 0 && window.matchMedia('(hover: hover)').matches) {
+    if (actualCount > 0 && window.matchMedia('(hover: hover)').matches) {
       setIsOpen(true);
     }
   };
@@ -85,14 +114,14 @@ export default function LikersPopover({ vibelogId, likeCount, children }: Likers
 
   const handleClick = (e: React.MouseEvent) => {
     // On mobile (non-hover devices), toggle on click
-    if (likeCount > 0 && !window.matchMedia('(hover: hover)').matches) {
+    if (actualCount > 0 && !window.matchMedia('(hover: hover)').matches) {
       e.stopPropagation();
       setIsOpen(!isOpen);
     }
   };
 
-  // Don't show popover if no likes
-  if (likeCount === 0) {
+  // Don't show popover if no likes (use actualCount which is more up-to-date)
+  if (actualCount === 0) {
     return <>{children}</>;
   }
 
@@ -117,7 +146,7 @@ export default function LikersPopover({ vibelogId, likeCount, children }: Likers
           <div className="max-h-80 overflow-y-auto p-3">
             <div className="mb-2 flex items-center justify-between border-b border-border/30 pb-2">
               <h3 className="text-sm font-semibold text-foreground">
-                Liked by {likeCount} {likeCount === 1 ? 'person' : 'people'}
+                Liked by {actualCount} {actualCount === 1 ? 'person' : 'people'}
               </h3>
             </div>
 

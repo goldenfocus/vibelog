@@ -4,8 +4,31 @@ import { createServerSupabaseClient } from '@/lib/supabase';
 
 export const runtime = 'nodejs';
 
-// Helper function to wait for database trigger to complete
-const waitForTrigger = () => new Promise(resolve => setTimeout(resolve, 100));
+// Helper function to wait for database trigger to complete with retry mechanism
+const waitForTrigger = async (
+  supabase: any,
+  vibelogId: string,
+  expectedCount: number,
+  maxRetries = 5
+): Promise<number> => {
+  for (let i = 0; i < maxRetries; i++) {
+    await new Promise(resolve => setTimeout(resolve, 100)); // Wait 100ms
+
+    const { data } = await supabase
+      .from('vibelogs')
+      .select('like_count')
+      .eq('id', vibelogId)
+      .maybeSingle();
+
+    if (data && data.like_count === expectedCount) {
+      console.log(`Trigger completed after ${(i + 1) * 100}ms`);
+      return data.like_count;
+    }
+  }
+
+  console.warn(`Trigger timeout after ${maxRetries * 100}ms, using fallback count`);
+  return expectedCount; // Fallback to expected count
+};
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -137,20 +160,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     console.log('Like successfully inserted:', { userId: user.id, vibelogId });
 
-    // Wait for database trigger to update like_count
-    await waitForTrigger();
-
-    // Get updated like_count after trigger
-    const { data: updatedVibelog } = await supabase
-      .from('vibelogs')
-      .select('like_count')
-      .eq('id', vibelogId)
-      .maybeSingle();
+    // Wait for database trigger to update like_count with retry mechanism
+    const expectedCount = vibelog.like_count + 1;
+    const finalCount = await waitForTrigger(supabase, vibelogId, expectedCount);
 
     return NextResponse.json({
       success: true,
       liked: true,
-      like_count: updatedVibelog?.like_count || vibelog.like_count + 1,
+      like_count: finalCount,
     });
   } catch (error) {
     console.error('Error liking vibelog:', error);
@@ -209,20 +226,14 @@ export async function DELETE(
       });
     }
 
-    // Wait for database trigger to update like_count
-    await waitForTrigger();
-
-    // Get updated like_count after trigger
-    const { data: updatedVibelog } = await supabase
-      .from('vibelogs')
-      .select('like_count')
-      .eq('id', vibelogId)
-      .maybeSingle();
+    // Wait for database trigger to update like_count with retry mechanism
+    const expectedCount = Math.max(0, vibelog.like_count - 1);
+    const finalCount = await waitForTrigger(supabase, vibelogId, expectedCount);
 
     return NextResponse.json({
       success: true,
       liked: false,
-      like_count: updatedVibelog?.like_count || Math.max(0, vibelog.like_count - 1),
+      like_count: finalCount,
     });
   } catch (error) {
     console.error('Error unliking vibelog:', error);
