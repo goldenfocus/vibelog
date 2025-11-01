@@ -447,29 +447,11 @@ export function useMicStateMachine(
         }
       });
 
-    // Clone voice in the background (don't block transcription)
-    if (isLoggedIn && audioBlob.size > 1024 * 1024) {
-      // Only clone if logged in and audio is substantial (>1MB, roughly >1 minute)
-      // Clone voice asynchronously - don't wait for it
-      cloneVoice(
-        audioBlob,
-        undefined,
-        `${profile?.username || user?.email?.split('@')[0] || 'User'}'s Voice`
-      )
-        .then(voiceId => {
-          if (voiceId && DEBUG_MODE) {
-            console.log('✅ Voice cloned successfully:', voiceId);
-          }
-        })
-        .catch(error => {
-          if (DEBUG_MODE) {
-            console.warn('Voice cloning failed (non-blocking):', error);
-          }
-        });
-    }
+    // Voice cloning will happen after vibelog is saved (in completeProcessing)
+    // This ensures we have a vibelogId to associate the voice clone with
 
     return transcriptionResult;
-  }, [audioBlob, user?.id, vibelogAPI, isLoggedIn, cloneVoice, profile?.username, user?.email]);
+  }, [audioBlob, user?.id, vibelogAPI, isLoggedIn, profile?.username, user?.email]);
 
   const processVibelogGeneration = useCallback(async () => {
     const transcriptionData = vibelogAPI.processingData.current.transcriptionData;
@@ -670,11 +652,14 @@ export function useMicStateMachine(
           // Clone voice synchronously to ensure it's ready before playback
           try {
             console.log('🎤 [VOICE-CLONE] Starting voice cloning for vibelog:', result.vibelogId);
+            showToast('🎤 Cloning your voice for future playback...', 2000);
+
             const voiceId = await cloneVoice(
               audioBlob,
               result.vibelogId,
               `${profile?.username || user?.email?.split('@')[0] || 'User'}'s Voice`
             );
+
             if (voiceId) {
               console.log(
                 '✅ [VOICE-CLONE] Voice cloned successfully:',
@@ -682,13 +667,16 @@ export function useMicStateMachine(
                 'for vibelog:',
                 result.vibelogId
               );
+              showToast('✅ Voice cloned! Future playback will use your voice.', 3000);
             } else {
               console.warn('⚠️ [VOICE-CLONE] Voice cloning returned no voice ID');
+              showToast('⚠️ Voice cloning incomplete. Using default voice.', 2000);
             }
           } catch (error) {
             console.error('❌ [VOICE-CLONE] Voice cloning failed:', error);
             // Don't block the save process if voice cloning fails
             // The user can still play back with default voice
+            showToast('Voice cloning failed. Using default voice for playback.', 2000);
           }
         }
 
