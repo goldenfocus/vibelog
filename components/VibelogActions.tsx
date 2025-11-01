@@ -270,7 +270,8 @@ export default function VibelogActions({
       cleanContent = words.slice(0, 500).join(' ') + '...';
     }
 
-    // Pass vibelogId so audio can be saved for future users
+    // Pass vibelogId so TTS route can look up voice_clone_id from database
+    // The TTS route will automatically use cloned voice if available
     await playText(cleanContent, 'shimmer', vibelogId);
   };
 
