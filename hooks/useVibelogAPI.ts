@@ -280,6 +280,7 @@ export function useVibelogAPI(
 
         if (reader) {
           try {
+            let streamComplete = false;
             while (true) {
               const { done, value } = await reader.read();
               if (done) {
@@ -293,6 +294,7 @@ export function useVibelogAPI(
                 if (line.startsWith('data: ')) {
                   const data = line.slice(6);
                   if (data === '[DONE]') {
+                    streamComplete = true;
                     break;
                   }
                   try {
@@ -305,6 +307,11 @@ export function useVibelogAPI(
                     // Ignore parse errors
                   }
                 }
+              }
+
+              // Break outer loop when stream is complete
+              if (streamComplete) {
+                break;
               }
             }
           } finally {
