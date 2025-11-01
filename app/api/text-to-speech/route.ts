@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
+import { config } from '@/lib/config';
 import { rateLimit, tooManyResponse } from '@/lib/rateLimit';
 import { storeTTSAudio, TTS_BUCKET, extractTTSPathFromUrl } from '@/lib/storage';
 import { createServerSupabaseClient } from '@/lib/supabase';
@@ -51,10 +52,50 @@ export async function POST(request: NextRequest) {
       return tooManyResponse(rl);
     }
 
-    const { text, voice = 'shimmer', vibelogId } = await request.json();
+    const { text, voice = 'shimmer', vibelogId, voiceCloneId } = await request.json();
 
     if (!text) {
       return NextResponse.json({ error: 'Text content is required' }, { status: 400 });
+    }
+
+    // Initialize adminSupabase early since we need it for voice clone ID lookup
+    const adminSupabase = await createServerAdminClient();
+
+    // Check if vibelog has a voice_clone_id
+    let voiceCloneIdToUse = voiceCloneId;
+    if (!voiceCloneIdToUse && vibelogId) {
+      try {
+        const { data: vibelog } = await adminSupabase
+          .from('vibelogs')
+          .select('voice_clone_id')
+          .eq('id', vibelogId)
+          .single();
+
+        if (vibelog?.voice_clone_id) {
+          voiceCloneIdToUse = vibelog.voice_clone_id;
+        }
+      } catch {
+        // If vibelog not found or no voice_clone_id, continue with regular TTS
+        console.log('No voice clone ID found for vibelog, using regular TTS');
+      }
+    }
+
+    // If no voice clone ID, try to get from user profile
+    if (!voiceCloneIdToUse && userId) {
+      try {
+        const { data: profile } = await adminSupabase
+          .from('profiles')
+          .select('voice_clone_id')
+          .eq('id', userId)
+          .single();
+
+        if (profile?.voice_clone_id) {
+          voiceCloneIdToUse = profile.voice_clone_id;
+        }
+      } catch {
+        // If profile not found or no voice_clone_id, continue with regular TTS
+        console.log('No voice clone ID found for user, using regular TTS');
+      }
     }
 
     // Validate text length (OpenAI TTS has a 4096 character limit)
@@ -68,9 +109,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate cache key (hash of text + voice)
-    const contentHash = hashTTSContent(text, voice);
-    const adminSupabase = await createServerAdminClient();
+    // Generate cache key (hash of text + voice + voiceCloneId if present)
+    const cacheKey = voiceCloneIdToUse ? `${text}:${voiceCloneIdToUse}` : `${text}:${voice}`;
+    const contentHash = hashTTSContent(cacheKey, voiceCloneIdToUse || voice);
 
     // Check cache first
     const { data: cachedEntry } = await adminSupabase
@@ -131,10 +172,11 @@ export async function POST(request: NextRequest) {
           console.warn('Cached audio file missing, regenerating:', downloadError);
         } else {
           const audioBuffer = Buffer.from(await audioData.arrayBuffer());
-          return new NextResponse(audioBuffer, {
+          const audioUint8Array = new Uint8Array(audioBuffer);
+          return new NextResponse(audioUint8Array, {
             headers: {
               'Content-Type': 'audio/mpeg',
-              'Content-Length': audioBuffer.length.toString(),
+              'Content-Length': audioUint8Array.length.toString(),
               'Cache-Control': 'public, max-age=31536000', // Cache for 1 year (immutable)
               'X-TTS-Cache': 'hit',
             },
@@ -155,90 +197,139 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if we have a real API key, otherwise return mock response
-    if (
-      !process.env.OPENAI_API_KEY ||
-      process.env.OPENAI_API_KEY === 'dummy_key' ||
-      process.env.OPENAI_API_KEY === 'your_openai_api_key_here'
-    ) {
-      console.log('🧪 Using mock TTS response for development/testing');
+    let audioBuffer: Buffer | undefined;
 
-      // Return a small silent audio file as mock
-      const mockAudioData = new Uint8Array([
-        // Minimal WAV file header for silence (44 bytes + minimal data)
-        0x52,
-        0x49,
-        0x46,
-        0x46, // "RIFF"
-        0x28,
-        0x00,
-        0x00,
-        0x00, // File size - 8
-        0x57,
-        0x41,
-        0x56,
-        0x45, // "WAVE"
-        0x66,
-        0x6d,
-        0x74,
-        0x20, // "fmt "
-        0x10,
-        0x00,
-        0x00,
-        0x00, // Subchunk1Size
-        0x01,
-        0x00,
-        0x01,
-        0x00, // AudioFormat, NumChannels
-        0x44,
-        0xac,
-        0x00,
-        0x00, // SampleRate (44100)
-        0x88,
-        0x58,
-        0x01,
-        0x00, // ByteRate
-        0x02,
-        0x00,
-        0x10,
-        0x00, // BlockAlign, BitsPerSample
-        0x64,
-        0x61,
-        0x74,
-        0x61, // "data"
-        0x04,
-        0x00,
-        0x00,
-        0x00, // Data size
-        0x00,
-        0x00,
-        0x00,
-        0x00, // Silence data
-      ]);
+    // Use cloned voice if available, otherwise use OpenAI TTS
+    if (voiceCloneIdToUse && config.ai.elevenlabs.apiKey) {
+      // Use ElevenLabs with cloned voice
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('🎤 Using cloned voice:', voiceCloneIdToUse);
+      }
 
-      return new NextResponse(mockAudioData, {
-        headers: {
-          'Content-Type': 'audio/wav',
-          'Content-Length': mockAudioData.length.toString(),
-        },
-      });
+      try {
+        const elevenLabsResponse = await fetch(
+          `${config.ai.elevenlabs.apiUrl}/text-to-speech/${voiceCloneIdToUse}`,
+          {
+            method: 'POST',
+            headers: {
+              'xi-api-key': config.ai.elevenlabs.apiKey!,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              text,
+              model_id: 'eleven_multilingual_v2', // Best quality model
+              voice_settings: {
+                stability: 0.5,
+                similarity_boost: 0.75,
+              },
+            }),
+          }
+        );
+
+        if (!elevenLabsResponse.ok) {
+          const errorData = await elevenLabsResponse.json().catch(() => ({}));
+          console.error('ElevenLabs TTS error:', errorData);
+
+          // Fallback to OpenAI TTS if ElevenLabs fails
+          throw new Error('ElevenLabs TTS failed, falling back to OpenAI');
+        }
+
+        const audioArrayBuffer = await elevenLabsResponse.arrayBuffer();
+        audioBuffer = Buffer.from(audioArrayBuffer);
+      } catch (error) {
+        console.warn('ElevenLabs TTS failed, falling back to OpenAI:', error);
+        // Fall through to OpenAI TTS
+        audioBuffer = undefined;
+      }
     }
 
-    // Initialize OpenAI client
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-      timeout: 60_000,
-    });
+    // Fallback to OpenAI TTS if no cloned voice or if ElevenLabs failed
+    if (!audioBuffer) {
+      // Check if we have a real API key, otherwise return mock response
+      if (
+        !process.env.OPENAI_API_KEY ||
+        process.env.OPENAI_API_KEY === 'dummy_key' ||
+        process.env.OPENAI_API_KEY === 'your_openai_api_key_here'
+      ) {
+        console.log('🧪 Using mock TTS response for development/testing');
 
-    // Generate speech using OpenAI TTS
-    const mp3 = await openai.audio.speech.create({
-      model: 'tts-1',
-      voice: voice as 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer',
-      input: text,
-      response_format: 'mp3',
-    });
+        // Return a small silent audio file as mock
+        const mockAudioData = new Uint8Array([
+          // Minimal WAV file header for silence (44 bytes + minimal data)
+          0x52,
+          0x49,
+          0x46,
+          0x46, // "RIFF"
+          0x28,
+          0x00,
+          0x00,
+          0x00, // File size - 8
+          0x57,
+          0x41,
+          0x56,
+          0x45, // "WAVE"
+          0x66,
+          0x6d,
+          0x74,
+          0x20, // "fmt "
+          0x10,
+          0x00,
+          0x00,
+          0x00, // Subchunk1Size
+          0x01,
+          0x00,
+          0x01,
+          0x00, // AudioFormat, NumChannels
+          0x44,
+          0xac,
+          0x00,
+          0x00, // SampleRate (44100)
+          0x88,
+          0x58,
+          0x01,
+          0x00, // ByteRate
+          0x02,
+          0x00,
+          0x10,
+          0x00, // BlockAlign, BitsPerSample
+          0x64,
+          0x61,
+          0x74,
+          0x61, // "data"
+          0x04,
+          0x00,
+          0x00,
+          0x00, // Data size
+          0x00,
+          0x00,
+          0x00,
+          0x00, // Silence data
+        ]);
 
-    const audioBuffer = Buffer.from(await mp3.arrayBuffer());
+        return new NextResponse(mockAudioData, {
+          headers: {
+            'Content-Type': 'audio/wav',
+            'Content-Length': mockAudioData.length.toString(),
+          },
+        });
+      }
+
+      // Initialize OpenAI client
+      const openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY,
+        timeout: 60_000,
+      });
+
+      // Generate speech using OpenAI TTS
+      const mp3 = await openai.audio.speech.create({
+        model: 'tts-1',
+        voice: voice as 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer',
+        input: text,
+        response_format: 'mp3',
+      });
+
+      audioBuffer = Buffer.from(await mp3.arrayBuffer());
+    }
 
     if (process.env.NODE_ENV !== 'production') {
       console.log('TTS generation completed, audio size:', audioBuffer.length, 'bytes');
@@ -255,7 +346,7 @@ export async function POST(request: NextRequest) {
         {
           content_hash: contentHash,
           text_content: text,
-          voice: voice,
+          voice: voiceCloneIdToUse || voice,
           audio_url: audioUrl,
           audio_size_bytes: audioBuffer.length,
           last_accessed_at: new Date().toISOString(),
@@ -303,10 +394,17 @@ export async function POST(request: NextRequest) {
       console.error('Failed to cache TTS audio:', cacheError);
     }
 
-    return new NextResponse(audioBuffer, {
+    // At this point, audioBuffer is guaranteed to be assigned (from ElevenLabs or OpenAI)
+    if (!audioBuffer) {
+      throw new Error('Failed to generate audio buffer');
+    }
+
+    // Convert Buffer to Uint8Array for NextResponse
+    const audioUint8Array = new Uint8Array(audioBuffer);
+    return new NextResponse(audioUint8Array, {
       headers: {
         'Content-Type': 'audio/mpeg',
-        'Content-Length': audioBuffer.length.toString(),
+        'Content-Length': audioUint8Array.length.toString(),
         'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
         'X-TTS-Cache': 'miss',
       },

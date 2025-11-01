@@ -61,7 +61,12 @@ export function useTextToSpeech(
     }
   };
 
-  const playText = async (text: string, voice = 'shimmer', vibelogId?: string) => {
+  const playText = async (
+    text: string,
+    voice = 'shimmer',
+    vibelogId?: string,
+    voiceCloneId?: string
+  ) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -70,13 +75,13 @@ export function useTextToSpeech(
       // Clean up any existing audio
       cleanup();
 
-      // Generate TTS audio (pass vibelogId so it can be saved for future users)
+      // Generate TTS audio (pass vibelogId and voiceCloneId so it can use cloned voice)
       const response = await fetch('/api/text-to-speech', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ text, voice, vibelogId }),
+        body: JSON.stringify({ text, voice, vibelogId, voiceCloneId }),
       });
 
       if (!response.ok) {
