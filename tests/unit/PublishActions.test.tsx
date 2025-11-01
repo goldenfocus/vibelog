@@ -116,7 +116,7 @@ describe('PublishActions', () => {
   });
 
   const defaultProps = {
-    content: 'Sample blog content for testing',
+    content: 'Sample vibelog content for testing',
     isLoggedIn: false,
     onCopy: mockOnCopy,
     onEdit: mockOnEdit,
@@ -168,7 +168,7 @@ describe('PublishActions', () => {
       const copyButton = screen.getByTestId('copy-button');
       fireEvent.click(copyButton);
 
-      expect(mockOnCopy).toHaveBeenCalledWith('Sample blog content for testing');
+      expect(mockOnCopy).toHaveBeenCalledWith('Sample vibelog content for testing');
     });
 
     it('should add signature when showSignature is true', () => {
@@ -188,7 +188,7 @@ describe('PublishActions', () => {
       const copyButton = screen.getByTestId('copy-button');
       fireEvent.click(copyButton);
 
-      expect(mockOnCopy).toHaveBeenCalledWith('Sample blog content for testing');
+      expect(mockOnCopy).toHaveBeenCalledWith('Sample vibelog content for testing');
     });
 
     it('should handle empty content', () => {

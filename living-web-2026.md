@@ -25,7 +25,7 @@ There was a quiet, constant hum inside you — the one that said, "I'm meant to 
 
 It started as irritation: too many tools, too much noise, too little soul. You watched creators fight algorithms and brands chase dopamine. Inside, a whisper: _What if the web could feel again?_
 
-That whisper turned into Fireblog.
+That whisper turned into Vibelog.
 
 A raw experiment, a confession of frustration — half-code, half-therapy. You weren't trying to build an empire; you were trying to silence the enemy in your head that said, "You'll never make something that matters."
 
@@ -145,7 +145,7 @@ AI (voice): "On it... Done! Here's the new intro:"
 
 Sarah: "Perfect. Publish everywhere."
 
-AI: "Published to your blog, Twitter, LinkedIn, and newsletter.
+AI: "Published to your vibelog, Twitter, LinkedIn, and newsletter.
      12 people already liked it. Want me to read you the first comment?"
 
 Sarah: [Smiles, puts phone down]

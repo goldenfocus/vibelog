@@ -19,7 +19,7 @@ vi.mock('@/components/providers/I18nProvider', () => ({
         'components.micRecorder.symphony.structureTitle': 'Structuring',
         'components.micRecorder.symphony.structureDesc': 'Organizing into sections',
         'components.micRecorder.symphony.formatTitle': 'Formatting',
-        'components.micRecorder.symphony.formatDesc': 'Applying blog formatting',
+        'components.micRecorder.symphony.formatDesc': 'Applying vibelog formatting',
         'components.micRecorder.symphony.imageTitle': 'Generating Image',
         'components.micRecorder.symphony.imageDesc': 'Creating cover image',
         'components.micRecorder.symphony.optimizeTitle': 'Optimizing',
@@ -47,7 +47,7 @@ describe('ProcessingAnimation', () => {
   beforeEach(() => {
     // Mock API functions
     mockOnTranscribeComplete = vi.fn().mockResolvedValue('Mock transcription result');
-    mockOnGenerateComplete = vi.fn().mockResolvedValue('Mock blog content');
+    mockOnGenerateComplete = vi.fn().mockResolvedValue('Mock vibelog content');
 
     // Mock console methods to avoid noise in tests
     vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -356,8 +356,8 @@ describe('ProcessingAnimation', () => {
       });
     });
 
-    it('should handle blog generation API errors gracefully', async () => {
-      const mockErrorGenerate = vi.fn().mockRejectedValue(new Error('Blog generation failed'));
+    it('should handle vibelog generation API errors gracefully', async () => {
+      const mockErrorGenerate = vi.fn().mockRejectedValue(new Error('Vibelog generation failed'));
 
       render(
         <ProcessingAnimation

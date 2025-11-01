@@ -1,16 +1,17 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 
-import MicRecorder from "@/components/MicRecorder";
-import { useI18n } from "@/components/providers/I18nProvider";
+import MicRecorder from '@/components/MicRecorder';
+import { useI18n } from '@/components/providers/I18nProvider';
 
 // Mock data for deterministic visual testing
-const MOCK_TRANSCRIPTION = "This is a sample transcription for visual testing purposes. It contains enough text to show how the transcription display works in the MicRecorder component.";
+const MOCK_TRANSCRIPTION =
+  'This is a sample transcription for visual testing purposes. It contains enough text to show how the transcription display works in the MicRecorder component.';
 
-const MOCK_BLOG_CONTENT = `# AI-Powered Voice Technology: The Future is Here
+const MOCK_VIBELOG_CONTENT = `# AI-Powered Voice Technology: The Future is Here
 
-The rapid advancement of voice recognition technology has opened up incredible possibilities for content creation. From simple voice notes to fully-fledged blog posts, we're witnessing a transformation in how we interact with digital content.
+The rapid advancement of voice recognition technology has opened up incredible possibilities for content creation. From simple voice notes to fully-fledged vibelog posts, we're witnessing a transformation in how we interact with digital content.
 
 ## Key Benefits of Voice-to-Text Technology
 
@@ -46,49 +47,49 @@ interface MicLabState {
 
 const MIC_STATES: MicLabState[] = [
   {
-    id: "idle",
-    name: "Idle State",
-    description: "Default state when no recording is happening"
+    id: 'idle',
+    name: 'Idle State',
+    description: 'Default state when no recording is happening',
   },
   {
-    id: "permission-request", 
-    name: "Permission Request",
-    description: "When microphone permission is being requested"
+    id: 'permission-request',
+    name: 'Permission Request',
+    description: 'When microphone permission is being requested',
   },
   {
-    id: "recording",
-    name: "Recording State", 
-    description: "Active recording with waveform visualization and live transcript"
+    id: 'recording',
+    name: 'Recording State',
+    description: 'Active recording with waveform visualization and live transcript',
   },
   {
-    id: "processing",
-    name: "Processing State",
-    description: "AI processing with magical sequence animation"
+    id: 'processing',
+    name: 'Processing State',
+    description: 'AI processing with magical sequence animation',
   },
   {
-    id: "complete",
-    name: "Complete State",
-    description: "Final state with transcription, blog content, and actions",
+    id: 'complete',
+    name: 'Complete State',
+    description: 'Final state with transcription, vibelog content, and actions',
     mockData: {
       transcription: MOCK_TRANSCRIPTION,
-      blogContent: MOCK_BLOG_CONTENT,
+      blogContent: MOCK_VIBELOG_CONTENT,
       audioBlob: createMockAudioBlob(),
-      duration: 23
-    }
+      duration: 23,
+    },
   },
   {
-    id: "error",
-    name: "Error State", 
-    description: "Error handling and retry options"
-  }
+    id: 'error',
+    name: 'Error State',
+    description: 'Error handling and retry options',
+  },
 ];
 
 // Enhanced MicRecorder with controllable state for testing
-function ControllableMicRecorder({ 
-  testId, 
-  forcedState, 
-  mockData 
-}: { 
+function ControllableMicRecorder({
+  testId,
+  forcedState,
+  mockData,
+}: {
   testId: string;
   forcedState?: string;
   mockData?: any;
@@ -108,7 +109,7 @@ function ControllableMicRecorder({
 }
 
 export default function MicLabPage() {
-  const { t } = useI18n();
+  const { t: _t } = useI18n();
   const [selectedState, setSelectedState] = useState<string | null>(null);
 
   // Auto-select state from URL params for automated testing
@@ -122,17 +123,17 @@ export default function MicLabPage() {
 
   return (
     <div className="min-h-screen bg-background p-8">
-      <div className="max-w-6xl mx-auto">
+      <div className="mx-auto max-w-6xl">
         {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-4 bg-gradient-electric bg-clip-text text-transparent">
+        <div className="mb-12 text-center">
+          <h1 className="mb-4 bg-gradient-electric bg-clip-text text-4xl font-bold text-transparent">
             MicRecorder Visual Lab
           </h1>
-          <p className="text-muted-foreground text-lg">
+          <p className="text-lg text-muted-foreground">
             Visual testing laboratory for all MicRecorder states and variants
           </p>
           <div className="mt-4 text-sm text-muted-foreground">
-            <span className="bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400 px-3 py-1 rounded-full">
+            <span className="rounded-full bg-yellow-100 px-3 py-1 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400">
               🧪 FOR VISUAL TESTING ONLY
             </span>
           </div>
@@ -140,23 +141,21 @@ export default function MicLabPage() {
 
         {/* State Selector */}
         <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">Select State to Test:</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {MIC_STATES.map((state) => (
+          <h2 className="mb-4 text-xl font-semibold">Select State to Test:</h2>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {MIC_STATES.map(state => (
               <button
                 key={state.id}
                 onClick={() => setSelectedState(selectedState === state.id ? null : state.id)}
-                className={`p-4 rounded-xl border text-left transition-all ${
+                className={`rounded-xl border p-4 text-left transition-all ${
                   selectedState === state.id
                     ? 'border-electric bg-electric/10'
                     : 'border-border hover:border-electric/50'
                 }`}
               >
-                <h3 className="font-semibold mb-1">{state.name}</h3>
+                <h3 className="mb-1 font-semibold">{state.name}</h3>
                 <p className="text-sm text-muted-foreground">{state.description}</p>
-                <div className="mt-2 text-xs text-electric">
-                  data-testid="mic-{state.id}"
-                </div>
+                <div className="mt-2 text-xs text-electric">data-testid={`mic-${state.id}`}</div>
               </button>
             ))}
           </div>
@@ -164,25 +163,25 @@ export default function MicLabPage() {
 
         {/* All States Display - For Comprehensive Visual Testing */}
         <div className="space-y-12">
-          <h2 className="text-2xl font-bold text-center">All States (Automated Visual Testing)</h2>
-          
-          {MIC_STATES.map((state) => (
-            <div 
+          <h2 className="text-center text-2xl font-bold">All States (Automated Visual Testing)</h2>
+
+          {MIC_STATES.map(state => (
+            <div
               key={state.id}
               className={`${selectedState && selectedState !== state.id ? 'opacity-30' : ''}`}
             >
-              <div className="border-b border-border/20 pb-4 mb-8">
-                <h3 className="text-xl font-semibold flex items-center gap-3">
-                  <span className="w-8 h-8 bg-electric/20 text-electric rounded-full flex items-center justify-center text-sm font-bold">
+              <div className="mb-8 border-b border-border/20 pb-4">
+                <h3 className="flex items-center gap-3 text-xl font-semibold">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-electric/20 text-sm font-bold text-electric">
                     {state.id.charAt(0).toUpperCase()}
                   </span>
                   {state.name}
                 </h3>
-                <p className="text-muted-foreground mt-1">{state.description}</p>
+                <p className="mt-1 text-muted-foreground">{state.description}</p>
               </div>
-              
+
               {/* MicRecorder Instance */}
-              <div className="max-w-3xl mx-auto bg-card/30 backdrop-blur-sm rounded-2xl p-8 border border-border/10">
+              <div className="mx-auto max-w-3xl rounded-2xl border border-border/10 bg-card/30 p-8 backdrop-blur-sm">
                 <ControllableMicRecorder
                   testId={`mic-${state.id}`}
                   forcedState={state.id}
@@ -194,27 +193,27 @@ export default function MicLabPage() {
         </div>
 
         {/* URL Testing Instructions */}
-        <div className="mt-16 p-6 bg-muted/20 rounded-xl">
-          <h3 className="font-semibold mb-3">URL Testing Parameters:</h3>
-          <div className="space-y-2 text-sm font-mono">
-            {MIC_STATES.map((state) => (
+        <div className="mt-16 rounded-xl bg-muted/20 p-6">
+          <h3 className="mb-3 font-semibold">URL Testing Parameters:</h3>
+          <div className="space-y-2 font-mono text-sm">
+            {MIC_STATES.map(state => (
               <div key={state.id}>
                 <span className="text-muted-foreground">/mic-lab?state=</span>
                 <span className="text-electric">{state.id}</span>
-                <span className="text-muted-foreground ml-4">→ {state.name}</span>
+                <span className="ml-4 text-muted-foreground">→ {state.name}</span>
               </div>
             ))}
           </div>
         </div>
 
         {/* Deterministic Data Notice */}
-        <div className="mt-8 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
-          <h4 className="font-semibold text-blue-800 dark:text-blue-400 mb-2">
+        <div className="mt-8 rounded-xl bg-blue-50 p-4 dark:bg-blue-900/20">
+          <h4 className="mb-2 font-semibold text-blue-800 dark:text-blue-400">
             📊 Deterministic Test Data
           </h4>
           <p className="text-sm text-blue-700 dark:text-blue-300">
-            All mock data is deterministic for consistent visual snapshots. 
-            Waveform animations and live transcripts use fixed patterns to ensure reproducible testing.
+            All mock data is deterministic for consistent visual snapshots. Waveform animations and
+            live transcripts use fixed patterns to ensure reproducible testing.
           </p>
         </div>
       </div>

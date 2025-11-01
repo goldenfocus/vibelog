@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
                 '10000 requests every 15 minutes (vs 10000 per day)',
                 'No daily limits',
                 'Faster processing priority',
-                'Save your blog posts',
+                'Save your vibelogs',
               ],
             },
             ...rl,

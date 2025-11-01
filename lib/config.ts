@@ -6,7 +6,7 @@ export const config = {
   app: {
     name: 'VibeLog',
     url: env.NEXT_PUBLIC_APP_URL || 'https://vibelog.io',
-    description: 'Voice-to-blog that turns your thoughts into beautiful posts—instantly.',
+    description: 'Voice-to-content that turns your thoughts into beautiful posts—instantly.',
   },
 
   // Database
