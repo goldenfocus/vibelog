@@ -58,6 +58,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Text content is required' }, { status: 400 });
     }
 
+    // Initialize adminSupabase early since we need it for voice clone ID lookup
+    const adminSupabase = await createServerAdminClient();
+
     // Check if vibelog has a voice_clone_id
     let voiceCloneIdToUse = voiceCloneId;
     if (!voiceCloneIdToUse && vibelogId) {
@@ -109,7 +112,6 @@ export async function POST(request: NextRequest) {
     // Generate cache key (hash of text + voice + voiceCloneId if present)
     const cacheKey = voiceCloneIdToUse ? `${text}:${voiceCloneIdToUse}` : `${text}:${voice}`;
     const contentHash = hashTTSContent(cacheKey, voiceCloneIdToUse || voice);
-    const adminSupabase = await createServerAdminClient();
 
     // Check cache first
     const { data: cachedEntry } = await adminSupabase
@@ -170,10 +172,11 @@ export async function POST(request: NextRequest) {
           console.warn('Cached audio file missing, regenerating:', downloadError);
         } else {
           const audioBuffer = Buffer.from(await audioData.arrayBuffer());
-          return new NextResponse(audioBuffer, {
+          const audioUint8Array = new Uint8Array(audioBuffer);
+          return new NextResponse(audioUint8Array, {
             headers: {
               'Content-Type': 'audio/mpeg',
-              'Content-Length': audioBuffer.length.toString(),
+              'Content-Length': audioUint8Array.length.toString(),
               'Cache-Control': 'public, max-age=31536000', // Cache for 1 year (immutable)
               'X-TTS-Cache': 'hit',
             },
@@ -194,7 +197,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let audioBuffer: Buffer;
+    let audioBuffer: Buffer | undefined;
 
     // Use cloned voice if available, otherwise use OpenAI TTS
     if (voiceCloneIdToUse && config.ai.elevenlabs.apiKey) {
@@ -236,12 +239,12 @@ export async function POST(request: NextRequest) {
       } catch (error) {
         console.warn('ElevenLabs TTS failed, falling back to OpenAI:', error);
         // Fall through to OpenAI TTS
-        voiceCloneIdToUse = undefined;
+        audioBuffer = undefined;
       }
     }
 
     // Fallback to OpenAI TTS if no cloned voice or if ElevenLabs failed
-    if (!voiceCloneIdToUse || !audioBuffer!) {
+    if (!audioBuffer) {
       // Check if we have a real API key, otherwise return mock response
       if (
         !process.env.OPENAI_API_KEY ||
@@ -391,10 +394,17 @@ export async function POST(request: NextRequest) {
       console.error('Failed to cache TTS audio:', cacheError);
     }
 
-    return new NextResponse(audioBuffer, {
+    // At this point, audioBuffer is guaranteed to be assigned (from ElevenLabs or OpenAI)
+    if (!audioBuffer) {
+      throw new Error('Failed to generate audio buffer');
+    }
+
+    // Convert Buffer to Uint8Array for NextResponse
+    const audioUint8Array = new Uint8Array(audioBuffer);
+    return new NextResponse(audioUint8Array, {
       headers: {
         'Content-Type': 'audio/mpeg',
-        'Content-Length': audioBuffer.length.toString(),
+        'Content-Length': audioUint8Array.length.toString(),
         'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
         'X-TTS-Cache': 'miss',
       },

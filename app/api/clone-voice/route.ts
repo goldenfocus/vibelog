@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
 
     // Get form data from request
     const formData = await request.formData();
-    const audioBlob = formData.get('audio') as File | null;
+    const audioBlob = formData.get('audio') as File | Blob | null;
     const vibelogId = formData.get('vibelogId') as string | null;
     const voiceName = (formData.get('voiceName') as string | null) || 'My Voice';
 
@@ -66,10 +66,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Handle case where audio is received as a blob/file
-    let audioFileForElevenLabs: File | Blob = audioBlob as File;
+    let audioFileForElevenLabs: File | Blob;
 
     // If audioBlob is not a File, convert it to one
-    if (!(audioBlob instanceof File)) {
+    if (audioBlob instanceof File) {
+      audioFileForElevenLabs = audioBlob;
+    } else {
+      // It's a Blob, convert to File
       const arrayBuffer = await audioBlob.arrayBuffer();
       audioFileForElevenLabs = new File([arrayBuffer], 'recording.webm', {
         type: audioBlob.type || 'audio/webm',
