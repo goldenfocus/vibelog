@@ -647,8 +647,8 @@ export function useMicStateMachine(
         }
 
         // Clone voice after saving vibelog (if we have audio and vibelogId)
-        if (audioBlob && result.vibelogId && isLoggedIn && audioBlob.size > 1024 * 1024) {
-          // Only clone if logged in and audio is substantial (>1MB, roughly >1 minute)
+        if (audioBlob && result.vibelogId && isLoggedIn && audioBlob.size > 512 * 1024) {
+          // Only clone if logged in and audio is substantial (>512KB, roughly >30 seconds)
           // Clone voice synchronously to ensure it's ready before playback
           try {
             console.log('🎤 [VOICE-CLONE] Starting voice cloning for vibelog:', result.vibelogId);
