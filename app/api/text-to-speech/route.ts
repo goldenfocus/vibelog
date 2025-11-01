@@ -65,22 +65,46 @@ export async function POST(request: NextRequest) {
     let voiceCloneIdToUse = voiceCloneId;
     if (!voiceCloneIdToUse && vibelogId) {
       try {
-        const { data: vibelog } = await adminSupabase
+        const { data: vibelog, error: vibelogError } = await adminSupabase
           .from('vibelogs')
-          .select('voice_clone_id')
+          .select('voice_clone_id, user_id')
           .eq('id', vibelogId)
           .single();
 
-        if (vibelog?.voice_clone_id) {
+        if (vibelogError) {
+          console.log('[TTS] Vibelog lookup error:', vibelogError.message);
+        } else if (vibelog?.voice_clone_id) {
           voiceCloneIdToUse = vibelog.voice_clone_id;
+          console.log('[TTS] Found voice_clone_id from vibelog:', voiceCloneIdToUse);
+        } else {
+          console.log('[TTS] No voice_clone_id found in vibelog, will check profile');
+          // Also try to get from vibelog's author profile
+          if (vibelog?.user_id) {
+            try {
+              const { data: profile } = await adminSupabase
+                .from('profiles')
+                .select('voice_clone_id')
+                .eq('id', vibelog.user_id)
+                .single();
+
+              if (profile?.voice_clone_id) {
+                voiceCloneIdToUse = profile.voice_clone_id;
+                console.log(
+                  '[TTS] Found voice_clone_id from vibelog author profile:',
+                  voiceCloneIdToUse
+                );
+              }
+            } catch {
+              // Ignore errors
+            }
+          }
         }
-      } catch {
-        // If vibelog not found or no voice_clone_id, continue with regular TTS
-        console.log('No voice clone ID found for vibelog, using regular TTS');
+      } catch (error) {
+        console.error('[TTS] Error looking up vibelog voice_clone_id:', error);
       }
     }
 
-    // If no voice clone ID, try to get from user profile
+    // If no voice clone ID yet, try to get from current user's profile
     if (!voiceCloneIdToUse && userId) {
       try {
         const { data: profile } = await adminSupabase
@@ -91,11 +115,15 @@ export async function POST(request: NextRequest) {
 
         if (profile?.voice_clone_id) {
           voiceCloneIdToUse = profile.voice_clone_id;
+          console.log('[TTS] Found voice_clone_id from user profile:', voiceCloneIdToUse);
         }
-      } catch {
-        // If profile not found or no voice_clone_id, continue with regular TTS
-        console.log('No voice clone ID found for user, using regular TTS');
+      } catch (error) {
+        console.log('[TTS] No voice_clone_id found for user:', error);
       }
+    }
+
+    if (!voiceCloneIdToUse) {
+      console.log('[TTS] Using default voice (no cloned voice available)');
     }
 
     // Validate text length (OpenAI TTS has a 4096 character limit)
