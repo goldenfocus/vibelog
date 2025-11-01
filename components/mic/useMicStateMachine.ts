@@ -652,7 +652,7 @@ export function useMicStateMachine(
           // Clone voice synchronously to ensure it's ready before playback
           try {
             console.log('🎤 [VOICE-CLONE] Starting voice cloning for vibelog:', result.vibelogId);
-            showToast('🎤 Cloning your voice for future playback...', 2000);
+            showToast('🎤 Cloning your voice for future playback...');
 
             const voiceId = await cloneVoice(
               audioBlob,
@@ -667,16 +667,16 @@ export function useMicStateMachine(
                 'for vibelog:',
                 result.vibelogId
               );
-              showToast('✅ Voice cloned! Future playback will use your voice.', 3000);
+              showToast('✅ Voice cloned! Future playback will use your voice.');
             } else {
               console.warn('⚠️ [VOICE-CLONE] Voice cloning returned no voice ID');
-              showToast('⚠️ Voice cloning incomplete. Using default voice.', 2000);
+              showToast('⚠️ Voice cloning incomplete. Using default voice.');
             }
           } catch (error) {
             console.error('❌ [VOICE-CLONE] Voice cloning failed:', error);
             // Don't block the save process if voice cloning fails
             // The user can still play back with default voice
-            showToast('Voice cloning failed. Using default voice for playback.', 2000);
+            showToast('Voice cloning failed. Using default voice for playback.');
           }
         }
 
