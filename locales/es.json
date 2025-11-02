@@ -73,8 +73,8 @@
     "blogContent": "# El Futuro de la Tecnología de Voz: Transformando la Creación de Contenido\n\nLa tecnología de voz está revolucionando cómo creamos y compartimos contenido. Mientras avanzamos hacia un mundo digital más conectado, la capacidad de transformar palabras habladas en contenido pulido y publicable representa un cambio fundamental en la creación de contenido.\n\n## La Evolución Natural de la Comunicación\n\nHablar es nuestra forma más natural de comunicación. Cuando eliminamos la fricción de escribir y formatear, podemos enfocarnos puramente en nuestras ideas y dejar que la tecnología maneje el resto. Esta liberación permite a los creadores:\n\n- **Expresar ideas más naturalmente** sin las limitaciones de un teclado\n- **Capturar inspiración en tiempo real** donde sea que estén\n- **Reducir la barrera entre pensamiento y publicación**\n\n## Por Qué la Voz Importa en la Creación de Contenido\n\nLas implicaciones para creadores, escritores y profesionales del marketing de contenidos son profundas. Nos dirigimos hacia un mundo donde tu voz se convierte en tu pluma, permitiendo:\n\n### Producción de Contenido Más Rápida\nLa tecnología de voz a texto puede capturar pensamientos a la velocidad del habla, que típicamente es 3-4 veces más rápida que escribir.\n\n### Mejor Accesibilidad\nLas interfaces de voz hacen la creación de contenido accesible para usuarios con desafíos de movilidad o aquellos que prefieren la interacción auditiva.\n\n### Autenticidad Mejorada\nEl contenido creado a través de voz a menudo retiene un tono más conversacional y auténtico que resuena mejor con las audiencias.\n\n## La Tecnología Detrás de la Magia\n\nLa tecnología de voz moderna combina varias tecnologías de vanguardia:\n\n- **Reconocimiento de voz avanzado** impulsado por redes neuronales\n- **Procesamiento de lenguaje natural** para comprensión de contexto\n- **Optimización de contenido impulsada por IA** para SEO y legibilidad\n- **Formateo y estructuración automatizada** para presentación profesional\n\n## Mirando Hacia el Futuro\n\nMientras la tecnología de voz continúa evolucionando, podemos esperar características aún más sofisticadas como verificación de hechos en tiempo real, generación automática de citas y creación de contenido multiidioma. El futuro de la creación de contenido no es solo digital—es conversacional.\n\n*¿Listo para probar la creación de contenido impulsada por voz? Comienza a hacer realidad tus ideas hablándolas hoy.*"
   },
   "meta": {
-    "title": "VibeLog - De Voz a Blog en Segundos",
-    "description": "Convierte tu voz en posts pulidos al instante. Habla tu vibe, la IA hace el resto. Publica en todas partes con un toque."
+    "title": "VibeLog - De Voz a Vibelog en Segundos",
+    "description": "Convierte tu voz en vibelogs pulidos al instante. Habla tu vibe, la IA hace el resto. Publica en todas partes con un toque."
   },
   "components": {
     "micRecorder": {
@@ -199,7 +199,7 @@
             "Integraciones redes sociales",
             "Auto-publicar en plataformas",
             "Opciones de formato avanzadas",
-            "Plantillas de blog personalizadas",
+            "Plantillas de contenido personalizadas",
             "Panel de analíticas",
             "Soporte por email"
           ]
@@ -258,7 +258,7 @@
       "solution": {
         "title": "La Solución",
         "paragraphs": [
-          "Así nació vibelog.io. Un lugar donde tu voz se convierte instantáneamente en contenido — posts de blog, hilos sociales, subtítulos, newsletters, lo que necesites.",
+          "Así nació vibelog.io. Un lugar donde tu voz se convierte instantáneamente en contenido — vibelogs, hilos sociales, subtítulos, newsletters, lo que necesites.",
           "Gratis para siempre si solo quieres jugar. Planes pagos si hablas en serio sobre influencia, marketing o crecimiento — con precios justos, porque el tiempo ahorrado no tiene precio."
         ]
       },

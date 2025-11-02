@@ -1,7 +1,7 @@
 {
   "name": "VibeLog",
   "short_name": "VibeLog",
-  "description": "Transform your voice into polished blog content in seconds.",
+  "description": "Transform your voice into polished content in seconds.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -20,4 +20,3 @@
     }
   ]
 }
-
