@@ -73,8 +73,8 @@
     "blogContent": "# Tương Lai Của Công Nghệ Giọng Nói: Biến Đổi Việc Tạo Nội Dung\n\nCông nghệ giọng nói đang cách mạng hóa cách chúng ta tạo và chia sẻ nội dung. Khi chúng ta tiến tới một thế giới kỹ thuật số kết nối hơn, khả năng biến đổi lời nói thành nội dung được chỉnh sửa và sẵn sàng xuất bản đại diện cho một sự thay đổi căn bản trong việc tạo nội dung.\n\n## Sự Phát Triển Tự Nhiên Của Giao Tiếp\n\nNói là hình thức giao tiếp tự nhiên nhất của chúng ta. Khi chúng ta loại bỏ ma sát của việc gõ và định dạng, chúng ta có thể tập trung hoàn toàn vào ý tưởng của mình và để công nghệ xử lý phần còn lại. Sự giải phóng này cho phép các nhà sáng tạo:\n\n- **Thể hiện ý tưởng tự nhiên hơn** mà không bị hạn chế bởi bàn phím\n- **Nắm bắt cảm hứng theo thời gian thực** bất kể ở đâu\n- **Giảm thiểu rào cản giữa suy nghĩ và xuất bản**\n\n## Tại Sao Giọng Nói Quan Trọng Trong Việc Tạo Nội Dung\n\nCác tác động đối với các nhà sáng tạo, nhà văn và chuyên gia tiếp thị nội dung là sâu sắc. Chúng ta đang tiến tới một thế giới nơi giọng nói của bạn trở thành cây bút của bạn, cho phép:\n\n### Sản Xuất Nội Dung Nhanh Hơn\nCông nghệ giọng nói-thành-văn bản có thể nắm bắt suy nghĩ với tốc độ của lời nói, thường nhanh hơn 3-4 lần so với việc gõ.\n\n### Cải Thiện Khả Năng Tiếp Cận\nGiao diện giọng nói làm cho việc tạo nội dung có thể tiếp cận được đối với người dùng có thách thức về vận động hoặc những người thích tương tác bằng âm thanh.\n\n### Tăng Tính Xác Thực\nNội dung được tạo qua giọng nói thường giữ lại giọng điệu đàm thoại và xác thực hơn, cộng hưởng tốt hơn với khán giả.\n\n## Công Nghệ Đằng Sau Phép Màu\n\nCông nghệ giọng nói hiện đại kết hợp nhiều công nghệ tiên tiến:\n\n- **Nhận diện giọng nói nâng cao** được hỗ trợ bởi mạng nơ-ron\n- **Xử lý ngôn ngữ tự nhiên** để hiểu bối cảnh\n- **Tối ưu hóa nội dung được điều khiển bởi AI** cho SEO và khả năng đọc\n- **Định dạng và cấu trúc tự động** cho trình bày chuyên nghiệp\n\n## Nhìn Về Phía Trước\n\nKhi công nghệ giọng nói tiếp tục phát triển, chúng ta có thể mong đợi các tính năng tinh vi hơn như kiểm tra sự thật theo thời gian thực, tạo trích dẫn tự động và tạo nội dung đa ngôn ngữ. Tương lai của việc tạo nội dung không chỉ là kỹ thuật số—nó còn là đàm thoại.\n\n*Sẵn sàng thử tạo nội dung bằng giọng nói? Bắt đầu biến ý tưởng của bạn thành hiện thực bằng cách nói chúng ra hôm nay.*"
   },
   "meta": {
-    "title": "VibeLog - Từ Giọng Nói Đến Blog Trong Vài Giây",
-    "description": "Biến giọng nói của bạn thành các bài đăng hoàn thiện ngay lập tức. Nói vibe của bạn, AI làm phần còn lại. Xuất bản mọi nơi chỉ với một chạm."
+    "title": "VibeLog - Từ Giọng Nói Đến Vibelog Trong Vài Giây",
+    "description": "Biến giọng nói của bạn thành vibelogs hoàn thiện ngay lập tức. Nói vibe của bạn, AI làm phần còn lại. Xuất bản mọi nơi chỉ với một chạm."
   },
   "components": {
     "micRecorder": {
@@ -199,7 +199,7 @@
             "Tích hợp mạng xã hội",
             "Tự động xuất bản trên các nền tảng",
             "Tùy chọn định dạng nâng cao",
-            "Mẫu blog tùy chỉnh",
+            "Mẫu nội dung tùy chỉnh",
             "Bảng điều khiển phân tích",
             "Hỗ trợ email"
           ]
@@ -258,7 +258,7 @@
       "solution": {
         "title": "Giải Pháp",
         "paragraphs": [
-          "Đó là cách vibelog.io ra đời. Một nơi mà giọng nói của bạn ngay lập tức trở thành nội dung — bài viết blog, threads mạng xã hội, chú thích, newsletters, mọi thứ bạn cần.",
+          "Đó là cách vibelog.io ra đời. Một nơi mà giọng nói của bạn ngay lập tức trở thành nội dung — vibelogs, threads mạng xã hội, chú thích, newsletters, mọi thứ bạn cần.",
           "Miễn phí mãi mãi nếu bạn chỉ muốn chơi. Các gói trả phí nếu bạn nghiêm túc về ảnh hưởng, marketing hoặc tăng trưởng — giá cả công bằng, vì thời gian tiết kiệm là vô giá."
         ]
       },
