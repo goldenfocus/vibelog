@@ -128,7 +128,24 @@ returns trigger
 language plpgsql
 security definer set search_path = public
 as $$
+declare
+  base_username text;
+  final_username text;
+  username_suffix int := 0;
 begin
+  -- Generate base username from email or name
+  base_username := coalesce(
+    lower(regexp_replace(new.raw_user_meta_data->>'name', '[^a-zA-Z0-9]', '', 'g')),
+    split_part(new.email, '@', 1)
+  );
+
+  -- Handle username conflicts by adding a numeric suffix
+  final_username := base_username;
+  while exists (select 1 from public.profiles where username = final_username) loop
+    username_suffix := username_suffix + 1;
+    final_username := base_username || username_suffix;
+  end loop;
+
   insert into public.profiles (
     id,
     email,
@@ -161,15 +178,16 @@ begin
     new.raw_user_meta_data->>'email',
     (new.raw_user_meta_data->>'email_verified')::boolean,
     new.raw_user_meta_data->>'locale',
-    -- Generate username from email or name
-    coalesce(
-      lower(regexp_replace(new.raw_user_meta_data->>'name', '[^a-zA-Z0-9]', '', 'g')),
-      split_part(new.email, '@', 1)
-    ),
+    final_username,  -- Use conflict-free username
     coalesce(new.raw_user_meta_data->>'name', split_part(new.email, '@', 1)),
     now()
   );
   return new;
+exception
+  when others then
+    -- Log error but don't fail user creation
+    raise warning 'Failed to create profile for user %: %', new.id, sqlerrm;
+    return new;
 end;
 $$;
 
