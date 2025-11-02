@@ -3,7 +3,11 @@ import { useState, useCallback } from 'react';
 export interface UseVoiceCloningReturn {
   isCloning: boolean;
   error: string | null;
-  cloneVoice: (audioBlob: Blob, vibelogId?: string, voiceName?: string) => Promise<string | null>;
+  cloneVoice: (
+    audioBlob: Blob,
+    vibelogId?: string,
+    voiceName?: string
+  ) => Promise<{ voiceId: string; userId?: string } | null>;
 }
 
 /**
@@ -26,7 +30,11 @@ export function useVoiceCloning(): UseVoiceCloningReturn {
   const [error, setError] = useState<string | null>(null);
 
   const cloneVoice = useCallback(
-    async (audioBlob: Blob, vibelogId?: string, voiceName?: string): Promise<string | null> => {
+    async (
+      audioBlob: Blob,
+      vibelogId?: string,
+      voiceName?: string
+    ): Promise<{ voiceId: string; userId?: string } | null> => {
       try {
         setIsCloning(true);
         setError(null);
@@ -54,7 +62,15 @@ export function useVoiceCloning(): UseVoiceCloningReturn {
         }
 
         const data = await response.json();
-        return data.voiceId || null;
+        if (!data.voiceId) {
+          return null;
+        }
+
+        // Return both voiceId and server-verified userId
+        return {
+          voiceId: data.voiceId,
+          userId: data.userId || undefined,
+        };
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to clone voice';
         setError(errorMessage);
