@@ -26,6 +26,7 @@ interface SaveVibelogRequest {
   };
   sessionId?: string; // SECURITY: Never accept userId from client
   isTeaser?: boolean;
+  voiceCloneId?: string; // Voice clone ID from ElevenLabs (if voice was cloned)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   metadata?: Record<string, any>;
 }
@@ -163,6 +164,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       audio_duration: requestBody.audioData?.duration
         ? Math.round(requestBody.audioData.duration)
         : null,
+      voice_clone_id: requestBody.voiceCloneId || null, // Voice clone ID for TTS playback
       language: 'en',
       word_count: wordCount,
       read_time: readTime,

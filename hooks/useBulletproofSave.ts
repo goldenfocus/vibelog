@@ -17,6 +17,7 @@ interface SaveVibelogData {
   };
   userId?: string;
   isTeaser?: boolean;
+  voiceCloneId?: string; // Voice clone ID from ElevenLabs (if voice was cloned)
   metadata?: Record<string, any>;
 }
 
@@ -260,6 +261,7 @@ export function useBulletproofSave() {
           userId: data.userId,
           sessionId,
           isTeaser: data.isTeaser,
+          voiceCloneId: data.voiceCloneId, // Pass voice clone ID if available
           metadata: {
             ...data.metadata,
             attempt: attempt,
