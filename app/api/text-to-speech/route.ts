@@ -234,40 +234,70 @@ export async function POST(request: NextRequest) {
         console.log('🎤 Using cloned voice:', voiceCloneIdToUse);
       }
 
-      try {
-        const elevenLabsResponse = await fetch(
-          `${config.ai.elevenlabs.apiUrl}/text-to-speech/${voiceCloneIdToUse}`,
-          {
-            method: 'POST',
-            headers: {
-              'xi-api-key': config.ai.elevenlabs.apiKey!,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              text,
-              model_id: 'eleven_multilingual_v2', // Best quality model
-              voice_settings: {
-                stability: 0.5,
-                similarity_boost: 0.75,
-              },
-            }),
+      // Retry logic for ElevenLabs API (helps with network/timeout issues on mobile)
+      const MAX_RETRIES = 3;
+      const RETRY_DELAY_BASE = 1000; // 1 second base delay
+
+      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        try {
+          if (attempt > 1) {
+            const delay = RETRY_DELAY_BASE * Math.pow(2, attempt - 2); // 1s, 2s, 4s
+            console.log(`🔄 [ElevenLabs] Retry attempt ${attempt}/${MAX_RETRIES} after ${delay}ms`);
+            await new Promise(resolve => setTimeout(resolve, delay));
           }
-        );
 
-        if (!elevenLabsResponse.ok) {
-          const errorData = await elevenLabsResponse.json().catch(() => ({}));
-          console.error('ElevenLabs TTS error:', errorData);
+          const elevenLabsResponse = await fetch(
+            `${config.ai.elevenlabs.apiUrl}/text-to-speech/${voiceCloneIdToUse}`,
+            {
+              method: 'POST',
+              headers: {
+                'xi-api-key': config.ai.elevenlabs.apiKey!,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                text,
+                model_id: 'eleven_multilingual_v2', // Best quality model
+                voice_settings: {
+                  stability: 0.5,
+                  similarity_boost: 0.75,
+                },
+              }),
+              signal: AbortSignal.timeout(30000), // 30 second timeout per attempt
+            }
+          );
 
-          // Fallback to OpenAI TTS if ElevenLabs fails
-          throw new Error('ElevenLabs TTS failed, falling back to OpenAI');
+          if (!elevenLabsResponse.ok) {
+            const errorData = await elevenLabsResponse.json().catch(() => ({}));
+            console.error(`❌ [ElevenLabs] Attempt ${attempt} failed:`, errorData);
+
+            // If rate limited or server error, retry
+            if (
+              elevenLabsResponse.status === 429 ||
+              elevenLabsResponse.status >= 500 ||
+              attempt < MAX_RETRIES
+            ) {
+              continue; // Retry
+            }
+
+            // Fallback to OpenAI TTS if all retries exhausted
+            throw new Error('ElevenLabs TTS failed after retries, falling back to OpenAI');
+          }
+
+          const audioArrayBuffer = await elevenLabsResponse.arrayBuffer();
+          audioBuffer = Buffer.from(audioArrayBuffer);
+          console.log(`✅ [ElevenLabs] Success on attempt ${attempt}`);
+          break; // Success, exit retry loop
+        } catch (error) {
+          console.warn(`⚠️ [ElevenLabs] Attempt ${attempt}/${MAX_RETRIES} error:`, error);
+
+          // If this was the last attempt, fall back to OpenAI
+          if (attempt === MAX_RETRIES) {
+            console.warn('❌ [ElevenLabs] All retries exhausted, falling back to OpenAI');
+            audioBuffer = undefined;
+            break;
+          }
+          // Otherwise, continue to next retry
         }
-
-        const audioArrayBuffer = await elevenLabsResponse.arrayBuffer();
-        audioBuffer = Buffer.from(audioArrayBuffer);
-      } catch (error) {
-        console.warn('ElevenLabs TTS failed, falling back to OpenAI:', error);
-        // Fall through to OpenAI TTS
-        audioBuffer = undefined;
       }
     }
 
