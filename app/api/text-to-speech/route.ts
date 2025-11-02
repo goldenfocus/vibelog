@@ -140,26 +140,41 @@ export async function POST(request: NextRequest) {
       });
 
       // If vibelogId is provided and vibelog doesn't have audio_url yet, save it
+      // IMPORTANT: Only save if this cached audio was generated with the CREATOR'S voice
       if (vibelogId && cachedEntry.audio_url) {
         try {
           // Check if vibelog exists and doesn't have audio_url
           const { data: vibelog } = await adminSupabase
             .from('vibelogs')
-            .select('id, audio_url')
+            .select('id, audio_url, voice_clone_id')
             .eq('id', vibelogId)
             .single();
 
           if (vibelog && !vibelog.audio_url) {
-            // Save audio_url to vibelog for future users
-            await adminSupabase
-              .from('vibelogs')
-              .update({
-                audio_url: cachedEntry.audio_url,
-                updated_at: new Date().toISOString(),
-              })
-              .eq('id', vibelogId);
+            // CRITICAL: Only save cached audio if it matches the creator's voice
+            // This ensures we ALWAYS play the creator's voice, never default voice
+            const creatorVoiceId = vibelog.voice_clone_id;
+            const cachedWithCreatorVoice = !creatorVoiceId || voiceCloneIdToUse === creatorVoiceId;
 
-            console.log(`💾 [TTS] Saved cached audio_url to vibelog ${vibelogId} for future use`);
+            if (cachedWithCreatorVoice) {
+              // ✅ This cached audio uses creator's voice - safe to save for instant playback
+              await adminSupabase
+                .from('vibelogs')
+                .update({
+                  audio_url: cachedEntry.audio_url,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', vibelogId);
+
+              console.log(
+                `💾 [TTS] Saved cached audio_url to vibelog ${vibelogId} (creator's voice)`
+              );
+            } else {
+              // ❌ Cached audio uses wrong voice - don't save, but still return it for this request
+              console.log(
+                `⚠️ [TTS] NOT saving cached audio to vibelog ${vibelogId} - voice mismatch (cached: ${voiceCloneIdToUse}, creator: ${creatorVoiceId})`
+              );
+            }
           }
         } catch (error) {
           // Don't fail the request if saving to vibelog fails
@@ -372,26 +387,40 @@ export async function POST(request: NextRequest) {
       );
 
       // If vibelogId is provided and vibelog doesn't have audio_url yet, save it
+      // IMPORTANT: Only save if this audio was generated with the CREATOR'S voice
       if (vibelogId && audioUrl) {
         try {
           // Check if vibelog exists and doesn't have audio_url
           const { data: vibelog } = await adminSupabase
             .from('vibelogs')
-            .select('id, audio_url')
+            .select('id, audio_url, voice_clone_id')
             .eq('id', vibelogId)
             .single();
 
           if (vibelog && !vibelog.audio_url) {
-            // Save audio_url to vibelog for future users
-            await adminSupabase
-              .from('vibelogs')
-              .update({
-                audio_url: audioUrl,
-                updated_at: new Date().toISOString(),
-              })
-              .eq('id', vibelogId);
+            // CRITICAL: Only save audio if it matches the creator's voice
+            // This ensures we ALWAYS play the creator's voice, never default voice
+            const creatorVoiceId = vibelog.voice_clone_id;
+            const generatedWithCreatorVoice =
+              !creatorVoiceId || voiceCloneIdToUse === creatorVoiceId;
 
-            console.log(`💾 [TTS] Saved audio_url to vibelog ${vibelogId} for future use`);
+            if (generatedWithCreatorVoice) {
+              // ✅ This audio uses creator's voice - safe to save for instant playback
+              await adminSupabase
+                .from('vibelogs')
+                .update({
+                  audio_url: audioUrl,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', vibelogId);
+
+              console.log(`💾 [TTS] Saved audio_url to vibelog ${vibelogId} (creator's voice)`);
+            } else {
+              // ❌ Audio uses wrong voice - don't save, but still return it for this request
+              console.log(
+                `⚠️ [TTS] NOT saving audio to vibelog ${vibelogId} - voice mismatch (generated: ${voiceCloneIdToUse}, creator: ${creatorVoiceId})`
+              );
+            }
           }
         } catch (error) {
           // Don't fail the request if saving to vibelog fails
