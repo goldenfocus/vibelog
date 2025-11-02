@@ -62,7 +62,7 @@ export function ImageCropModal({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Crop {type === 'avatar' ? 'Profile Picture' : 'Header Image'}</DialogTitle>
           <p className="text-sm text-muted-foreground">
@@ -73,7 +73,7 @@ export function ImageCropModal({
         </DialogHeader>
 
         {/* Crop Area */}
-        <div className="relative h-[400px] w-full bg-background">
+        <div className="relative h-[250px] w-full bg-background sm:h-[400px]">
           <Cropper
             image={imageSrc}
             crop={crop}
@@ -107,36 +107,34 @@ export function ImageCropModal({
             <span className="text-muted-foreground">Filter</span>
             <span className="font-medium">{selectedFilter.name}</span>
           </div>
-          <div className="relative">
-            <div className="scrollbar-thin flex gap-2 overflow-x-auto pb-2">
-              {IMAGE_FILTERS.map(filter => (
-                <button
-                  key={filter.id}
-                  onClick={() => setSelectedFilter(filter)}
-                  className={cn(
-                    'group relative flex-shrink-0 overflow-hidden rounded-lg border-2 transition-all',
-                    selectedFilter.id === filter.id
-                      ? 'border-electric shadow-lg shadow-electric/20'
-                      : 'border-border/50 hover:border-electric/50'
-                  )}
-                >
-                  {/* Filter thumbnail preview */}
-                  <div className="relative h-16 w-16">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={imageSrc}
-                      alt={filter.name}
-                      className="h-full w-full object-cover"
-                      style={{ filter: filter.cssFilter }}
-                    />
-                    {/* Overlay with filter name */}
-                    <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/60 to-transparent p-1 opacity-0 transition-opacity group-hover:opacity-100">
-                      <span className="text-[10px] font-medium text-white">{filter.name}</span>
-                    </div>
+          <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
+            {IMAGE_FILTERS.map(filter => (
+              <button
+                key={filter.id}
+                onClick={() => setSelectedFilter(filter)}
+                className={cn(
+                  'group relative overflow-hidden rounded-lg border-2 transition-all',
+                  selectedFilter.id === filter.id
+                    ? 'border-electric shadow-lg shadow-electric/20'
+                    : 'border-border/50 hover:border-electric/50'
+                )}
+              >
+                {/* Filter thumbnail preview */}
+                <div className="relative h-16 w-full">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={imageSrc}
+                    alt={filter.name}
+                    className="h-full w-full object-cover"
+                    style={{ filter: filter.cssFilter }}
+                  />
+                  {/* Overlay with filter name */}
+                  <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/60 to-transparent p-1 opacity-0 transition-opacity group-hover:opacity-100">
+                    <span className="text-[10px] font-medium text-white">{filter.name}</span>
                   </div>
-                </button>
-              ))}
-            </div>
+                </div>
+              </button>
+            ))}
           </div>
         </div>
 
