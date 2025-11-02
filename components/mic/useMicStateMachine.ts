@@ -604,12 +604,43 @@ export function useMicStateMachine(
         );
       }
 
+      // Clone voice BEFORE saving vibelog (if we have substantial audio)
+      let voiceCloneId: string | undefined;
+      if (audioBlob && audioBlob.size > 512 * 1024) {
+        // Clone if audio is substantial (>512KB, roughly >30 seconds)
+        // This works for both logged-in and anonymous users
+        try {
+          console.log('🎤 [VOICE-CLONE] Starting voice cloning before save...');
+          showToast('🎤 Cloning your voice...');
+
+          // Clone voice without vibelogId (will save to profile for logged-in users)
+          voiceCloneId =
+            (await cloneVoice(
+              audioBlob,
+              undefined, // No vibelogId yet - will be added to vibelog when we save
+              `${profile?.username || user?.email?.split('@')[0] || 'Anonymous'}'s Voice`
+            )) || undefined;
+
+          if (voiceCloneId) {
+            console.log('✅ [VOICE-CLONE] Voice cloned successfully:', voiceCloneId);
+            showToast('✅ Voice cloned!');
+          } else {
+            console.warn('⚠️ [VOICE-CLONE] Voice cloning returned no voice ID');
+          }
+        } catch (error) {
+          console.error('❌ [VOICE-CLONE] Voice cloning failed:', error);
+          // Don't block the save - continue without voice cloning
+          showToast('Voice cloning failed. Using default voice for playback.');
+        }
+      }
+
       console.log('💾 [COMPLETE-PROCESSING] Calling saveVibelog with:', {
         contentLength: contentToSave.length,
         fullContentLength: fullContent.length,
         hasTranscription: !!transcription,
         hasCoverImage: !!finalCoverImage,
         hasAudioData: !!audioData,
+        hasVoiceCloneId: !!voiceCloneId,
         userId: user?.id || 'anonymous',
       });
 
@@ -621,6 +652,7 @@ export function useMicStateMachine(
         audioData: audioData || undefined,
         userId: user?.id,
         isTeaser: isTeaserContent,
+        voiceCloneId, // Include voice clone ID if available
         metadata: {
           recordingTime,
           processingSteps: ['transcribe', 'generate', 'format', 'image'],
@@ -643,40 +675,6 @@ export function useMicStateMachine(
             }
           } catch (err) {
             console.warn('Failed to store sessionId:', err);
-          }
-        }
-
-        // Clone voice after saving vibelog (if we have audio and vibelogId)
-        if (audioBlob && result.vibelogId && isLoggedIn && audioBlob.size > 512 * 1024) {
-          // Only clone if logged in and audio is substantial (>512KB, roughly >30 seconds)
-          // Clone voice synchronously to ensure it's ready before playback
-          try {
-            console.log('🎤 [VOICE-CLONE] Starting voice cloning for vibelog:', result.vibelogId);
-            showToast('🎤 Cloning your voice for future playback...');
-
-            const voiceId = await cloneVoice(
-              audioBlob,
-              result.vibelogId,
-              `${profile?.username || user?.email?.split('@')[0] || 'User'}'s Voice`
-            );
-
-            if (voiceId) {
-              console.log(
-                '✅ [VOICE-CLONE] Voice cloned successfully:',
-                voiceId,
-                'for vibelog:',
-                result.vibelogId
-              );
-              showToast('✅ Voice cloned! Future playback will use your voice.');
-            } else {
-              console.warn('⚠️ [VOICE-CLONE] Voice cloning returned no voice ID');
-              showToast('⚠️ Voice cloning incomplete. Using default voice.');
-            }
-          } catch (error) {
-            console.error('❌ [VOICE-CLONE] Voice cloning failed:', error);
-            // Don't block the save process if voice cloning fails
-            // The user can still play back with default voice
-            showToast('Voice cloning failed. Using default voice for playback.');
           }
         }
 

@@ -104,26 +104,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // If no voice clone ID yet, try to get from current user's profile
-    if (!voiceCloneIdToUse && userId) {
-      try {
-        const { data: profile } = await adminSupabase
-          .from('profiles')
-          .select('voice_clone_id')
-          .eq('id', userId)
-          .single();
-
-        if (profile?.voice_clone_id) {
-          voiceCloneIdToUse = profile.voice_clone_id;
-          console.log('[TTS] Found voice_clone_id from user profile:', voiceCloneIdToUse);
-        }
-      } catch (error) {
-        console.log('[TTS] No voice_clone_id found for user:', error);
-      }
-    }
-
+    // NOTE: We intentionally do NOT fallback to the current viewer's voice clone.
+    // The voice should always match the content author, not the person viewing it.
+    // If no author voice is found, we'll use the default TTS voice.
     if (!voiceCloneIdToUse) {
-      console.log('[TTS] Using default voice (no cloned voice available)');
+      console.log('[TTS] Using default voice (no cloned voice available for author)');
     }
 
     // Validate text length (OpenAI TTS has a 4096 character limit)

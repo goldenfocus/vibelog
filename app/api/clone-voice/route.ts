@@ -153,33 +153,53 @@ export async function POST(request: NextRequest) {
     if (userId) {
       // Store in user profile for future use
       try {
-        await adminSupabase
+        const { data, error: updateError } = await adminSupabase
           .from('profiles')
           .update({
             voice_clone_id: voiceId,
             voice_clone_name: voiceName,
             updated_at: new Date().toISOString(),
           })
-          .eq('id', userId);
+          .eq('id', userId)
+          .select();
+
+        if (updateError) {
+          console.error('❌ Failed to save voice clone to profile:', updateError);
+          console.error('   User ID:', userId);
+          console.error('   Voice ID:', voiceId);
+        } else if (!data || data.length === 0) {
+          console.warn('⚠️ No profile found for user:', userId);
+        } else {
+          console.log('✅ Successfully saved voice_clone_id to profile:', userId);
+        }
       } catch (error) {
-        console.error('Failed to save voice clone to profile:', error);
-        // Continue - don't fail the request
+        console.error('❌ Exception while saving voice clone to profile:', error);
       }
     }
 
     // If vibelogId is provided, store voice clone ID in vibelog
     if (vibelogId) {
       try {
-        await adminSupabase
+        const { data, error: updateError } = await adminSupabase
           .from('vibelogs')
           .update({
             voice_clone_id: voiceId,
             updated_at: new Date().toISOString(),
           })
-          .eq('id', vibelogId);
+          .eq('id', vibelogId)
+          .select();
+
+        if (updateError) {
+          console.error('❌ Failed to save voice clone to vibelog:', updateError);
+          console.error('   Vibelog ID:', vibelogId);
+          console.error('   Voice ID:', voiceId);
+        } else if (!data || data.length === 0) {
+          console.warn('⚠️ No vibelog found with ID:', vibelogId);
+        } else {
+          console.log('✅ Successfully saved voice_clone_id to vibelog:', vibelogId);
+        }
       } catch (error) {
-        console.error('Failed to save voice clone to vibelog:', error);
-        // Continue - don't fail the request
+        console.error('❌ Exception while saving voice clone to vibelog:', error);
       }
     }
 
