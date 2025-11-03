@@ -4,6 +4,7 @@ import { Clock, Heart, User, ArrowLeft } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+import Comments from '@/components/comments/Comments';
 import Navigation from '@/components/Navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import VibelogActions from '@/components/VibelogActions';
@@ -265,6 +266,9 @@ export default function VibelogDetailPage() {
               />
             </div>
           )}
+
+          {/* Comments Section */}
+          <Comments vibelogId={vibelog.id} />
         </div>
       </main>
     </div>

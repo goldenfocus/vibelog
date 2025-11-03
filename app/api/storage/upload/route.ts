@@ -5,6 +5,7 @@ import {
   generateStoragePath,
   getCategoryFromMimeType,
   getExtensionFromMimeType,
+  getVibelogPublicUrl,
   VIBELOGS_BUCKET,
 } from '@/lib/storage';
 import { createServerSupabaseClient } from '@/lib/supabase';
@@ -101,8 +102,12 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ Upload successful:', storagePath);
 
+    // Get public URL
+    const publicUrl = getVibelogPublicUrl(storagePath);
+
     return NextResponse.json({
       storagePath,
+      url: publicUrl,
       success: true,
     });
   } catch (error) {
