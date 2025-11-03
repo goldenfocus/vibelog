@@ -1,11 +1,12 @@
 'use client';
 
 import { Volume2, Play, Pause } from 'lucide-react';
-import React from 'react';
+import React, { useEffect } from 'react';
 
 import Waveform from '@/components/mic/Waveform';
 import { useI18n } from '@/components/providers/I18nProvider';
 import { UseAudioPlaybackReturn } from '@/hooks/useAudioPlayback';
+import { useAudioPlayerStore } from '@/state/audio-player-store';
 
 interface AudioPlayerProps {
   audioBlob: Blob | null;
@@ -16,6 +17,7 @@ export default function AudioPlayer({ audioBlob, playback }: AudioPlayerProps) {
   const { t } = useI18n();
   const [isLoading, setIsLoading] = React.useState(false);
   const [buttonPressed, setButtonPressed] = React.useState(false);
+  const [blobUrl, setBlobUrl] = React.useState<string | null>(null);
 
   const {
     audioRef,
@@ -35,39 +37,105 @@ export default function AudioPlayer({ audioBlob, playback }: AudioPlayerProps) {
     handlePause,
   } = playback;
 
+  const {
+    currentTrack,
+    isPlaying: globalIsPlaying,
+    currentTime: globalCurrentTime,
+    duration: globalDuration,
+    playbackLevels: globalPlaybackLevels,
+    play: globalPlay,
+    pause: globalPause,
+    seek: globalSeek,
+    setTrack,
+  } = useAudioPlayerStore();
+
+  // Create blob URL and sync with global store
+  useEffect(() => {
+    if (audioBlob) {
+      const url = URL.createObjectURL(audioBlob);
+      setBlobUrl(url);
+
+      // Set track in global store
+      setTrack({
+        id: `recording-${Date.now()}`,
+        url,
+        title: t('components.micRecorder.yourRecording'),
+        type: 'blob',
+      });
+
+      return () => {
+        URL.revokeObjectURL(url);
+        // Only reset if this is the current track
+        const current = useAudioPlayerStore.getState().currentTrack;
+        if (current?.url === url) {
+          setTrack(null);
+        }
+      };
+    } else {
+      setBlobUrl(null);
+    }
+  }, [audioBlob, setTrack, t]);
+
+  // Sync playback state with global store
+  const isUsingGlobalPlayer = currentTrack?.url === blobUrl;
+  const displayIsPlaying = isUsingGlobalPlayer ? globalIsPlaying : isPlaying;
+  const displayCurrentTime = isUsingGlobalPlayer ? globalCurrentTime : currentTime;
+  const displayDuration = isUsingGlobalPlayer ? globalDuration : duration;
+  const displayPlaybackLevels = isUsingGlobalPlayer ? globalPlaybackLevels : playbackLevels;
+
   const handlePlayPause = async () => {
     // Immediate visual feedback
     setButtonPressed(true);
     setTimeout(() => setButtonPressed(false), 150);
 
-    if (isPlaying) {
-      // Always use the pause function from the hook
-      pause();
+    if (isUsingGlobalPlayer) {
+      // Use global player
+      if (globalIsPlaying) {
+        globalPause();
+      } else {
+        setIsLoading(true);
+        try {
+          await globalPlay();
+        } catch (error) {
+          console.error('Playback failed:', error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
     } else {
-      setIsLoading(true);
-      try {
-        // Always use the play function from the hook
-        await play();
-      } catch (error) {
-        console.error('Playback failed:', error);
-      } finally {
-        setIsLoading(false);
+      // Use local player
+      if (isPlaying) {
+        pause();
+      } else {
+        setIsLoading(true);
+        try {
+          await play();
+        } catch (error) {
+          console.error('Playback failed:', error);
+        } finally {
+          setIsLoading(false);
+        }
       }
     }
   };
 
   const handleSeekClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!duration || isNaN(duration) || duration <= 0) {
+    const displayDur = displayDuration;
+    if (!displayDur || isNaN(displayDur) || displayDur <= 0) {
       return;
     }
 
     const rect = e.currentTarget.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
-    const seekTime = (clickX / rect.width) * duration;
+    const seekTime = (clickX / rect.width) * displayDur;
 
     // Ensure seekTime is valid and finite
-    if (isFinite(seekTime) && seekTime >= 0 && seekTime <= duration) {
-      seek(seekTime);
+    if (isFinite(seekTime) && seekTime >= 0 && seekTime <= displayDur) {
+      if (isUsingGlobalPlayer) {
+        globalSeek(seekTime);
+      } else {
+        seek(seekTime);
+      }
     }
   };
 
@@ -91,7 +159,7 @@ export default function AudioPlayer({ audioBlob, playback }: AudioPlayerProps) {
         >
           {isLoading ? (
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-          ) : isPlaying ? (
+          ) : displayIsPlaying ? (
             <Pause className="h-6 w-6" />
           ) : (
             <Play className="ml-1 h-6 w-6" />
@@ -100,7 +168,7 @@ export default function AudioPlayer({ audioBlob, playback }: AudioPlayerProps) {
 
         <div className="flex flex-1 items-center gap-3">
           <span className="min-w-[40px] font-mono text-sm text-muted-foreground">
-            {formatTime(currentTime)}
+            {formatTime(displayCurrentTime)}
           </span>
 
           <div
@@ -110,7 +178,7 @@ export default function AudioPlayer({ audioBlob, playback }: AudioPlayerProps) {
             <div
               className="relative h-full rounded-full bg-gradient-electric transition-all duration-75"
               style={{
-                width: `${duration && !isNaN(duration) && duration > 0 ? Math.max(0, Math.min(100, (currentTime / duration) * 100)) : 0}%`,
+                width: `${displayDuration && !isNaN(displayDuration) && displayDuration > 0 ? Math.max(0, Math.min(100, (displayCurrentTime / displayDuration) * 100)) : 0}%`,
               }}
             >
               {/* Always visible scrubber dot */}
@@ -119,13 +187,22 @@ export default function AudioPlayer({ audioBlob, playback }: AudioPlayerProps) {
           </div>
 
           <span className="min-w-[40px] text-right font-mono text-sm text-muted-foreground">
-            {formatTime(duration)}
+            {formatTime(displayDuration)}
           </span>
         </div>
       </div>
 
       {/* Playback Equalizer */}
-      {isPlaying && <Waveform levels={playbackLevels} isActive={isPlaying} variant="playback" />}
+      {displayIsPlaying && (
+        <Waveform levels={displayPlaybackLevels} isActive={displayIsPlaying} variant="playback" />
+      )}
+
+      {/* Show indicator if playing in global player */}
+      {isUsingGlobalPlayer && globalIsPlaying && (
+        <div className="mt-2 text-xs text-muted-foreground">
+          {t('components.micRecorder.playingInGlobalPlayer') || 'Playing in global player'}
+        </div>
+      )}
 
       <audio
         ref={audioRef}

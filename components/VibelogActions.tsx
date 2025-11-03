@@ -20,6 +20,7 @@ import LikersPopover from '@/components/LikersPopover';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useTextToSpeech } from '@/hooks/useTextToSpeech';
 import type { ExportFormat } from '@/lib/export';
+import { useAudioPlayerStore } from '@/state/audio-player-store';
 
 interface VibelogActionsProps {
   vibelogId: string;
@@ -79,12 +80,28 @@ export default function VibelogActions({
   const [isLiking, setIsLiking] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const lastLikeRequestRef = useRef<Promise<void> | null>(null);
-  const { isPlaying, isLoading, playText, stop, progress } = useTextToSpeech(onUpgradePrompt);
+  const {
+    isPlaying: isTTSPlaying,
+    isLoading: isTTSLoading,
+    playText,
+    stop,
+    progress,
+  } = useTextToSpeech(onUpgradePrompt);
 
-  // Audio playback state for original audio
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
-  const [audioProgress, setAudioProgress] = useState(0);
+  // Global audio player store
+  const {
+    currentTrack,
+    isPlaying: globalIsPlaying,
+    isLoading: globalIsLoading,
+    play: globalPlay,
+    pause: globalPause,
+    setTrack,
+  } = useAudioPlayerStore();
+
+  // Check if this vibelog's audio is currently playing in global player
+  const isUsingGlobalPlayer = currentTrack?.id === `vibelog-${vibelogId}`;
+  const isLoading = isUsingGlobalPlayer ? globalIsLoading : isTTSLoading;
+  const isPlaying = isUsingGlobalPlayer ? globalIsPlaying : isTTSPlaying;
 
   // Determine if this is user's own vibelog
   const isOwnVibelog = user?.id && authorId && user.id === authorId;
@@ -151,110 +168,60 @@ export default function VibelogActions({
     }
   }, [isMenuOpen]);
 
-  // Set up audio element for original audio playback
-  // Preload audio when audioUrl is available for instant playback
+  // Set track in global store when audioUrl is available
   useEffect(() => {
-    if (audioUrl && !audioRef.current) {
-      const audio = new Audio(audioUrl);
-      audioRef.current = audio;
-
-      // Preload the audio for instant playback
-      audio.preload = 'auto';
-
-      // Start loading the audio immediately
-      audio.load();
-
-      audio.addEventListener('play', () => setIsAudioPlaying(true));
-      audio.addEventListener('pause', () => setIsAudioPlaying(false));
-      audio.addEventListener('ended', () => {
-        setIsAudioPlaying(false);
-        setAudioProgress(0);
+    if (audioUrl && !teaserOnly) {
+      // Set track in global store for potential playback
+      setTrack({
+        id: `vibelog-${vibelogId}`,
+        url: audioUrl,
+        title: title || 'Vibelog Audio',
+        author: author,
+        type: 'url',
       });
-      audio.addEventListener('timeupdate', () => {
-        if (audio.duration > 0) {
-          setAudioProgress((audio.currentTime / audio.duration) * 100);
-        }
-      });
-
-      // Listen for when audio is ready to play (preload complete)
-      audio.addEventListener('canplaythrough', () => {
-        console.log('✅ Audio preloaded and ready to play');
-      });
-
-      return () => {
-        audio.pause();
-        audio.src = '';
-      };
     }
-  }, [audioUrl]);
+  }, [audioUrl, vibelogId, title, author, teaserOnly, setTrack]);
 
   const handlePlayClick = async () => {
-    // If original audio is available, use it instead of TTS
+    // If original audio is available, use global player instead of TTS
     // Note: In teaserOnly mode, we don't use audioUrl as it's the full audio
     if (audioUrl && !teaserOnly) {
-      // If audio element doesn't exist yet, create it first
-      if (!audioRef.current) {
-        const audio = new Audio(audioUrl);
-        audio.preload = 'auto';
-        audioRef.current = audio;
-
-        // Set up event listeners
-        audio.addEventListener('play', () => setIsAudioPlaying(true));
-        audio.addEventListener('pause', () => setIsAudioPlaying(false));
-        audio.addEventListener('ended', () => {
-          setIsAudioPlaying(false);
-          setAudioProgress(0);
-        });
-        audio.addEventListener('timeupdate', () => {
-          if (audio.duration > 0) {
-            setAudioProgress((audio.currentTime / audio.duration) * 100);
-          }
-        });
-
-        // Load the audio
-        audio.load();
-      }
-
-      // Use the audio element
-      if (audioRef.current) {
-        if (isAudioPlaying) {
-          audioRef.current.pause();
+      // Use global audio player
+      const current = useAudioPlayerStore.getState();
+      if (current.currentTrack?.id === `vibelog-${vibelogId}`) {
+        // This track is already set, just toggle play/pause
+        if (globalIsPlaying) {
+          globalPause();
         } else {
           try {
-            // Wait for audio to be ready if it's still loading
-            if (audioRef.current.readyState < 2) {
-              // HAVE_CURRENT_DATA
-              await new Promise<void>((resolve, reject) => {
-                const timeout = setTimeout(() => reject(new Error('Audio load timeout')), 5000);
-                audioRef.current!.addEventListener(
-                  'canplaythrough',
-                  () => {
-                    clearTimeout(timeout);
-                    resolve();
-                  },
-                  { once: true }
-                );
-                audioRef.current!.addEventListener(
-                  'error',
-                  e => {
-                    clearTimeout(timeout);
-                    reject(e);
-                  },
-                  { once: true }
-                );
-              });
-            }
-            await audioRef.current.play();
+            await globalPlay();
           } catch (error) {
             console.error('Audio playback failed:', error);
           }
+        }
+        return;
+      } else {
+        // Set track and play
+        setTrack({
+          id: `vibelog-${vibelogId}`,
+          url: audioUrl,
+          title: title || 'Vibelog Audio',
+          author: author,
+          type: 'url',
+        });
+        try {
+          // Small delay to ensure track is set
+          await new Promise(resolve => setTimeout(resolve, 100));
+          await globalPlay();
+        } catch (error) {
+          console.error('Audio playback failed:', error);
         }
         return;
       }
     }
 
     // Fall back to TTS if no original audio
-    if (isPlaying) {
+    if (isTTSPlaying) {
       stop();
       return;
     }
@@ -571,20 +538,20 @@ export default function VibelogActions({
               onClick={handlePlayClick}
               disabled={isLoading}
               className={`${baseButtonClass} relative ${isCompact ? '' : 'overflow-hidden'}`}
-              title={isAudioPlaying || isPlaying ? 'Pause' : 'Listen'}
+              title={isPlaying ? 'Pause' : 'Listen'}
               data-testid="listen-button"
             >
-              {!isCompact && (isPlaying || isAudioPlaying) && (
+              {!isCompact && isPlaying && (
                 <div
                   className="absolute bottom-0 left-0 h-1 bg-electric transition-all duration-100 ease-out"
-                  style={{ width: `${audioUrl ? audioProgress : progress}%` }}
+                  style={{ width: `${isUsingGlobalPlayer ? 0 : progress}%` }}
                 />
               )}
 
               <div className="relative flex items-center justify-center">
                 {isLoading ? (
                   <Loader2 className={`${iconClass} animate-spin`} />
-                ) : isAudioPlaying || isPlaying ? (
+                ) : isPlaying ? (
                   <Pause className={iconClass} />
                 ) : (
                   <Play className={iconClass} />
@@ -592,7 +559,7 @@ export default function VibelogActions({
               </div>
 
               <span className={labelClass}>
-                {isLoading ? 'Generating...' : isAudioPlaying || isPlaying ? 'Pause' : 'Listen'}
+                {isLoading ? 'Generating...' : isPlaying ? 'Pause' : 'Listen'}
               </span>
             </button>
 
