@@ -10,6 +10,7 @@ function SignInContent() {
   const { signIn, loading, error } = useAuth();
   const searchParams = useSearchParams();
   const [urlError, setUrlError] = useState<string | null>(null);
+  const [isSigningIn, setIsSigningIn] = useState(false);
 
   useEffect(() => {
     const errorParam = searchParams.get('error');
@@ -35,9 +36,23 @@ function SignInContent() {
 
   const displayError = error || urlError;
 
-  const handleSignIn = () => {
+  const handleSignIn = async () => {
+    // Prevent double-clicks
+    if (isSigningIn || loading) {
+      console.warn('⚠️ Sign in already in progress, ignoring duplicate click');
+      return;
+    }
+
     console.log('Sign in button clicked');
-    signIn('google');
+    setIsSigningIn(true);
+
+    try {
+      await signIn('google');
+    } catch (err) {
+      console.error('Sign in failed:', err);
+      setIsSigningIn(false);
+    }
+    // Note: don't reset isSigningIn on success - we'll be redirected away
   };
 
   return (
@@ -53,13 +68,18 @@ function SignInContent() {
         {displayError && (
           <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/20 p-3">
             <p className="text-center text-sm text-destructive">{displayError}</p>
+            {displayError.includes('OAuth session expired') && (
+              <p className="mt-2 text-center text-xs text-muted-foreground">
+                Tip: Make sure to click the sign in button only once and wait for Google to load.
+              </p>
+            )}
           </div>
         )}
 
         <div className="space-y-4">
           <Button
             onClick={handleSignIn}
-            disabled={loading}
+            disabled={loading || isSigningIn}
             className="relative w-full bg-electric py-4 font-medium text-white shadow-lg transition-all duration-200 hover:bg-electric-glow hover:shadow-electric/25 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24">
@@ -80,7 +100,7 @@ function SignInContent() {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
             </svg>
-            {loading ? (
+            {loading || isSigningIn ? (
               <>
                 <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                 Connecting...
