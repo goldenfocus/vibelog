@@ -60,8 +60,16 @@ export default function Comments({ vibelogId }: CommentsProps) {
     fetchComments();
   };
 
+  console.log('Comments component rendering with vibelogId:', vibelogId);
+  console.log('Comments data:', { comments, isLoading, error });
+
   return (
-    <div className="mt-12 space-y-6">
+    <div className="mt-12 space-y-6 border-4 border-red-500">
+      {/* DEBUG: Visible test marker */}
+      <div className="bg-yellow-500 p-4 font-bold text-black">
+        🔍 COMMENTS COMPONENT IS RENDERING - vibelogId: {vibelogId}
+      </div>
+
       {/* Header */}
       <div className="flex items-center gap-3">
         <MessageSquare className="h-6 w-6 text-electric" />
