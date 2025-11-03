@@ -248,7 +248,12 @@ export function useVibelogAPI(
 
   const processVibelogGeneration = async (
     transcriptionData: string,
-    options?: { enableStreaming?: boolean; onStreamChunk?: (chunk: string) => void }
+    options?: {
+      enableStreaming?: boolean;
+      onStreamChunk?: (chunk: string) => void;
+      tone?: string;
+      keepFillerWords?: boolean;
+    }
   ): Promise<TeaserResult> => {
     try {
       if (!transcriptionData) {
