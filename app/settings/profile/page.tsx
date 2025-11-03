@@ -9,6 +9,7 @@ import { ImageUploadZone } from '@/components/profile/ImageUploadZone';
 import { SocialLinksEditor } from '@/components/profile/SocialLinksEditor';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useI18n } from '@/components/providers/I18nProvider';
+import VoiceCloningSettings from '@/components/settings/VoiceCloningSettings';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -240,6 +241,9 @@ export default function ProfileSettingsPage() {
               <SocialLinksEditor initialLinks={socialLinks} onChange={setSocialLinks} />
             </div>
           </div>
+
+          {/* Voice Cloning Section */}
+          <VoiceCloningSettings userId={user.id} />
 
           {/* Account Info and Save Button Section */}
           <div className="mb-8 overflow-hidden rounded-2xl border border-border/50 bg-card/30 backdrop-blur-sm">
