@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 
+import { useAudioPlayerStore } from '@/state/audio-player-store';
+
 export interface UseTextToSpeechReturn {
   isPlaying: boolean;
   isLoading: boolean;
@@ -19,52 +21,49 @@ export function useTextToSpeech(
   onUpgradePrompt?: (message: string, benefits: string[]) => void,
   onEnded?: () => void
 ): UseTextToSpeechReturn {
-  const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [progress, setProgress] = useState(0);
-  const [duration, setDuration] = useState(0);
 
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef<string | null>(null);
+  const trackIdRef = useRef<string | null>(null);
+
+  const {
+    currentTrack,
+    isPlaying: globalIsPlaying,
+    currentTime,
+    duration,
+    setTrack,
+    play,
+    pause,
+  } = useAudioPlayerStore();
+
+  // Check if our TTS track is the active track
+  const isTTSTrack = trackIdRef.current && currentTrack?.id === trackIdRef.current;
+  const isPlaying = isTTSTrack ? globalIsPlaying : false;
+  const progress = isTTSTrack && duration > 0 ? (currentTime / duration) * 100 : 0;
 
   const cleanup = () => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.removeEventListener('timeupdate', updateProgress);
-      audioRef.current.removeEventListener('ended', handleEnded);
-      audioRef.current.removeEventListener('loadedmetadata', handleLoadedMetadata);
-    }
     if (audioUrlRef.current) {
       URL.revokeObjectURL(audioUrlRef.current);
       audioUrlRef.current = null;
     }
+    trackIdRef.current = null;
   };
 
-  const updateProgress = () => {
-    if (audioRef.current) {
-      const currentTime = audioRef.current.currentTime;
-      const duration = audioRef.current.duration;
-      if (duration > 0) {
-        setProgress((currentTime / duration) * 100);
+  // Monitor when track ends and call onEnded callback
+  useEffect(() => {
+    if (
+      isTTSTrack &&
+      !globalIsPlaying &&
+      currentTime > 0 &&
+      duration > 0 &&
+      currentTime >= duration - 0.5
+    ) {
+      if (onEnded) {
+        onEnded();
       }
     }
-  };
-
-  const handleEnded = () => {
-    setIsPlaying(false);
-    setProgress(100);
-    setTimeout(() => setProgress(0), 500); // Reset progress after a brief delay
-    if (onEnded) {
-      onEnded();
-    }
-  };
-
-  const handleLoadedMetadata = () => {
-    if (audioRef.current) {
-      setDuration(audioRef.current.duration);
-    }
-  };
+  }, [isTTSTrack, globalIsPlaying, currentTime, duration, onEnded]);
 
   const playText = async (
     text: string,
@@ -75,10 +74,12 @@ export function useTextToSpeech(
     try {
       setIsLoading(true);
       setError(null);
-      setProgress(0);
 
-      // Clean up any existing audio
-      cleanup();
+      // Clean up any existing audio URL
+      if (audioUrlRef.current) {
+        URL.revokeObjectURL(audioUrlRef.current);
+        audioUrlRef.current = null;
+      }
 
       // Generate TTS audio (pass vibelogId and voiceCloneId so it can use cloned voice)
       const response = await fetch('/api/text-to-speech', {
@@ -116,34 +117,36 @@ export function useTextToSpeech(
       const audioUrl = URL.createObjectURL(audioBlob);
       audioUrlRef.current = audioUrl;
 
-      // Create and configure audio element
-      const audio = new Audio(audioUrl);
-      audioRef.current = audio;
+      // Create unique track ID for this TTS audio
+      const trackId = `tts-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      trackIdRef.current = trackId;
 
-      // Set up event listeners
-      audio.addEventListener('timeupdate', updateProgress);
-      audio.addEventListener('ended', handleEnded);
-      audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+      // Set track in global player
+      setTrack({
+        id: trackId,
+        url: audioUrl,
+        title: 'Text-to-Speech',
+        author: voice,
+        type: 'tts',
+      });
 
-      // Start playing
-      await audio.play();
-      setIsPlaying(true);
+      // Small delay to ensure track is set
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Start playing via global player
+      await play();
     } catch (error) {
       console.error('TTS playback error:', error);
       setError(error instanceof Error ? error.message : 'Failed to play speech');
-      setIsPlaying(false);
     } finally {
       setIsLoading(false);
     }
   };
 
   const stop = () => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
+    if (isTTSTrack) {
+      pause();
     }
-    setIsPlaying(false);
-    setProgress(0);
   };
 
   // Cleanup on unmount
@@ -151,7 +154,6 @@ export function useTextToSpeech(
     return () => {
       cleanup();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return {
@@ -161,6 +163,6 @@ export function useTextToSpeech(
     playText,
     stop,
     progress,
-    duration,
+    duration: isTTSTrack ? duration : 0,
   };
 }
