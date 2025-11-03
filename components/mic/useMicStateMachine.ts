@@ -409,15 +409,33 @@ export function useMicStateMachine(
       return;
     }
 
-    setEditedContent(vibelogContent);
+    // Context-aware editing: edit what's currently displayed
+    // - If viewing teaser, edit teaser
+    // - If viewing full, edit full content
+    const contentToEdit = isTeaserContent ? vibelogContent : fullVibelogContent;
+    setEditedContent(contentToEdit);
     setIsEditing(true);
-  }, [vibelogContent, handleTranscriptUpgradeGate, isLoggedIn]);
+  }, [
+    vibelogContent,
+    fullVibelogContent,
+    isTeaserContent,
+    handleTranscriptUpgradeGate,
+    isLoggedIn,
+  ]);
 
   const finalizeEdit = useCallback(() => {
-    setVibelogContent(editedContent);
+    // Save to the correct field based on what was being viewed
+    if (isTeaserContent) {
+      // User was editing teaser - only update teaser (vibelogContent)
+      setVibelogContent(editedContent);
+    } else {
+      // User was editing full content - update both full and display
+      setFullVibelogContent(editedContent);
+      setVibelogContent(editedContent);
+    }
     setIsEditing(false);
     showToast(t('components.micRecorder.vibelogUpdated'));
-  }, [editedContent, showToast, t]);
+  }, [editedContent, isTeaserContent, showToast, t]);
 
   const cancelEdit = useCallback(() => {
     setEditedContent('');
@@ -453,7 +471,7 @@ export function useMicStateMachine(
     // This ensures we have a vibelogId to associate the voice clone with
 
     return transcriptionResult;
-  }, [audioBlob, user?.id, vibelogAPI, isLoggedIn, profile?.username, user?.email]);
+  }, [audioBlob, user?.id, vibelogAPI]);
 
   const processVibelogGeneration = useCallback(async () => {
     const transcriptionData = vibelogAPI.processingData.current.transcriptionData;
