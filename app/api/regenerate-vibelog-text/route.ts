@@ -68,15 +68,24 @@ export async function POST(request: NextRequest) {
 
     // Build tone instruction
     const toneInstructions: Record<string, string> = {
-      professional: 'Use a professional, formal tone with clear structure and authority.',
-      casual: 'Use a casual, conversational tone that feels friendly and approachable.',
+      authentic:
+        "Keep the speaker's natural voice. Make minimal edits - only fix obvious grammar errors and remove excessive repetition. Preserve their vocabulary, sentence structure, and speaking style. Don't make it more dramatic or polished than the original. The goal is to sound like the person actually talks, just cleaned up slightly.",
+      professional:
+        'Use a professional, formal tone with clear structure and authority. Employ industry-standard terminology, maintain objectivity, and present ideas with confidence and expertise. Structure content logically with strong topic sentences. Do not use casual language, slang, or humor.',
+      casual:
+        "Use a casual, conversational tone that feels friendly and approachable. Write like you're chatting with a friend - use contractions, simple words, and a relaxed style. Keep it warm and personable. Do not use formal or technical language unless necessary.",
       humorous:
-        'Make it funny and lighthearted while keeping the core message intact. Add humor naturally.',
+        "Make it funny and lighthearted while keeping the core message intact. Add humor naturally through wordplay, wit, amusing observations, or playful language. Don't force jokes - let humor emerge from the content itself. This tone is explicitly comedic - do not confuse with poetic or dramatic tones.",
       inspiring:
-        'Make it inspirational and uplifting, focusing on positive outcomes and motivation.',
-      analytical: 'Use an analytical, data-driven approach with clear insights and conclusions.',
+        'Make it inspirational and uplifting, focusing on positive outcomes and motivation. Use empowering language, highlight possibilities, emphasize growth and transformation. Make readers feel capable and excited about taking action. Maintain an optimistic, forward-looking perspective.',
+      analytical:
+        'Use an analytical, data-driven approach with clear insights and conclusions. Break down complex ideas logically, identify patterns, draw evidence-based conclusions. Use precise language and structured reasoning. Do not use emotional language or dramatic flourishes - focus on facts and logical analysis.',
       storytelling:
-        'Transform it into a narrative with engaging characters, scenes, and progression.',
+        'Transform it into a narrative with engaging characters, scenes, and progression. Use story elements like setting, conflict, resolution. Create vivid scenes and emotional arcs. Make abstract concepts concrete through narrative. Focus on plot and character development rather than literary flourishes.',
+      dramatic:
+        'Heighten the emotional impact and intensity. Use vivid imagery, build tension, emphasize stakes and consequences. Make every moment feel significant and charged with emotion. Create suspense and anticipation. This is about emotional intensity and high stakes - distinct from poetic (which is contemplative) or humorous (which is comedic).',
+      poetic:
+        'Transform into contemplative literary prose with a serious, reflective tone. Use metaphors, rich imagery, and lyrical language to create depth and meaning. Employ literary devices like alliteration, symbolism, and evocative descriptions. Maintain a thoughtful, introspective mood - this is NOT humorous or comedic. Focus on beauty, meaning, and emotional resonance rather than entertainment or jokes. The tone should be serene and profound, not dramatic or lighthearted.',
     };
 
     const toneInstruction = tone ? toneInstructions[tone] || `Use a ${tone} tone.` : '';

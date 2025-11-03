@@ -14,7 +14,11 @@ const TONE_OPTIONS: Array<{ value: WritingTone; label: string; description: stri
   { value: 'analytical', label: 'Analytical', description: 'Data-driven and logical' },
   { value: 'storytelling', label: 'Storytelling', description: 'Narrative with scenes' },
   { value: 'dramatic', label: 'Dramatic', description: 'Heightened emotions' },
-  { value: 'poetic', label: 'Poetic', description: 'Literary and metaphorical' },
+  {
+    value: 'poetic',
+    label: 'Poetic',
+    description: 'Contemplative literary prose, serious and reflective',
+  },
 ];
 
 interface ToneSettingsProps {
