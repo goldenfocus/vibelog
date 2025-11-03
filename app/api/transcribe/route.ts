@@ -147,6 +147,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         transcription:
           "Today I want to share some thoughts about the future of voice technology and how it's changing the way we create content. Speaking is our most natural form of communication and I believe we're moving toward a world where your voice becomes your pen.",
+        language: 'en',
+        detectedLanguage: 'en',
+        success: true,
       });
     }
 
