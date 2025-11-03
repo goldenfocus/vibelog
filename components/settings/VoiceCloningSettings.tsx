@@ -69,22 +69,25 @@ export default function VoiceCloningSettings({ userId }: VoiceCloningSettingsPro
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
 
+  // Force refetch profile on mount to get latest voice_clone_id
+  useEffect(() => {
+    console.log('🔄 [VOICE-CLONE] Component mounted, refreshing profile data...');
+    refetchProfile();
+  }, []);
+
   // Check if user has a cloned voice and sync with profile
   useEffect(() => {
     if (profile) {
       const voiceCloneId = (profile as ProfileWithVoiceClone).voice_clone_id;
-      const hadVoice = hasClonedVoice;
-      setHasClonedVoice(!!voiceCloneId);
+
+      // Always update current voice clone ID from profile
       if (voiceCloneId) {
         setCurrentVoiceCloneId(voiceCloneId);
+        setHasClonedVoice(true);
         console.log('✅ [VOICE-CLONE] Profile loaded with voice_clone_id:', voiceCloneId);
       } else {
         console.log('⚠️ [VOICE-CLONE] Profile has no voice_clone_id');
-      }
-
-      // If we just got a voice clone ID when we didn't have one before, show success
-      if (!hadVoice && voiceCloneId) {
-        console.log('🎉 [VOICE-CLONE] Voice clone detected! Showing success animation');
+        setHasClonedVoice(false);
       }
     }
   }, [profile]);

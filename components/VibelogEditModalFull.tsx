@@ -46,7 +46,10 @@ export default function VibelogEditModalFull({
   // Text editing state
   const [title, setTitle] = useState(vibelog.title);
   const [content, setContent] = useState(vibelog.content);
-  const [teaser, setTeaser] = useState(vibelog.teaser || '');
+  // Only use teaser if it exists and is different from content
+  // If teaser equals content, treat it as if there's no teaser
+  const initialTeaser = vibelog.teaser && vibelog.teaser !== vibelog.content ? vibelog.teaser : '';
+  const [teaser, setTeaser] = useState(initialTeaser);
   const [tone, setTone] = useState<string>('');
   const [prompt, setPrompt] = useState('');
 
