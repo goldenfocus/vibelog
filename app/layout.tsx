@@ -3,6 +3,7 @@ import type { Viewport } from 'next';
 import { Inter } from 'next/font/google';
 
 import './globals.css';
+import GlobalAudioPlayer from '@/components/GlobalAudioPlayer';
 import { AuthProvider } from '@/components/providers/AuthProvider';
 import { I18nProvider } from '@/components/providers/I18nProvider';
 import { ReactQueryProvider } from '@/components/providers/ReactQueryProvider';
@@ -95,6 +96,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <TooltipProvider>
               <I18nProvider>
                 {children}
+                <GlobalAudioPlayer />
                 <Toaster />
                 <Sonner />
               </I18nProvider>
