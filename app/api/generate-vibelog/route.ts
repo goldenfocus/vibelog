@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
       return tooManyResponse(rl);
     }
 
-    const { transcription, stream } = await request.json();
+    const { transcription, stream, tone, keepFillerWords } = await request.json();
 
     if (!transcription) {
       return NextResponse.json({ error: 'No transcription provided' }, { status: 400 });
@@ -92,6 +92,20 @@ export async function POST(request: NextRequest) {
     if (typeof transcription !== 'string') {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
     }
+
+    // Validate tone if provided
+    const validTones = [
+      'authentic',
+      'professional',
+      'casual',
+      'humorous',
+      'inspiring',
+      'analytical',
+      'storytelling',
+      'dramatic',
+      'poetic',
+    ];
+    const selectedTone = tone && validTones.includes(tone) ? tone : 'authentic';
 
     // Limit transcription length to prevent abuse and reduce cost
     const MAX_CHARS = 10_000;
@@ -104,6 +118,8 @@ export async function POST(request: NextRequest) {
         'Generating vibelog from transcription:',
         transcription.substring(0, 100) + '...'
       );
+      console.log('Selected tone:', selectedTone);
+      console.log('Keep filler words:', keepFillerWords);
     }
 
     // Check if we have a real API key, otherwise return mock response for testing
@@ -180,7 +196,7 @@ As voice technology continues to evolve, we can expect even more sophisticated f
           headers: {
             'Content-Type': 'text/event-stream',
             'Cache-Control': 'no-cache',
-            'Connection': 'keep-alive',
+            Connection: 'keep-alive',
           },
         });
       }
@@ -241,6 +257,30 @@ As voice technology continues to evolve, we can expect even more sophisticated f
       timeout: 60_000,
     });
 
+    // Tone-specific instructions
+    const toneInstructions: Record<string, string> = {
+      authentic:
+        "Keep the speaker's natural voice. Make minimal edits - only fix obvious grammar errors and remove excessive repetition. Preserve their vocabulary, sentence structure, and speaking style. Don't make it more dramatic or polished than the original. The goal is to sound like the person actually talks, just cleaned up slightly.",
+      professional:
+        'Use a professional, formal tone with clear structure and authority. Employ industry-standard terminology, maintain objectivity, and present ideas with confidence and expertise. Structure content logically with strong topic sentences.',
+      casual:
+        "Use a casual, conversational tone that feels friendly and approachable. Write like you're chatting with a friend - use contractions, simple words, and a relaxed style. Keep it warm and personable.",
+      humorous:
+        "Make it funny and lighthearted while keeping the core message intact. Add humor naturally through wordplay, wit, amusing observations, or playful language. Don't force jokes - let humor emerge from the content itself.",
+      inspiring:
+        'Make it inspirational and uplifting, focusing on positive outcomes and motivation. Use empowering language, highlight possibilities, emphasize growth and transformation. Make readers feel capable and excited about taking action.',
+      analytical:
+        'Use an analytical, data-driven approach with clear insights and conclusions. Break down complex ideas logically, identify patterns, draw evidence-based conclusions. Use precise language and structured reasoning.',
+      storytelling:
+        'Transform it into a narrative with engaging characters, scenes, and progression. Use story elements like setting, conflict, resolution. Create vivid scenes and emotional arcs. Make abstract concepts concrete through narrative.',
+      dramatic:
+        'Heighten the emotional impact. Use vivid imagery, build tension, emphasize stakes and consequences. Make every moment feel significant and charged with emotion. Create suspense and anticipation.',
+      poetic:
+        'Transform into literary prose. Use metaphors, rich imagery, and lyrical language. Create atmosphere and mood through careful word choice and rhythm. Employ literary devices like alliteration, symbolism, and evocative descriptions.',
+    };
+
+    const toneInstruction = toneInstructions[selectedTone] || toneInstructions.authentic;
+
     // OPTIMIZATION 2: Enable streaming for real-time content delivery
     // OPTIMIZATION 4: Use GPT-4o-mini for faster, better, cheaper generation
     const completion = await openai.chat.completions.create({
@@ -248,7 +288,10 @@ As voice technology continues to evolve, we can expect even more sophisticated f
       messages: [
         {
           role: 'system',
-          content: `You are an English vibelog writer creating content optimized for maximum engagement. Your task is to write posts in English only.
+          content: `You are an English vibelog writer creating content based on the user's preferred tone. Your task is to write posts in English only.
+
+TONE INSTRUCTION (CRITICAL - APPLY THIS STYLE):
+${toneInstruction}
 
 CRITICAL REQUIREMENTS:
 - You MUST write in English language only - never use Spanish, German, French, or any other language
@@ -261,16 +304,17 @@ DUAL-CONTENT OUTPUT FORMAT (CRITICAL):
 You MUST output TWO versions in this EXACT format:
 
 ---TEASER---
-[Write a 2-3 paragraph addictive teaser (200-400 chars) using curiosity-gap psychology. This should be an IRRESISTIBLE hook that makes readers NEED to read more. Use techniques like: cliffhanger endings, intriguing questions, controversial statements, surprising facts, or promises of valuable insights. DO NOT just truncate the intro - craft a unique hook designed to maximize click-through.]
+[Write a 2-3 paragraph addictive teaser (200-400 chars) that creates curiosity and makes readers want to sign up. Keep the author's natural style and vocabulary, but enhance it with engagement techniques. DO NOT just truncate the intro - craft a unique hook.]
 ---FULL---
 # [Compelling Title]
 
-[Complete vibelog post with full content, proper structure, H2 sections, engaging writing]
+[Complete vibelog post with full content, proper structure, H2 sections, using the specified tone style above]
 
-TEASER WRITING TECHNIQUES:
-- Start with a surprising statement or question
+TEASER WRITING TECHNIQUES (keep their style, add engagement):
+- Preserve the author's voice and vocabulary
+- Start with a surprising statement or question from their content
 - Build curiosity without revealing the answer
-- Use power words: "shocking", "secret", "truth", "never", "always"
+- Use power words naturally: "shocking", "secret", "truth", "never", "always"
 - Create information gaps that beg to be filled
 - End mid-thought or with a provocative question
 - Promise specific value or transformation
@@ -326,7 +370,7 @@ Remember: Output BOTH sections in the exact format:
         headers: {
           'Content-Type': 'text/event-stream',
           'Cache-Control': 'no-cache',
-          'Connection': 'keep-alive',
+          Connection: 'keep-alive',
         },
       });
     }
