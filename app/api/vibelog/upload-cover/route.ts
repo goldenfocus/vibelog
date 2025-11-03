@@ -42,8 +42,9 @@ export async function POST(request: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Resize and optimize
+    // Resize and optimize (auto-rotate based on EXIF first)
     const processed = await sharp(buffer)
+      .rotate() // Auto-rotate based on EXIF orientation
       .resize(1920, 1080, {
         fit: 'cover',
         withoutEnlargement: true,

@@ -7,6 +7,7 @@ import { Area } from 'react-easy-crop';
 
 import { ImageCropModal } from '@/components/profile/ImageCropModal';
 import { Button } from '@/components/ui/button';
+import { getOrientedImageUrl } from '@/lib/image-orientation';
 import { cn } from '@/lib/utils';
 
 interface ImageUploadZoneProps {
@@ -61,13 +62,16 @@ export function ImageUploadZone({
     setError(null);
     setSelectedFile(file);
 
-    // Create image URL for cropper
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setImageSrc(reader.result as string);
-      setShowCropModal(true);
-    };
-    reader.readAsDataURL(file);
+    // Create properly oriented image URL for cropper (handles EXIF orientation)
+    getOrientedImageUrl(file)
+      .then(url => {
+        setImageSrc(url);
+        setShowCropModal(true);
+      })
+      .catch(err => {
+        console.error('Failed to load image:', err);
+        setError('Failed to load image');
+      });
   }, []);
 
   const handleCropComplete = useCallback(
@@ -118,10 +122,14 @@ export function ImageUploadZone({
       } finally {
         setUploading(false);
         setSelectedFile(null);
+        // Clean up blob URL to prevent memory leak
+        if (imageSrc && imageSrc.startsWith('blob:')) {
+          URL.revokeObjectURL(imageSrc);
+        }
         setImageSrc('');
       }
     },
-    [selectedFile, type, onUploadComplete, currentImage, router]
+    [selectedFile, type, onUploadComplete, currentImage, router, imageSrc]
   );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -299,6 +307,10 @@ export function ImageUploadZone({
         onClose={() => {
           setShowCropModal(false);
           setSelectedFile(null);
+          // Clean up blob URL to prevent memory leak
+          if (imageSrc && imageSrc.startsWith('blob:')) {
+            URL.revokeObjectURL(imageSrc);
+          }
           setImageSrc('');
         }}
         imageSrc={imageSrc}
