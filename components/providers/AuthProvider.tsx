@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 
 import { clearCachedSession, getCachedSession, setCachedSession } from '@/lib/auth-cache';
+import { ensureProfileExists } from '@/lib/ensure-profile';
 import { createClient } from '@/lib/supabase';
 
 type AuthContextType = {
@@ -130,6 +131,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setCachedSession(session.user);
         setUser(session.user);
         setError(null);
+
+        // CRITICAL: Ensure profile exists (catches users whose profiles failed to create)
+        if (event === 'SIGNED_IN') {
+          ensureProfileExists(supabase, session.user.id)
+            .then(result => {
+              if (result.created) {
+                console.log('✅ [AUTH] Created missing profile for user:', session.user.email);
+              } else if (!result.success) {
+                console.error('❌ [AUTH] Profile check failed:', result.error);
+              }
+            })
+            .catch(err => {
+              console.error('❌ [AUTH] Profile check error:', err);
+            });
+        }
       } else {
         clearCachedSession();
         setUser(null);
