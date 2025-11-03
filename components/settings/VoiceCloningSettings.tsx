@@ -16,6 +16,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useProfile } from '@/hooks/useProfile';
 import { useVoiceCloning } from '@/hooks/useVoiceCloning';
+import { createClient } from '@/lib/supabase';
 
 interface VoiceCloningSettingsProps {
   userId: string;
@@ -203,14 +204,6 @@ export default function VoiceCloningSettings({ userId }: VoiceCloningSettingsPro
       return;
     }
 
-    const voiceCloneId = currentVoiceCloneId || (profile as ProfileWithVoiceClone)?.voice_clone_id;
-    if (!voiceCloneId) {
-      toast.error('No cloned voice found. Please clone your voice first.');
-      return;
-    }
-
-    console.log('🎵 [VOICE-CLONE] Playing sample with voice ID:', voiceCloneId);
-
     // Stop any currently playing audio
     if (sampleAudioRef.current) {
       sampleAudioRef.current.pause();
@@ -221,6 +214,25 @@ export default function VoiceCloningSettings({ userId }: VoiceCloningSettingsPro
     setTtsError(null);
 
     try {
+      // CRITICAL FIX: Fetch fresh voice_clone_id directly from database, bypassing ALL caching
+      console.log('🔄 [VOICE-CLONE] Fetching latest voice_clone_id directly from database...');
+      const supabase = createClient();
+      const { data: freshProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('voice_clone_id')
+        .eq('id', userId)
+        .single();
+
+      if (profileError || !freshProfile?.voice_clone_id) {
+        console.error('❌ [VOICE-CLONE] Failed to fetch voice_clone_id:', profileError);
+        toast.error('No cloned voice found. Please clone your voice first.');
+        setIsLoadingSample(false);
+        return;
+      }
+
+      const voiceCloneId = freshProfile.voice_clone_id;
+      console.log('🎵 [VOICE-CLONE] Playing sample with FRESH voice ID:', voiceCloneId);
+
       const response = await fetch('/api/text-to-speech', {
         method: 'POST',
         headers: {
