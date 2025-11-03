@@ -207,6 +207,7 @@ export async function POST(request: NextRequest) {
       success: true,
       voiceId,
       voiceName,
+      userId, // Return server-verified userId for save endpoint
       message: 'Voice cloned successfully!',
     });
   } catch (error) {

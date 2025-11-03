@@ -25,6 +25,7 @@ interface SaveVibelogRequest {
     duration: number;
   };
   sessionId?: string; // SECURITY: Never accept userId from client
+  serverVerifiedUserId?: string; // Server-verified userId from voice clone API (fallback if session expires)
   isTeaser?: boolean;
   voiceCloneId?: string; // Voice clone ID from ElevenLabs (if voice was cloned)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -135,7 +136,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    const userId = user?.id || null;
+
+    // Use session userId if available, otherwise fall back to server-verified userId from voice clone
+    // This handles cases where session cookies expire between voice clone and save
+    let userId = user?.id || null;
+    if (!userId && requestBody.serverVerifiedUserId) {
+      console.log(
+        '⚠️ [VIBELOG-SAVE] Session expired, using server-verified userId from voice clone'
+      );
+      userId = requestBody.serverVerifiedUserId;
+    }
+
     const isAnonymous = !userId;
 
     // Generate appropriate slug based on auth status

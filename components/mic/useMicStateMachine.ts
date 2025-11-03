@@ -606,6 +606,7 @@ export function useMicStateMachine(
 
       // Clone voice BEFORE saving vibelog (if we have substantial audio)
       let voiceCloneId: string | undefined;
+      let serverVerifiedUserId: string | undefined;
       if (audioBlob && audioBlob.size > 512 * 1024) {
         // Clone if audio is substantial (>512KB, roughly >30 seconds)
         // This works for both logged-in and anonymous users
@@ -614,18 +615,20 @@ export function useMicStateMachine(
           showToast('🎤 Cloning your voice...');
 
           // Clone voice without vibelogId (will save to profile for logged-in users)
-          voiceCloneId =
-            (await cloneVoice(
-              audioBlob,
-              undefined, // No vibelogId yet - will be added to vibelog when we save
-              `${profile?.username || user?.email?.split('@')[0] || 'Anonymous'}'s Voice`
-            )) || undefined;
+          const cloneResult = await cloneVoice(
+            audioBlob,
+            undefined, // No vibelogId yet - will be added to vibelog when we save
+            `${profile?.username || user?.email?.split('@')[0] || 'Anonymous'}'s Voice`
+          );
 
-          if (voiceCloneId) {
+          if (cloneResult) {
+            voiceCloneId = cloneResult.voiceId;
+            serverVerifiedUserId = cloneResult.userId;
             console.log('✅ [VOICE-CLONE] Voice cloned successfully:', voiceCloneId);
+            console.log('✅ [VOICE-CLONE] Server-verified userId:', serverVerifiedUserId);
             showToast('✅ Voice cloned!');
           } else {
-            console.warn('⚠️ [VOICE-CLONE] Voice cloning returned no voice ID');
+            console.warn('⚠️ [VOICE-CLONE] Voice cloning returned no result');
           }
         } catch (error) {
           console.error('❌ [VOICE-CLONE] Voice cloning failed:', error);
@@ -651,6 +654,7 @@ export function useMicStateMachine(
         coverImage: finalCoverImage || undefined,
         audioData: audioData || undefined,
         userId: user?.id,
+        serverVerifiedUserId, // Pass server-verified userId from voice clone API
         isTeaser: isTeaserContent,
         voiceCloneId, // Include voice clone ID if available
         metadata: {
