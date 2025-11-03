@@ -50,16 +50,23 @@ export default function VoiceCloningSettings({ userId }: VoiceCloningSettingsPro
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [hasClonedVoice, setHasClonedVoice] = useState(false);
+  // CRITICAL: Track the current voice_clone_id locally so it updates immediately
+  const [currentVoiceCloneId, setCurrentVoiceCloneId] = useState<string | null>(null);
+  const [isVoiceProcessing, setIsVoiceProcessing] = useState(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
-  // Check if user has a cloned voice
+  // Check if user has a cloned voice and sync with profile
   useEffect(() => {
     if (profile) {
       const voiceCloneId = (profile as ProfileWithVoiceClone).voice_clone_id;
       setHasClonedVoice(!!voiceCloneId);
+      // IMPORTANT: Update local state when profile changes
+      if (voiceCloneId) {
+        setCurrentVoiceCloneId(voiceCloneId);
+      }
     }
   }, [profile]);
 
@@ -126,7 +133,8 @@ export default function VoiceCloningSettings({ userId }: VoiceCloningSettingsPro
       return;
     }
 
-    const voiceCloneId = (profile as ProfileWithVoiceClone)?.voice_clone_id;
+    // CRITICAL: Use currentVoiceCloneId instead of profile to get the latest value
+    const voiceCloneId = currentVoiceCloneId || (profile as ProfileWithVoiceClone)?.voice_clone_id;
     if (!voiceCloneId) {
       toast.error('No cloned voice found. Please clone your voice first.');
       return;
@@ -183,8 +191,17 @@ export default function VoiceCloningSettings({ userId }: VoiceCloningSettingsPro
       setIsPlayingSample(true);
     } catch (error) {
       console.error('TTS error:', error);
-      setTtsError(error instanceof Error ? error.message : 'Failed to play sample');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to play sample';
+      setTtsError(errorMessage);
       setIsPlayingSample(false);
+      // If error suggests voice isn't ready, show helpful message
+      if (
+        errorMessage.toLowerCase().includes('voice') ||
+        errorMessage.toLowerCase().includes('not found') ||
+        errorMessage.toLowerCase().includes('invalid')
+      ) {
+        toast.error('Voice may still be processing. Please wait a few seconds and try again.');
+      }
     } finally {
       setIsLoadingSample(false);
     }
@@ -205,25 +222,84 @@ export default function VoiceCloningSettings({ userId }: VoiceCloningSettingsPro
     }
 
     setIsRecloning(true);
+    setIsVoiceProcessing(false);
+
     try {
+      toast.info('Cloning your voice... This may take a moment.');
+
+      // Get the old voice ID before cloning so we can delete it
+      const oldVoiceCloneId =
+        currentVoiceCloneId || (profile as ProfileWithVoiceClone)?.voice_clone_id;
+
       const voiceName = `${(profile as ProfileWithVoiceClone)?.display_name || 'User'}'s Voice`;
       const result = await cloneVoice(recordingBlob, undefined, voiceName);
 
       if (result?.voiceId) {
-        // Refresh profile to get updated voice_clone_id
-        const { data } = await supabase
+        // CRITICAL: Update local state IMMEDIATELY with new voice ID
+        setCurrentVoiceCloneId(result.voiceId);
+        setHasClonedVoice(true);
+
+        toast.success('Voice cloned! Processing... Please wait a few seconds before testing.');
+
+        // Set processing state
+        setIsVoiceProcessing(true);
+
+        // Refresh profile from database to ensure consistency
+        // Wait a bit for database to update
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        const { data, error: refreshError } = await supabase
           .from('profiles')
           .select('voice_clone_id')
           .eq('id', userId)
           .single();
 
-        if (data?.voice_clone_id) {
-          setHasClonedVoice(true);
-          toast.success('Voice recloned successfully!');
+        if (refreshError) {
+          console.error('Failed to refresh profile:', refreshError);
+        } else if (data?.voice_clone_id) {
+          // Double-check the database has the new voice ID
+          setCurrentVoiceCloneId(data.voice_clone_id);
+          console.log('✅ Profile refreshed with new voice_clone_id:', data.voice_clone_id);
         }
+
+        // Delete old voice from ElevenLabs if it exists and is different
+        if (oldVoiceCloneId && oldVoiceCloneId !== result.voiceId) {
+          try {
+            console.log('🗑️ Deleting old voice from ElevenLabs:', oldVoiceCloneId);
+            const deleteResponse = await fetch('/api/delete-voice', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ voiceId: oldVoiceCloneId }),
+            });
+
+            if (deleteResponse.ok) {
+              console.log('✅ Old voice deleted successfully');
+            } else {
+              console.warn('⚠️ Failed to delete old voice (non-critical)');
+            }
+          } catch (deleteError) {
+            console.warn('Failed to delete old voice (non-critical):', deleteError);
+            // Don't fail the whole operation if deletion fails
+          }
+        }
+
+        // Wait for ElevenLabs to process the voice (usually ready in 3-5 seconds)
+        await new Promise(resolve => setTimeout(resolve, 3000));
+
+        setIsVoiceProcessing(false);
+        toast.success('Voice ready! You can now test it with the Play Sample button.');
+
+        // Clear recording blob so user can record again if needed
+        setRecordingBlob(null);
+        setRecordingTime(0);
+      } else {
+        toast.error('Failed to get voice ID from cloning service.');
       }
     } catch (error) {
       console.error('Reclone error:', error);
+      setIsVoiceProcessing(false);
       toast.error('Failed to reclone voice. Please try again.');
     } finally {
       setIsRecloning(false);
@@ -302,9 +378,14 @@ export default function VoiceCloningSettings({ userId }: VoiceCloningSettingsPro
         {/* Play Sample Button */}
         {hasClonedVoice && (
           <div className="flex flex-col gap-2 sm:flex-row">
+            {isVoiceProcessing && (
+              <div className="mb-2 rounded-lg border border-blue-500/50 bg-blue-500/10 p-2 text-center text-xs text-blue-500 sm:text-sm">
+                ⏳ Voice is processing... Please wait a few seconds before testing.
+              </div>
+            )}
             <Button
               onClick={isPlayingSample ? handleStopSample : handlePlaySample}
-              disabled={!sampleText.trim() || isLoadingSample}
+              disabled={!sampleText.trim() || isLoadingSample || isVoiceProcessing}
               className="flex-1"
               size="lg"
             >
@@ -321,7 +402,7 @@ export default function VoiceCloningSettings({ userId }: VoiceCloningSettingsPro
               ) : (
                 <>
                   <Play className="mr-2 h-4 w-4" />
-                  Play Sample
+                  {isVoiceProcessing ? 'Processing...' : 'Play Sample'}
                 </>
               )}
             </Button>

@@ -67,6 +67,7 @@ export default function DashboardPage() {
           teaser,
           content,
           cover_image_url,
+          audio_url,
           created_at,
           published_at,
           view_count,
