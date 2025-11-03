@@ -54,17 +54,63 @@ export function useVoiceCloning(): UseVoiceCloningReturn {
           body: formData,
         });
 
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({
-            error: 'Failed to clone voice',
-          }));
-          throw new Error(errorData.error || errorData.message || 'Failed to clone voice');
+        // Get response text first to handle both JSON and text errors
+        const responseText = await response.text();
+        let errorData: {
+          message?: string;
+          error?: string | { message?: string };
+          details?: string;
+        } | null = null;
+        let data: { voiceId?: string; userId?: string } | null = null;
+
+        try {
+          if (!response.ok) {
+            errorData = JSON.parse(responseText);
+          } else {
+            data = JSON.parse(responseText);
+          }
+        } catch {
+          // If response is not JSON, use text as error message
+          if (!response.ok) {
+            throw new Error(
+              `Voice cloning failed (${response.status}): ${responseText.substring(0, 200)}`
+            );
+          }
+          throw new Error('Invalid response from voice cloning service');
         }
 
-        const data = await response.json();
-        if (!data.voiceId) {
-          return null;
+        if (!response.ok) {
+          // Extract error message from various possible formats
+          let errorMessage = 'Failed to clone voice. Please try again.';
+          if (errorData) {
+            if (errorData.message) {
+              errorMessage = errorData.message;
+            } else if (errorData.error) {
+              errorMessage =
+                typeof errorData.error === 'string'
+                  ? errorData.error
+                  : errorData.error.message || errorMessage;
+            } else if (errorData.details) {
+              errorMessage =
+                typeof errorData.details === 'string' ? errorData.details : errorMessage;
+            }
+          }
+
+          console.error('❌ [VOICE-CLONE] API error:', {
+            status: response.status,
+            errorData,
+            responseText: responseText.substring(0, 500),
+          });
+
+          throw new Error(errorMessage);
         }
+
+        if (!data || !data.voiceId) {
+          console.error('❌ [VOICE-CLONE] No voiceId in response:', data);
+          throw new Error('No voice ID returned from cloning service.');
+        }
+
+        console.log('✅ [VOICE-CLONE] Successfully cloned voice:', data.voiceId);
 
         // Return both voiceId and server-verified userId
         return {
@@ -74,7 +120,7 @@ export function useVoiceCloning(): UseVoiceCloningReturn {
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to clone voice';
         setError(errorMessage);
-        console.error('Voice cloning error:', err);
+        console.error('❌ [VOICE-CLONE] Hook error:', err);
         return null;
       } finally {
         setIsCloning(false);

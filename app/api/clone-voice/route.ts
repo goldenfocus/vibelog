@@ -65,16 +65,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Audio file is required' }, { status: 400 });
     }
 
-    // Handle case where audio is received as a blob/file
-    let audioFileForElevenLabs: File | Blob;
+    // Ensure we have a File object with proper name and type for ElevenLabs
+    // ElevenLabs API works best with File objects that have proper filenames
+    let audioFileForElevenLabs: File;
 
-    // If audioBlob is not a File, convert it to one
     if (audioBlob instanceof File) {
+      // Already a File, use it directly
       audioFileForElevenLabs = audioBlob;
     } else {
-      // It's a Blob, convert to File
+      // Convert Blob to File with proper name and type
       const arrayBuffer = await audioBlob.arrayBuffer();
-      audioFileForElevenLabs = new File([arrayBuffer], 'recording.webm', {
+      // Determine file extension from MIME type
+      const extension = audioBlob.type.includes('webm')
+        ? 'webm'
+        : audioBlob.type.includes('wav')
+          ? 'wav'
+          : audioBlob.type.includes('mp4')
+            ? 'mp4'
+            : 'webm'; // default to webm
+
+      const fileName = `recording_${Date.now()}.${extension}`;
+      audioFileForElevenLabs = new File([arrayBuffer], fileName, {
         type: audioBlob.type || 'audio/webm',
       });
     }
@@ -91,61 +102,164 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // ElevenLabs requires at least 1KB, but recommends 1+ minute for quality
+    // We'll accept smaller files but warn about quality
     if (audioBlob.size < 1024) {
       return NextResponse.json(
         {
           error: 'Audio file too small',
           message:
-            'Audio file must be at least 1KB. For best results, provide at least 1 minute of clear speech.',
+            'Audio file must be at least 1KB. For best voice cloning results, provide at least 30 seconds (512KB) of clear speech.',
         },
         { status: 400 }
       );
     }
 
+    // Warn (but don't block) if audio is too short for good quality
+    const recommendedMinSize = 512 * 1024; // 512KB ≈ 30 seconds
+    if (audioBlob.size < recommendedMinSize) {
+      console.warn(
+        `⚠️ [VOICE-CLONE] Audio file is smaller than recommended (${audioBlob.size} bytes < ${recommendedMinSize} bytes). Voice quality may be reduced.`
+      );
+    }
+
     // Clone voice using ElevenLabs API
     // Create FormData for ElevenLabs API
+    // Required fields: 'name' and 'files'
     const elevenLabsFormData = new FormData();
     elevenLabsFormData.append('name', voiceName);
+    // audioFileForElevenLabs is now guaranteed to be a File with proper name
     elevenLabsFormData.append('files', audioFileForElevenLabs);
 
-    // Clone voice using ElevenLabs API
-    const elevenLabsResponse = await fetch(`${config.ai.elevenlabs.apiUrl}/voices/add`, {
-      method: 'POST',
-      headers: {
-        'xi-api-key': config.ai.elevenlabs.apiKey!,
-        // Don't set Content-Type header - fetch will set it with boundary for FormData
-      },
-      body: elevenLabsFormData,
+    console.log('🎤 [VOICE-CLONE] Sending request to ElevenLabs:', {
+      url: `${config.ai.elevenlabs.apiUrl}/voices/add`,
+      audioSize: audioBlob.size,
+      audioType: audioFileForElevenLabs.type,
+      fileName: audioFileForElevenLabs.name,
+      voiceName,
+      hasApiKey: !!config.ai.elevenlabs.apiKey,
     });
 
-    if (!elevenLabsResponse.ok) {
-      const errorData = await elevenLabsResponse.json().catch(() => ({
-        error: 'Failed to clone voice',
-      }));
+    // Clone voice using ElevenLabs API
+    let elevenLabsResponse: Response;
+    try {
+      elevenLabsResponse = await fetch(`${config.ai.elevenlabs.apiUrl}/voices/add`, {
+        method: 'POST',
+        headers: {
+          'xi-api-key': config.ai.elevenlabs.apiKey!,
+          // Don't set Content-Type header - fetch will set it with boundary for FormData
+        },
+        body: elevenLabsFormData,
+      });
+    } catch (fetchError) {
+      console.error('❌ [VOICE-CLONE] Network error calling ElevenLabs:', fetchError);
+      return NextResponse.json(
+        {
+          error: 'Network error',
+          message:
+            'Failed to connect to voice cloning service. Please check your internet connection and try again.',
+          details: fetchError instanceof Error ? fetchError.message : 'Unknown network error',
+        },
+        { status: 503 }
+      );
+    }
 
-      console.error('ElevenLabs voice cloning error:', errorData);
+    // Get response text first to handle both JSON and text errors
+    const responseText = await elevenLabsResponse.text();
+    let errorData: {
+      detail?: { message?: string };
+      error?: { message?: string };
+      message?: string;
+    } | null = null;
+    let clonedVoiceData: { voice_id?: string; voiceId?: string; id?: string } | null = null;
+
+    try {
+      if (!elevenLabsResponse.ok) {
+        errorData = JSON.parse(responseText);
+      } else {
+        clonedVoiceData = JSON.parse(responseText);
+      }
+    } catch (parseError) {
+      // If response is not JSON, use text as error message
+      console.error('❌ [VOICE-CLONE] Failed to parse ElevenLabs response:', parseError);
+      console.error('Response text:', responseText.substring(0, 500));
+
+      if (!elevenLabsResponse.ok) {
+        return NextResponse.json(
+          {
+            error: 'Voice cloning failed',
+            message: `Voice cloning service returned an error (${elevenLabsResponse.status}): ${responseText.substring(0, 200)}`,
+            details: responseText,
+          },
+          { status: elevenLabsResponse.status }
+        );
+      }
+    }
+
+    if (!elevenLabsResponse.ok) {
+      console.error('❌ [VOICE-CLONE] ElevenLabs API error:', {
+        status: elevenLabsResponse.status,
+        statusText: elevenLabsResponse.statusText,
+        errorData,
+        responseText: responseText.substring(0, 500),
+      });
+
+      // Extract error message from various possible formats
+      let errorMessage = 'Failed to clone voice. Please try again.';
+      if (errorData) {
+        if (errorData.detail?.message) {
+          errorMessage = errorData.detail.message;
+        } else if (errorData.error?.message) {
+          errorMessage = errorData.error.message;
+        } else if (errorData.message) {
+          errorMessage = errorData.message;
+        } else if (typeof errorData === 'string') {
+          errorMessage = errorData;
+        }
+      } else if (responseText) {
+        errorMessage = responseText.substring(0, 200);
+      }
 
       return NextResponse.json(
         {
           error: 'Voice cloning failed',
-          message: errorData.error?.message || 'Failed to clone voice. Please try again.',
+          message: errorMessage,
+          details: errorData || responseText,
+          status: elevenLabsResponse.status,
         },
         { status: elevenLabsResponse.status }
       );
     }
 
-    const clonedVoiceData = await elevenLabsResponse.json();
-    const voiceId = clonedVoiceData.voice_id;
-
-    if (!voiceId) {
+    // Validate response structure
+    if (!clonedVoiceData) {
+      console.error('❌ [VOICE-CLONE] No data in successful response');
       return NextResponse.json(
         {
           error: 'Voice cloning failed',
-          message: 'No voice ID returned from cloning service.',
+          message: 'Invalid response from voice cloning service.',
+          details: responseText,
         },
         { status: 500 }
       );
     }
+
+    // Handle different possible response formats
+    const voiceId = clonedVoiceData.voice_id || clonedVoiceData.voiceId || clonedVoiceData.id;
+
+    if (!voiceId) {
+      console.error('❌ [VOICE-CLONE] No voice_id in response:', clonedVoiceData);
+      return NextResponse.json(
+        {
+          error: 'Voice cloning failed',
+          message: 'No voice ID returned from cloning service.',
+          details: clonedVoiceData,
+        },
+        { status: 500 }
+      );
+    }
+
+    console.log('✅ [VOICE-CLONE] Voice cloned successfully:', voiceId);
 
     // Store voice clone ID in database
     const adminSupabase = await createServerAdminClient();
