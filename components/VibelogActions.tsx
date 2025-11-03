@@ -168,20 +168,6 @@ export default function VibelogActions({
     }
   }, [isMenuOpen]);
 
-  // Set track in global store when audioUrl is available
-  useEffect(() => {
-    if (audioUrl && !teaserOnly) {
-      // Set track in global store for potential playback
-      setTrack({
-        id: `vibelog-${vibelogId}`,
-        url: audioUrl,
-        title: title || 'Vibelog Audio',
-        author: author,
-        type: 'url',
-      });
-    }
-  }, [audioUrl, vibelogId, title, author, teaserOnly, setTrack]);
-
   const handlePlayClick = async () => {
     // If original audio is available, use global player instead of TTS
     // Note: In teaserOnly mode, we don't use audioUrl as it's the full audio
