@@ -1,6 +1,6 @@
 'use client';
 
-import { Copy, Edit, X, Check } from 'lucide-react';
+import { Edit, X, Check } from 'lucide-react';
 import React, { useState } from 'react';
 
 import { useI18n } from '@/components/providers/I18nProvider';
@@ -80,23 +80,15 @@ export default function TranscriptionPanel({
   liveTranscript,
   isRecording,
   isComplete,
-  onCopy,
-  onEdit,
+  onCopy: _onCopy,
+  onEdit: _onEdit,
   onTranscriptUpdate,
   onLiveTranscriptEdit,
-  isLoggedIn = false,
+  isLoggedIn: _isLoggedIn = false,
   canEditLive = false,
 }: TranscriptionPanelProps) {
   const { t } = useI18n();
   const [isEditing, setIsEditing] = useState(false);
-
-  const handleEdit = () => {
-    if (!isLoggedIn && onEdit) {
-      onEdit(); // This will show login popup in parent
-      return;
-    }
-    setIsEditing(true);
-  };
 
   const handleSaveEdit = (newContent: string) => {
     if (onTranscriptUpdate) {
@@ -168,26 +160,8 @@ export default function TranscriptionPanel({
           className="rounded-2xl border border-border/20 bg-card p-6"
           data-testid="completed-transcript-panel"
         >
-          <div className="mb-4 flex items-center justify-between">
+          <div className="mb-4">
             <h3 className="text-lg font-semibold">{t('recorder.originalTranscription')}</h3>
-            <div className="flex gap-2">
-              <button
-                onClick={handleEdit}
-                className="inline-flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-1.5 text-sm transition-colors hover:bg-muted"
-                data-testid="edit-transcript-button"
-              >
-                <Edit className="h-4 w-4" />
-                {t('actions.edit')}
-              </button>
-              <button
-                onClick={() => onCopy(transcription)}
-                className="inline-flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-1.5 text-sm transition-colors hover:bg-muted"
-                data-testid="copy-transcript-button"
-              >
-                <Copy className="h-4 w-4" />
-                {t('actions.copy')}
-              </button>
-            </div>
           </div>
           <p
             className="leading-relaxed text-muted-foreground"
