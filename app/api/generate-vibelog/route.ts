@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
       return tooManyResponse(rl);
     }
 
-    const { transcription, stream, tone, keepFillerWords } = await request.json();
+    const { transcription, stream, tone, keepFillerWords, detectedLanguage } = await request.json();
 
     if (!transcription) {
       return NextResponse.json({ error: 'No transcription provided' }, { status: 400 });
@@ -92,6 +92,18 @@ export async function POST(request: NextRequest) {
     if (typeof transcription !== 'string') {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
     }
+
+    // Use detected language or default to English
+    const targetLanguage = detectedLanguage || 'en';
+    const languageNames: Record<string, string> = {
+      en: 'English',
+      es: 'Spanish',
+      fr: 'French',
+      de: 'German',
+      vi: 'Vietnamese',
+      zh: 'Chinese',
+    };
+    const languageName = languageNames[targetLanguage] || 'English';
 
     // Validate tone if provided
     const validTones = [
@@ -118,6 +130,7 @@ export async function POST(request: NextRequest) {
         'Generating vibelog from transcription:',
         transcription.substring(0, 100) + '...'
       );
+      console.log('Target language:', languageName, `(${targetLanguage})`);
       console.log('Selected tone:', selectedTone);
       console.log('Keep filler words:', keepFillerWords);
     }
@@ -247,6 +260,7 @@ Modern voice technology combines several cutting-edge technologies:
 As voice technology continues to evolve, we can expect even more sophisticated features like real-time fact-checking, automatic citation generation, and multi-language content creation. The future of content creation is not just digital—it's conversational.
 
 *Ready to try voice-powered content creation? Start speaking your ideas into existence today.*`),
+        originalLanguage: targetLanguage, // ISO 639-1 code for the original content
         success: true,
       });
     }
@@ -288,16 +302,16 @@ As voice technology continues to evolve, we can expect even more sophisticated f
       messages: [
         {
           role: 'system',
-          content: `You are an English vibelog writer creating content based on the user's preferred tone. Your task is to write posts in English only.
+          content: `You are a vibelog writer creating content based on the user's preferred tone. Your task is to write posts in ${languageName} (language code: ${targetLanguage}).
 
 TONE INSTRUCTION (CRITICAL - APPLY THIS STYLE):
 ${toneInstruction}
 
 CRITICAL REQUIREMENTS:
-- You MUST write in English language only - never use Spanish, German, French, or any other language
-- All titles, headings, and content must be in English
-- Ignore any perceived language patterns in the input - always respond in English
-- The input is an English transcription that should be transformed into an English vibelog post
+- You MUST write in ${languageName} language only - preserve the original language of the speaker
+- All titles, headings, and content must be in ${languageName}
+- The input is a ${languageName} transcription that should be transformed into a ${languageName} vibelog post
+- Keep the content in the SAME language as the transcription - do NOT translate
 - Branding rule: replace any word that starts with "blog" with the "vibelog" family (blog→vibelog, blogging→vibelogging, blogger→vibelogger). Do NOT modify URLs or product/brand names that are already correct.
 
 DUAL-CONTENT OUTPUT FORMAT (CRITICAL):
@@ -330,15 +344,17 @@ Write a complete dual-content vibelog based on the transcription provided.`,
         },
         {
           role: 'user',
-          content: `Transform this English transcription into a dual-content English vibelog post with both an addictive teaser and full content:
+          content: `Transform this ${languageName} transcription into a dual-content ${languageName} vibelog post with both an addictive teaser and full content:
 
 "${transcription}"
 
-Remember: Output BOTH sections in the exact format:
+Remember:
+- Write EVERYTHING in ${languageName} language
+- Output BOTH sections in the exact format:
 ---TEASER---
-[irresistible hook content]
+[irresistible hook content in ${languageName}]
 ---FULL---
-[complete vibelog with title and full content]`,
+[complete vibelog with title and full content in ${languageName}]`,
         },
       ],
       temperature: 0.7,
@@ -413,6 +429,7 @@ Remember: Output BOTH sections in the exact format:
     return NextResponse.json({
       vibelogTeaser: finalTeaser,
       vibelogContent: finalFullContent,
+      originalLanguage: targetLanguage, // ISO 639-1 code for the original content
       success: true,
     });
   } catch (error) {
