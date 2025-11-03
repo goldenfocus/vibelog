@@ -1,7 +1,7 @@
 'use client';
 
-import { Volume2, Play, Pause, X } from 'lucide-react';
-import React, { useEffect, useRef } from 'react';
+import { Volume2, Volume1, VolumeX, Play, Pause, X } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import Waveform from '@/components/mic/Waveform';
 import { useAudioPlayerStore } from '@/state/audio-player-store';
@@ -14,18 +14,22 @@ export default function GlobalAudioPlayer() {
     currentTime,
     duration,
     playbackLevels,
+    volume,
     audioElement,
     setAudioElement,
     setIsPlaying,
     setCurrentTime,
     setDuration,
     setPlaybackLevels,
+    setVolume,
     reset,
     play,
     pause,
-
     seek,
   } = useAudioPlayerStore();
+
+  const [showVolumeSlider, setShowVolumeSlider] = useState(false);
+  const volumeButtonRef = useRef<HTMLDivElement>(null);
 
   const playbackAnalyserRef = useRef<AnalyserNode | null>(null);
   const playbackContextRef = useRef<AudioContext | null>(null);
@@ -39,6 +43,9 @@ export default function GlobalAudioPlayer() {
 
     const audio = new Audio();
     audio.preload = 'metadata';
+    // Set initial volume from store
+    const currentVolume = useAudioPlayerStore.getState().volume;
+    audio.volume = currentVolume;
 
     // Set up event listeners
     audio.addEventListener('loadedmetadata', () => {
@@ -132,6 +139,27 @@ export default function GlobalAudioPlayer() {
       }
     };
   }, [audioElement, setAudioElement, setIsPlaying, setCurrentTime, setDuration]);
+
+  // Apply volume to audio element when it changes
+  useEffect(() => {
+    if (audioElement) {
+      audioElement.volume = volume;
+    }
+  }, [volume, audioElement]);
+
+  // Close volume slider when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (volumeButtonRef.current && !volumeButtonRef.current.contains(event.target as Node)) {
+        setShowVolumeSlider(false);
+      }
+    };
+
+    if (showVolumeSlider) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showVolumeSlider]);
 
   // Update audio source when track changes
   useEffect(() => {
@@ -296,6 +324,35 @@ export default function GlobalAudioPlayer() {
     reset();
   };
 
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newVolume = parseFloat(e.target.value);
+    setVolume(newVolume);
+  };
+
+  const handleVolumeClick = () => {
+    setShowVolumeSlider(!showVolumeSlider);
+  };
+
+  const handleMuteToggle = () => {
+    if (volume > 0) {
+      setVolume(0);
+    } else {
+      setVolume(1.0); // Restore to 100%
+    }
+  };
+
+  const getVolumeIcon = () => {
+    if (volume === 0) {
+      return VolumeX;
+    } else if (volume < 0.5) {
+      return Volume1;
+    } else {
+      return Volume2;
+    }
+  };
+
+  const VolumeIcon = getVolumeIcon();
+
   // Don't render if no track is set
   if (!currentTrack) {
     return null;
@@ -368,6 +425,53 @@ export default function GlobalAudioPlayer() {
             <span className="min-w-[40px] text-right font-mono text-sm text-muted-foreground">
               {formatTime(duration)}
             </span>
+          </div>
+
+          {/* Volume Control */}
+          <div className="relative" ref={volumeButtonRef}>
+            <button
+              onClick={handleVolumeClick}
+              className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+              aria-label="Volume"
+            >
+              <VolumeIcon className="h-5 w-5" />
+            </button>
+
+            {showVolumeSlider && (
+              <div className="absolute bottom-full right-0 mb-2 rounded-lg border border-border/50 bg-card p-3 shadow-xl">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="relative flex h-24 w-8 items-center justify-center">
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value={volume}
+                      onChange={handleVolumeChange}
+                      className="absolute h-24 w-2 cursor-pointer appearance-none rounded-lg bg-muted/30 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-electric [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-electric"
+                      style={{
+                        transform: 'rotate(-90deg)',
+                        transformOrigin: 'center',
+                      }}
+                    />
+                    <div
+                      className="pointer-events-none absolute w-2 rounded-lg bg-gradient-electric transition-all duration-75"
+                      style={{
+                        height: `${volume * 96}px`,
+                        bottom: '4px',
+                      }}
+                    />
+                  </div>
+                  <button
+                    onClick={handleMuteToggle}
+                    className="mt-1 rounded p-1 text-xs text-muted-foreground hover:text-foreground"
+                    aria-label={volume === 0 ? 'Unmute' : 'Mute'}
+                  >
+                    {volume === 0 ? 'Unmute' : 'Mute'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
