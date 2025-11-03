@@ -51,7 +51,9 @@ async function getVibelog(username: string, slug: string) {
     return null;
   }
 
-  // Handle anonymous vibelogs (unclaimed vibelogs without user_id)
+  // Handle anonymous vibelogs (vibelogs accessed via /@anonymous/{public_slug})
+  // Note: Don't filter by user_id IS NULL because some vibelogs may have been
+  // created during session expiry and have user_id set but still use public_slug
   if (normalizedUsername === 'anonymous') {
     console.log('👻 Querying anonymous vibelog by public_slug:', slug);
     const { data, error } = await supabase
@@ -78,7 +80,6 @@ async function getVibelog(username: string, slug: string) {
       `
       )
       .eq('public_slug', slug)
-      .is('user_id', null)
       .eq('is_published', true)
       .eq('is_public', true)
       .single();
@@ -90,13 +91,32 @@ async function getVibelog(username: string, slug: string) {
       return null;
     }
 
+    // If the vibelog has a user_id, try to fetch the author profile
+    let author = {
+      username: 'anonymous',
+      display_name: 'Anonymous',
+      avatar_url: null,
+    };
+
+    if (data.user_id) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('username, display_name, avatar_url')
+        .eq('id', data.user_id)
+        .single();
+
+      if (profile) {
+        author = {
+          username: profile.username,
+          display_name: profile.display_name,
+          avatar_url: profile.avatar_url,
+        };
+      }
+    }
+
     return {
       ...data,
-      author: {
-        username: 'anonymous',
-        display_name: 'Anonymous',
-        avatar_url: null,
-      },
+      author,
     };
   }
 
