@@ -147,7 +147,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         transcription:
           "Today I want to share some thoughts about the future of voice technology and how it's changing the way we create content. Speaking is our most natural form of communication and I believe we're moving toward a world where your voice becomes your pen.",
-        language: 'en',
         detectedLanguage: 'en',
         success: true,
       });
@@ -165,15 +164,21 @@ export async function POST(request: NextRequest) {
       type: audioFile.type || 'audio/webm',
     });
 
+    // Use verbose_json to get language detection metadata
     const transcription = await openai.audio.transcriptions.create({
       file: whisperFile,
       model: config.ai.openai.whisperModel,
       // Remove language parameter to enable auto-detection
-      response_format: 'text',
+      response_format: 'verbose_json',
     });
 
+    // Extract language metadata from verbose response
+    const detectedLanguage = transcription.language || 'en'; // ISO 639-1 code
+    const transcriptionText = transcription.text;
+
     if (isDev) {
-      console.log('Transcription completed:', transcription.substring(0, 100) + '...');
+      console.log('✅ Transcription completed:', transcriptionText.substring(0, 100) + '...');
+      console.log('🌐 Detected language:', detectedLanguage);
     }
 
     // Clean up storage file after successful transcription
@@ -186,7 +191,8 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
-      transcription,
+      transcription: transcriptionText,
+      detectedLanguage, // ISO 639-1 code (e.g., "fr", "en", "es")
       success: true,
     });
   } catch (error) {

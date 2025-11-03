@@ -62,6 +62,7 @@ export async function POST(request: NextRequest) {
     const adminSupabase = await createServerAdminClient();
 
     // Check if vibelog has a voice_clone_id
+    // If voiceCloneId is provided directly, use it (for settings page testing)
     let voiceCloneIdToUse = voiceCloneId;
     if (!voiceCloneIdToUse && vibelogId) {
       try {

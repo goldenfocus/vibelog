@@ -9,7 +9,13 @@ import {
 } from '@/types/micRecorder';
 
 export interface UseVibelogAPIReturn {
-  processTranscription: (audioBlob: Blob, sessionId?: string) => Promise<string>;
+  processTranscription: (
+    audioBlob: Blob,
+    sessionId?: string
+  ) => Promise<{
+    transcription: string;
+    detectedLanguage?: string;
+  }>;
   processVibelogGeneration: (
     transcription: string,
     options?: {
@@ -17,6 +23,7 @@ export interface UseVibelogAPIReturn {
       onStreamChunk?: (chunk: string) => void;
       tone?: string;
       keepFillerWords?: boolean;
+      detectedLanguage?: string;
     }
   ) => Promise<TeaserResult>;
   processCoverImage: (args: {
@@ -158,7 +165,10 @@ export function useVibelogAPI(
     }
   };
 
-  const processTranscription = async (audioFile: Blob, sessionId?: string): Promise<string> => {
+  const processTranscription = async (
+    audioFile: Blob,
+    sessionId?: string
+  ): Promise<{ transcription: string; detectedLanguage?: string }> => {
     if (!audioFile) {
       console.error('No audio blob available for processing');
       throw new Error('No audio blob available');
@@ -231,15 +241,19 @@ export function useVibelogAPI(
         await handleAPIError(transcribeResponse);
       }
 
-      const { transcription }: TranscriptionResponse = await transcribeResponse.json();
+      const { transcription, detectedLanguage }: TranscriptionResponse =
+        await transcribeResponse.json();
 
       if (!transcription) {
         throw new Error('No transcription received from API');
       }
 
       console.log('✅ Transcription complete!');
+      if (detectedLanguage) {
+        console.log('🌐 Detected language:', detectedLanguage);
+      }
       processingDataRef.current.transcriptionData = transcription;
-      return transcription;
+      return { transcription, detectedLanguage };
     } catch (error) {
       console.error('❌ Transcription error:', error);
       throw error;
@@ -253,6 +267,7 @@ export function useVibelogAPI(
       onStreamChunk?: (chunk: string) => void;
       tone?: string;
       keepFillerWords?: boolean;
+      detectedLanguage?: string;
     }
   ): Promise<TeaserResult> => {
     try {
@@ -265,6 +280,7 @@ export function useVibelogAPI(
       const enableStreaming = options?.enableStreaming ?? false;
       const tone = options?.tone;
       const keepFillerWords = options?.keepFillerWords;
+      const detectedLanguage = options?.detectedLanguage;
 
       const vibelogResponse = await fetch('/api/generate-vibelog', {
         method: 'POST',
@@ -276,6 +292,7 @@ export function useVibelogAPI(
           stream: enableStreaming,
           ...(tone && { tone }),
           ...(keepFillerWords !== undefined && { keepFillerWords }),
+          ...(detectedLanguage && { detectedLanguage }),
         }),
       });
 

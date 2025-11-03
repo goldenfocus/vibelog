@@ -152,6 +152,7 @@ export function useMicStateMachine(
 
   const [recordingState, setRecordingState] = useState<RecordingState>('idle');
   const [transcription, setTranscription] = useState('');
+  const [detectedLanguage, setDetectedLanguage] = useState<string | undefined>();
   const [vibelogContent, setVibelogContent] = useState('');
   const [fullVibelogContent, setFullVibelogContent] = useState('');
   const [isTeaserContent, setIsTeaserContent] = useState(false);
@@ -466,8 +467,10 @@ export function useMicStateMachine(
     // Generate sessionId first (needed for both transcription and audio upload)
     const sessionId = `session_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
-    const transcriptionResult = await vibelogAPI.processTranscription(audioBlob, sessionId);
+    const { transcription: transcriptionResult, detectedLanguage: detectedLang } =
+      await vibelogAPI.processTranscription(audioBlob, sessionId);
     setTranscription(transcriptionResult);
+    setDetectedLanguage(detectedLang);
 
     vibelogAPI
       .uploadAudio(audioBlob, sessionId, user?.id)
@@ -498,12 +501,14 @@ export function useMicStateMachine(
     console.log('🚀 [VIBELOG-GEN] Starting generation...');
     console.log('🎨 [VIBELOG-GEN] Using tone:', tone);
     console.log('🗣️ [VIBELOG-GEN] Keep filler words:', keepFillerWords);
+    console.log('🌐 [VIBELOG-GEN] Detected language:', detectedLanguage);
 
     // OPTIMIZATION 2: Enable streaming for real-time content delivery
     const teaserResult = await vibelogAPI.processVibelogGeneration(transcriptionData, {
       enableStreaming: true,
       tone,
       keepFillerWords,
+      detectedLanguage,
       onStreamChunk: (_chunk: string) => {
         // Optional: Update UI with streaming chunks in real-time
         // Streaming logs disabled to reduce console noise
@@ -526,7 +531,7 @@ export function useMicStateMachine(
     });
 
     return teaserResult.fullContent || teaserResult.content;
-  }, [vibelogAPI, tone, keepFillerWords]);
+  }, [vibelogAPI, tone, keepFillerWords, detectedLanguage]);
 
   const processCoverImage = useCallback(
     async (vibelogContentOverride?: string) => {

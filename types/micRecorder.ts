@@ -57,11 +57,13 @@ export interface APIResponse<T = any> {
 
 export interface TranscriptionResponse extends APIResponse {
   transcription?: string;
+  detectedLanguage?: string; // ISO 639-1 language code from Whisper (e.g., "fr", "en", "es")
 }
 
 export interface VibelogGenerationResponse extends APIResponse {
   vibelogTeaser?: string;
   vibelogContent?: string;
+  originalLanguage?: string; // ISO 639-1 language code (e.g., "fr", "en", "es")
 }
 
 // Legacy alias for backwards compatibility during migration
