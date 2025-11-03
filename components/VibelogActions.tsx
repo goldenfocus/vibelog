@@ -31,6 +31,8 @@ interface VibelogActionsProps {
   vibelogUrl?: string;
   createdAt?: string;
   audioUrl?: string;
+  teaser?: string; // Teaser text for preview mode
+  teaserOnly?: boolean; // If true, only show play button and use teaser text
   likeCount?: number; // Initial like count
   isLiked?: boolean; // Initial liked state
   onEdit?: () => void;
@@ -54,6 +56,8 @@ export default function VibelogActions({
   vibelogUrl,
   createdAt,
   audioUrl,
+  teaser,
+  teaserOnly = false,
   likeCount: initialLikeCount = 0,
   isLiked: initialIsLiked = false,
   onEdit,
@@ -186,7 +190,8 @@ export default function VibelogActions({
 
   const handlePlayClick = async () => {
     // If original audio is available, use it instead of TTS
-    if (audioUrl) {
+    // Note: In teaserOnly mode, we don't use audioUrl as it's the full audio
+    if (audioUrl && !teaserOnly) {
       // If audio element doesn't exist yet, create it first
       if (!audioRef.current) {
         const audio = new Audio(audioUrl);
@@ -254,8 +259,11 @@ export default function VibelogActions({
       return;
     }
 
+    // Use teaser text if in teaserOnly mode, otherwise use full content
+    const textToPlay = teaserOnly && teaser ? teaser : content;
+
     // Clean markdown for TTS
-    let cleanContent = content
+    let cleanContent = textToPlay
       .replace(/#{1,6}\s/g, '') // Remove headers
       .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
       .replace(/\*(.*?)\*/g, '$1') // Remove italic
@@ -450,173 +458,207 @@ export default function VibelogActions({
   return (
     <>
       <div className={`${wrapperClass} ${className}`} data-testid="vibelog-actions">
-        {/* Owner Menu Dropdown (Edit/Delete) */}
-        {isOwnVibelog && onEdit && onDelete && (
-          <div className="relative" ref={menuRef}>
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className={baseButtonClass}
-              title="More options"
-              data-testid="owner-menu-button"
-            >
-              <MoreVertical className={iconClass} />
-              {!isCompact && <span className={labelClass}>Manage</span>}
-            </button>
+        {/* If teaserOnly mode, only show the play button */}
+        {teaserOnly ? (
+          <button
+            onClick={handlePlayClick}
+            disabled={isLoading}
+            className={`${baseButtonClass} relative ${isCompact ? '' : 'overflow-hidden'}`}
+            title={isPlaying ? 'Pause' : 'Listen'}
+            data-testid="listen-button"
+          >
+            {!isCompact && isPlaying && (
+              <div
+                className="absolute bottom-0 left-0 h-1 bg-electric transition-all duration-100 ease-out"
+                style={{ width: `${progress}%` }}
+              />
+            )}
 
-            {isMenuOpen && (
-              <div className="absolute left-0 top-full z-50 mt-2 w-40 rounded-lg border border-border/50 bg-card/95 shadow-xl backdrop-blur-sm">
-                <div className="p-1">
-                  <button
-                    onClick={handleEditClick}
-                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/50"
-                    data-testid="menu-edit-button"
-                  >
-                    <Edit className="h-4 w-4" />
-                    <span>Edit</span>
-                  </button>
-                  <button
-                    onClick={handleDeleteClick}
-                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
-                    data-testid="menu-delete-button"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    <span>Delete</span>
-                  </button>
-                </div>
+            <div className="relative flex items-center justify-center">
+              {isLoading ? (
+                <Loader2 className={`${iconClass} animate-spin`} />
+              ) : isPlaying ? (
+                <Pause className={iconClass} />
+              ) : (
+                <Play className={iconClass} />
+              )}
+            </div>
+
+            <span className={labelClass}>
+              {isLoading ? 'Generating...' : isPlaying ? 'Pause' : 'Listen'}
+            </span>
+          </button>
+        ) : (
+          <>
+            {/* Owner Menu Dropdown (Edit/Delete) */}
+            {isOwnVibelog && onEdit && onDelete && (
+              <div className="relative" ref={menuRef}>
+                <button
+                  onClick={() => setIsMenuOpen(!isMenuOpen)}
+                  className={baseButtonClass}
+                  title="More options"
+                  data-testid="owner-menu-button"
+                >
+                  <MoreVertical className={iconClass} />
+                  {!isCompact && <span className={labelClass}>Manage</span>}
+                </button>
+
+                {isMenuOpen && (
+                  <div className="absolute left-0 top-full z-50 mt-2 w-40 rounded-lg border border-border/50 bg-card/95 shadow-xl backdrop-blur-sm">
+                    <div className="p-1">
+                      <button
+                        onClick={handleEditClick}
+                        className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/50"
+                        data-testid="menu-edit-button"
+                      >
+                        <Edit className="h-4 w-4" />
+                        <span>Edit</span>
+                      </button>
+                      <button
+                        onClick={handleDeleteClick}
+                        className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
+                        data-testid="menu-delete-button"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span>Delete</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
-          </div>
-        )}
 
-        {/* Edit or Remix Button (for non-owners or when delete not available) */}
-        {(onEdit || onRemix) && !(isOwnVibelog && onEdit && onDelete) && (
-          <button
-            onClick={handleEditOrRemix}
-            className={
-              isOwnVibelog
-                ? baseButtonClass
-                : `${baseButtonClass} ml-auto flex items-center gap-2 rounded-lg bg-electric/10 px-4 py-2 font-medium text-electric transition-all duration-200 hover:bg-electric hover:text-white`
-            }
-            title={isOwnVibelog ? 'Edit' : 'Remix'}
-            data-testid={isOwnVibelog ? 'edit-button' : 'remix-button'}
-          >
-            {isOwnVibelog ? (
-              <>
-                <Edit className={iconClass} />
-                {isCompact && <span className={labelClass}>Edit</span>}
-                {!isCompact && <span className={labelClass}>Edit</span>}
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-4 w-4" />
-                <span>Remix</span>
-              </>
+            {/* Edit or Remix Button (for non-owners or when delete not available) */}
+            {(onEdit || onRemix) && !(isOwnVibelog && onEdit && onDelete) && (
+              <button
+                onClick={handleEditOrRemix}
+                className={
+                  isOwnVibelog
+                    ? baseButtonClass
+                    : `${baseButtonClass} ml-auto flex items-center gap-2 rounded-lg bg-electric/10 px-4 py-2 font-medium text-electric transition-all duration-200 hover:bg-electric hover:text-white`
+                }
+                title={isOwnVibelog ? 'Edit' : 'Remix'}
+                data-testid={isOwnVibelog ? 'edit-button' : 'remix-button'}
+              >
+                {isOwnVibelog ? (
+                  <>
+                    <Edit className={iconClass} />
+                    {isCompact && <span className={labelClass}>Edit</span>}
+                    {!isCompact && <span className={labelClass}>Edit</span>}
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    <span>Remix</span>
+                  </>
+                )}
+              </button>
             )}
-          </button>
-        )}
 
-        {/* Copy Button */}
-        <button
-          onClick={handleCopyClick}
-          className={baseButtonClass}
-          title={copySuccess ? 'Copied!' : 'Copy'}
-          data-testid="copy-button"
-        >
-          <Copy className={iconClass} />
-          <span className={labelClass}>{copySuccess ? 'Copied!' : 'Copy'}</span>
-        </button>
+            {/* Copy Button */}
+            <button
+              onClick={handleCopyClick}
+              className={baseButtonClass}
+              title={copySuccess ? 'Copied!' : 'Copy'}
+              data-testid="copy-button"
+            >
+              <Copy className={iconClass} />
+              <span className={labelClass}>{copySuccess ? 'Copied!' : 'Copy'}</span>
+            </button>
 
-        {/* Listen Button with original audio or TTS */}
-        <button
-          onClick={handlePlayClick}
-          disabled={isLoading}
-          className={`${baseButtonClass} relative ${isCompact ? '' : 'overflow-hidden'}`}
-          title={isAudioPlaying || isPlaying ? 'Pause' : 'Listen'}
-          data-testid="listen-button"
-        >
-          {!isCompact && (isPlaying || isAudioPlaying) && (
-            <div
-              className="absolute bottom-0 left-0 h-1 bg-electric transition-all duration-100 ease-out"
-              style={{ width: `${audioUrl ? audioProgress : progress}%` }}
-            />
-          )}
+            {/* Listen Button with original audio or TTS */}
+            <button
+              onClick={handlePlayClick}
+              disabled={isLoading}
+              className={`${baseButtonClass} relative ${isCompact ? '' : 'overflow-hidden'}`}
+              title={isAudioPlaying || isPlaying ? 'Pause' : 'Listen'}
+              data-testid="listen-button"
+            >
+              {!isCompact && (isPlaying || isAudioPlaying) && (
+                <div
+                  className="absolute bottom-0 left-0 h-1 bg-electric transition-all duration-100 ease-out"
+                  style={{ width: `${audioUrl ? audioProgress : progress}%` }}
+                />
+              )}
 
-          <div className="relative flex items-center justify-center">
-            {isLoading ? (
-              <Loader2 className={`${iconClass} animate-spin`} />
-            ) : isAudioPlaying || isPlaying ? (
-              <Pause className={iconClass} />
-            ) : (
-              <Play className={iconClass} />
+              <div className="relative flex items-center justify-center">
+                {isLoading ? (
+                  <Loader2 className={`${iconClass} animate-spin`} />
+                ) : isAudioPlaying || isPlaying ? (
+                  <Pause className={iconClass} />
+                ) : (
+                  <Play className={iconClass} />
+                )}
+              </div>
+
+              <span className={labelClass}>
+                {isLoading ? 'Generating...' : isAudioPlaying || isPlaying ? 'Pause' : 'Listen'}
+              </span>
+            </button>
+
+            {/* Like Button */}
+            <LikersPopover
+              vibelogId={vibelogId}
+              likeCount={likeCount}
+              onCountUpdate={handleCountUpdate}
+            >
+              <button
+                onClick={handleLikeClick}
+                disabled={isLiking}
+                className={`${baseButtonClass} ${isLiked ? 'text-red-500 hover:text-red-600' : ''}`}
+                title={user ? (isLiked ? 'Unlike' : 'Like') : 'Sign in to like'}
+                data-testid="like-button"
+              >
+                {isLiking ? (
+                  <Loader2 className={`${iconClass} animate-spin`} />
+                ) : (
+                  <Heart className={iconClass} fill={isLiked ? 'currentColor' : 'none'} />
+                )}
+                <span className={labelClass}>{isLiking ? '...' : likeCount}</span>
+              </button>
+            </LikersPopover>
+
+            {/* Share Button */}
+            {onShare && (
+              <button
+                onClick={handleShareClick}
+                className={baseButtonClass}
+                title="Share"
+                data-testid="share-button"
+              >
+                <Share2 className={iconClass} />
+                <span className={labelClass}>Share</span>
+              </button>
             )}
-          </div>
 
-          <span className={labelClass}>
-            {isLoading ? 'Generating...' : isAudioPlaying || isPlaying ? 'Pause' : 'Listen'}
-          </span>
-        </button>
-
-        {/* Like Button */}
-        <LikersPopover
-          vibelogId={vibelogId}
-          likeCount={likeCount}
-          onCountUpdate={handleCountUpdate}
-        >
-          <button
-            onClick={handleLikeClick}
-            disabled={isLiking}
-            className={`${baseButtonClass} ${isLiked ? 'text-red-500 hover:text-red-600' : ''}`}
-            title={user ? (isLiked ? 'Unlike' : 'Like') : 'Sign in to like'}
-            data-testid="like-button"
-          >
-            {isLiking ? (
-              <Loader2 className={`${iconClass} animate-spin`} />
-            ) : (
-              <Heart className={iconClass} fill={isLiked ? 'currentColor' : 'none'} />
+            {/* Export Button */}
+            {!isCompact && (
+              <ExportButton
+                content={content}
+                title={title}
+                author={author}
+                authorUsername={authorUsername}
+                vibelogUrl={vibelogUrl}
+                createdAt={createdAt}
+                audioUrl={audioUrl}
+                onExport={onExport}
+              />
             )}
-            <span className={labelClass}>{isLiking ? '...' : likeCount}</span>
-          </button>
-        </LikersPopover>
 
-        {/* Share Button */}
-        {onShare && (
-          <button
-            onClick={handleShareClick}
-            className={baseButtonClass}
-            title="Share"
-            data-testid="share-button"
-          >
-            <Share2 className={iconClass} />
-            <span className={labelClass}>Share</span>
-          </button>
-        )}
-
-        {/* Export Button */}
-        {!isCompact && (
-          <ExportButton
-            content={content}
-            title={title}
-            author={author}
-            authorUsername={authorUsername}
-            vibelogUrl={vibelogUrl}
-            createdAt={createdAt}
-            audioUrl={audioUrl}
-            onExport={onExport}
-          />
-        )}
-
-        {isCompact && (
-          <ExportButton
-            content={content}
-            title={title}
-            author={author}
-            authorUsername={authorUsername}
-            vibelogUrl={vibelogUrl}
-            createdAt={createdAt}
-            audioUrl={audioUrl}
-            onExport={onExport}
-            variant="compact"
-          />
+            {isCompact && (
+              <ExportButton
+                content={content}
+                title={title}
+                author={author}
+                authorUsername={authorUsername}
+                vibelogUrl={vibelogUrl}
+                createdAt={createdAt}
+                audioUrl={audioUrl}
+                onExport={onExport}
+                variant="compact"
+              />
+            )}
+          </>
         )}
       </div>
 
