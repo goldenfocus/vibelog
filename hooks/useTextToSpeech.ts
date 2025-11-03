@@ -4,7 +4,12 @@ export interface UseTextToSpeechReturn {
   isPlaying: boolean;
   isLoading: boolean;
   error: string | null;
-  playText: (text: string, voice?: string, vibelogId?: string) => Promise<void>;
+  playText: (
+    text: string,
+    voice?: string,
+    vibelogId?: string,
+    voiceCloneId?: string
+  ) => Promise<void>;
   stop: () => void;
   progress: number;
   duration: number;
