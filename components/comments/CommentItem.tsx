@@ -3,6 +3,8 @@
 import { Mic, Play, Pause, User } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 
+import { useAudioPlayerStore } from '@/state/audio-player-store';
+
 interface CommentAuthor {
   username: string;
   display_name: string;
@@ -24,20 +26,29 @@ interface CommentItemProps {
 }
 
 export default function CommentItem({ comment, onPlayAudio }: CommentItemProps) {
-  const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef<string | null>(null);
+
+  const {
+    currentTrack,
+    isPlaying: globalIsPlaying,
+    currentTime,
+    duration: globalDuration,
+    setTrack,
+    play,
+    pause,
+  } = useAudioPlayerStore();
+
+  // Check if this comment's audio is currently playing
+  const trackId = `comment-${comment.id}`;
+  const isThisTrackPlaying = currentTrack?.id === trackId;
+  const isPlaying = isThisTrackPlaying ? globalIsPlaying : false;
+  const duration = isThisTrackPlaying ? globalDuration : 0;
+  const progress = isThisTrackPlaying && duration > 0 ? (currentTime / duration) * 100 : 0;
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
       if (audioUrlRef.current) {
         URL.revokeObjectURL(audioUrlRef.current);
         audioUrlRef.current = null;
@@ -50,64 +61,63 @@ export default function CommentItem({ comment, onPlayAudio }: CommentItemProps) 
       return;
     }
 
-    if (isPlaying) {
-      // Pause
-      if (audioRef.current) {
-        audioRef.current.pause();
+    // If already playing this track, pause it
+    if (isThisTrackPlaying && globalIsPlaying) {
+      pause();
+      return;
+    }
+
+    // If already set as track but paused, resume
+    if (isThisTrackPlaying && !globalIsPlaying) {
+      try {
+        await play();
+      } catch (error) {
+        console.error('Error playing audio:', error);
       }
-      setIsPlaying(false);
-    } else {
-      // Play - use TTS with cloned voice if available, otherwise play audio directly
-      if (onPlayAudio && comment.voice_id && comment.content) {
-        // Use TTS with cloned voice for text comments that have voice_id
-        setIsLoading(true);
-        try {
-          await onPlayAudio(comment.content, comment.voice_id);
-          setIsPlaying(true);
-        } catch (error) {
-          console.error('Error playing audio:', error);
-          setIsLoading(false);
+      return;
+    }
+
+    // Play - use TTS with cloned voice if available, otherwise play audio directly
+    if (onPlayAudio && comment.voice_id && comment.content) {
+      // Use TTS with cloned voice for text comments that have voice_id
+      setIsLoading(true);
+      try {
+        await onPlayAudio(comment.content, comment.voice_id);
+      } catch (error) {
+        console.error('Error playing audio:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    } else if (comment.audio_url) {
+      // Play audio directly via global player
+      setIsLoading(true);
+      try {
+        // Fetch and create blob URL if not already done
+        if (!audioUrlRef.current) {
+          const response = await fetch(comment.audio_url);
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+          audioUrlRef.current = url;
         }
-      } else if (comment.audio_url) {
-        // Play audio directly
-        setIsLoading(true);
-        try {
-          if (!audioRef.current || !audioUrlRef.current) {
-            // Fetch audio URL
-            const response = await fetch(comment.audio_url);
-            const blob = await response.blob();
-            const url = URL.createObjectURL(blob);
-            audioUrlRef.current = url;
 
-            const audio = new Audio(url);
-            audioRef.current = audio;
+        // Set track in global player
+        setTrack({
+          id: trackId,
+          url: audioUrlRef.current,
+          title: 'Voice comment',
+          author: comment.author.display_name,
+          type: 'url',
+        });
 
-            audio.addEventListener('loadedmetadata', () => {
-              setDuration(audio.duration);
-            });
+        // Small delay to ensure track is set
+        await new Promise(resolve => setTimeout(resolve, 50));
 
-            audio.addEventListener('timeupdate', () => {
-              if (audio.duration > 0) {
-                setProgress((audio.currentTime / audio.duration) * 100);
-              }
-            });
-
-            audio.addEventListener('ended', () => {
-              setIsPlaying(false);
-              setProgress(0);
-            });
-
-            await audio.play();
-            setIsPlaying(true);
-          } else {
-            await audioRef.current.play();
-            setIsPlaying(true);
-          }
-        } catch (error) {
-          console.error('Error playing audio:', error);
-        } finally {
-          setIsLoading(false);
-        }
+        // Play via global player
+        await play();
+      } catch (error) {
+        console.error('Error playing audio:', error);
+      } finally {
+        setIsLoading(false);
       }
     }
   };
@@ -199,29 +209,6 @@ export default function CommentItem({ comment, onPlayAudio }: CommentItemProps) 
             )}
           </div>
         </div>
-      )}
-
-      {/* Hidden audio element for direct audio playback */}
-      {comment.audio_url && !comment.voice_id && (
-        <audio
-          ref={audioRef}
-          src={audioUrlRef.current || undefined}
-          className="hidden"
-          onLoadedMetadata={() => {
-            if (audioRef.current) {
-              setDuration(audioRef.current.duration);
-            }
-          }}
-          onTimeUpdate={() => {
-            if (audioRef.current && audioRef.current.duration > 0) {
-              setProgress((audioRef.current.currentTime / audioRef.current.duration) * 100);
-            }
-          }}
-          onEnded={() => {
-            setIsPlaying(false);
-            setProgress(0);
-          }}
-        />
       )}
     </div>
   );

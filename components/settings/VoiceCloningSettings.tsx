@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { useProfile } from '@/hooks/useProfile';
+import { useTextToSpeech } from '@/hooks/useTextToSpeech';
 import { useVoiceCloning } from '@/hooks/useVoiceCloning';
 import { createClient } from '@/lib/supabase';
 
@@ -43,11 +44,14 @@ export default function VoiceCloningSettings({ userId }: VoiceCloningSettingsPro
   const { profile, refetch: refetchProfile } = useProfile(userId);
   const { cloneVoice, error: cloneError } = useVoiceCloning();
 
-  // Local TTS state for simpler playback control
-  const [isPlayingSample, setIsPlayingSample] = useState(false);
-  const [isLoadingSample, setIsLoadingSample] = useState(false);
-  const [ttsError, setTtsError] = useState<string | null>(null);
-  const sampleAudioRef = useRef<HTMLAudioElement | null>(null);
+  // Use global TTS hook instead of local audio element
+  const {
+    isPlaying: isPlayingSample,
+    isLoading: isLoadingSample,
+    error: ttsError,
+    playText,
+    stop: stopSample,
+  } = useTextToSpeech();
 
   const [sampleText, setSampleText] = useState(DEFAULT_SAMPLE_TEXT);
   const [isRecloning, setIsRecloning] = useState(false);
@@ -204,14 +208,11 @@ export default function VoiceCloningSettings({ userId }: VoiceCloningSettingsPro
       return;
     }
 
-    // Stop any currently playing audio
-    if (sampleAudioRef.current) {
-      sampleAudioRef.current.pause();
-      sampleAudioRef.current = null;
+    // If already playing, stop it
+    if (isPlayingSample) {
+      stopSample();
+      return;
     }
-
-    setIsLoadingSample(true);
-    setTtsError(null);
 
     try {
       // CRITICAL FIX: Fetch fresh voice_clone_id directly from database, bypassing ALL caching
@@ -226,70 +227,23 @@ export default function VoiceCloningSettings({ userId }: VoiceCloningSettingsPro
       if (profileError || !freshProfile?.voice_clone_id) {
         console.error('❌ [VOICE-CLONE] Failed to fetch voice_clone_id:', profileError);
         toast.error('No cloned voice found. Please clone your voice first.');
-        setIsLoadingSample(false);
         return;
       }
 
       const voiceCloneId = freshProfile.voice_clone_id;
       console.log('🎵 [VOICE-CLONE] Playing sample with FRESH voice ID:', voiceCloneId);
 
-      const response = await fetch('/api/text-to-speech', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          text: sampleText,
-          voice: 'shimmer',
-          voiceCloneId: voiceCloneId,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response
-          .json()
-          .catch(() => ({ error: 'Failed to generate speech' }));
-        throw new Error(errorData.error || 'Failed to generate speech');
-      }
-
-      const audioBlob = await response.blob();
-      const audioUrl = URL.createObjectURL(audioBlob);
-      const audio = new Audio(audioUrl);
-      sampleAudioRef.current = audio;
-
-      audio.onended = () => {
-        setIsPlayingSample(false);
-        URL.revokeObjectURL(audioUrl);
-        sampleAudioRef.current = null;
-      };
-
-      audio.onerror = () => {
-        setIsPlayingSample(false);
-        setTtsError('Playback failed');
-        URL.revokeObjectURL(audioUrl);
-        sampleAudioRef.current = null;
-      };
-
-      await audio.play();
-      setIsPlayingSample(true);
+      // Use the TTS hook which now uses the global player
+      await playText(sampleText, 'shimmer', undefined, voiceCloneId);
       console.log('✅ [VOICE-CLONE] Sample playback started');
     } catch (error) {
       console.error('TTS error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to play sample';
-      setTtsError(errorMessage);
-      setIsPlayingSample(false);
       toast.error('Failed to play sample. Please try again.');
-    } finally {
-      setIsLoadingSample(false);
     }
   };
 
   const handleStopSample = () => {
-    if (sampleAudioRef.current) {
-      sampleAudioRef.current.pause();
-      sampleAudioRef.current.currentTime = 0;
-      setIsPlayingSample(false);
-    }
+    stopSample();
   };
 
   const handleReclone = async () => {

@@ -34,6 +34,7 @@ export default function GlobalAudioPlayer() {
   const playbackAnalyserRef = useRef<AnalyserNode | null>(null);
   const playbackContextRef = useRef<AudioContext | null>(null);
   const playbackRafRef = useRef<number | null>(null);
+  const mediaSourceCreatedRef = useRef<boolean>(false);
 
   // Initialize audio element once
   useEffect(() => {
@@ -43,6 +44,7 @@ export default function GlobalAudioPlayer() {
 
     const audio = new Audio();
     audio.preload = 'metadata';
+    audio.crossOrigin = 'anonymous'; // Enable CORS for Web Audio API
     // Set initial volume from store
     const currentVolume = useAudioPlayerStore.getState().volume;
     audio.volume = currentVolume;
@@ -87,8 +89,8 @@ export default function GlobalAudioPlayer() {
 
     audio.addEventListener('play', () => {
       setIsPlaying(true);
-      // Start playback visualization
-      if (!playbackAnalyserRef.current && audio) {
+      // Start playback visualization - create AudioContext ONCE per audio element
+      if (!mediaSourceCreatedRef.current && audio) {
         try {
           const audioContext = new (window.AudioContext ||
             (window as typeof window & { webkitAudioContext?: typeof AudioContext })
@@ -103,6 +105,7 @@ export default function GlobalAudioPlayer() {
 
           playbackContextRef.current = audioContext;
           playbackAnalyserRef.current = analyser;
+          mediaSourceCreatedRef.current = true; // Mark as created to prevent recreation
         } catch (error) {
           console.error('Error creating playback analyser:', error);
         }
@@ -137,6 +140,7 @@ export default function GlobalAudioPlayer() {
           // Ignore errors when closing context
         }
       }
+      mediaSourceCreatedRef.current = false;
     };
   }, [audioElement, setAudioElement, setIsPlaying, setCurrentTime, setDuration]);
 
@@ -193,23 +197,14 @@ export default function GlobalAudioPlayer() {
 
     // If URL changed, update the source
     if (normalizeUrl(currentSrc) !== normalizeUrl(newSrc)) {
-      // Clean up old analyser if it exists
-      if (playbackAnalyserRef.current) {
-        if (playbackRafRef.current) {
-          cancelAnimationFrame(playbackRafRef.current);
-          playbackRafRef.current = null;
-        }
-        playbackAnalyserRef.current = null;
-      }
-      if (playbackContextRef.current) {
-        try {
-          playbackContextRef.current.close();
-        } catch {
-          // Ignore errors
-        }
-        playbackContextRef.current = null;
+      // Stop animation frame if playing
+      if (playbackRafRef.current) {
+        cancelAnimationFrame(playbackRafRef.current);
+        playbackRafRef.current = null;
       }
 
+      // Don't close AudioContext - it's reused for all tracks
+      // Just update the audio source
       audioElement.src = currentTrack.url;
       audioElement.load();
       setCurrentTime(0);
