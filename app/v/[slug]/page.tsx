@@ -2,7 +2,7 @@ import { User } from 'lucide-react';
 import { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 
 import Navigation from '@/components/Navigation';
 import PublicVibelogContent from '@/components/PublicVibelogContent';
@@ -102,11 +102,6 @@ export default async function PublicVibelogPage({ params }: PageProps) {
     ...vibelog,
     author,
   };
-
-  // Check if this post has been claimed and should redirect
-  if (vibelog.redirect_to) {
-    redirect(vibelog.redirect_to);
-  }
 
   const coverImage = vibelogWithAuthor.cover_url || vibelogWithAuthor.cover_image_url;
   const isAnonymous = !vibelogWithAuthor.user_id;
