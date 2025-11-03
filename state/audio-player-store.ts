@@ -28,6 +28,9 @@ interface AudioPlayerState {
   // Visualizer levels
   playbackLevels: number[];
 
+  // Volume (0-1, default 1.0)
+  volume: number;
+
   // Actions
   setTrack: (track: AudioTrack | null) => void;
   play: () => Promise<void>;
@@ -39,6 +42,7 @@ interface AudioPlayerState {
   setCurrentTime: (time: number) => void;
   setDuration: (duration: number) => void;
   setPlaybackLevels: (levels: number[]) => void;
+  setVolume: (volume: number) => void;
   reset: () => void;
 }
 
@@ -50,6 +54,7 @@ const initialState = {
   duration: 0,
   audioElement: null,
   playbackLevels: Array.from({ length: 15 }, () => 0.15),
+  volume: 1.0, // Default to 100% volume
 };
 
 export const useAudioPlayerStore = create<AudioPlayerState>(set => ({
@@ -147,6 +152,16 @@ export const useAudioPlayerStore = create<AudioPlayerState>(set => ({
 
   setPlaybackLevels: levels => {
     set({ playbackLevels: levels });
+  },
+
+  setVolume: volume => {
+    const clampedVolume = Math.max(0, Math.min(1, volume));
+    set({ volume: clampedVolume });
+    // Apply volume to audio element immediately
+    const state = useAudioPlayerStore.getState();
+    if (state.audioElement) {
+      state.audioElement.volume = clampedVolume;
+    }
   },
 
   reset: () => {
