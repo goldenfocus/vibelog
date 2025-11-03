@@ -23,7 +23,7 @@ async function getProfile(username: string) {
   // Normalize username (strip @ if present)
   const normalizedUsername = username.startsWith('@') ? username.slice(1) : username;
 
-  // Handle anonymous profile (unclaimed vibelogs)
+  // Handle anonymous profile
   if (normalizedUsername === 'anonymous') {
     // Get aggregate stats for anonymous vibelogs
     const { data: vibelogs } = await supabase
@@ -109,7 +109,7 @@ async function getProfile(username: string) {
 async function getVibelogs(userId: string) {
   const supabase = await createServerSupabaseClient();
 
-  // Handle anonymous vibelogs (unclaimed vibelogs)
+  // Handle anonymous vibelogs
   if (userId === 'anonymous') {
     const { data: vibelogs, error } = await supabase
       .from('vibelogs')
