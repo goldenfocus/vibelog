@@ -102,6 +102,10 @@ export async function POST(request: NextRequest) {
     try {
       let sharpImage = sharp(buffer);
 
+      // IMPORTANT: Auto-rotate based on EXIF orientation first
+      // This fixes mobile photos that appear sideways/upside down
+      sharpImage = sharpImage.rotate();
+
       // Get filter early to check if we need color processing
       const filter = getFilterById(filterId);
       const needsColorProcessing = filter.sharp && (filter.sharp.modulate || filter.sharp.linear);
