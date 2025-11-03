@@ -130,41 +130,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setCachedSession(session.user);
         setUser(session.user);
         setError(null);
-
-        // CRITICAL: Auto-claim anonymous vibelogs after sign-in
-        if (event === 'SIGNED_IN' && typeof window !== 'undefined') {
-          try {
-            const sessionsJSON = localStorage.getItem('vibelog_anonymous_sessions');
-            if (sessionsJSON) {
-              const sessions = JSON.parse(sessionsJSON);
-              if (Array.isArray(sessions) && sessions.length > 0) {
-                console.log(`🔐 [AUTH] Found ${sessions.length} anonymous sessions to claim`);
-
-                // Claim all anonymous vibelogs
-                for (const sessionId of sessions) {
-                  fetch('/api/claim-vibelog', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sessionId }),
-                  })
-                    .then(res => res.json())
-                    .then(data => {
-                      if (data.success && data.claimedCount > 0) {
-                        console.log(`✅ [AUTH] Claimed ${data.claimedCount} vibelogs!`);
-                      }
-                    })
-                    .catch(err => console.error('Failed to claim:', err));
-                }
-
-                // Clear claimed sessions
-                localStorage.removeItem('vibelog_anonymous_sessions');
-                console.log('🧹 [AUTH] Cleared claimed sessions');
-              }
-            }
-          } catch (err) {
-            console.warn('Failed to claim vibelogs:', err);
-          }
-        }
       } else {
         clearCachedSession();
         setUser(null);
@@ -219,14 +184,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(true);
 
       // Clean up any stale OAuth state before starting new flow
-      console.log('🧹 Clearing stale OAuth state before sign in');
+      console.log('🧹 Clearing stale OAuth hash before sign in');
       if (typeof window !== 'undefined') {
         // Clear URL hash (Supabase OAuth state)
         if (window.location.hash) {
           window.history.replaceState(null, '', window.location.pathname + window.location.search);
         }
-        // Clear any existing session to ensure fresh OAuth flow
-        await supabase.auth.signOut({ scope: 'local' });
+        // REMOVED: signOut({ scope: 'local' }) - This was breaking OAuth state cookies
+        // causing "bad_oauth_state" errors
       }
 
       // Build redirect URL

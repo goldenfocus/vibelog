@@ -20,8 +20,19 @@ export async function GET(request: NextRequest) {
   // === HANDLE ERRORS ===
   if (error) {
     console.error('OAuth error:', error, errorDescription);
-    const message =
-      error === 'access_denied' ? 'Sign in was cancelled' : `Auth failed: ${errorDescription}`;
+
+    // Map OAuth errors to user-friendly messages
+    let message = errorDescription || 'Authentication failed';
+
+    if (error === 'access_denied') {
+      message = 'Sign in was cancelled';
+    } else if (error === 'invalid_request' && errorDescription?.includes('bad_oauth_state')) {
+      message = 'OAuth session expired. Please try signing in again.';
+      console.error('❌ bad_oauth_state error - OAuth state cookie mismatch or expired');
+    } else if (errorDescription) {
+      message = `Auth failed: ${errorDescription}`;
+    }
+
     return NextResponse.redirect(
       new URL(`/auth/signin?error=${encodeURIComponent(message)}`, request.url)
     );
@@ -37,9 +48,6 @@ export async function GET(request: NextRequest) {
   try {
     console.log('🔄 [OAuth Callback] Starting code exchange...');
     const requestUrl = new URL(request.url);
-
-    // Check for VibeLog claim parameters
-    const claimSessionId = searchParams.get('claim');
     const returnTo = searchParams.get('returnTo');
 
     // Default redirect to dashboard
@@ -104,57 +112,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Log success
-    console.log(
-      '✅ [OAuth Callback] Success! User:',
-      data.user?.email,
-      'Session established'
-    );
-
-    // === HANDLE VIBELOG CLAIMING ===
-    if (claimSessionId && returnTo) {
-      console.log('🔐 [OAuth Callback] Claiming anonymous VibeLog...');
-      try {
-        // Extract public slug from returnTo (/v/[slug])
-        const publicSlug = returnTo.split('/v/')[1];
-
-        if (publicSlug) {
-          // Call claim-vibelog API
-          const claimResponse = await fetch(`${requestUrl.origin}/api/claim-vibelog`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Cookie: response.headers.get('Set-Cookie') || '',
-            },
-            body: JSON.stringify({
-              sessionId: claimSessionId,
-              publicSlug: publicSlug,
-            }),
-          });
-
-          if (claimResponse.ok) {
-            const claimData = await claimResponse.json();
-            console.log('✅ [OAuth Callback] VibeLog claimed successfully!');
-            console.log('📍 [OAuth Callback] New URL:', claimData.newUrl);
-
-            // Redirect to the newly owned VibeLog
-            redirectUrl = new URL(claimData.newUrl, requestUrl.origin);
-            return NextResponse.redirect(redirectUrl);
-          } else {
-            const claimError = await claimResponse.json();
-            console.error('❌ [OAuth Callback] Failed to claim VibeLog:', claimError);
-            // Fall through to redirect to returnTo anyway
-            redirectUrl = new URL(returnTo, requestUrl.origin);
-            return NextResponse.redirect(redirectUrl);
-          }
-        }
-      } catch (claimErr) {
-        console.error('💥 [OAuth Callback] Error claiming VibeLog:', claimErr);
-        // Fall through to normal redirect
-      }
-    }
+    console.log('✅ [OAuth Callback] Success! User:', data.user?.email, 'Session established');
 
     // Redirect to dashboard or returnTo (AuthProvider will cache session)
-    if (returnTo && !claimSessionId) {
+    if (returnTo) {
       redirectUrl = new URL(returnTo, requestUrl.origin);
     }
 
