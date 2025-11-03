@@ -51,12 +51,15 @@ async function getVibelog(username: string, slug: string) {
     return null;
   }
 
-  // Handle anonymous vibelogs (vibelogs accessed via /@anonymous/{public_slug})
-  // Note: Don't filter by user_id IS NULL because some vibelogs may have been
-  // created during session expiry and have user_id set but still use public_slug
+  // Handle anonymous vibelogs (vibelogs accessed via /@anonymous/{slug})
+  // Note: Orphaned vibelogs (user deleted) may have slug set but public_slug NULL
+  // So we need to check both public_slug and slug fields
   if (normalizedUsername === 'anonymous') {
-    console.log('👻 Querying anonymous vibelog by public_slug:', slug);
-    const { data, error } = await supabase
+    console.log('👻 Querying anonymous vibelog by slug:', slug);
+
+    // First try public_slug
+    let data, error;
+    const publicSlugResult = await supabase
       .from('vibelogs')
       .select(
         `
@@ -82,12 +85,50 @@ async function getVibelog(username: string, slug: string) {
       .eq('public_slug', slug)
       .eq('is_published', true)
       .eq('is_public', true)
-      .single();
+      .maybeSingle();
+
+    data = publicSlugResult.data;
+    error = publicSlugResult.error;
+
+    // If not found by public_slug, try slug field (for orphaned vibelogs)
+    if (!data && !error) {
+      console.log('👻 Trying slug field for orphaned vibelog:', slug);
+      const slugResult = await supabase
+        .from('vibelogs')
+        .select(
+          `
+          id,
+          title,
+          slug,
+          content,
+          teaser,
+          audio_url,
+          cover_image_url,
+          created_at,
+          published_at,
+          view_count,
+          like_count,
+          share_count,
+          read_time,
+          word_count,
+          tags,
+          user_id,
+          public_slug
+        `
+        )
+        .eq('slug', slug)
+        .eq('is_published', true)
+        .eq('is_public', true)
+        .maybeSingle();
+
+      data = slugResult.data;
+      error = slugResult.error;
+    }
 
     console.log('📄 Anonymous vibelog query result:', { data: data?.title, error });
 
     if (error || !data) {
-      console.error('❌ Anonymous vibelog not found:', { public_slug: slug, error });
+      console.error('❌ Anonymous vibelog not found:', { slug, error });
       return null;
     }
 
