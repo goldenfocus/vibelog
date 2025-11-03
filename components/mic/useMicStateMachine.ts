@@ -674,22 +674,6 @@ export function useMicStateMachine(
       });
 
       if (result.success) {
-        // CRITICAL: Store sessionId for anonymous users to claim later
-        if (result.isAnonymous && result.sessionId && typeof window !== 'undefined') {
-          try {
-            // Store in localStorage so we can claim after sign-in
-            const existingSessions = localStorage.getItem('vibelog_anonymous_sessions');
-            const sessions = existingSessions ? JSON.parse(existingSessions) : [];
-            if (!sessions.includes(result.sessionId)) {
-              sessions.push(result.sessionId);
-              localStorage.setItem('vibelog_anonymous_sessions', JSON.stringify(sessions));
-              console.log('💾 [SAVE] Stored anonymous sessionId for claiming:', result.sessionId);
-            }
-          } catch (err) {
-            console.warn('Failed to store sessionId:', err);
-          }
-        }
-
         if (result.warnings?.length) {
           const criticalWarnings = result.warnings.filter((warning: string) => {
             return (

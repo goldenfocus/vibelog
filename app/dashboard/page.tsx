@@ -20,7 +20,6 @@ export default function DashboardPage() {
   const router = useRouter();
   const [vibelogs, setVibelogs] = useState<Array<any>>([]);
   const [loadingVibelogs, setLoadingVibelogs] = useState(true);
-  const [showClaimToast, setShowClaimToast] = useState(false);
   const [profile, setProfile] = useState<any>(null);
 
   // Transfer anonymous vibelogs to user account (background, non-blocking)
@@ -122,18 +121,10 @@ export default function DashboardPage() {
     fetchVibelogs();
   }, [user?.id, user?.email, user?.user_metadata, transferred]); // Refetch when vibelogs are transferred
 
-  // Show success message when transfer completes
+  // Log transfer completion
   useEffect(() => {
     if (transferred && count > 0) {
       console.log(`✅ ${count} vibelogs transferred to your account`);
-      setShowClaimToast(true);
-
-      // Auto-hide toast after 5 seconds
-      const timer = setTimeout(() => {
-        setShowClaimToast(false);
-      }, 5000);
-
-      return () => clearTimeout(timer);
     }
   }, [transferred, count]);
 
@@ -243,27 +234,6 @@ export default function DashboardPage() {
           </div>
         </div>
       </main>
-
-      {/* Claim Success Toast */}
-      {showClaimToast && (
-        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 animate-[toastSlideUp_0.4s_ease-out]">
-          <div className="max-w-md rounded-xl border border-electric/30 bg-card/95 px-6 py-4 shadow-xl backdrop-blur-sm">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-electric/10">
-                <span className="text-2xl">🎉</span>
-              </div>
-              <div>
-                <p className="font-semibold text-foreground">
-                  {count} {count === 1 ? 'Vibelog' : 'Vibelogs'} Claimed!
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Your anonymous content is now linked to your account
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Onboarding Modal */}
       {user && <OnboardingModal user={user} onComplete={() => {}} />}

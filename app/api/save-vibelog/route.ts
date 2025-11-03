@@ -183,7 +183,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Prepare data object with both teaser and full content
     vibelogData = {
       user_id: userId, // SECURITY: Only use server-verified userId (NULL for anonymous)
-      anonymous_session_id: isAnonymous ? sessionId : null, // Track session for ownership claim
       session_id: sessionId, // Keep for backward compatibility
       title: title,
       slug: userSlug, // User-based slug (NULL for anonymous)
@@ -366,9 +365,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         slug: finalSlug,
         publicUrl: publicUrl,
         isAnonymous: isAnonymous,
-        sessionId: isAnonymous ? sessionId : undefined, // Return session ID for claim later
         message: isAnonymous
-          ? 'Vibelog published to community! Sign in to claim ownership.'
+          ? 'Vibelog published to community! Sign in to save to your profile.'
           : 'Vibelog published to community successfully!',
         warnings: warnings.length > 0 ? warnings : undefined,
       });
