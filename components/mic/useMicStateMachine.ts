@@ -52,6 +52,7 @@ interface UseMicStateMachineReturn {
   handleCopy: (content: string, opts?: { silent?: boolean }) => Promise<void>;
   handleShare: (content?: string) => Promise<void>;
   beginEdit: () => void;
+  beginEditFull: () => void;
   finalizeEdit: () => void;
   cancelEdit: () => void;
   setEditedContent: (content: string) => void;
@@ -156,6 +157,7 @@ export function useMicStateMachine(
   const [isTeaserContent, setIsTeaserContent] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState('');
+  const [isEditingFull, setIsEditingFull] = useState(false); // Track if editing full or teaser
   const [coverImage, setCoverImage] = useState<CoverImage | null>(null);
   const [audioData, setAudioData] = useState<{ url: string; duration: number } | null>(null);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -414,6 +416,7 @@ export function useMicStateMachine(
     // - If viewing full, edit full content
     const contentToEdit = isTeaserContent ? vibelogContent : fullVibelogContent;
     setEditedContent(contentToEdit);
+    setIsEditingFull(!isTeaserContent); // Track whether we're editing full or teaser
     setIsEditing(true);
   }, [
     vibelogContent,
@@ -423,19 +426,32 @@ export function useMicStateMachine(
     isLoggedIn,
   ]);
 
+  const beginEditFull = useCallback(() => {
+    if (!isLoggedIn) {
+      handleTranscriptUpgradeGate();
+      return;
+    }
+
+    // Always edit full content, regardless of what's displayed
+    setEditedContent(fullVibelogContent);
+    setIsEditingFull(true);
+    setIsEditing(true);
+  }, [fullVibelogContent, handleTranscriptUpgradeGate, isLoggedIn]);
+
   const finalizeEdit = useCallback(() => {
-    // Save to the correct field based on what was being viewed
-    if (isTeaserContent) {
-      // User was editing teaser - only update teaser (vibelogContent)
-      setVibelogContent(editedContent);
-    } else {
+    // Save to the correct field based on what was being edited
+    if (isEditingFull) {
       // User was editing full content - update both full and display
       setFullVibelogContent(editedContent);
       setVibelogContent(editedContent);
+    } else {
+      // User was editing teaser - only update teaser (vibelogContent)
+      setVibelogContent(editedContent);
     }
     setIsEditing(false);
+    setIsEditingFull(false);
     showToast(t('components.micRecorder.vibelogUpdated'));
-  }, [editedContent, isTeaserContent, showToast, t]);
+  }, [editedContent, isEditingFull, showToast, t]);
 
   const cancelEdit = useCallback(() => {
     setEditedContent('');
@@ -657,7 +673,8 @@ export function useMicStateMachine(
         } catch (error) {
           console.error('❌ [VOICE-CLONE] Voice cloning failed:', error);
           // Don't block the save - continue without voice cloning
-          showToast('Voice cloning failed. Using default voice for playback.');
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          showToast(`Voice cloning failed: ${errorMessage}. Using default voice for playback.`);
         }
       } else if (!voiceCloningEnabled) {
         console.log('🔇 [VOICE-CLONE] Voice cloning disabled by user settings');
@@ -790,6 +807,7 @@ export function useMicStateMachine(
     handleCopy,
     handleShare,
     beginEdit,
+    beginEditFull,
     finalizeEdit,
     cancelEdit,
     setEditedContent,
