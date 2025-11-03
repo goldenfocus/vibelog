@@ -204,6 +204,14 @@ export default function VoiceCloningSettings({ userId }: VoiceCloningSettingsPro
       return;
     }
 
+    const voiceCloneId = currentVoiceCloneId || (profile as ProfileWithVoiceClone)?.voice_clone_id;
+    if (!voiceCloneId) {
+      toast.error('No cloned voice found. Please clone your voice first.');
+      return;
+    }
+
+    console.log('🎵 [VOICE-CLONE] Playing sample with voice ID:', voiceCloneId);
+
     // Stop any currently playing audio
     if (sampleAudioRef.current) {
       sampleAudioRef.current.pause();
