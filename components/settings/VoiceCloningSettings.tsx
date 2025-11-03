@@ -1,9 +1,10 @@
 'use client';
 
-import { Info, Loader2, Mic, Play, Pause, RefreshCw } from 'lucide-react';
+import { Circle, Info, Loader2, Mic, Play, Pause, RefreshCw, Check } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 
+import Waveform from '@/components/mic/Waveform';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -12,11 +13,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useProfile } from '@/hooks/useProfile';
 import { useVoiceCloning } from '@/hooks/useVoiceCloning';
-import { createClient } from '@/lib/supabase';
 
 interface VoiceCloningSettingsProps {
   userId: string;
@@ -32,9 +31,8 @@ interface ProfileWithVoiceClone {
 }
 
 export default function VoiceCloningSettings({ userId }: VoiceCloningSettingsProps) {
-  const { profile } = useProfile(userId);
+  const { profile, refetch: refetchProfile } = useProfile(userId);
   const { cloneVoice, error: cloneError } = useVoiceCloning();
-  const supabase = createClient();
 
   // Local TTS state for simpler playback control
   const [isPlayingSample, setIsPlayingSample] = useState(false);
@@ -46,42 +44,85 @@ export default function VoiceCloningSettings({ userId }: VoiceCloningSettingsPro
   const [isRecloning, setIsRecloning] = useState(false);
   const [showTipsModal, setShowTipsModal] = useState(false);
   const [recordingBlob, setRecordingBlob] = useState<Blob | null>(null);
-  const [recordingAudioUrl, setRecordingAudioUrl] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [hasClonedVoice, setHasClonedVoice] = useState(false);
-  // CRITICAL: Track the current voice_clone_id locally so it updates immediately
   const [currentVoiceCloneId, setCurrentVoiceCloneId] = useState<string | null>(null);
-  const [isVoiceProcessing, setIsVoiceProcessing] = useState(false);
+
+  // Waveform audio levels (15 bars)
+  const [audioLevels, setAudioLevels] = useState<number[]>(Array(15).fill(0));
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
 
   // Check if user has a cloned voice and sync with profile
   useEffect(() => {
     if (profile) {
       const voiceCloneId = (profile as ProfileWithVoiceClone).voice_clone_id;
       setHasClonedVoice(!!voiceCloneId);
-      // IMPORTANT: Update local state when profile changes
       if (voiceCloneId) {
         setCurrentVoiceCloneId(voiceCloneId);
       }
     }
   }, [profile]);
 
-  // Cleanup audio URL on unmount
+  // Cleanup
   useEffect(() => {
     return () => {
-      if (recordingAudioUrl) {
-        URL.revokeObjectURL(recordingAudioUrl);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
       }
     };
-  }, [recordingAudioUrl]);
+  }, []);
+
+  const updateAudioLevels = () => {
+    if (!analyserRef.current) {
+      return;
+    }
+
+    const analyser = analyserRef.current;
+    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+    analyser.getByteFrequencyData(dataArray);
+
+    // Map to 15 bars
+    const levels = Array(15)
+      .fill(0)
+      .map((_, i) => {
+        const start = Math.floor((i * dataArray.length) / 15);
+        const end = Math.floor(((i + 1) * dataArray.length) / 15);
+        const avg = dataArray.slice(start, end).reduce((a, b) => a + b, 0) / (end - start);
+        return Math.min(1, avg / 255);
+      });
+
+    setAudioLevels(levels);
+    animationFrameRef.current = requestAnimationFrame(updateAudioLevels);
+  };
 
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      // Setup audio analysis for waveform
+      const audioContext = new AudioContext();
+      const analyser = audioContext.createAnalyser();
+      const source = audioContext.createMediaStreamSource(stream);
+
+      analyser.fftSize = 256;
+      source.connect(analyser);
+
+      audioContextRef.current = audioContext;
+      analyserRef.current = analyser;
+
+      // Start waveform animation
+      updateAudioLevels();
+
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType: 'audio/webm',
       });
@@ -98,9 +139,16 @@ export default function VoiceCloningSettings({ userId }: VoiceCloningSettingsPro
       mediaRecorder.onstop = () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         setRecordingBlob(audioBlob);
-        const url = URL.createObjectURL(audioBlob);
-        setRecordingAudioUrl(url);
         stream.getTracks().forEach(track => track.stop());
+
+        // Stop waveform animation
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+        }
+        if (audioContextRef.current) {
+          audioContextRef.current.close();
+        }
+        setAudioLevels(Array(15).fill(0));
       };
 
       mediaRecorder.start();
@@ -133,7 +181,6 @@ export default function VoiceCloningSettings({ userId }: VoiceCloningSettingsPro
       return;
     }
 
-    // CRITICAL: Use currentVoiceCloneId instead of profile to get the latest value
     const voiceCloneId = currentVoiceCloneId || (profile as ProfileWithVoiceClone)?.voice_clone_id;
     if (!voiceCloneId) {
       toast.error('No cloned voice found. Please clone your voice first.');
@@ -194,14 +241,7 @@ export default function VoiceCloningSettings({ userId }: VoiceCloningSettingsPro
       const errorMessage = error instanceof Error ? error.message : 'Failed to play sample';
       setTtsError(errorMessage);
       setIsPlayingSample(false);
-      // If error suggests voice isn't ready, show helpful message
-      if (
-        errorMessage.toLowerCase().includes('voice') ||
-        errorMessage.toLowerCase().includes('not found') ||
-        errorMessage.toLowerCase().includes('invalid')
-      ) {
-        toast.error('Voice may still be processing. Please wait a few seconds and try again.');
-      }
+      toast.error('Failed to play sample. Please try again.');
     } finally {
       setIsLoadingSample(false);
     }
@@ -222,12 +262,10 @@ export default function VoiceCloningSettings({ userId }: VoiceCloningSettingsPro
     }
 
     setIsRecloning(true);
-    setIsVoiceProcessing(false);
 
     try {
-      toast.info('Cloning your voice... This may take a moment.');
+      toast.loading('Cloning your voice...', { id: 'voice-clone' });
 
-      // Get the old voice ID before cloning so we can delete it
       const oldVoiceCloneId =
         currentVoiceCloneId || (profile as ProfileWithVoiceClone)?.voice_clone_id;
 
@@ -235,74 +273,68 @@ export default function VoiceCloningSettings({ userId }: VoiceCloningSettingsPro
       const result = await cloneVoice(recordingBlob, undefined, voiceName);
 
       if (result?.voiceId) {
-        // CRITICAL: Update local state IMMEDIATELY with new voice ID
+        // CRITICAL: Update local state IMMEDIATELY
         setCurrentVoiceCloneId(result.voiceId);
         setHasClonedVoice(true);
 
-        toast.success('Voice cloned! Processing... Please wait a few seconds before testing.');
+        // Refresh profile data
+        await refetchProfile();
 
-        // Set processing state
-        setIsVoiceProcessing(true);
-
-        // Refresh profile from database to ensure consistency
-        // Wait a bit for database to update
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        const { data, error: refreshError } = await supabase
-          .from('profiles')
-          .select('voice_clone_id')
-          .eq('id', userId)
-          .single();
-
-        if (refreshError) {
-          console.error('Failed to refresh profile:', refreshError);
-        } else if (data?.voice_clone_id) {
-          // Double-check the database has the new voice ID
-          setCurrentVoiceCloneId(data.voice_clone_id);
-          console.log('✅ Profile refreshed with new voice_clone_id:', data.voice_clone_id);
-        }
+        toast.success('Voice cloned! Ready to test.', { id: 'voice-clone' });
 
         // Delete old voice from ElevenLabs if it exists and is different
         if (oldVoiceCloneId && oldVoiceCloneId !== result.voiceId) {
           try {
             console.log('🗑️ Deleting old voice from ElevenLabs:', oldVoiceCloneId);
-            const deleteResponse = await fetch('/api/delete-voice', {
+            await fetch('/api/delete-voice', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({ voiceId: oldVoiceCloneId }),
             });
-
-            if (deleteResponse.ok) {
-              console.log('✅ Old voice deleted successfully');
-            } else {
-              console.warn('⚠️ Failed to delete old voice (non-critical)');
-            }
           } catch (deleteError) {
             console.warn('Failed to delete old voice (non-critical):', deleteError);
-            // Don't fail the whole operation if deletion fails
           }
         }
 
-        // Wait for ElevenLabs to process the voice (usually ready in 3-5 seconds)
-        await new Promise(resolve => setTimeout(resolve, 3000));
-
-        setIsVoiceProcessing(false);
-        toast.success('Voice ready! You can now test it with the Play Sample button.');
-
-        // Clear recording blob so user can record again if needed
+        // Clear recording
         setRecordingBlob(null);
         setRecordingTime(0);
       } else {
-        toast.error('Failed to get voice ID from cloning service.');
+        toast.error('Failed to get voice ID from cloning service.', { id: 'voice-clone' });
       }
     } catch (error) {
       console.error('Reclone error:', error);
-      setIsVoiceProcessing(false);
-      toast.error('Failed to reclone voice. Please try again.');
+      toast.error('Failed to reclone voice. Please try again.', { id: 'voice-clone' });
     } finally {
       setIsRecloning(false);
+    }
+  };
+
+  const handleReset = () => {
+    setRecordingBlob(null);
+    setRecordingTime(0);
+    setHasClonedVoice(false);
+    setCurrentVoiceCloneId(null);
+    setAudioLevels(Array(15).fill(0));
+    setSampleText(DEFAULT_SAMPLE_TEXT);
+    toast.info('Voice clone reset. Record a new one!');
+  };
+
+  const handleMainAction = () => {
+    if (isRecording) {
+      stopRecording();
+    } else if (recordingBlob && !hasClonedVoice) {
+      handleReclone();
+    } else if (hasClonedVoice) {
+      if (isPlayingSample) {
+        handleStopSample();
+      } else {
+        handlePlaySample();
+      }
+    } else {
+      startRecording();
     }
   };
 
@@ -312,97 +344,165 @@ export default function VoiceCloningSettings({ userId }: VoiceCloningSettingsPro
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const getMainButtonContent = () => {
+    if (isRecording) {
+      return (
+        <Circle className="h-20 w-20 animate-pulse fill-current text-red-500 sm:h-24 sm:w-24" />
+      );
+    }
+    if (isRecloning) {
+      return (
+        <div className="h-20 w-20 animate-spin rounded-full border-8 border-current border-t-transparent sm:h-24 sm:w-24" />
+      );
+    }
+    if (hasClonedVoice) {
+      return isPlayingSample ? (
+        <Pause className="h-20 w-20 sm:h-24 sm:w-24" />
+      ) : (
+        <Play className="h-20 w-20 sm:h-24 sm:w-24" />
+      );
+    }
+    return <Mic className="h-20 w-20 sm:h-24 sm:w-24" />;
+  };
+
+  const getStatusText = () => {
+    if (isRecording) {
+      return 'Recording...';
+    }
+    if (isRecloning) {
+      return 'Cloning your voice...';
+    }
+    if (hasClonedVoice) {
+      return 'Voice Cloned ✓';
+    }
+    if (recordingBlob) {
+      return 'Ready to Clone';
+    }
+    return 'Clone Your Voice';
+  };
+
+  const getSubtext = () => {
+    if (isRecording) {
+      return 'Click to stop';
+    }
+    if (isRecloning) {
+      return 'Please wait...';
+    }
+    if (hasClonedVoice) {
+      return 'Click to test your voice';
+    }
+    if (recordingBlob) {
+      return 'Click to start cloning';
+    }
+    return 'Click to record 30+ seconds';
+  };
+
   return (
-    <div className="mb-8 overflow-hidden rounded-2xl border border-border/50 bg-card/30 backdrop-blur-sm">
+    <div className="mb-8 overflow-hidden rounded-2xl border border-electric/20 bg-gradient-to-br from-card/40 via-card/30 to-electric/5 backdrop-blur-xl">
       <div className="space-y-6 p-4 sm:p-6">
         {/* Header */}
-        <div>
-          <h2 className="mb-2 flex items-center gap-2 text-xl font-semibold sm:text-2xl">
-            <Mic className="h-5 w-5 sm:h-6 sm:w-6" />
+        <div className="text-center">
+          <h2 className="mb-2 flex items-center justify-center gap-2 text-2xl font-bold sm:text-3xl">
+            <Mic className="h-6 w-6 text-electric sm:h-7 sm:w-7" />
             Voice Cloning
           </h2>
           <p className="text-sm text-muted-foreground sm:text-base">
-            Test your cloned voice and create a new one if needed
+            Clone your voice and test it in seconds
           </p>
         </div>
 
-        {/* Status Badge */}
-        <div
-          className={`rounded-lg border p-3 sm:p-4 ${
-            hasClonedVoice
-              ? 'border-green-500/50 bg-green-500/10'
-              : 'border-yellow-500/50 bg-yellow-500/10'
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">{hasClonedVoice ? '✓ Voice Cloned' : 'No Voice Clone'}</p>
-              <p className="text-xs text-muted-foreground sm:text-sm">
-                {hasClonedVoice
-                  ? 'Your voice is ready to use'
-                  : 'Record 30+ seconds to clone your voice'}
-              </p>
+        {/* Central Circular Control */}
+        <div className="flex flex-col items-center space-y-6">
+          <button
+            onClick={handleMainAction}
+            disabled={isLoadingSample || (!sampleText.trim() && hasClonedVoice)}
+            className="transition-electric group relative flex h-40 w-40 items-center justify-center rounded-full bg-gradient-electric text-primary-foreground hover:shadow-[0_20px_40px_rgba(97,144,255,0.3)] disabled:opacity-50 disabled:hover:shadow-none sm:h-48 sm:w-48"
+          >
+            {getMainButtonContent()}
+          </button>
+
+          {/* Status Text */}
+          <div className="text-center">
+            <div className="text-xl font-bold sm:text-2xl">{getStatusText()}</div>
+            <div className="text-sm text-muted-foreground">{getSubtext()}</div>
+            {isRecording && (
+              <div className="mt-2 font-mono text-2xl font-bold">{formatTime(recordingTime)}</div>
+            )}
+          </div>
+        </div>
+
+        {/* Waveform During Recording */}
+        {isRecording && (
+          <div className="py-4">
+            <Waveform levels={audioLevels} isActive={true} variant="recording" />
+          </div>
+        )}
+
+        {/* Processing Animation */}
+        {isRecloning && (
+          <div className="rounded-3xl border border-electric/20 bg-gradient-to-br from-card/40 via-card/30 to-electric/5 p-6">
+            <div className="flex items-center gap-3">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-electric border-t-transparent" />
+              <div className="text-base font-bold">Cloning Voice</div>
+            </div>
+            <div className="mt-2 h-[2px] w-full overflow-hidden rounded bg-slate-700/30">
+              <div className="metallic-strike h-full w-full" />
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Sample Text Editor */}
-        <div className="space-y-2">
-          <Label htmlFor="sampleText" className="text-sm font-medium sm:text-base">
-            Sample Text
-          </Label>
-          <Textarea
-            id="sampleText"
-            value={sampleText}
-            onChange={e => setSampleText(e.target.value)}
-            placeholder="Enter text to test your cloned voice..."
-            rows={4}
-            className="resize-none text-sm sm:text-base"
-            maxLength={500}
-          />
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground sm:text-sm">
-              {sampleText.length}/500 characters
+        {/* Recording Info */}
+        {recordingBlob && !isRecording && !hasClonedVoice && (
+          <div className="rounded-lg border border-green-500/50 bg-green-500/10 p-4 text-center">
+            <p className="font-medium text-green-500">
+              <Check className="mr-2 inline h-4 w-4" />
+              Recording Complete: {formatTime(recordingTime)} (
+              {Math.round(recordingBlob.size / 1024)}
+              KB)
             </p>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSampleText(DEFAULT_SAMPLE_TEXT)}
-              className="text-xs sm:text-sm"
-            >
-              Reset
-            </Button>
-          </div>
-        </div>
-
-        {/* Play Sample Button */}
-        {hasClonedVoice && (
-          <div className="flex flex-col gap-2 sm:flex-row">
-            {isVoiceProcessing && (
-              <div className="mb-2 rounded-lg border border-blue-500/50 bg-blue-500/10 p-2 text-center text-xs text-blue-500 sm:text-sm">
-                ⏳ Voice is processing... Please wait a few seconds before testing.
-              </div>
+            {recordingBlob.size < 512 * 1024 && (
+              <p className="mt-2 text-xs text-yellow-500">
+                ⚠️ For best results, record at least 30 seconds (512KB)
+              </p>
             )}
+          </div>
+        )}
+
+        {/* Sample Text + Actions (Only show when voice is cloned) */}
+        {hasClonedVoice && (
+          <div className="space-y-4 border-t border-border/50 pt-6">
+            <div>
+              <h3 className="mb-3 text-lg font-semibold">Test Your Voice</h3>
+              <Textarea
+                value={sampleText}
+                onChange={e => setSampleText(e.target.value)}
+                placeholder="Type something to test your cloned voice..."
+                rows={3}
+                className="resize-none text-base"
+                maxLength={500}
+              />
+            </div>
+
             <Button
               onClick={isPlayingSample ? handleStopSample : handlePlaySample}
-              disabled={!sampleText.trim() || isLoadingSample || isVoiceProcessing}
-              className="flex-1"
+              disabled={!sampleText.trim() || isLoadingSample}
+              className="w-full bg-gradient-electric"
               size="lg"
             >
               {isLoadingSample ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                   Generating...
                 </>
               ) : isPlayingSample ? (
                 <>
-                  <Pause className="mr-2 h-4 w-4" />
+                  <Pause className="mr-2 h-5 w-5" />
                   Stop
                 </>
               ) : (
                 <>
-                  <Play className="mr-2 h-4 w-4" />
-                  {isVoiceProcessing ? 'Processing...' : 'Play Sample'}
+                  <Play className="mr-2 h-5 w-5" />
+                  Play Sample
                 </>
               )}
             </Button>
@@ -416,96 +516,29 @@ export default function VoiceCloningSettings({ userId }: VoiceCloningSettingsPro
           </div>
         )}
 
-        {/* Reclone Section */}
-        <div className="border-t border-border/50 pt-4 sm:pt-6">
-          <div className="space-y-4">
-            <div>
-              <h3 className="mb-2 text-base font-semibold sm:text-lg">Reclone Your Voice</h3>
-              <p className="text-xs text-muted-foreground sm:text-sm">
-                Record a new sample to improve or update your voice clone
-              </p>
-            </div>
-
-            {/* Recording Controls */}
-            <div className="space-y-3">
-              {!recordingBlob && !isRecording && (
-                <Button onClick={startRecording} variant="outline" className="w-full" size="lg">
-                  <Mic className="mr-2 h-4 w-4" />
-                  Start Recording
-                </Button>
-              )}
-
-              {isRecording && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-center gap-4 rounded-lg border border-red-500/50 bg-red-500/10 p-4">
-                    <div className="flex h-3 w-3 animate-pulse rounded-full bg-red-500" />
-                    <span className="font-mono text-lg font-semibold">
-                      {formatTime(recordingTime)}
-                    </span>
-                  </div>
-                  <Button
-                    onClick={stopRecording}
-                    variant="destructive"
-                    className="w-full"
-                    size="lg"
-                  >
-                    Stop Recording
-                  </Button>
-                </div>
-              )}
-
-              {recordingBlob && !isRecording && (
-                <div className="space-y-3">
-                  <div className="rounded-lg border border-border/50 bg-card/50 p-3">
-                    <p className="text-xs text-muted-foreground sm:text-sm">
-                      Recording: {formatTime(recordingTime)} (
-                      {Math.round(recordingBlob.size / 1024)}KB)
-                    </p>
-                    {recordingBlob.size < 512 * 1024 && (
-                      <p className="mt-1 text-xs text-yellow-500">
-                        ⚠️ For best results, record at least 30 seconds (512KB)
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex flex-col gap-2 sm:flex-row">
-                    <Button onClick={startRecording} variant="outline" className="flex-1" size="lg">
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                      Record Again
-                    </Button>
-                    <Button
-                      onClick={handleReclone}
-                      disabled={isRecloning || recordingBlob.size < 1024}
-                      className="flex-1"
-                      size="lg"
-                    >
-                      {isRecloning ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Cloning...
-                        </>
-                      ) : (
-                        <>
-                          <Mic className="mr-2 h-4 w-4" />
-                          Reclone Voice
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Tips Button */}
-            <Button
-              onClick={() => setShowTipsModal(true)}
-              variant="ghost"
-              size="sm"
-              className="w-full text-xs sm:text-sm"
-            >
-              <Info className="mr-2 h-4 w-4" />
-              Tips for Better Voice Cloning
+        {/* Action Buttons */}
+        <div className="flex flex-col gap-2 border-t border-border/50 pt-4 sm:flex-row">
+          {!isRecording && !isRecloning && (recordingBlob || hasClonedVoice) && (
+            <Button onClick={startRecording} variant="outline" className="flex-1" size="lg">
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Record New Sample
             </Button>
-          </div>
+          )}
+          <Button
+            onClick={() => setShowTipsModal(true)}
+            variant="ghost"
+            size="lg"
+            className="flex-1"
+          >
+            <Info className="mr-2 h-4 w-4" />
+            Tips
+          </Button>
+          {(recordingBlob || hasClonedVoice) && (
+            <Button onClick={handleReset} variant="outline" size="lg" className="flex-1">
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Start Over
+            </Button>
+          )}
         </div>
       </div>
 
@@ -571,6 +604,29 @@ export default function VoiceCloningSettings({ userId }: VoiceCloningSettingsPro
           </div>
         </DialogContent>
       </Dialog>
+
+      <style jsx>{`
+        .metallic-strike {
+          background: linear-gradient(
+            90deg,
+            rgba(148, 163, 184, 0.2) 0%,
+            rgba(229, 231, 235, 0.9) 40%,
+            rgba(203, 213, 225, 0.7) 60%,
+            rgba(148, 163, 184, 0.2) 100%
+          );
+          background-size: 200% 100%;
+          animation: metallic-scan 1100ms linear infinite;
+        }
+
+        @keyframes metallic-scan {
+          0% {
+            background-position: 0% 0;
+          }
+          100% {
+            background-position: 200% 0;
+          }
+        }
+      `}</style>
     </div>
   );
 }
