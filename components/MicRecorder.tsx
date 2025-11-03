@@ -48,6 +48,7 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
     handleCopy,
     handleShare,
     beginEdit,
+    beginEditFull,
     finalizeEdit,
     cancelEdit,
     setEditedContent,
@@ -268,7 +269,7 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
                     onCopy={() => {
                       void handleCopy(displayContent);
                     }}
-                    onEdit={beginEdit}
+                    onEdit={beginEditFull}
                     onShare={() => {
                       void handleShare(displayContent);
                     }}
