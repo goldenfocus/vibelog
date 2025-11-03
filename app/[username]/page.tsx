@@ -41,7 +41,7 @@ async function getProfile(username: string) {
       username: 'anonymous',
       display_name: 'Anonymous',
       full_name: null,
-      bio: 'Unclaimed vibelogs created before signing in. Sign in to claim your vibelogs!',
+      bio: 'Anonymous vibelogs from users who posted without signing in.',
       avatar_url: null,
       header_image: null,
       twitter_url: null,
