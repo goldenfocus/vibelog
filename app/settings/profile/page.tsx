@@ -129,6 +129,9 @@ export default function ProfileSettingsPage() {
             </p>
           </div>
 
+          {/* Voice Cloning Section - Premium Feature at Top */}
+          <VoiceCloningSettings userId={user.id} />
+
           {/* Profile Images Section */}
           <div className="mb-8 overflow-hidden rounded-2xl border border-border/50 bg-card/30 backdrop-blur-sm">
             <div className="space-y-6 p-6">
@@ -241,9 +244,6 @@ export default function ProfileSettingsPage() {
               <SocialLinksEditor initialLinks={socialLinks} onChange={setSocialLinks} />
             </div>
           </div>
-
-          {/* Voice Cloning Section */}
-          <VoiceCloningSettings userId={user.id} />
 
           {/* Account Info and Save Button Section */}
           <div className="mb-8 overflow-hidden rounded-2xl border border-border/50 bg-card/30 backdrop-blur-sm">
