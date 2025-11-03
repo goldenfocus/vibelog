@@ -8,6 +8,7 @@ import AudioPlayer from '@/components/AudioPlayer';
 import Controls from '@/components/mic/Controls';
 import ProcessingAnimation from '@/components/mic/ProcessingAnimation';
 import PublishActions from '@/components/mic/PublishActions';
+import ToneSettings from '@/components/mic/ToneSettings';
 import TranscriptionPanel from '@/components/mic/TranscriptionPanel';
 import { useMicStateMachine } from '@/components/mic/useMicStateMachine';
 import Waveform from '@/components/mic/Waveform';
@@ -127,13 +128,22 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
 
   return (
     <div className="w-full">
-      <Controls
-        recordingState={recordingState}
-        recordingTime={recordingTime}
-        onStartRecording={startRecording}
-        onStopRecording={stopRecording}
-        onReset={reset}
-      />
+      {/* Recording controls with settings gear */}
+      <div className="relative flex justify-center">
+        <Controls
+          recordingState={recordingState}
+          recordingTime={recordingTime}
+          onStartRecording={startRecording}
+          onStopRecording={stopRecording}
+          onReset={reset}
+        />
+        {/* Settings gear - positioned to the right of mic button */}
+        <div className="absolute right-4 top-4 sm:right-8">
+          <ToneSettings
+            disabled={recordingState === 'recording' || recordingState === 'processing'}
+          />
+        </div>
+      </div>
 
       {showRecordingUI && <Waveform levels={audioLevels} isActive variant="recording" />}
 

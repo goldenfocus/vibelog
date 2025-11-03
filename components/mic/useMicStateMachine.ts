@@ -10,6 +10,7 @@ import { useAudioPlayback } from '@/hooks/useAudioPlayback';
 import { useBulletproofSave } from '@/hooks/useBulletproofSave';
 import { useProfile } from '@/hooks/useProfile';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
+import { useToneSettings } from '@/hooks/useToneSettings';
 import { useVibelogAPI } from '@/hooks/useVibelogAPI';
 import { useVoiceActivityDetection } from '@/hooks/useVoiceActivityDetection';
 import { useVoiceCloning } from '@/hooks/useVoiceCloning';
@@ -146,6 +147,7 @@ export function useMicStateMachine(
   const { user } = useAuth();
   const { profile } = useProfile(user?.id);
   const isLoggedIn = Boolean(user);
+  const { tone, keepFillerWords, voiceCloningEnabled } = useToneSettings();
 
   const [recordingState, setRecordingState] = useState<RecordingState>('idle');
   const [transcription, setTranscription] = useState('');
@@ -460,10 +462,14 @@ export function useMicStateMachine(
     }
 
     console.log('🚀 [VIBELOG-GEN] Starting generation...');
+    console.log('🎨 [VIBELOG-GEN] Using tone:', tone);
+    console.log('🗣️ [VIBELOG-GEN] Keep filler words:', keepFillerWords);
 
     // OPTIMIZATION 2: Enable streaming for real-time content delivery
     const teaserResult = await vibelogAPI.processVibelogGeneration(transcriptionData, {
       enableStreaming: true,
+      tone,
+      keepFillerWords,
       onStreamChunk: (_chunk: string) => {
         // Optional: Update UI with streaming chunks in real-time
         // Streaming logs disabled to reduce console noise
@@ -486,7 +492,7 @@ export function useMicStateMachine(
     });
 
     return teaserResult.fullContent || teaserResult.content;
-  }, [vibelogAPI]);
+  }, [vibelogAPI, tone, keepFillerWords]);
 
   const processCoverImage = useCallback(
     async (vibelogContentOverride?: string) => {
@@ -607,8 +613,8 @@ export function useMicStateMachine(
       // Clone voice BEFORE saving vibelog (if we have substantial audio)
       let voiceCloneId: string | undefined;
       let serverVerifiedUserId: string | undefined;
-      if (audioBlob && audioBlob.size > 512 * 1024) {
-        // Clone if audio is substantial (>512KB, roughly >30 seconds)
+      if (voiceCloningEnabled && audioBlob && audioBlob.size > 512 * 1024) {
+        // Clone if voice cloning is enabled AND audio is substantial (>512KB, roughly >30 seconds)
         // This works for both logged-in and anonymous users
         try {
           console.log('🎤 [VOICE-CLONE] Starting voice cloning before save...');
@@ -635,6 +641,8 @@ export function useMicStateMachine(
           // Don't block the save - continue without voice cloning
           showToast('Voice cloning failed. Using default voice for playback.');
         }
+      } else if (!voiceCloningEnabled) {
+        console.log('🔇 [VOICE-CLONE] Voice cloning disabled by user settings');
       }
 
       console.log('💾 [COMPLETE-PROCESSING] Calling saveVibelog with:', {
@@ -726,6 +734,7 @@ export function useMicStateMachine(
     t,
     transcription,
     user?.id,
+    voiceCloningEnabled,
     // Note: vibelogAPI.processingData is a ref, not a state value, so it doesn't need to be in deps
     // Including it causes stale closure issues where the ref data isn't accessible
     vibelogContent,

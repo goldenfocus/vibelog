@@ -12,7 +12,12 @@ export interface UseVibelogAPIReturn {
   processTranscription: (audioBlob: Blob, sessionId?: string) => Promise<string>;
   processVibelogGeneration: (
     transcription: string,
-    options?: { enableStreaming?: boolean; onStreamChunk?: (chunk: string) => void }
+    options?: {
+      enableStreaming?: boolean;
+      onStreamChunk?: (chunk: string) => void;
+      tone?: string;
+      keepFillerWords?: boolean;
+    }
   ) => Promise<TeaserResult>;
   processCoverImage: (args: {
     vibelogContent: string;
@@ -243,7 +248,12 @@ export function useVibelogAPI(
 
   const processVibelogGeneration = async (
     transcriptionData: string,
-    options?: { enableStreaming?: boolean; onStreamChunk?: (chunk: string) => void }
+    options?: {
+      enableStreaming?: boolean;
+      onStreamChunk?: (chunk: string) => void;
+      tone?: string;
+      keepFillerWords?: boolean;
+    }
   ): Promise<TeaserResult> => {
     try {
       if (!transcriptionData) {
@@ -253,6 +263,8 @@ export function useVibelogAPI(
 
       // OPTIMIZATION 2: Enable streaming for faster perceived performance
       const enableStreaming = options?.enableStreaming ?? false;
+      const tone = options?.tone;
+      const keepFillerWords = options?.keepFillerWords;
 
       const vibelogResponse = await fetch('/api/generate-vibelog', {
         method: 'POST',
@@ -262,6 +274,8 @@ export function useVibelogAPI(
         body: JSON.stringify({
           transcription: transcriptionData,
           stream: enableStreaming,
+          ...(tone && { tone }),
+          ...(keepFillerWords !== undefined && { keepFillerWords }),
         }),
       });
 
