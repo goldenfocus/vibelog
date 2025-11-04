@@ -228,8 +228,61 @@ export async function POST(request: NextRequest) {
 
     let audioBuffer: Buffer | undefined;
 
-    // Use cloned voice if available, otherwise use OpenAI TTS
-    if (voiceCloneIdToUse && config.ai.elevenlabs.apiKey) {
+    // Try Modal.com first (self-hosted, much cheaper)
+    if (voiceCloneIdToUse && config.ai.modal.enabled && config.ai.modal.endpoint) {
+      try {
+        console.log('🎵 [MODAL] Using self-hosted TTS with cloned voice:', voiceCloneIdToUse);
+
+        // Fetch the voice audio sample from storage
+        const supabaseAdmin = await createServerAdminClient();
+        const { data: profile } = await supabaseAdmin
+          .from('profiles')
+          .select('id')
+          .eq('voice_clone_id', voiceCloneIdToUse)
+          .single();
+
+        if (profile) {
+          // Get the voice audio file from storage
+          const voiceAudioPath = `voices/${profile.id}/voice_sample.wav`;
+          const { data: voiceAudioData } = await supabaseAdmin.storage
+            .from('tts-audio')
+            .download(voiceAudioPath);
+
+          if (voiceAudioData) {
+            // Convert to base64
+            const voiceBuffer = Buffer.from(await voiceAudioData.arrayBuffer());
+            const voiceBase64 = voiceBuffer.toString('base64');
+
+            // Call Modal endpoint
+            const modalResponse = await fetch(config.ai.modal.endpoint, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                text,
+                voiceAudio: voiceBase64,
+                language: 'en', // TODO: detect language from request
+              }),
+              signal: AbortSignal.timeout(30000), // 30 second timeout
+            });
+
+            if (modalResponse.ok) {
+              const { audioBase64 } = await modalResponse.json();
+              audioBuffer = Buffer.from(audioBase64, 'base64');
+              console.log('✅ [MODAL] TTS generated successfully');
+            } else {
+              const error = await modalResponse.text();
+              console.warn('⚠️ [MODAL] Failed:', modalResponse.status, error);
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('⚠️ [MODAL] Error, falling back to ElevenLabs:', error);
+        // Continue to ElevenLabs fallback
+      }
+    }
+
+    // Fallback to ElevenLabs if Modal fails or is not enabled
+    if (!audioBuffer && voiceCloneIdToUse && config.ai.elevenlabs.apiKey) {
       // Use ElevenLabs with cloned voice
       if (process.env.NODE_ENV !== 'production') {
         console.log('🎤 Using cloned voice:', voiceCloneIdToUse);
