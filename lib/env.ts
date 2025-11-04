@@ -50,16 +50,36 @@ const envSchema = isServer ? serverEnvSchema : clientEnvSchema;
 // Parse and validate environment variables
 function validateEnv() {
   try {
-    const parsed = envSchema.parse(process.env);
-    return parsed;
+    // On the client, Next.js replaces references like
+    // process.env.NEXT_PUBLIC_... at build time, but process.env as an
+    // object is not populated. Parsing process.env directly will fail and
+    // produce scary console errors even though the values are inlined.
+    // Build a minimal source object for client-side validation instead.
+    const source = isServer
+      ? process.env
+      : {
+          NODE_ENV: process.env.NODE_ENV as any,
+          NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+          NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        };
+
+    const parsed = envSchema.parse(source);
+    return parsed as any;
   } catch (error) {
     if (error instanceof z.ZodError) {
       const errorMessages = error.errors.map(
         issue => `❌ ${issue.path.join('.')}: ${issue.message}`
       );
 
-      console.error('🚨 Environment validation failed:');
-      console.error(errorMessages.join('\n'));
+      // On the server we keep errors loud; on the client we downgrade to a
+      // single warn so we don't spam false negatives caused by bundling.
+      if (isServer) {
+        console.error('🚨 Environment validation failed:');
+        console.error(errorMessages.join('\n'));
+      } else {
+        console.warn('⚠️  Client-side env check: some values missing.');
+      }
 
       // In development, show helpful tips
       if (process.env.NODE_ENV === 'development') {
@@ -73,10 +93,15 @@ function validateEnv() {
       // This prevents the app from crashing if env vars weren't bundled at build time
       if (isServer) {
         throw new Error(`Environment validation failed: ${errorMessages.join(', ')}`);
-      } else {
-        console.warn('⚠️  Client-side env validation failed - using process.env directly');
-        return process.env as z.infer<typeof envSchema>;
       }
+      // Client: return the minimal object we attempted to validate so
+      // consumers still get the inlined values.
+      return {
+        NODE_ENV: (process.env.NODE_ENV as any) ?? 'production',
+        NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+        NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      } as z.infer<typeof envSchema>;
     }
     throw error;
   }
