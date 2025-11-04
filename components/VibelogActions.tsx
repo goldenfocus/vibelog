@@ -29,6 +29,7 @@ interface VibelogActionsProps {
   author?: string;
   authorId?: string; // User ID of vibelog author
   authorUsername?: string;
+  authorVoiceCloneId?: string; // Author's current voice clone ID (for preferring TTS over old audio)
   vibelogUrl?: string;
   createdAt?: string;
   audioUrl?: string;
@@ -54,6 +55,7 @@ export default function VibelogActions({
   author,
   authorId,
   authorUsername,
+  authorVoiceCloneId,
   vibelogUrl,
   createdAt,
   audioUrl,
@@ -169,10 +171,14 @@ export default function VibelogActions({
   }, [isMenuOpen]);
 
   const handlePlayClick = async () => {
-    // If original audio is available, use global player instead of TTS
-    // Note: In teaserOnly mode, we don't use audioUrl as it's the full audio
-    if (audioUrl && !teaserOnly) {
-      // Use global audio player
+    // VOICE CLONING FIX: If author has a cloned voice, always use TTS instead of old audio_url
+    // This ensures we use the latest cloned voice rather than outdated pre-generated audio
+    const shouldUseTTS = authorVoiceCloneId || teaserOnly || !audioUrl;
+
+    // If original audio is available AND author has no cloned voice, use global player
+    // Note: In teaserOnly mode, we always use TTS (teaser text)
+    if (audioUrl && !shouldUseTTS) {
+      // Use global audio player for pre-generated audio
       const current = useAudioPlayerStore.getState();
       if (current.currentTrack?.id === `vibelog-${vibelogId}`) {
         // This track is already set, just toggle play/pause
