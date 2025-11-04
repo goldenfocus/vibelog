@@ -29,7 +29,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         read_time,
         user_id,
         is_published,
-        is_public
+        is_public,
+        voice_clone_id
       `
       )
       .eq('id', id)
