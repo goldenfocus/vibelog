@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { toast as sonnerToast } from 'sonner';
 
 import type { RecordingState } from '@/components/mic/Controls';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -14,7 +15,6 @@ import { useToneSettings } from '@/hooks/useToneSettings';
 import { useVibelogAPI } from '@/hooks/useVibelogAPI';
 import { useVoiceActivityDetection } from '@/hooks/useVoiceActivityDetection';
 import { useVoiceCloning } from '@/hooks/useVoiceCloning';
-import { toast } from 'sonner';
 import type { CoverImage, ToastState, UpgradePromptState } from '@/types/micRecorder';
 
 interface AttributionDetails {
@@ -706,7 +706,7 @@ export function useMicStateMachine(
         if (!voiceCloningEnabled) {
           console.log('🔇 [VOICE-CLONE] Skipped: Voice cloning disabled in settings');
           console.log('💡 [VOICE-CLONE] Tip: Enable voice cloning in the settings gear ⚙️');
-          toast('Voice cloning disabled. Enable in settings ⚙️ to use your voice.', {
+          sonnerToast('Voice cloning disabled. Enable in settings ⚙️ to use your voice.', {
             duration: 4000,
           });
         } else if (!audioBlob) {
@@ -720,7 +720,7 @@ export function useMicStateMachine(
             requiredSize: `${requiredKB} KB (~30 seconds)`,
             shortfall: `${((sizeThreshold - audioBlob.size) / 1024).toFixed(2)} KB`,
           });
-          toast(
+          sonnerToast(
             `Recording too short for voice cloning (${sizeKB}KB). Need ~${requiredKB}KB (30+ seconds).`,
             { duration: 5000 }
           );
