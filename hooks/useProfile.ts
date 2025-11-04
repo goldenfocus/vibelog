@@ -61,7 +61,7 @@ export function useProfile(userId: string | null | undefined) {
 
       setLoading(false);
     } catch (err) {
-      logger.error('Profile fetch exception', err as Error, { userId });
+      logger.error('Profile fetch exception', { userId, error: err });
       setError(err instanceof Error ? err.message : 'Unknown error');
       setProfile(null);
       setLoading(false);

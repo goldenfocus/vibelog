@@ -238,8 +238,7 @@ describe('useProfile', () => {
       expect(result.current.error).toBe('Network error');
       expect(logger.error).toHaveBeenCalledWith(
         'Profile fetch exception',
-        exception,
-        expect.objectContaining({ userId: 'exception-user' })
+        expect.objectContaining({ userId: 'exception-user', error: exception })
       );
     });
   });
