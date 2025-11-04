@@ -14,6 +14,7 @@ import { useToneSettings } from '@/hooks/useToneSettings';
 import { useVibelogAPI } from '@/hooks/useVibelogAPI';
 import { useVoiceActivityDetection } from '@/hooks/useVoiceActivityDetection';
 import { useVoiceCloning } from '@/hooks/useVoiceCloning';
+import { toast } from 'sonner';
 import type { CoverImage, ToastState, UpgradePromptState } from '@/types/micRecorder';
 
 interface AttributionDetails {
@@ -656,7 +657,22 @@ export function useMicStateMachine(
       // Clone voice BEFORE saving vibelog (if we have substantial audio)
       let voiceCloneId: string | undefined;
       let serverVerifiedUserId: string | undefined;
-      if (voiceCloningEnabled && audioBlob && audioBlob.size > 512 * 1024) {
+
+      // Debug: Log voice cloning conditions
+      const sizeThreshold = 512 * 1024; // 512KB (~30 seconds)
+      console.log('🔍 [VOICE-CLONE-CHECK] Checking voice cloning conditions:', {
+        voiceCloningEnabled,
+        hasAudioBlob: !!audioBlob,
+        audioBlobSize: audioBlob?.size,
+        audioBlobSizeKB: audioBlob ? (audioBlob.size / 1024).toFixed(2) + ' KB' : 'N/A',
+        sizeThreshold: sizeThreshold,
+        sizeThresholdKB: (sizeThreshold / 1024).toFixed(0) + ' KB (~30 seconds)',
+        meetsThreshold: audioBlob ? audioBlob.size > sizeThreshold : false,
+        allConditionsMet:
+          voiceCloningEnabled && !!audioBlob && (audioBlob?.size || 0) > sizeThreshold,
+      });
+
+      if (voiceCloningEnabled && audioBlob && audioBlob.size > sizeThreshold) {
         // Clone if voice cloning is enabled AND audio is substantial (>512KB, roughly >30 seconds)
         // This works for both logged-in and anonymous users
         try {
@@ -685,8 +701,30 @@ export function useMicStateMachine(
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
           showToast(`Voice cloning failed: ${errorMessage}. Using default voice for playback.`);
         }
-      } else if (!voiceCloningEnabled) {
-        console.log('🔇 [VOICE-CLONE] Voice cloning disabled by user settings');
+      } else {
+        // Voice cloning skipped - log detailed reason
+        if (!voiceCloningEnabled) {
+          console.log('🔇 [VOICE-CLONE] Skipped: Voice cloning disabled in settings');
+          console.log('💡 [VOICE-CLONE] Tip: Enable voice cloning in the settings gear ⚙️');
+          toast('Voice cloning disabled. Enable in settings ⚙️ to use your voice.', {
+            duration: 4000,
+          });
+        } else if (!audioBlob) {
+          console.log('🔇 [VOICE-CLONE] Skipped: No audio blob available');
+          console.error('❌ [VOICE-CLONE] ERROR: Audio blob should exist at this point!');
+        } else if (audioBlob.size <= sizeThreshold) {
+          const sizeKB = (audioBlob.size / 1024).toFixed(2);
+          const requiredKB = (sizeThreshold / 1024).toFixed(0);
+          console.log('🔇 [VOICE-CLONE] Skipped: Audio too short for voice cloning', {
+            actualSize: `${sizeKB} KB`,
+            requiredSize: `${requiredKB} KB (~30 seconds)`,
+            shortfall: `${((sizeThreshold - audioBlob.size) / 1024).toFixed(2)} KB`,
+          });
+          toast(
+            `Recording too short for voice cloning (${sizeKB}KB). Need ~${requiredKB}KB (30+ seconds).`,
+            { duration: 5000 }
+          );
+        }
       }
 
       console.log('💾 [COMPLETE-PROCESSING] Calling saveVibelog with:', {
