@@ -236,41 +236,41 @@ export default function VibelogDetailPage() {
           </article>
 
           {/* Actions Footer */}
-          {user && (
-            <div className="mt-8 border-t border-border/30 pt-8">
-              <VibelogActions
-                vibelogId={vibelog.id}
-                content={vibelog.content}
-                title={vibelog.title}
-                author={vibelog.author.display_name}
-                authorId={vibelog.user_id}
-                authorUsername={vibelog.author.username}
-                authorVoiceCloneId={
-                  vibelog.voice_clone_id || vibelog.author.voice_clone_id || undefined
+          <div className="mt-8 border-t border-border/30 pt-8">
+            <VibelogActions
+              vibelogId={vibelog.id}
+              content={vibelog.content}
+              title={vibelog.title}
+              author={vibelog.author.display_name}
+              authorId={vibelog.user_id}
+              authorUsername={vibelog.author.username}
+              authorVoiceCloneId={
+                vibelog.voice_clone_id || vibelog.author.voice_clone_id || undefined
+              }
+              vibelogUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/vibelogs/${vibelog.id}`}
+              createdAt={vibelog.created_at}
+              audioUrl={vibelog.audio_url || undefined}
+              teaser={vibelog.teaser}
+              teaserOnly={!user}
+              likeCount={vibelog.like_count}
+              onShare={async () => {
+                const url = `${window.location.origin}/vibelogs/${vibelog.id}`;
+                if (navigator.share) {
+                  await navigator.share({
+                    title: vibelog.title,
+                    text: vibelog.teaser,
+                    url: url,
+                  });
+                } else {
+                  await navigator.clipboard.writeText(url);
                 }
-                vibelogUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/vibelogs/${vibelog.id}`}
-                createdAt={vibelog.created_at}
-                audioUrl={vibelog.audio_url || undefined}
-                likeCount={vibelog.like_count}
-                onShare={async () => {
-                  const url = `${window.location.origin}/vibelogs/${vibelog.id}`;
-                  if (navigator.share) {
-                    await navigator.share({
-                      title: vibelog.title,
-                      text: vibelog.teaser,
-                      url: url,
-                    });
-                  } else {
-                    await navigator.clipboard.writeText(url);
-                  }
-                }}
-                onExport={(format: ExportFormat) => {
-                  console.log('Export as:', format);
-                }}
-                variant="default"
-              />
-            </div>
-          )}
+              }}
+              onExport={(format: ExportFormat) => {
+                console.log('Export as:', format);
+              }}
+              variant="default"
+            />
+          </div>
 
           {/* Comments Section */}
           <Comments vibelogId={vibelog.id} />
