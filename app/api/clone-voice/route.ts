@@ -1,14 +1,17 @@
+import { randomUUID } from 'crypto';
+
 import { NextRequest, NextResponse } from 'next/server';
 
 import { config } from '@/lib/config';
 import { rateLimit } from '@/lib/rateLimit';
+import { TTS_BUCKET } from '@/lib/storage';
 import { createServerSupabaseClient } from '@/lib/supabase';
 import { createServerAdminClient } from '@/lib/supabaseAdmin';
 
 /**
  * POST /api/clone-voice
  *
- * Clones a user's voice from their recording using ElevenLabs API.
+ * Clones a user's voice from their recording.
  * Stores the voice clone ID in the database for future use.
  */
 export async function POST(request: NextRequest) {
@@ -44,14 +47,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if ElevenLabs API key is configured
-    if (!config.ai.elevenlabs.apiKey) {
+    // Check if Modal/Coqui XTTS is configured
+    if (!config.ai.modal.enabled || !config.ai.modal.endpoint) {
       return NextResponse.json(
         {
           error: 'Voice cloning not configured',
-          message: 'ElevenLabs API key is not configured. Voice cloning is unavailable.',
+          message: 'Modal/Coqui XTTS is not configured. Voice cloning is unavailable.',
         },
         { status: 503 }
+      );
+    }
+
+    if (!userId) {
+      return NextResponse.json(
+        {
+          error: 'Authentication required',
+          message: 'You must be signed in to clone your voice.',
+        },
+        { status: 401 }
       );
     }
 
@@ -65,13 +78,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Audio file is required' }, { status: 400 });
     }
 
-    // Ensure we have a File object with proper name and type for ElevenLabs
-    // ElevenLabs API works best with File objects that have proper filenames
-    let audioFileForElevenLabs: File;
+    // Ensure we have a File object with proper name and type
+    let audioFile: File;
 
     if (audioBlob instanceof File) {
       // Already a File, use it directly
-      audioFileForElevenLabs = audioBlob;
+      audioFile = audioBlob;
     } else {
       // Convert Blob to File with proper name and type
       const arrayBuffer = await audioBlob.arrayBuffer();
@@ -85,12 +97,12 @@ export async function POST(request: NextRequest) {
             : 'webm'; // default to webm
 
       const fileName = `recording_${Date.now()}.${extension}`;
-      audioFileForElevenLabs = new File([arrayBuffer], fileName, {
+      audioFile = new File([arrayBuffer], fileName, {
         type: audioBlob.type || 'audio/webm',
       });
     }
 
-    // Validate audio file size (ElevenLabs requires at least 1 minute, max 25MB for cloning)
+    // Validate audio file size (max 25MB for cloning)
     const maxSize = 25 * 1024 * 1024; // 25MB
     if (audioBlob.size > maxSize) {
       return NextResponse.json(
@@ -102,7 +114,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ElevenLabs requires at least 1KB, but recommends 1+ minute for quality
+    // Voice cloning services typically require at least 1KB, but recommend 30+ seconds for quality
     // We'll accept smaller files but warn about quality
     if (audioBlob.size < 1024) {
       return NextResponse.json(
@@ -123,137 +135,54 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Clone voice using ElevenLabs API
-    // Create FormData for ElevenLabs API
-    // Required fields: 'name' and 'files'
-    const elevenLabsFormData = new FormData();
-    elevenLabsFormData.append('name', voiceName);
-    // audioFileForElevenLabs is now guaranteed to be a File with proper name
-    elevenLabsFormData.append('files', audioFileForElevenLabs);
-
-    console.log('🎤 [VOICE-CLONE] Sending request to ElevenLabs:', {
-      url: `${config.ai.elevenlabs.apiUrl}/voices/add`,
+    console.log('🎤 [VOICE-CLONE] Starting voice cloning with Modal/Coqui XTTS:', {
       audioSize: audioBlob.size,
-      audioType: audioFileForElevenLabs.type,
-      fileName: audioFileForElevenLabs.name,
+      audioType: audioFile.type,
+      fileName: audioFile.name,
       voiceName,
-      hasApiKey: !!config.ai.elevenlabs.apiKey,
+      userId,
     });
 
-    // Clone voice using ElevenLabs API
-    let elevenLabsResponse: Response;
+    // For Modal/Coqui XTTS, we store the voice audio in Supabase storage
+    // The "voice ID" is just a unique identifier that maps to the storage path
+    const voiceId = randomUUID();
+    const voiceStoragePath = `voices/${userId}/voice_sample.wav`;
+
+    // Convert audio to WAV format if needed (Coqui XTTS works best with WAV)
+    // For now, we'll upload the audio as-is and let Modal handle conversion
+    const arrayBuffer = await audioFile.arrayBuffer();
+    const audioBuffer = Buffer.from(arrayBuffer);
+
+    // Upload voice sample to Supabase storage
+    const adminSupabase = await createServerAdminClient();
     try {
-      elevenLabsResponse = await fetch(`${config.ai.elevenlabs.apiUrl}/voices/add`, {
-        method: 'POST',
-        headers: {
-          'xi-api-key': config.ai.elevenlabs.apiKey!,
-          // Don't set Content-Type header - fetch will set it with boundary for FormData
-        },
-        body: elevenLabsFormData,
-      });
-    } catch (fetchError) {
-      console.error('❌ [VOICE-CLONE] Network error calling ElevenLabs:', fetchError);
-      return NextResponse.json(
-        {
-          error: 'Network error',
-          message:
-            'Failed to connect to voice cloning service. Please check your internet connection and try again.',
-          details: fetchError instanceof Error ? fetchError.message : 'Unknown network error',
-        },
-        { status: 503 }
-      );
-    }
+      const { error: uploadError } = await adminSupabase.storage
+        .from(TTS_BUCKET)
+        .upload(voiceStoragePath, audioBuffer, {
+          contentType: 'audio/wav',
+          upsert: true, // Replace existing voice sample if user reclones
+        });
 
-    // Get response text first to handle both JSON and text errors
-    const responseText = await elevenLabsResponse.text();
-    let errorData: {
-      detail?: { message?: string };
-      error?: { message?: string };
-      message?: string;
-    } | null = null;
-    let clonedVoiceData: { voice_id?: string; voiceId?: string; id?: string } | null = null;
-
-    try {
-      if (!elevenLabsResponse.ok) {
-        errorData = JSON.parse(responseText);
-      } else {
-        clonedVoiceData = JSON.parse(responseText);
-      }
-    } catch (parseError) {
-      // If response is not JSON, use text as error message
-      console.error('❌ [VOICE-CLONE] Failed to parse ElevenLabs response:', parseError);
-      console.error('Response text:', responseText.substring(0, 500));
-
-      if (!elevenLabsResponse.ok) {
+      if (uploadError) {
+        console.error('❌ [VOICE-CLONE] Failed to upload voice sample to storage:', uploadError);
         return NextResponse.json(
           {
             error: 'Voice cloning failed',
-            message: `Voice cloning service returned an error (${elevenLabsResponse.status}): ${responseText.substring(0, 200)}`,
-            details: responseText,
+            message: 'Failed to store voice sample. Please try again.',
+            details: uploadError.message,
           },
-          { status: elevenLabsResponse.status }
+          { status: 500 }
         );
       }
-    }
 
-    if (!elevenLabsResponse.ok) {
-      console.error('❌ [VOICE-CLONE] ElevenLabs API error:', {
-        status: elevenLabsResponse.status,
-        statusText: elevenLabsResponse.statusText,
-        errorData,
-        responseText: responseText.substring(0, 500),
-      });
-
-      // Extract error message from various possible formats
-      let errorMessage = 'Failed to clone voice. Please try again.';
-      if (errorData) {
-        if (errorData.detail?.message) {
-          errorMessage = errorData.detail.message;
-        } else if (errorData.error?.message) {
-          errorMessage = errorData.error.message;
-        } else if (errorData.message) {
-          errorMessage = errorData.message;
-        } else if (typeof errorData === 'string') {
-          errorMessage = errorData;
-        }
-      } else if (responseText) {
-        errorMessage = responseText.substring(0, 200);
-      }
-
+      console.log('✅ [VOICE-CLONE] Voice sample uploaded to storage:', voiceStoragePath);
+    } catch (storageError) {
+      console.error('❌ [VOICE-CLONE] Storage error:', storageError);
       return NextResponse.json(
         {
           error: 'Voice cloning failed',
-          message: errorMessage,
-          details: errorData || responseText,
-          status: elevenLabsResponse.status,
-        },
-        { status: elevenLabsResponse.status }
-      );
-    }
-
-    // Validate response structure
-    if (!clonedVoiceData) {
-      console.error('❌ [VOICE-CLONE] No data in successful response');
-      return NextResponse.json(
-        {
-          error: 'Voice cloning failed',
-          message: 'Invalid response from voice cloning service.',
-          details: responseText,
-        },
-        { status: 500 }
-      );
-    }
-
-    // Handle different possible response formats
-    const voiceId = clonedVoiceData.voice_id || clonedVoiceData.voiceId || clonedVoiceData.id;
-
-    if (!voiceId) {
-      console.error('❌ [VOICE-CLONE] No voice_id in response:', clonedVoiceData);
-      return NextResponse.json(
-        {
-          error: 'Voice cloning failed',
-          message: 'No voice ID returned from cloning service.',
-          details: clonedVoiceData,
+          message: 'Failed to store voice sample. Please try again.',
+          details: storageError instanceof Error ? storageError.message : 'Unknown storage error',
         },
         { status: 500 }
       );
@@ -262,33 +191,32 @@ export async function POST(request: NextRequest) {
     console.log('✅ [VOICE-CLONE] Voice cloned successfully:', voiceId);
 
     // Store voice clone ID in database
-    const adminSupabase = await createServerAdminClient();
+    // Note: For Modal/Coqui XTTS, the voiceId is just a reference ID
+    // The actual audio is stored at voiceStoragePath in the tts-audio bucket
+    try {
+      const { data, error: updateError } = await adminSupabase
+        .from('profiles')
+        .update({
+          voice_clone_id: voiceId,
+          voice_clone_name: voiceName,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', userId)
+        .select();
 
-    if (userId) {
-      // Store in user profile for future use
-      try {
-        const { data, error: updateError } = await adminSupabase
-          .from('profiles')
-          .update({
-            voice_clone_id: voiceId,
-            voice_clone_name: voiceName,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', userId)
-          .select();
-
-        if (updateError) {
-          console.error('❌ Failed to save voice clone to profile:', updateError);
-          console.error('   User ID:', userId);
-          console.error('   Voice ID:', voiceId);
-        } else if (!data || data.length === 0) {
-          console.warn('⚠️ No profile found for user:', userId);
-        } else {
-          console.log('✅ Successfully saved voice_clone_id to profile:', userId);
-        }
-      } catch (error) {
-        console.error('❌ Exception while saving voice clone to profile:', error);
+      if (updateError) {
+        console.error('❌ Failed to save voice clone to profile:', updateError);
+        console.error('   User ID:', userId);
+        console.error('   Voice ID:', voiceId);
+        // Don't fail the request - voice is cloned, just DB update failed
+      } else if (!data || data.length === 0) {
+        console.warn('⚠️ No profile found for user:', userId);
+      } else {
+        console.log('✅ Successfully saved voice_clone_id to profile:', userId);
       }
+    } catch (error) {
+      console.error('❌ Exception while saving voice clone to profile:', error);
+      // Don't fail the request - voice is cloned, just DB update failed
     }
 
     // If vibelogId is provided, store voice clone ID in vibelog
