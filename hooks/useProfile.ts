@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import { logger } from '@/lib/logger';
 import { createClient } from '@/lib/supabase';
 
 type Profile = {
@@ -42,12 +43,14 @@ export function useProfile(userId: string | null | undefined) {
 
       if (fetchError) {
         // Handle common errors gracefully
+        const logContext = { userId, code: fetchError.code };
+
         if (fetchError.code === 'PGRST116') {
-          console.log('No profile found (normal for new users)');
+          logger.info('No profile found (normal for new users)', logContext);
         } else if (fetchError.code === '42501' || fetchError.code === 'PGRST204') {
-          console.log('Profile restricted by RLS');
+          logger.warn('Profile restricted by RLS', logContext);
         } else {
-          console.warn('Profile fetch error:', fetchError);
+          logger.error('Profile fetch error', { ...logContext, error: fetchError });
           setError(fetchError.message);
         }
         setProfile(null);
@@ -58,7 +61,7 @@ export function useProfile(userId: string | null | undefined) {
 
       setLoading(false);
     } catch (err) {
-      console.error('Profile fetch exception:', err);
+      logger.error('Profile fetch exception', err as Error, { userId });
       setError(err instanceof Error ? err.message : 'Unknown error');
       setProfile(null);
       setLoading(false);
