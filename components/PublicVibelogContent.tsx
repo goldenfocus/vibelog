@@ -23,6 +23,7 @@ interface PublicVibelogContentProps {
     author?: {
       username: string;
       display_name: string;
+      voice_clone_id?: string | null;
     };
   };
 }
@@ -133,6 +134,7 @@ export default function PublicVibelogContent({ vibelog }: PublicVibelogContentPr
           author={vibelog.author?.display_name}
           authorId={vibelog.user_id || undefined}
           authorUsername={vibelog.author?.username}
+          authorVoiceCloneId={vibelog.author?.voice_clone_id || undefined}
           vibelogUrl={vibelogUrl}
           createdAt={vibelog.created_at}
           audioUrl={vibelog.audio_url || undefined}
