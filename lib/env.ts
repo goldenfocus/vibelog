@@ -69,7 +69,14 @@ function validateEnv() {
         console.error('- Check the README.md for setup instructions');
       }
 
-      throw new Error(`Environment validation failed: ${errorMessages.join(', ')}`);
+      // Only throw on server - on client, log and return process.env as-is
+      // This prevents the app from crashing if env vars weren't bundled at build time
+      if (isServer) {
+        throw new Error(`Environment validation failed: ${errorMessages.join(', ')}`);
+      } else {
+        console.warn('⚠️  Client-side env validation failed - using process.env directly');
+        return process.env as z.infer<typeof envSchema>;
+      }
     }
     throw error;
   }
