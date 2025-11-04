@@ -152,16 +152,34 @@ export default function GlobalAudioPlayer() {
   }, [volume, audioElement]);
 
   // Close volume slider when clicking outside
+  const isDraggingVolumeRef = useRef(false);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      // Don't close if currently dragging the slider
+      if (isDraggingVolumeRef.current) {
+        return;
+      }
+
       if (volumeButtonRef.current && !volumeButtonRef.current.contains(event.target as Node)) {
         setShowVolumeSlider(false);
       }
     };
 
+    const handleMouseUp = () => {
+      // Reset dragging state on mouse up
+      isDraggingVolumeRef.current = false;
+    };
+
     if (showVolumeSlider) {
       document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('touchend', handleMouseUp);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        document.removeEventListener('mouseup', handleMouseUp);
+        document.removeEventListener('touchend', handleMouseUp);
+      };
     }
   }, [showVolumeSlider]);
 
@@ -319,23 +337,47 @@ export default function GlobalAudioPlayer() {
     reset();
   };
 
+  const previousVolumeRef = useRef(volume);
+
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    e.stopPropagation(); // Prevent event bubbling
+    e.stopPropagation();
     const newVolume = parseFloat(e.target.value);
+    console.log('Volume changing to:', newVolume);
     setVolume(newVolume);
   };
 
-  const handleVolumeClick = (e: React.MouseEvent) => {
+  const handleSliderMouseDown = (e: React.MouseEvent<HTMLInputElement>) => {
+    e.preventDefault();
     e.stopPropagation();
-    setShowVolumeSlider(!showVolumeSlider);
+    isDraggingVolumeRef.current = true;
+    console.log('Started dragging volume slider');
+  };
+
+  const handleSliderTouchStart = (e: React.TouchEvent<HTMLInputElement>) => {
+    e.stopPropagation();
+    isDraggingVolumeRef.current = true;
+    console.log('Started touching volume slider');
+  };
+
+  const handleVolumeIconClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Left click toggles slider, right click mutes
+    if (e.button === 0) {
+      setShowVolumeSlider(!showVolumeSlider);
+    }
   };
 
   const handleMuteToggle = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent closing the volume slider
+    e.preventDefault();
+    e.stopPropagation();
+
     if (volume > 0) {
+      previousVolumeRef.current = volume;
       setVolume(0);
     } else {
-      setVolume(1.0); // Restore to 100%
+      setVolume(previousVolumeRef.current || 1.0);
     }
   };
 
@@ -428,21 +470,50 @@ export default function GlobalAudioPlayer() {
           {/* Volume Control */}
           <div className="relative" ref={volumeButtonRef}>
             <button
-              onClick={handleVolumeClick}
+              onClick={handleVolumeIconClick}
+              onDoubleClick={handleMuteToggle}
               className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
-              aria-label="Volume"
+              aria-label="Volume (Double-click to mute)"
+              title="Click for volume, double-click to mute"
             >
               <VolumeIcon className="h-5 w-5" />
             </button>
 
             {showVolumeSlider && (
               <div
-                className="absolute bottom-full right-0 mb-2 rounded-lg border border-border/50 bg-card p-3 shadow-xl"
-                onClick={e => e.stopPropagation()}
-                onMouseDown={e => e.stopPropagation()}
+                className="absolute bottom-full right-0 mb-2 rounded-lg border border-border/50 bg-card p-4 shadow-xl"
+                onClick={e => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onMouseDown={e => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onTouchStart={e => {
+                  e.stopPropagation();
+                }}
               >
-                <div className="flex flex-col items-center gap-2">
-                  <div className="relative flex h-24 w-8 items-center justify-center">
+                <div className="flex flex-col items-center gap-3">
+                  {/* Volume percentage display */}
+                  <span className="text-xs font-medium text-electric">
+                    {Math.round(volume * 100)}%
+                  </span>
+
+                  {/* Vertical slider container */}
+                  <div className="relative flex h-32 w-10 items-center justify-center">
+                    {/* Background track */}
+                    <div className="absolute h-full w-2 rounded-full bg-muted/30" />
+
+                    {/* Filled track */}
+                    <div
+                      className="pointer-events-none absolute bottom-0 w-2 rounded-full bg-gradient-electric transition-all duration-100"
+                      style={{
+                        height: `${volume * 100}%`,
+                      }}
+                    />
+
+                    {/* Slider input */}
                     <input
                       type="range"
                       min="0"
@@ -450,29 +521,24 @@ export default function GlobalAudioPlayer() {
                       step="0.01"
                       value={volume}
                       onChange={handleVolumeChange}
-                      onMouseDown={e => e.stopPropagation()}
-                      onClick={e => e.stopPropagation()}
-                      className="absolute h-24 w-2 cursor-pointer appearance-none rounded-lg bg-muted/30 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-electric [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-electric"
+                      onMouseDown={handleSliderMouseDown}
+                      onTouchStart={handleSliderTouchStart}
+                      onClick={e => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                      className="absolute h-full w-2 cursor-pointer appearance-none bg-transparent [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:cursor-grab [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-electric [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:shadow-lg [&::-moz-range-thumb]:active:cursor-grabbing [&::-moz-range-track]:bg-transparent [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:cursor-grab [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-electric [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:active:cursor-grabbing"
                       style={{
                         transform: 'rotate(-90deg)',
                         transformOrigin: 'center',
                       }}
                     />
-                    <div
-                      className="pointer-events-none absolute w-2 rounded-lg bg-gradient-electric transition-all duration-75"
-                      style={{
-                        height: `${volume * 96}px`,
-                        bottom: '4px',
-                      }}
-                    />
                   </div>
-                  <button
-                    onClick={handleMuteToggle}
-                    className="mt-1 rounded p-1 text-xs text-muted-foreground hover:text-foreground"
-                    aria-label={volume === 0 ? 'Unmute' : 'Mute'}
-                  >
-                    {volume === 0 ? 'Unmute' : 'Mute'}
-                  </button>
+
+                  {/* Mute shortcut hint */}
+                  <span className="text-[10px] text-muted-foreground">
+                    Double-click icon to mute
+                  </span>
                 </div>
               </div>
             )}
