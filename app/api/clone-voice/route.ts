@@ -47,16 +47,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if Modal/Coqui XTTS is configured
-    if (!config.ai.modal.enabled || !config.ai.modal.endpoint) {
-      return NextResponse.json(
-        {
-          error: 'Voice cloning not configured',
-          message: 'Modal/Coqui XTTS is not configured. Voice cloning is unavailable.',
-        },
-        { status: 503 }
-      );
-    }
+    // Note: We don't require Modal to be configured for voice cloning
+    // The audio is stored in Supabase storage, and TTS will check Modal availability when needed
+    // This allows users to clone voices even if Modal isn't set up yet
 
     if (!userId) {
       return NextResponse.json(
@@ -153,13 +146,18 @@ export async function POST(request: NextRequest) {
     const arrayBuffer = await audioFile.arrayBuffer();
     const audioBuffer = Buffer.from(arrayBuffer);
 
+    // Determine the correct content type from the audio file
+    // Even though we store with .wav extension, we preserve the original type
+    // Modal's Coqui XTTS can handle various audio formats and will convert internally
+    const contentType = audioFile.type || 'audio/wav';
+
     // Upload voice sample to Supabase storage
     const adminSupabase = await createServerAdminClient();
     try {
       const { error: uploadError } = await adminSupabase.storage
         .from(TTS_BUCKET)
         .upload(voiceStoragePath, audioBuffer, {
-          contentType: 'audio/wav',
+          contentType,
           upsert: true, // Replace existing voice sample if user reclones
         });
 
@@ -189,6 +187,13 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('✅ [VOICE-CLONE] Voice cloned successfully:', voiceId);
+
+    // Warn if Modal isn't configured (TTS won't work without it)
+    if (!config.ai.modal.enabled || !config.ai.modal.endpoint) {
+      console.warn(
+        '⚠️ [VOICE-CLONE] Modal/Coqui XTTS is not configured. Voice cloning succeeded, but TTS will not work until Modal is configured.'
+      );
+    }
 
     // Store voice clone ID in database
     // Note: For Modal/Coqui XTTS, the voiceId is just a reference ID
