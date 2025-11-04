@@ -227,33 +227,62 @@ export async function POST(request: NextRequest) {
     }
 
     let audioBuffer: Buffer | undefined;
+    let ttsService: 'modal' | 'elevenlabs' | 'openai' | 'mock' = 'openai'; // Track which service was used
+
+    // Warn if voice cloning is requested but Modal is not configured
+    if (voiceCloneIdToUse && !config.ai.modal.enabled) {
+      console.warn('⚠️ [CONFIG] Voice cloning requested but Modal is disabled in config');
+      console.warn('⚠️ [CONFIG] Set MODAL_ENABLED=true to use voice cloning with Modal');
+    }
+    if (voiceCloneIdToUse && config.ai.modal.enabled && !config.ai.modal.endpoint) {
+      console.error('❌ [CONFIG] Modal is enabled but MODAL_TTS_ENDPOINT is not set!');
+      console.error('❌ [CONFIG] Voice cloning will fall back to ElevenLabs or fail');
+    }
 
     // Try Modal.com first (self-hosted, much cheaper)
     if (voiceCloneIdToUse && config.ai.modal.enabled && config.ai.modal.endpoint) {
       try {
-        console.log('🎵 [MODAL] Using self-hosted TTS with cloned voice:', voiceCloneIdToUse);
+        console.log('🎵 [MODAL] Attempting self-hosted TTS with cloned voice:', voiceCloneIdToUse);
+        console.log('🎵 [MODAL] Endpoint:', config.ai.modal.endpoint);
 
         // Fetch the voice audio sample from storage
         const supabaseAdmin = await createServerAdminClient();
-        const { data: profile } = await supabaseAdmin
+        const { data: profile, error: profileError } = await supabaseAdmin
           .from('profiles')
           .select('id')
           .eq('voice_clone_id', voiceCloneIdToUse)
           .single();
 
+        if (profileError) {
+          console.error(
+            '❌ [MODAL] Failed to fetch profile for voice clone:',
+            profileError.message
+          );
+          throw new Error(`Profile lookup failed: ${profileError.message}`);
+        }
+
         if (profile) {
           // Get the voice audio file from storage
           const voiceAudioPath = `voices/${profile.id}/voice_sample.wav`;
-          const { data: voiceAudioData } = await supabaseAdmin.storage
+          console.log('🎵 [MODAL] Fetching voice sample from:', voiceAudioPath);
+
+          const { data: voiceAudioData, error: storageError } = await supabaseAdmin.storage
             .from('tts-audio')
             .download(voiceAudioPath);
+
+          if (storageError) {
+            console.error('❌ [MODAL] Failed to download voice sample:', storageError.message);
+            throw new Error(`Voice sample download failed: ${storageError.message}`);
+          }
 
           if (voiceAudioData) {
             // Convert to base64
             const voiceBuffer = Buffer.from(await voiceAudioData.arrayBuffer());
             const voiceBase64 = voiceBuffer.toString('base64');
+            console.log('🎵 [MODAL] Voice sample size:', voiceBuffer.length, 'bytes');
 
             // Call Modal endpoint
+            console.log('🎵 [MODAL] Sending request to Modal endpoint...');
             const modalResponse = await fetch(config.ai.modal.endpoint, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -268,15 +297,33 @@ export async function POST(request: NextRequest) {
             if (modalResponse.ok) {
               const { audioBase64 } = await modalResponse.json();
               audioBuffer = Buffer.from(audioBase64, 'base64');
-              console.log('✅ [MODAL] TTS generated successfully');
+              ttsService = 'modal';
+              console.log(
+                '✅ [MODAL] TTS generated successfully! Audio size:',
+                audioBuffer.length,
+                'bytes'
+              );
             } else {
-              const error = await modalResponse.text();
-              console.warn('⚠️ [MODAL] Failed:', modalResponse.status, error);
+              const errorText = await modalResponse.text();
+              console.error('❌ [MODAL] Request failed with status:', modalResponse.status);
+              console.error('❌ [MODAL] Error response:', errorText);
+              console.warn('⚠️ [MODAL] Falling back to ElevenLabs...');
             }
+          } else {
+            console.error('❌ [MODAL] Voice audio data is empty');
+            throw new Error('Voice sample file is empty');
           }
+        } else {
+          console.error('❌ [MODAL] No profile found for voice_clone_id:', voiceCloneIdToUse);
+          throw new Error('Profile not found for voice clone ID');
         }
       } catch (error) {
-        console.warn('⚠️ [MODAL] Error, falling back to ElevenLabs:', error);
+        console.error(
+          '❌ [MODAL] Exception occurred:',
+          error instanceof Error ? error.message : error
+        );
+        console.error('❌ [MODAL] Full error:', error);
+        console.warn('⚠️ [MODAL] Falling back to ElevenLabs due to error');
         // Continue to ElevenLabs fallback
       }
     }
@@ -339,6 +386,7 @@ export async function POST(request: NextRequest) {
 
           const audioArrayBuffer = await elevenLabsResponse.arrayBuffer();
           audioBuffer = Buffer.from(audioArrayBuffer);
+          ttsService = 'elevenlabs';
           console.log(`✅ [ElevenLabs] Success on attempt ${attempt}`);
           break; // Success, exit retry loop
         } catch (error) {
@@ -364,6 +412,7 @@ export async function POST(request: NextRequest) {
         process.env.OPENAI_API_KEY === 'your_openai_api_key_here'
       ) {
         console.log('🧪 Using mock TTS response for development/testing');
+        ttsService = 'mock';
 
         // Return a small silent audio file as mock
         const mockAudioData = new Uint8Array([
@@ -527,12 +576,14 @@ export async function POST(request: NextRequest) {
 
     // Convert Buffer to Uint8Array for NextResponse
     const audioUint8Array = new Uint8Array(audioBuffer);
+    console.log(`🎵 [TTS] Returning audio generated by: ${ttsService.toUpperCase()}`);
     return new NextResponse(audioUint8Array, {
       headers: {
         'Content-Type': 'audio/mpeg',
         'Content-Length': audioUint8Array.length.toString(),
         'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
         'X-TTS-Cache': 'miss',
+        'X-TTS-Service': ttsService, // Track which service generated this audio
       },
     });
   } catch (error) {

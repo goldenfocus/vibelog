@@ -237,10 +237,10 @@ export default function VibelogActions({
       cleanContent = words.slice(0, 500).join(' ') + '...';
     }
 
-    // Pass vibelogId so TTS route can look up voice_clone_id from database
-    // The TTS route will automatically use cloned voice if available
+    // Pass authorVoiceCloneId directly so TTS route can use the cloned voice
+    // This ensures we use the author's current voice clone without database lookup
     // Pass title and author so they display correctly in the audio player
-    await playText(cleanContent, 'shimmer', vibelogId, undefined, title, author);
+    await playText(cleanContent, 'shimmer', vibelogId, authorVoiceCloneId, title, author);
   };
 
   const handleCopyClick = async () => {
