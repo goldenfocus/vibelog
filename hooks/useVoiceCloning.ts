@@ -61,6 +61,7 @@ export function useVoiceCloning(options?: UseVoiceCloningOptions): UseVoiceCloni
         const response = await fetch('/api/clone-voice', {
           method: 'POST',
           body: formData,
+          credentials: 'include', // Send auth cookies with request
         });
 
         // Get response text first to handle both JSON and text errors
