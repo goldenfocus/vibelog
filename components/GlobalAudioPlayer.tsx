@@ -320,15 +320,18 @@ export default function GlobalAudioPlayer() {
   };
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.stopPropagation(); // Prevent event bubbling
     const newVolume = parseFloat(e.target.value);
     setVolume(newVolume);
   };
 
-  const handleVolumeClick = () => {
+  const handleVolumeClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setShowVolumeSlider(!showVolumeSlider);
   };
 
-  const handleMuteToggle = () => {
+  const handleMuteToggle = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent closing the volume slider
     if (volume > 0) {
       setVolume(0);
     } else {
@@ -433,7 +436,11 @@ export default function GlobalAudioPlayer() {
             </button>
 
             {showVolumeSlider && (
-              <div className="absolute bottom-full right-0 mb-2 rounded-lg border border-border/50 bg-card p-3 shadow-xl">
+              <div
+                className="absolute bottom-full right-0 mb-2 rounded-lg border border-border/50 bg-card p-3 shadow-xl"
+                onClick={e => e.stopPropagation()}
+                onMouseDown={e => e.stopPropagation()}
+              >
                 <div className="flex flex-col items-center gap-2">
                   <div className="relative flex h-24 w-8 items-center justify-center">
                     <input
@@ -443,6 +450,8 @@ export default function GlobalAudioPlayer() {
                       step="0.01"
                       value={volume}
                       onChange={handleVolumeChange}
+                      onMouseDown={e => e.stopPropagation()}
+                      onClick={e => e.stopPropagation()}
                       className="absolute h-24 w-2 cursor-pointer appearance-none rounded-lg bg-muted/30 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-electric [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-electric"
                       style={{
                         transform: 'rotate(-90deg)',
