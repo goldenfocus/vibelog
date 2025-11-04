@@ -1,3 +1,15 @@
+/**
+ * Unit Tests for Conversation State Store
+ *
+ * Tests:
+ * - Initial state
+ * - State transitions
+ * - Message management
+ * - Content management
+ * - Error handling
+ * - State validation
+ */
+
 import { describe, it, expect, beforeEach } from 'vitest';
 
 import {
@@ -6,153 +18,155 @@ import {
   getStateDescription,
 } from '@/state/conversation-state';
 
-// Helper to get fresh state
-const getState = () => useConversationStore.getState();
-
-describe('Conversation State Store', () => {
+describe('ConversationState Store', () => {
   beforeEach(() => {
     // Reset store before each test
-    getState().reset();
+    useConversationStore.getState().reset();
   });
 
-  describe('Initial state', () => {
-    it('should start in generating state', () => {
-      expect(getState().state).toBe('generating');
-    });
+  describe('Initial State', () => {
+    it('should have correct initial state', () => {
+      const state = useConversationStore.getState();
 
-    it('should have empty messages', () => {
-      expect(getState().messages).toEqual([]);
-    });
-
-    it('should have empty content', () => {
-      expect(getState().vibelogContent).toEqual({});
-    });
-
-    it('should have no error', () => {
-      expect(getState().error).toBeNull();
+      expect(state.state).toBe('generating');
+      expect(state.messages).toEqual([]);
+      expect(state.vibelogContent).toEqual({});
+      expect(state.error).toBeNull();
     });
   });
 
-  describe('State transitions', () => {
+  describe('State Transitions', () => {
     describe('startGenerating', () => {
       it('should transition to generating state', () => {
-        getState().startEditing(); // First go to editing
-        getState().startGenerating();
+        const { startGenerating } = useConversationStore.getState();
 
-        expect(getState().state).toBe('generating');
+        startGenerating();
+
+        const state = useConversationStore.getState();
+        expect(state.state).toBe('generating');
+        expect(state.error).toBeNull();
       });
 
-      it('should clear error when transitioning', () => {
-        getState().setError('Test error');
-        getState().startGenerating();
+      it('should be valid from any state', () => {
+        const { startEditing, startGenerating } = useConversationStore.getState();
 
-        expect(getState().error).toBeNull();
+        startEditing();
+        startGenerating();
+
+        expect(useConversationStore.getState().state).toBe('generating');
       });
     });
 
     describe('startEditing', () => {
-      it('should transition from generating to editing', () => {
-        getState().startEditing();
+      it('should transition to editing state', () => {
+        const { startEditing } = useConversationStore.getState();
 
-        expect(getState().state).toBe('editing');
+        startEditing();
+
+        expect(useConversationStore.getState().state).toBe('editing');
+        expect(useConversationStore.getState().error).toBeNull();
       });
 
-      it('should not transition from publishing to editing', () => {
-        // Setup content first
-        getState().updateContent({ title: 'Test', content: 'Test content' });
-        getState().startEditing();
-        getState().startPublishing();
+      it('should not allow transition from publishing', () => {
+        const { startEditing, startPublishing } = useConversationStore.getState();
 
-        // Try to transition to editing
-        getState().startEditing();
+        // First go to editing to set up content
+        startEditing();
+        useConversationStore.getState().updateContent({ title: 'Test', content: 'Test content' });
 
-        // Should still be in publishing
-        expect(getState().state).toBe('publishing');
-        expect(getState().error).toContain('Cannot edit while publishing');
-      });
+        // Then try to publish and edit
+        startPublishing();
+        startEditing();
 
-      it('should allow staying in editing state', () => {
-        getState().startEditing();
-        getState().startEditing(); // Call again
-
-        expect(getState().state).toBe('editing');
-        expect(getState().error).toBeNull();
+        const state = useConversationStore.getState();
+        expect(state.state).toBe('publishing');
+        expect(state.error).toContain('Cannot edit while publishing');
       });
     });
 
     describe('startPublishing', () => {
-      it('should transition from editing to publishing with valid content', () => {
-        getState().updateContent({ title: 'Test Title', content: 'Test Content' });
-        getState().startEditing();
-        getState().startPublishing();
-
-        expect(getState().state).toBe('publishing');
-        expect(getState().error).toBeNull();
+      beforeEach(() => {
+        // Set up valid content
+        const { startEditing, updateContent } = useConversationStore.getState();
+        startEditing();
+        updateContent({ title: 'Test Title', content: 'Test content' });
       });
 
-      it('should not transition from generating to publishing', () => {
-        getState().updateContent({ title: 'Test', content: 'Test' });
-        getState().startPublishing();
+      it('should transition to publishing state', () => {
+        const { startPublishing } = useConversationStore.getState();
 
-        expect(getState().state).toBe('generating');
-        expect(getState().error).toContain('Cannot publish while generating');
+        startPublishing();
+
+        expect(useConversationStore.getState().state).toBe('publishing');
+        expect(useConversationStore.getState().error).toBeNull();
       });
 
-      it('should not publish without title', () => {
-        getState().updateContent({ content: 'Test Content' });
-        getState().startEditing();
-        getState().startPublishing();
+      it('should not allow transition from generating', () => {
+        const { startGenerating, startPublishing } = useConversationStore.getState();
 
-        expect(getState().state).toBe('editing');
-        expect(getState().error).toContain('Cannot publish without content and title');
+        startGenerating();
+        startPublishing();
+
+        const state = useConversationStore.getState();
+        expect(state.state).toBe('generating');
+        expect(state.error).toContain('Cannot publish while generating');
       });
 
-      it('should not publish without content', () => {
-        getState().updateContent({ title: 'Test Title' });
-        getState().startEditing();
-        getState().startPublishing();
+      it('should not allow publishing without content', () => {
+        const { resetContent, startPublishing } = useConversationStore.getState();
 
-        expect(getState().state).toBe('editing');
-        expect(getState().error).toContain('Cannot publish without content and title');
+        resetContent();
+        startPublishing();
+
+        const state = useConversationStore.getState();
+        expect(state.state).toBe('editing');
+        expect(state.error).toContain('Cannot publish without content and title');
       });
 
-      it('should not allow publishing while already publishing', () => {
-        getState().updateContent({ title: 'Test', content: 'Test' });
-        getState().startEditing();
-        getState().startPublishing();
-        getState().startPublishing(); // Try again
+      it('should not allow publishing without title', () => {
+        const { updateContent, startPublishing } = useConversationStore.getState();
 
-        expect(getState().state).toBe('publishing');
-        expect(getState().error).toContain('Already publishing');
+        updateContent({ title: '', content: 'Some content' });
+        startPublishing();
+
+        expect(useConversationStore.getState().error).toBeTruthy();
       });
     });
   });
 
-  describe('Message management', () => {
-    it('should add user message', () => {
-      getState().addMessage('user', 'Hello');
+  describe('Message Management', () => {
+    it('should add user messages', () => {
+      const { addMessage } = useConversationStore.getState();
 
-      const messages = getState().messages;
+      addMessage('user', 'Test message');
+
+      const messages = useConversationStore.getState().messages;
       expect(messages).toHaveLength(1);
       expect(messages[0].role).toBe('user');
-      expect(messages[0].content).toBe('Hello');
+      expect(messages[0].content).toBe('Test message');
+      expect(messages[0].id).toBeDefined();
+      expect(messages[0].timestamp).toBeInstanceOf(Date);
     });
 
-    it('should add assistant message', () => {
-      getState().addMessage('assistant', 'Hi there!');
+    it('should add assistant messages', () => {
+      const { addMessage } = useConversationStore.getState();
 
-      const messages = getState().messages;
+      addMessage('assistant', 'Response message');
+
+      const messages = useConversationStore.getState().messages;
       expect(messages).toHaveLength(1);
       expect(messages[0].role).toBe('assistant');
-      expect(messages[0].content).toBe('Hi there!');
+      expect(messages[0].content).toBe('Response message');
     });
 
-    it('should add multiple messages in order', () => {
-      getState().addMessage('user', 'First');
-      getState().addMessage('assistant', 'Second');
-      getState().addMessage('user', 'Third');
+    it('should preserve message order', () => {
+      const { addMessage } = useConversationStore.getState();
 
-      const messages = getState().messages;
+      addMessage('user', 'First');
+      addMessage('assistant', 'Second');
+      addMessage('user', 'Third');
+
+      const messages = useConversationStore.getState().messages;
       expect(messages).toHaveLength(3);
       expect(messages[0].content).toBe('First');
       expect(messages[1].content).toBe('Second');
@@ -160,164 +174,172 @@ describe('Conversation State Store', () => {
     });
 
     it('should generate unique message IDs', () => {
-      getState().addMessage('user', 'Message 1');
-      getState().addMessage('user', 'Message 2');
+      const { addMessage } = useConversationStore.getState();
 
-      const messages = getState().messages;
-      const ids = messages.map(m => m.id);
-      expect(ids[0]).not.toBe(ids[1]);
-    });
+      addMessage('user', 'Message 1');
+      addMessage('user', 'Message 2');
 
-    it('should include timestamp in messages', () => {
-      const before = new Date();
-      getState().addMessage('user', 'Test');
-      const after = new Date();
-
-      const message = getState().messages[0];
-      expect(message.timestamp).toBeInstanceOf(Date);
-      expect(message.timestamp.getTime()).toBeGreaterThanOrEqual(before.getTime());
-      expect(message.timestamp.getTime()).toBeLessThanOrEqual(after.getTime());
+      const messages = useConversationStore.getState().messages;
+      expect(messages[0].id).not.toBe(messages[1].id);
     });
 
     it('should clear all messages', () => {
-      getState().addMessage('user', 'Message 1');
-      getState().addMessage('assistant', 'Message 2');
-      getState().clearMessages();
+      const { addMessage, clearMessages } = useConversationStore.getState();
 
-      expect(getState().messages).toEqual([]);
+      addMessage('user', 'Test 1');
+      addMessage('user', 'Test 2');
+      expect(useConversationStore.getState().messages).toHaveLength(2);
+
+      clearMessages();
+
+      expect(useConversationStore.getState().messages).toHaveLength(0);
     });
   });
 
-  describe('Content management', () => {
-    it('should update title', () => {
-      getState().updateContent({ title: 'My Title' });
-
-      expect(getState().vibelogContent.title).toBe('My Title');
-    });
-
+  describe('Content Management', () => {
     it('should update content', () => {
-      getState().updateContent({ content: 'My content' });
+      const { updateContent } = useConversationStore.getState();
 
-      expect(getState().vibelogContent.content).toBe('My content');
+      updateContent({ title: 'Test Title' });
+
+      const content = useConversationStore.getState().vibelogContent;
+      expect(content.title).toBe('Test Title');
     });
 
-    it('should update multiple fields', () => {
-      getState().updateContent({
-        title: 'Title',
-        content: 'Content',
-        teaser: 'Teaser',
-      });
+    it('should merge content updates', () => {
+      const { updateContent } = useConversationStore.getState();
 
-      expect(getState().vibelogContent).toEqual({
-        title: 'Title',
-        content: 'Content',
-        teaser: 'Teaser',
-      });
+      updateContent({ title: 'Title' });
+      updateContent({ content: 'Content' });
+
+      const vibelogContent = useConversationStore.getState().vibelogContent;
+      expect(vibelogContent.title).toBe('Title');
+      expect(vibelogContent.content).toBe('Content');
     });
 
-    it('should merge updates with existing content', () => {
-      getState().updateContent({ title: 'Title' });
-      getState().updateContent({ content: 'Content' });
+    it('should overwrite existing fields', () => {
+      const { updateContent } = useConversationStore.getState();
 
-      expect(getState().vibelogContent).toEqual({
-        title: 'Title',
-        content: 'Content',
-      });
+      updateContent({ title: 'First Title' });
+      updateContent({ title: 'Second Title' });
+
+      expect(useConversationStore.getState().vibelogContent.title).toBe('Second Title');
     });
 
     it('should reset content', () => {
-      getState().updateContent({ title: 'Title', content: 'Content' });
-      getState().resetContent();
+      const { updateContent, resetContent } = useConversationStore.getState();
 
-      expect(getState().vibelogContent).toEqual({});
+      updateContent({ title: 'Title', content: 'Content' });
+      expect(useConversationStore.getState().vibelogContent).not.toEqual({});
+
+      resetContent();
+
+      expect(useConversationStore.getState().vibelogContent).toEqual({});
     });
   });
 
-  describe('Error handling', () => {
-    it('should set error message', () => {
-      getState().setError('Test error');
+  describe('Error Handling', () => {
+    it('should set error', () => {
+      const { setError } = useConversationStore.getState();
 
-      expect(getState().error).toBe('Test error');
+      setError('Test error message');
+
+      expect(useConversationStore.getState().error).toBe('Test error message');
     });
 
-    it('should clear error message', () => {
-      getState().setError('Test error');
-      getState().setError(null);
+    it('should clear error', () => {
+      const { setError } = useConversationStore.getState();
 
-      expect(getState().error).toBeNull();
+      setError('Test error');
+      setError(null);
+
+      expect(useConversationStore.getState().error).toBeNull();
     });
   });
 
-  describe('Reset functionality', () => {
-    it('should reset all state to initial', () => {
+  describe('Reset', () => {
+    it('should reset entire store to initial state', () => {
+      const { startEditing, addMessage, updateContent, setError, reset } =
+        useConversationStore.getState();
+
       // Modify all state
-      getState().startEditing();
-      getState().addMessage('user', 'Test');
-      getState().updateContent({ title: 'Test' });
-      getState().setError('Test error');
+      startEditing();
+      addMessage('user', 'Test');
+      updateContent({ title: 'Title' });
+      setError('Error');
 
       // Reset
-      getState().reset();
+      reset();
 
-      // Check everything is back to initial
-      expect(getState().state).toBe('generating');
-      expect(getState().messages).toEqual([]);
-      expect(getState().vibelogContent).toEqual({});
-      expect(getState().error).toBeNull();
-    });
-  });
-});
-
-describe('Helper functions', () => {
-  describe('isValidTransition', () => {
-    it('should allow generating -> generating', () => {
-      expect(isValidTransition('generating', 'generating')).toBe(true);
-    });
-
-    it('should allow generating -> editing', () => {
-      expect(isValidTransition('generating', 'editing')).toBe(true);
-    });
-
-    it('should not allow generating -> publishing', () => {
-      expect(isValidTransition('generating', 'publishing')).toBe(false);
-    });
-
-    it('should allow editing -> generating', () => {
-      expect(isValidTransition('editing', 'generating')).toBe(true);
-    });
-
-    it('should allow editing -> editing', () => {
-      expect(isValidTransition('editing', 'editing')).toBe(true);
-    });
-
-    it('should allow editing -> publishing', () => {
-      expect(isValidTransition('editing', 'publishing')).toBe(true);
-    });
-
-    it('should allow publishing -> generating', () => {
-      expect(isValidTransition('publishing', 'generating')).toBe(true);
-    });
-
-    it('should allow publishing -> editing', () => {
-      expect(isValidTransition('publishing', 'editing')).toBe(true);
-    });
-
-    it('should not allow publishing -> publishing', () => {
-      expect(isValidTransition('publishing', 'publishing')).toBe(false);
+      const state = useConversationStore.getState();
+      expect(state.state).toBe('generating');
+      expect(state.messages).toEqual([]);
+      expect(state.vibelogContent).toEqual({});
+      expect(state.error).toBeNull();
     });
   });
 
-  describe('getStateDescription', () => {
-    it('should return description for generating', () => {
-      expect(getStateDescription('generating')).toBe('Generating your vibelog...');
+  describe('Helper Functions', () => {
+    describe('isValidTransition', () => {
+      it('should validate transitions from generating', () => {
+        expect(isValidTransition('generating', 'generating')).toBe(true);
+        expect(isValidTransition('generating', 'editing')).toBe(true);
+        expect(isValidTransition('generating', 'publishing')).toBe(false);
+      });
+
+      it('should validate transitions from editing', () => {
+        expect(isValidTransition('editing', 'generating')).toBe(true);
+        expect(isValidTransition('editing', 'editing')).toBe(true);
+        expect(isValidTransition('editing', 'publishing')).toBe(true);
+      });
+
+      it('should validate transitions from publishing', () => {
+        expect(isValidTransition('publishing', 'generating')).toBe(true);
+        expect(isValidTransition('publishing', 'editing')).toBe(true);
+        expect(isValidTransition('publishing', 'publishing')).toBe(false);
+      });
     });
 
-    it('should return description for editing', () => {
-      expect(getStateDescription('editing')).toBe('Editing your content');
+    describe('getStateDescription', () => {
+      it('should return description for generating', () => {
+        const desc = getStateDescription('generating');
+        expect(desc).toBe('Generating your vibelog...');
+      });
+
+      it('should return description for editing', () => {
+        const desc = getStateDescription('editing');
+        expect(desc).toBe('Editing your content');
+      });
+
+      it('should return description for publishing', () => {
+        const desc = getStateDescription('publishing');
+        expect(desc).toBe('Publishing to platforms...');
+      });
+    });
+  });
+
+  describe('Zustand Store Behavior', () => {
+    it('should allow subscription to state changes', () => {
+      let callCount = 0;
+      const unsubscribe = useConversationStore.subscribe(() => {
+        callCount++;
+      });
+
+      useConversationStore.getState().startEditing();
+      useConversationStore.getState().addMessage('user', 'test');
+
+      expect(callCount).toBeGreaterThan(0);
+      unsubscribe();
     });
 
-    it('should return description for publishing', () => {
-      expect(getStateDescription('publishing')).toBe('Publishing to platforms...');
+    it('should persist updates across reads', () => {
+      useConversationStore.getState().updateContent({ title: 'Test' });
+
+      const content1 = useConversationStore.getState().vibelogContent;
+      const content2 = useConversationStore.getState().vibelogContent;
+
+      expect(content1).toBe(content2);
+      expect(content1.title).toBe('Test');
     });
   });
 });

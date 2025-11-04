@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
 import { config } from '@/lib/config';
+import { createApiLogger } from '@/lib/logger';
 import { rateLimit, tooManyResponse } from '@/lib/rateLimit';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
@@ -39,11 +40,17 @@ function postProcessContent(content: string): string {
 }
 
 export async function POST(request: NextRequest) {
+  // Create API logger with request context
+  const apiLogger = createApiLogger(request.headers.get('x-request-id') || undefined);
+
   try {
     // Rate limit per user if logged in; otherwise per IP
     const supa = await createServerSupabaseClient();
     const { data: auth } = await supa.auth.getUser();
     const userId = auth?.user?.id;
+
+    // Update logger with user context
+    apiLogger.setContext({ userId, endpoint: '/api/generate-vibelog' });
 
     // Limits: logged-in 10000 per 15 minutes; anonymous 10000 per day
     // In development, loosen limits to avoid noisy 429s during iteration
@@ -125,15 +132,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Transcription too long' }, { status: 413 });
     }
 
-    if (process.env.NODE_ENV !== 'production') {
-      console.log(
-        'Generating vibelog from transcription:',
-        transcription.substring(0, 100) + '...'
-      );
-      console.log('Target language:', languageName, `(${targetLanguage})`);
-      console.log('Selected tone:', selectedTone);
-      console.log('Keep filler words:', keepFillerWords);
-    }
+    apiLogger.debug('Generating vibelog from transcription', {
+      transcriptionPreview: transcription.substring(0, 100),
+      transcriptionLength: transcription.length,
+      targetLanguage,
+      languageName,
+      selectedTone,
+      keepFillerWords,
+    });
 
     // Check if we have a real API key, otherwise return mock response for testing
     if (
@@ -141,7 +147,7 @@ export async function POST(request: NextRequest) {
       process.env.OPENAI_API_KEY === 'dummy_key' ||
       process.env.OPENAI_API_KEY === 'your_openai_api_key_here'
     ) {
-      console.log('🧪 Using mock vibelog generation for development/testing');
+      apiLogger.debug('Using mock vibelog generation', { reason: 'no API key configured' });
 
       // OPTIMIZATION 2: Support streaming for mock responses too
       if (stream) {
@@ -407,7 +413,7 @@ Remember:
       fullContent = postProcessContent(fullMatch[1].trim());
     } else {
       // Fallback: if parsing fails, use the whole content as full and create a simple teaser
-      console.warn('⚠️ [VIBELOG-GEN] Failed to parse dual-content format, using fallback');
+      apiLogger.warn('Failed to parse dual-content format, using fallback');
       fullContent = postProcessContent(rawContent);
 
       // Create a simple teaser from the first 300 characters
@@ -415,12 +421,12 @@ Remember:
       teaser = firstParagraphs.substring(0, 300) + (firstParagraphs.length > 300 ? '...' : '');
     }
 
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('🔍 [VIBELOG-GEN] Teaser length:', teaser.length);
-      console.log('🔍 [VIBELOG-GEN] Full content length:', fullContent.length);
-      console.log('🔍 [VIBELOG-GEN] Teaser preview:', teaser.substring(0, 100) + '...');
-      console.log('🔍 [VIBELOG-GEN] Full content preview:', fullContent.substring(0, 100) + '...');
-    }
+    apiLogger.debug('Generated vibelog content', {
+      teaserLength: teaser.length,
+      fullContentLength: fullContent.length,
+      teaserPreview: teaser.substring(0, 100),
+      fullContentPreview: fullContent.substring(0, 100),
+    });
 
     // Ensure we always return valid content
     const finalTeaser = teaser || 'Content generation in progress...';
@@ -433,7 +439,7 @@ Remember:
       success: true,
     });
   } catch (error) {
-    console.error('Vibelog generation error:', error);
+    apiLogger.error('Vibelog generation failed', error as Error);
     return NextResponse.json({ error: 'Failed to generate vibelog content' }, { status: 500 });
   }
 }
