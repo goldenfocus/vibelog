@@ -86,6 +86,16 @@ export function useTextToSpeech(
       }
 
       // Generate TTS audio (pass vibelogId and voiceCloneId so it can use cloned voice)
+      console.log('🎵 [USE-TTS] Calling /api/text-to-speech with:', {
+        voice,
+        vibelogId,
+        voiceCloneId,
+        hasVoiceCloneId: !!voiceCloneId,
+        textLength: text.length,
+        title,
+        author,
+      });
+
       const response = await fetch('/api/text-to-speech', {
         method: 'POST',
         headers: {

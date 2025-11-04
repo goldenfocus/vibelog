@@ -240,6 +240,14 @@ export default function VibelogActions({
     // Pass authorVoiceCloneId directly so TTS route can use the cloned voice
     // This ensures we use the author's current voice clone without database lookup
     // Pass title and author so they display correctly in the audio player
+    console.log('🎵 [TTS-BUTTON] Calling playText with:', {
+      vibelogId,
+      authorVoiceCloneId,
+      hasVoiceCloneId: !!authorVoiceCloneId,
+      title,
+      author,
+      textLength: cleanContent.length,
+    });
     await playText(cleanContent, 'shimmer', vibelogId, authorVoiceCloneId, title, author);
   };
 
