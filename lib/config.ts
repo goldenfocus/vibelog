@@ -1,5 +1,8 @@
 import { env, isDev, isProd } from './env';
 
+// Check if we're on the server
+const isServer = typeof window === 'undefined';
+
 // Application configuration
 export const config = {
   // App settings
@@ -13,22 +16,28 @@ export const config = {
   database: {
     url: env.NEXT_PUBLIC_SUPABASE_URL,
     anonKey: env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY,
+    serviceRoleKey: (isServer ? (env as any).SUPABASE_SERVICE_ROLE_KEY : undefined) as
+      | string
+      | undefined,
   },
 
-  // AI Services
+  // AI Services (server-only)
   ai: {
     openai: {
-      apiKey: env.OPENAI_API_KEY,
+      apiKey: (isServer ? (env as any).OPENAI_API_KEY : undefined) as string | undefined,
       model: 'gpt-4o-mini', // Upgraded from gpt-3.5-turbo: 3-4x faster, better quality, cheaper
       whisperModel: 'whisper-1',
     },
     anthropic: {
-      apiKey: env.ANTHROPIC_API_KEY,
+      apiKey: (isServer ? (env as any).ANTHROPIC_API_KEY : undefined) as string | undefined,
     },
     elevenlabs: {
-      apiKey: env.ELEVENLABS_API_KEY,
+      apiKey: (isServer ? (env as any).ELEVENLABS_API_KEY : undefined) as string | undefined,
       apiUrl: 'https://api.elevenlabs.io/v1',
+    },
+    modal: {
+      endpoint: (isServer ? (env as any).MODAL_TTS_ENDPOINT : undefined) as string | undefined,
+      enabled: isServer ? (env as any).MODAL_ENABLED === 'true' : false,
     },
   },
 
