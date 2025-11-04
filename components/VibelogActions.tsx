@@ -239,7 +239,8 @@ export default function VibelogActions({
 
     // Pass vibelogId so TTS route can look up voice_clone_id from database
     // The TTS route will automatically use cloned voice if available
-    await playText(cleanContent, 'shimmer', vibelogId);
+    // Pass title and author so they display correctly in the audio player
+    await playText(cleanContent, 'shimmer', vibelogId, undefined, title, author);
   };
 
   const handleCopyClick = async () => {

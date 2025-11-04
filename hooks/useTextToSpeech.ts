@@ -10,7 +10,9 @@ export interface UseTextToSpeechReturn {
     text: string,
     voice?: string,
     vibelogId?: string,
-    voiceCloneId?: string
+    voiceCloneId?: string,
+    title?: string,
+    author?: string
   ) => Promise<void>;
   stop: () => void;
   progress: number;
@@ -69,7 +71,9 @@ export function useTextToSpeech(
     text: string,
     voice = 'shimmer',
     vibelogId?: string,
-    voiceCloneId?: string
+    voiceCloneId?: string,
+    title?: string,
+    author?: string
   ) => {
     try {
       setIsLoading(true);
@@ -125,8 +129,8 @@ export function useTextToSpeech(
       setTrack({
         id: trackId,
         url: audioUrl,
-        title: 'Text-to-Speech',
-        author: voice,
+        title: title || 'Text-to-Speech',
+        author: author || voice,
         type: 'tts',
       });
 

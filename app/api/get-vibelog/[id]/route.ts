@@ -21,6 +21,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         teaser,
         content,
         cover_image_url,
+        audio_url,
         created_at,
         published_at,
         view_count,
