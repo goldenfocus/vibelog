@@ -25,6 +25,7 @@ interface Vibelog {
   teaser: string;
   content: string;
   audio_url?: string | null;
+  voice_clone_id?: string | null;
   cover_image_url: string | null;
   created_at: string;
   published_at: string;
@@ -244,7 +245,9 @@ export default function VibelogDetailPage() {
                 author={vibelog.author.display_name}
                 authorId={vibelog.user_id}
                 authorUsername={vibelog.author.username}
-                authorVoiceCloneId={vibelog.author.voice_clone_id || undefined}
+                authorVoiceCloneId={
+                  vibelog.voice_clone_id || vibelog.author.voice_clone_id || undefined
+                }
                 vibelogUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/vibelogs/${vibelog.id}`}
                 createdAt={vibelog.created_at}
                 audioUrl={vibelog.audio_url || undefined}
