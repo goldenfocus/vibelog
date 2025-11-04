@@ -10,12 +10,20 @@ export interface UseVoiceCloningReturn {
   ) => Promise<{ voiceId: string; userId?: string } | null>;
 }
 
+export interface UseVoiceCloningOptions {
+  onUpgradePrompt?: (message: string, benefits: string[]) => void;
+}
+
 /**
  * Hook for cloning a user's voice from their recording
  *
  * @example
  * ```tsx
- * const { isCloning, error, cloneVoice } = useVoiceCloning();
+ * const { isCloning, error, cloneVoice } = useVoiceCloning({
+ *   onUpgradePrompt: (message, benefits) => {
+ *     // Show upgrade prompt
+ *   }
+ * });
  *
  * const handleCloneVoice = async () => {
  *   const voiceId = await cloneVoice(audioBlob, vibelogId, 'My Voice');
@@ -25,7 +33,8 @@ export interface UseVoiceCloningReturn {
  * };
  * ```
  */
-export function useVoiceCloning(): UseVoiceCloningReturn {
+export function useVoiceCloning(options?: UseVoiceCloningOptions): UseVoiceCloningReturn {
+  const { onUpgradePrompt } = options || {};
   const [isCloning, setIsCloning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -96,6 +105,30 @@ export function useVoiceCloning(): UseVoiceCloningReturn {
             }
           }
 
+          // Check if this is an upgrade prompt error
+          if (
+            (response.status === 400 || response.status === 429) &&
+            errorData &&
+            typeof errorData === 'object' &&
+            'upgrade' in errorData &&
+            onUpgradePrompt
+          ) {
+            const upgradeData = errorData as {
+              upgrade?: { benefits?: string[] };
+              message?: string;
+            };
+            onUpgradePrompt(
+              errorMessage,
+              upgradeData.upgrade?.benefits || [
+                'Create unlimited custom voices',
+                'Access to premium voice cloning features',
+                'Higher quality voice synthesis',
+                'Priority support',
+              ]
+            );
+            return null;
+          }
+
           console.error('❌ [VOICE-CLONE] API error:', {
             status: response.status,
             errorData,
@@ -126,7 +159,7 @@ export function useVoiceCloning(): UseVoiceCloningReturn {
         setIsCloning(false);
       }
     },
-    []
+    [onUpgradePrompt]
   );
 
   return {

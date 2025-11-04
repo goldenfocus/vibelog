@@ -207,7 +207,11 @@ export function useMicStateMachine(
   const audioPlayback = useAudioPlayback(audioBlob);
   const vibelogAPI = useVibelogAPI(setUpgradePrompt);
   const { saveVibelog } = useBulletproofSave();
-  const { cloneVoice } = useVoiceCloning();
+  const { cloneVoice } = useVoiceCloning({
+    onUpgradePrompt: (message, benefits) => {
+      setUpgradePrompt({ visible: true, message, benefits });
+    },
+  });
 
   // Use current profile username (not cached user_metadata) for attribution
   const attribution = useMemo(
