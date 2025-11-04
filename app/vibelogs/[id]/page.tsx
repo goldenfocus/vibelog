@@ -16,6 +16,7 @@ interface VibelogAuthor {
   username: string;
   display_name: string;
   avatar_url: string | null;
+  voice_clone_id?: string | null;
 }
 
 interface Vibelog {
@@ -243,6 +244,7 @@ export default function VibelogDetailPage() {
                 author={vibelog.author.display_name}
                 authorId={vibelog.user_id}
                 authorUsername={vibelog.author.username}
+                authorVoiceCloneId={vibelog.author.voice_clone_id || undefined}
                 vibelogUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/vibelogs/${vibelog.id}`}
                 createdAt={vibelog.created_at}
                 audioUrl={vibelog.audio_url || undefined}
