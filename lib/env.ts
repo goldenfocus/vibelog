@@ -1,14 +1,22 @@
 import { z } from 'zod';
 
-// Environment validation schema
-const envSchema = z.object({
+// Check if we're running on the server
+const isServer = typeof window === 'undefined';
+
+// Client-side environment validation (only NEXT_PUBLIC_ vars)
+const clientEnvSchema = z.object({
   // Application
   NODE_ENV: z.enum(['development', 'staging', 'production', 'test']).default('development'),
   NEXT_PUBLIC_APP_URL: z.string().url().optional(),
 
-  // Database
+  // Database (public vars only)
   NEXT_PUBLIC_SUPABASE_URL: z.string().url('NEXT_PUBLIC_SUPABASE_URL must be a valid URL'),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1, 'NEXT_PUBLIC_SUPABASE_ANON_KEY is required'),
+});
+
+// Server-side environment validation (includes secrets)
+const serverEnvSchema = clientEnvSchema.extend({
+  // Database (server-only)
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'SUPABASE_SERVICE_ROLE_KEY is required'),
 
   // Authentication
@@ -19,6 +27,10 @@ const envSchema = z.object({
   OPENAI_API_KEY: z.string().min(1, 'OPENAI_API_KEY is required'),
   ANTHROPIC_API_KEY: z.string().optional(),
   ELEVENLABS_API_KEY: z.string().optional(),
+
+  // Modal.com (Self-hosted TTS)
+  MODAL_TTS_ENDPOINT: z.string().url().optional(),
+  MODAL_ENABLED: z.string().optional(),
 
   // External Services
   RESEND_API_KEY: z.string().optional(),
@@ -31,6 +43,9 @@ const envSchema = z.object({
   // Feature flags
   ANALYZE: z.string().optional(),
 });
+
+// Use appropriate schema based on environment
+const envSchema = isServer ? serverEnvSchema : clientEnvSchema;
 
 // Parse and validate environment variables
 function validateEnv() {
