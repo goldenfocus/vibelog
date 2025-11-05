@@ -278,7 +278,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
               return;
             }
 
-            // Generate cache key
             // Call the TTS API endpoint which handles voice cloning properly
             // This will use the user's cloned voice if available, otherwise default voice
             const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';

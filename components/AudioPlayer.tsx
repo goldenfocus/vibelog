@@ -216,7 +216,19 @@ export default function AudioPlayer({ audioBlob, playback }: AudioPlayerProps) {
         onEnded={handleEnded}
         onPlay={handlePlay}
         onPause={handlePause}
-        onError={e => console.error('Audio error:', e)}
+        onError={e => {
+          const audioElement = e.target as HTMLAudioElement;
+          const error = audioElement.error;
+
+          console.error('Audio playback error:', {
+            src: audioElement.src,
+            errorCode: error?.code,
+            errorMessage: error?.message,
+            networkState: audioElement.networkState,
+            readyState: audioElement.readyState,
+            event: e,
+          });
+        }}
         className="hidden"
       />
     </div>

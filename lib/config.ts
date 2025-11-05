@@ -85,6 +85,13 @@ export const config = {
     },
   },
 
+  // Voice cloning constraints
+  voiceCloning: {
+    // Lower than 512KB so ~30s low-bitrate recordings still qualify
+    minBytes: 300 * 1024, // 300KB
+    minDuration: 3, // 3 seconds (lowered for anonymous users)
+  },
+
   // UI constraints
   ui: {
     recording: {
