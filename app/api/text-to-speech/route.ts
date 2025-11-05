@@ -54,6 +54,16 @@ export async function POST(request: NextRequest) {
 
     const { text, voice = 'shimmer', vibelogId, voiceCloneId } = await request.json();
 
+    console.log('🎵 [TTS-API] Received request:', {
+      voice,
+      vibelogId,
+      voiceCloneId,
+      hasVoiceCloneId: !!voiceCloneId,
+      textLength: text?.length,
+      userId,
+      isAuthenticated: !!userId,
+    });
+
     if (!text) {
       return NextResponse.json({ error: 'Text content is required' }, { status: 400 });
     }
@@ -108,6 +118,13 @@ export async function POST(request: NextRequest) {
     // NOTE: We intentionally do NOT fallback to the current viewer's voice clone.
     // The voice should always match the content author, not the person viewing it.
     // If no author voice is found, we'll use the default TTS voice.
+    console.log('🎵 [TTS-API] Voice clone resolution complete:', {
+      voiceCloneIdToUse,
+      hasVoiceClone: !!voiceCloneIdToUse,
+      vibelogId,
+      providedVoiceCloneId: voiceCloneId,
+    });
+
     if (!voiceCloneIdToUse) {
       console.log('[TTS] Using default voice (no cloned voice available for author)');
     }
@@ -328,8 +345,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Fallback to ElevenLabs if Modal fails or is not enabled
-    if (!audioBuffer && voiceCloneIdToUse && config.ai.elevenlabs.apiKey) {
+    // Helper: detect if a voice ID looks like an ElevenLabs voice ID
+    const looksLikeElevenLabsId = (id: string) =>
+      /^[A-Za-z0-9]{20,}$/.test(id) && !id.includes('-');
+
+    // Fallback to ElevenLabs only if the clone ID actually looks like an ElevenLabs voice id
+    if (
+      !audioBuffer &&
+      voiceCloneIdToUse &&
+      config.ai.elevenlabs.apiKey &&
+      looksLikeElevenLabsId(voiceCloneIdToUse)
+    ) {
       // Use ElevenLabs with cloned voice
       if (process.env.NODE_ENV !== 'production') {
         console.log('🎤 Using cloned voice:', voiceCloneIdToUse);
@@ -401,6 +427,10 @@ export async function POST(request: NextRequest) {
           // Otherwise, continue to next retry
         }
       }
+    } else if (!audioBuffer && voiceCloneIdToUse && config.ai.elevenlabs.apiKey) {
+      console.log(
+        'ℹ️  [TTS] Skipping ElevenLabs fallback: voiceCloneId does not look like an ElevenLabs ID (likely a Modal/Supabase UUID)'
+      );
     }
 
     // Fallback to OpenAI TTS if no cloned voice or if ElevenLabs failed
