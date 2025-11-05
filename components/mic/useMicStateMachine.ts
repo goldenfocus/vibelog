@@ -738,6 +738,7 @@ export function useMicStateMachine(
           });
           sonnerToast(
             `Voice cloning skipped: ${reasons.join(', ')}. Try a slightly longer recording.`,
+            `Recording too short for voice cloning (${sizeKB}KB). Need ~${requiredKB}KB (30+ seconds).`,
             { duration: 5000 }
           );
         }
