@@ -116,7 +116,17 @@ export default function GlobalAudioPlayer() {
     });
 
     audio.addEventListener('error', e => {
-      console.error('Audio error:', e);
+      const audioElement = e.target as HTMLAudioElement;
+      const error = audioElement.error;
+
+      console.error('Audio playback error:', {
+        src: audioElement.src,
+        errorCode: error?.code,
+        errorMessage: error?.message,
+        networkState: audioElement.networkState,
+        readyState: audioElement.readyState,
+        event: e,
+      });
       setIsPlaying(false);
     });
 

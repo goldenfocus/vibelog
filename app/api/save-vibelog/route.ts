@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import OpenAI from 'openai';
 
 import { generatePublicSlug, generateUserSlug, generateVibelogSEO } from '@/lib/seo';
-import { storeTTSAudio } from '@/lib/storage';
 import { createServerSupabaseClient } from '@/lib/supabase';
-import { createServerAdminClient } from '@/lib/supabaseAdmin';
-import { hashTTSContent } from '@/lib/utils';
 
 export const runtime = 'nodejs';
 
@@ -256,6 +252,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
       // === STEP 4: GENERATE TTS AUDIO IN BACKGROUND (if no audio provided) ===
       // Generate TTS audio automatically for instant playback
+      // Use the /api/text-to-speech endpoint which handles voice cloning properly
       if (!vibelogData.audio_url && fullContent) {
         // Fire and forget - don't block the response
         (async () => {
@@ -281,77 +278,29 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
               return;
             }
 
-            // Generate cache key
-            const contentHash = hashTTSContent(ttsText, 'shimmer');
-            const adminSupabase = await createServerAdminClient();
+            // Call the TTS API endpoint which handles voice cloning properly
+            // This will use the user's cloned voice if available, otherwise default voice
+            const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+            const ttsResponse = await fetch(`${baseUrl}/api/text-to-speech`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                text: ttsText,
+                voice: 'shimmer', // Default fallback if no cloned voice
+                vibelogId: vibelogId,
+                voiceCloneId: voiceCloneIdToSave, // Pass the cloned voice ID
+              }),
+            });
 
-            // Check cache first
-            const { data: cachedEntry } = await adminSupabase
-              .from('tts_cache')
-              .select('audio_url')
-              .eq('content_hash', contentHash)
-              .single();
-
-            let audioUrl: string | null = null;
-
-            if (cachedEntry?.audio_url) {
-              // Use cached audio
-              audioUrl = cachedEntry.audio_url;
-              console.log('✅ [VIBELOG-SAVE] Using cached TTS audio');
-            } else if (
-              process.env.OPENAI_API_KEY &&
-              process.env.OPENAI_API_KEY !== 'dummy_key' &&
-              process.env.OPENAI_API_KEY !== 'your_openai_api_key_here'
-            ) {
-              // Generate new TTS
-              const openai = new OpenAI({
-                apiKey: process.env.OPENAI_API_KEY,
-                timeout: 60_000,
-              });
-
-              const mp3 = await openai.audio.speech.create({
-                model: 'tts-1',
-                voice: 'shimmer',
-                input: ttsText,
-                response_format: 'mp3',
-              });
-
-              const audioBuffer = Buffer.from(await mp3.arrayBuffer());
-
-              // Store in cache and get URL
-              audioUrl = await storeTTSAudio(contentHash, audioBuffer);
-
-              // Save to cache table
-              await adminSupabase.from('tts_cache').upsert(
-                {
-                  content_hash: contentHash,
-                  text_content: ttsText,
-                  voice: 'shimmer',
-                  audio_url: audioUrl,
-                  audio_size_bytes: audioBuffer.length,
-                  last_accessed_at: new Date().toISOString(),
-                  access_count: 1,
-                },
-                {
-                  onConflict: 'content_hash',
-                }
-              );
-
-              console.log('✅ [VIBELOG-SAVE] TTS audio generated and cached');
+            if (!ttsResponse.ok) {
+              console.error('⚠️ [VIBELOG-SAVE] TTS generation failed:', await ttsResponse.text());
+              return;
             }
 
-            // Update vibelog with audio URL
-            if (audioUrl) {
-              await adminSupabase
-                .from('vibelogs')
-                .update({
-                  audio_url: audioUrl,
-                  updated_at: new Date().toISOString(),
-                })
-                .eq('id', vibelogId);
-
-              console.log('✅ [VIBELOG-SAVE] Audio URL saved to vibelog');
-            }
+            console.log('✅ [VIBELOG-SAVE] TTS audio generated successfully');
+            // The TTS endpoint automatically saves the audio_url to the vibelog
           } catch (error) {
             // Don't fail the save if TTS generation fails
             console.error('⚠️ [VIBELOG-SAVE] TTS generation failed (non-critical):', error);

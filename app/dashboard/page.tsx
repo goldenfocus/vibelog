@@ -11,7 +11,6 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { useI18n } from '@/components/providers/I18nProvider';
 import { Button } from '@/components/ui/button';
 import VibelogCard from '@/components/VibelogCard';
-import { useVibelogTransfer } from '@/hooks/useVibelogTransfer';
 import { createClient } from '@/lib/supabase';
 
 export default function DashboardPage() {
@@ -21,9 +20,6 @@ export default function DashboardPage() {
   const [vibelogs, setVibelogs] = useState<Array<any>>([]);
   const [loadingVibelogs, setLoadingVibelogs] = useState(true);
   const [profile, setProfile] = useState<any>(null);
-
-  // Transfer anonymous vibelogs to user account (background, non-blocking)
-  const { transferred, count } = useVibelogTransfer(user?.id);
 
   // Fetch user's profile
   useEffect(() => {
@@ -120,14 +116,7 @@ export default function DashboardPage() {
     }
 
     fetchVibelogs();
-  }, [user?.id, user?.email, user?.user_metadata, transferred]); // Refetch when vibelogs are transferred
-
-  // Log transfer completion
-  useEffect(() => {
-    if (transferred && count > 0) {
-      console.log(`✅ ${count} vibelogs transferred to your account`);
-    }
-  }, [transferred, count]);
+  }, [user?.id, user?.email, user?.user_metadata]);
 
   // Redirect to sign in if not authenticated (but NOT during sign out!)
   useEffect(() => {
