@@ -121,14 +121,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // const usesElevenLabs = Boolean(config.ai.elevenlabs.apiKey);
+    const usesElevenLabs = Boolean(config.ai.elevenlabs.apiKey);
     console.log('🎤 [VOICE-CLONE] Starting voice cloning:', {
       audioSize: audioBlob.size,
       audioType: audioFile.type,
       fileName: audioFile.name,
       voiceName,
       userId,
-      // elevenLabsConfigured: usesElevenLabs,
+      elevenLabsConfigured: usesElevenLabs,
       modalEnabled: config.ai.modal.enabled,
     });
 
@@ -143,10 +143,8 @@ export async function POST(request: NextRequest) {
     const contentType = audioFile.type || 'audio/wav';
 
     let voiceId: string | null = null;
-    const voiceProvider: 'modal' | 'elevenlabs' = 'modal';
+    let voiceProvider: 'modal' | 'elevenlabs' = 'modal';
 
-    // DISABLED: ElevenLabs voice cloning - using Modal/Coqui XTTS only
-    /*
     if (usesElevenLabs) {
       try {
         console.log('🧪 [ElevenLabs] Sending voice cloning request...');
@@ -218,7 +216,6 @@ export async function POST(request: NextRequest) {
         // Continue to Modal/Coqui XTTS fallback
       }
     }
-    */
 
     if (!voiceId) {
       voiceId = randomUUID();
