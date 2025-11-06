@@ -345,6 +345,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // DISABLED: ElevenLabs TTS fallback - using Modal/Coqui XTTS only
+    /*
     // Helper: detect if a voice ID looks like an ElevenLabs voice ID
     const looksLikeElevenLabsId = (id: string) =>
       /^[A-Za-z0-9]{20,}$/.test(id) && !id.includes('-');
@@ -432,6 +434,7 @@ export async function POST(request: NextRequest) {
         'ℹ️  [TTS] Skipping ElevenLabs fallback: voiceCloneId does not look like an ElevenLabs ID (likely a Modal/Supabase UUID)'
       );
     }
+    */
 
     // Fallback to OpenAI TTS if no cloned voice or if ElevenLabs failed
     if (!audioBuffer) {
