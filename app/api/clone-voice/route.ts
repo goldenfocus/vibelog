@@ -212,15 +212,8 @@ export async function POST(request: NextRequest) {
         console.log('✅ [ElevenLabs] Voice cloned successfully:', voiceId);
       } catch (elevenError) {
         console.error('❌ [ElevenLabs] Voice cloning error:', elevenError);
-        const message =
-          elevenError instanceof Error ? elevenError.message : 'Unknown ElevenLabs error';
-        return NextResponse.json(
-          {
-            error: 'Voice cloning failed',
-            message,
-          },
-          { status: 502 }
-        );
+        console.warn('⚠️ [ElevenLabs] Falling back to Modal/Coqui XTTS');
+        // Continue to Modal/Coqui XTTS fallback
       }
     }
 

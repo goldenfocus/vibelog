@@ -170,11 +170,16 @@ export default function GlobalAudioPlayer() {
     }
 
     // Compare URLs properly (blob URLs need special handling)
-    const currentSrc = audioElement.src;
+    // Use getAttribute to check if src is actually set (not the default page URL)
+    const currentSrcAttr = audioElement.getAttribute('src');
+    const currentSrc = currentSrcAttr || '';
     const newSrc = currentTrack.url;
 
     // Extract just the URL part (remove origin for blob URLs)
     const normalizeUrl = (url: string) => {
+      if (!url) {
+        return '';
+      }
       try {
         if (url.startsWith('blob:')) {
           return url;
