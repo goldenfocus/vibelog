@@ -106,8 +106,8 @@ export default function ExportButton({
 
   const isCompact = variant === 'compact';
   const buttonClass = isCompact
-    ? 'flex items-center gap-2 rounded-lg border border-border/50 px-3 py-2 text-sm transition-all hover:border-electric/30 hover:bg-electric/5'
-    : 'group flex min-w-[70px] flex-col items-center gap-2 rounded-2xl border border-border/20 bg-muted/20 p-3 transition-all duration-200 hover:scale-105 hover:bg-muted/30 sm:min-w-[80px] sm:p-4';
+    ? 'flex items-center gap-2 rounded-lg border border-border/50 px-3 py-2 text-sm transition-all hover:border-electric/30 hover:bg-electric/5 active:scale-95 active:bg-electric/10 touch-manipulation'
+    : 'group flex min-w-[80px] flex-col items-center gap-2 rounded-2xl border border-border/20 bg-muted/20 p-4 transition-all duration-200 hover:scale-105 hover:bg-muted/30 active:scale-95 active:bg-muted/40 sm:min-w-[90px] sm:p-4 touch-manipulation';
 
   const iconClass = isCompact
     ? 'h-4 w-4'
@@ -143,7 +143,7 @@ export default function ExportButton({
               <button
                 key={format}
                 onClick={() => handleExport(format)}
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted/50 active:bg-muted/70"
+                className="flex w-full touch-manipulation items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted/50 active:bg-muted/70"
                 data-testid={`export-${format}`}
               >
                 <Icon className="h-4 w-4 text-muted-foreground" />
@@ -160,7 +160,7 @@ export default function ExportButton({
                 <div className="my-2 border-t border-border/30" />
                 <button
                   onClick={handleAudioDownload}
-                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted/50 active:bg-muted/70"
+                  className="flex w-full touch-manipulation items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted/50 active:bg-muted/70"
                   data-testid="export-audio"
                 >
                   <Music className="h-4 w-4 text-muted-foreground" />
