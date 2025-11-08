@@ -245,6 +245,7 @@ export async function POST(request: NextRequest) {
 
     let audioBuffer: Buffer | undefined;
     let ttsService: 'modal' | 'elevenlabs' | 'openai' | 'mock' = 'openai'; // Track which service was used
+    let modalError: string | undefined; // Store Modal error details for better error messages
 
     // CRITICAL: If voice cloning is requested but Modal is not configured, return error immediately
     // This prevents falling back to default "shimmer" voice when voice cloning is expected
@@ -301,13 +302,21 @@ export async function POST(request: NextRequest) {
         }
 
         // Fetch the voice audio file from storage
+        console.log('🎵 [MODAL] Fetching voice sample from storage:', voiceAudioPath);
         const { data: voiceAudioData, error: storageError } = await supabaseAdmin.storage
           .from('tts-audio')
           .download(voiceAudioPath);
 
         if (storageError) {
           console.error('❌ [MODAL] Failed to download voice sample:', storageError.message);
+          console.error('❌ [MODAL] Storage error:', storageError);
           console.error('❌ [MODAL] Tried path:', voiceAudioPath);
+          console.error('❌ [MODAL] Voice clone ID:', voiceCloneIdToUse);
+          console.error('❌ [MODAL] Profile lookup result:', {
+            profile: profile?.id,
+            profileError,
+          });
+
           throw new Error(`Voice sample download failed: ${storageError.message}`);
         }
 
@@ -319,6 +328,14 @@ export async function POST(request: NextRequest) {
 
           // Call Modal endpoint
           console.log('🎵 [MODAL] Sending request to Modal endpoint...');
+          console.log('🎵 [MODAL] Request details:', {
+            endpoint: config.ai.modal.endpoint,
+            textLength: text.length,
+            voiceAudioSize: voiceBase64.length,
+            timeout: 120000,
+          });
+
+          const requestStartTime = Date.now();
           const modalResponse = await fetch(config.ai.modal.endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -329,6 +346,11 @@ export async function POST(request: NextRequest) {
             }),
             signal: AbortSignal.timeout(120000), // 120 second timeout (allows for cold starts + model download)
           });
+
+          const requestDuration = Date.now() - requestStartTime;
+          console.log(
+            `🎵 [MODAL] Request completed in ${requestDuration}ms, status: ${modalResponse.status}`
+          );
 
           if (modalResponse.ok) {
             const { audioBase64 } = await modalResponse.json();
@@ -353,12 +375,17 @@ export async function POST(request: NextRequest) {
           throw new Error('Voice sample file is empty');
         }
       } catch (error) {
-        console.error(
-          '❌ [MODAL] Exception occurred:',
-          error instanceof Error ? error.message : error
-        );
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorStack = error instanceof Error ? error.stack : undefined;
+
+        console.error('❌ [MODAL] Exception occurred:', errorMessage);
         console.error('❌ [MODAL] Full error:', error);
-        // Error will be caught by the check below - won't fall back to default voice
+        if (errorStack) {
+          console.error('❌ [MODAL] Stack trace:', errorStack);
+        }
+
+        // Store error details for the response below
+        modalError = errorMessage;
         // audioBuffer remains undefined, which will trigger the error response
       }
     }
@@ -461,14 +488,37 @@ export async function POST(request: NextRequest) {
       if (voiceCloneIdToUse) {
         console.error('❌ [TTS] Voice cloning requested but Modal failed or is not configured');
         console.error('❌ [TTS] Cannot fall back to default voice - returning error instead');
+
+        // Include the actual Modal error if available
+        let errorDetails = '';
+        if (config.ai.modal.enabled && config.ai.modal.endpoint) {
+          if (modalError) {
+            errorDetails =
+              `Modal request failed: ${modalError}\n\n` +
+              'Common causes:\n' +
+              '- Modal endpoint is unreachable or timing out\n' +
+              '- Voice sample file not found in storage\n' +
+              '- Modal service error (check Modal logs with: modal app logs vibelog-tts)\n' +
+              '- Network connectivity issues\n' +
+              '- Request timeout (120 seconds)';
+          } else {
+            errorDetails =
+              'Modal is enabled but the request failed. Check your server logs for detailed error messages.';
+          }
+        } else if (!config.ai.modal.enabled) {
+          errorDetails =
+            'Modal is not enabled. Set MODAL_ENABLED=true and MODAL_TTS_ENDPOINT to use voice cloning.';
+        } else if (!config.ai.modal.endpoint) {
+          errorDetails =
+            'Modal is enabled but MODAL_TTS_ENDPOINT is not set. Set the endpoint URL in your environment variables.';
+        }
+
         return NextResponse.json(
           {
             error: 'Voice cloning service unavailable',
             message:
               'Voice cloning was requested but the service is not available. Please check Modal configuration.',
-            details: config.ai.modal.enabled
-              ? 'Modal is enabled but the request failed. Check Modal logs for details.'
-              : 'Modal is not enabled. Set MODAL_ENABLED=true and MODAL_TTS_ENDPOINT to use voice cloning.',
+            details: errorDetails,
           },
           { status: 503 }
         );
