@@ -248,7 +248,9 @@ export default function VibelogActions({
       author,
       textLength: cleanContent.length,
     });
-    await playText(cleanContent, 'shimmer', vibelogId, authorVoiceCloneId, title, author);
+    // Pass authorId so TTS route can check author's profile for voice_clone_id
+    // even if authorVoiceCloneId is undefined (e.g., when voice cloning failed)
+    await playText(cleanContent, 'shimmer', vibelogId, authorVoiceCloneId, title, author, authorId);
   };
 
   const handleCopyClick = async () => {
