@@ -408,8 +408,8 @@ export default function VibelogActions({
 
   const isCompact = variant === 'compact';
   const baseButtonClass = isCompact
-    ? 'flex items-center gap-2 rounded-lg border border-border/50 px-3 py-2 text-sm transition-all hover:border-electric/30 hover:bg-electric/5'
-    : 'group flex min-w-[70px] flex-col items-center gap-2 rounded-2xl border border-border/20 bg-muted/20 p-3 transition-all duration-200 hover:scale-105 hover:bg-muted/30 sm:min-w-[80px] sm:p-4';
+    ? 'flex items-center gap-2 rounded-lg border border-border/50 px-3 py-2 text-sm transition-all hover:border-electric/30 hover:bg-electric/5 active:scale-95 active:bg-electric/10 touch-manipulation'
+    : 'group flex min-w-[80px] flex-col items-center gap-2 rounded-2xl border border-border/20 bg-muted/20 p-4 transition-all duration-200 hover:scale-105 hover:bg-muted/30 active:scale-95 active:bg-muted/40 sm:min-w-[90px] sm:p-4 touch-manipulation';
 
   const iconClass = isCompact
     ? 'h-4 w-4'
@@ -421,7 +421,7 @@ export default function VibelogActions({
 
   const wrapperClass = isCompact
     ? 'flex flex-wrap items-center gap-3 border-t border-border/30 pt-4'
-    : 'flex justify-center gap-2 sm:gap-3';
+    : 'flex justify-center gap-3 sm:gap-4';
 
   return (
     <>
@@ -476,7 +476,7 @@ export default function VibelogActions({
                     <div className="p-1">
                       <button
                         onClick={handleEditClick}
-                        className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/50"
+                        className="flex w-full touch-manipulation items-center gap-2 rounded-md px-3 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted/50 active:bg-muted/70"
                         data-testid="menu-edit-button"
                       >
                         <Edit className="h-4 w-4" />
@@ -484,7 +484,7 @@ export default function VibelogActions({
                       </button>
                       <button
                         onClick={handleDeleteClick}
-                        className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
+                        className="flex w-full touch-manipulation items-center gap-2 rounded-md px-3 py-3 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10 active:bg-destructive/20"
                         data-testid="menu-delete-button"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -503,7 +503,7 @@ export default function VibelogActions({
                 className={
                   isOwnVibelog
                     ? baseButtonClass
-                    : `${baseButtonClass} ml-auto flex items-center gap-2 rounded-lg bg-electric/10 px-4 py-2 font-medium text-electric transition-all duration-200 hover:bg-electric hover:text-white`
+                    : `${baseButtonClass} ml-auto flex touch-manipulation items-center gap-2 rounded-lg bg-electric/10 px-4 py-2 font-medium text-electric transition-all duration-200 hover:bg-electric hover:text-white active:scale-95 active:bg-electric/80`
                 }
                 title={isOwnVibelog ? 'Edit' : 'Remix'}
                 data-testid={isOwnVibelog ? 'edit-button' : 'remix-button'}
@@ -573,7 +573,7 @@ export default function VibelogActions({
               <button
                 onClick={handleLikeClick}
                 disabled={isLiking}
-                className={`${baseButtonClass} ${isLiked ? 'text-red-500 hover:text-red-600' : ''}`}
+                className={`${baseButtonClass} ${isLiked ? 'text-red-500 hover:text-red-600 active:text-red-700' : ''}`}
                 title={user ? (isLiked ? 'Unlike' : 'Like') : 'Sign in to like'}
                 data-testid="like-button"
               >
@@ -644,14 +644,14 @@ export default function VibelogActions({
             <div className="flex justify-end gap-3">
               <button
                 onClick={handleCancelDelete}
-                className="rounded-lg border border-border/50 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/50"
+                className="touch-manipulation rounded-lg border border-border/50 px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted/50 active:bg-muted/70"
                 data-testid="delete-cancel-button"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmDelete}
-                className="rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground transition-colors hover:bg-destructive/90"
+                className="touch-manipulation rounded-lg bg-destructive px-4 py-3 text-sm font-medium text-destructive-foreground transition-colors hover:bg-destructive/90 active:bg-destructive/80"
                 data-testid="delete-confirm-button"
               >
                 Delete

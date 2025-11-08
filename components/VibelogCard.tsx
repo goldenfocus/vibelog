@@ -154,7 +154,9 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
   return (
     <article
       className={`group relative rounded-2xl border border-border/50 bg-gradient-to-br from-background via-background to-background/50 p-6 transition-all duration-300 hover:border-electric/30 hover:shadow-lg hover:shadow-electric/5 ${
-        isLoggedIn ? 'cursor-pointer' : ''
+        isLoggedIn
+          ? 'cursor-pointer touch-manipulation active:scale-[0.98] active:border-electric/40'
+          : ''
       }`}
       onClick={isLoggedIn ? handleReadMore : undefined}
     >
