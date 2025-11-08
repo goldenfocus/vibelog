@@ -162,7 +162,7 @@ export default function GlobalAudioPlayer() {
       // Clear source if no track
       if (audioElement && !currentTrack) {
         audioElement.pause();
-        audioElement.src = '';
+        audioElement.removeAttribute('src'); // Remove src attribute instead of setting to empty string
         setCurrentTime(0);
         setDuration(0);
       }

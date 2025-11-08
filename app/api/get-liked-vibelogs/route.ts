@@ -11,12 +11,15 @@ export async function GET(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const searchParams = request.nextUrl.searchParams;
+    const userId = searchParams.get('user_id');
+
+    // user_id is required - can be from query param or authenticated user
+    if (!userId && !user?.id) {
+      return NextResponse.json({ error: 'user_id query parameter is required' }, { status: 400 });
     }
 
-    const searchParams = request.nextUrl.searchParams;
-    const userId = searchParams.get('user_id') || user.id; // Allow viewing other users' likes if they're public
+    const targetUserId = userId || user?.id; // Use query param if provided, otherwise authenticated user
 
     // Fetch liked vibelogs
     const { data: likes, error: likesError } = await supabase
@@ -42,7 +45,7 @@ export async function GET(request: NextRequest) {
         )
       `
       )
-      .eq('user_id', userId)
+      .eq('user_id', targetUserId)
       .order('created_at', { ascending: false });
 
     if (likesError) {
@@ -58,10 +61,11 @@ export async function GET(request: NextRequest) {
       slug?: string;
       [key: string]: unknown;
     }
-    
+
     // Flatten vibelogs from likes and filter out nulls
     // Use double cast through unknown to fix TypeScript nested array type error
-    const vibelogs = (likes?.map(l => l.vibelogs).filter(Boolean) || []) as unknown as VibelogWithUserId[];
+    const vibelogs = (likes?.map(l => l.vibelogs).filter(Boolean) ||
+      []) as unknown as VibelogWithUserId[];
     if (vibelogs.length > 0 && vibelogs[0]?.user_id) {
       // Fetch author profiles
       const userIds = [...new Set(vibelogs.map(v => v.user_id).filter(Boolean))] as string[];
