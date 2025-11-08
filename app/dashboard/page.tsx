@@ -64,6 +64,7 @@ export default function DashboardPage() {
           content,
           cover_image_url,
           audio_url,
+          voice_clone_id,
           created_at,
           published_at,
           view_count,
@@ -92,7 +93,7 @@ export default function DashboardPage() {
       // Fetch user's profile
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('username, display_name, avatar_url')
+        .select('username, display_name, avatar_url, voice_clone_id')
         .eq('id', user.id)
         .single();
 
@@ -108,6 +109,7 @@ export default function DashboardPage() {
             user.email?.split('@')[0] ||
             'User',
           avatar_url: profileData?.avatar_url || null, // Database is source of truth
+          voice_clone_id: profileData?.voice_clone_id || null, // Include user's voice clone ID
         },
       }));
 

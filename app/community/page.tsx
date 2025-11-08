@@ -11,6 +11,7 @@ interface VibelogAuthor {
   username: string;
   display_name: string;
   avatar_url: string | null;
+  voice_clone_id?: string | null;
 }
 
 interface Vibelog {
@@ -22,6 +23,7 @@ interface Vibelog {
   content: string;
   cover_image_url: string | null;
   audio_url?: string | null;
+  voice_clone_id?: string | null;
   created_at: string;
   published_at: string;
   view_count: number;
