@@ -246,14 +246,32 @@ export async function POST(request: NextRequest) {
     let audioBuffer: Buffer | undefined;
     let ttsService: 'modal' | 'elevenlabs' | 'openai' | 'mock' = 'openai'; // Track which service was used
 
-    // Warn if voice cloning is requested but Modal is not configured
+    // CRITICAL: If voice cloning is requested but Modal is not configured, return error immediately
+    // This prevents falling back to default "shimmer" voice when voice cloning is expected
     if (voiceCloneIdToUse && !config.ai.modal.enabled) {
-      console.warn('⚠️ [CONFIG] Voice cloning requested but Modal is disabled in config');
-      console.warn('⚠️ [CONFIG] Set MODAL_ENABLED=true to use voice cloning with Modal');
+      console.error('❌ [CONFIG] Voice cloning requested but Modal is disabled in config');
+      console.error('❌ [CONFIG] Set MODAL_ENABLED=true to use voice cloning with Modal');
+      return NextResponse.json(
+        {
+          error: 'Voice cloning service not configured',
+          message:
+            'Voice cloning was requested but Modal is not enabled. Please configure Modal to use voice cloning.',
+          details: 'Set MODAL_ENABLED=true and MODAL_TTS_ENDPOINT in your environment variables.',
+        },
+        { status: 503 }
+      );
     }
     if (voiceCloneIdToUse && config.ai.modal.enabled && !config.ai.modal.endpoint) {
       console.error('❌ [CONFIG] Modal is enabled but MODAL_TTS_ENDPOINT is not set!');
-      console.error('❌ [CONFIG] Voice cloning will fall back to ElevenLabs or fail');
+      return NextResponse.json(
+        {
+          error: 'Voice cloning service misconfigured',
+          message:
+            'Modal is enabled but the endpoint is not configured. Please set MODAL_TTS_ENDPOINT.',
+          details: 'Set MODAL_TTS_ENDPOINT to your Modal TTS endpoint URL.',
+        },
+        { status: 503 }
+      );
     }
 
     // Try Modal.com first (self-hosted, much cheaper)
@@ -325,7 +343,10 @@ export async function POST(request: NextRequest) {
             const errorText = await modalResponse.text();
             console.error('❌ [MODAL] Request failed with status:', modalResponse.status);
             console.error('❌ [MODAL] Error response:', errorText);
-            console.warn('⚠️ [MODAL] Falling back to OpenAI...');
+            // Don't fall back to OpenAI - throw error so it's caught and handled properly
+            throw new Error(
+              `Modal TTS request failed: ${modalResponse.status} - ${errorText.substring(0, 200)}`
+            );
           }
         } else {
           console.error('❌ [MODAL] Voice audio data is empty');
@@ -337,8 +358,8 @@ export async function POST(request: NextRequest) {
           error instanceof Error ? error.message : error
         );
         console.error('❌ [MODAL] Full error:', error);
-        console.warn('⚠️ [MODAL] Falling back to ElevenLabs due to error');
-        // Continue to ElevenLabs fallback
+        // Error will be caught by the check below - won't fall back to default voice
+        // audioBuffer remains undefined, which will trigger the error response
       }
     }
 
@@ -435,6 +456,25 @@ export async function POST(request: NextRequest) {
 
     // Fallback to OpenAI TTS if no cloned voice or if ElevenLabs failed
     if (!audioBuffer) {
+      // CRITICAL FIX: If voice cloning was requested but failed, don't fall back to default voice
+      // This prevents users from hearing "shimmer" when they expect their cloned voice
+      if (voiceCloneIdToUse) {
+        console.error('❌ [TTS] Voice cloning requested but Modal failed or is not configured');
+        console.error('❌ [TTS] Cannot fall back to default voice - returning error instead');
+        return NextResponse.json(
+          {
+            error: 'Voice cloning service unavailable',
+            message:
+              'Voice cloning was requested but the service is not available. Please check Modal configuration.',
+            details: config.ai.modal.enabled
+              ? 'Modal is enabled but the request failed. Check Modal logs for details.'
+              : 'Modal is not enabled. Set MODAL_ENABLED=true and MODAL_TTS_ENDPOINT to use voice cloning.',
+          },
+          { status: 503 }
+        );
+      }
+
+      // Only fall back to OpenAI TTS if no voice cloning was requested
       // Check if we have a real API key, otherwise return mock response
       if (
         !process.env.OPENAI_API_KEY ||
@@ -511,7 +551,7 @@ export async function POST(request: NextRequest) {
         timeout: 60_000,
       });
 
-      // Generate speech using OpenAI TTS
+      // Generate speech using OpenAI TTS (only when no voice cloning was requested)
       const mp3 = await openai.audio.speech.create({
         model: 'tts-1',
         voice: voice as 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer',

@@ -120,10 +120,21 @@ export function useTextToSpeech(
           }
         }
 
-        const errorData = await response
-          .json()
-          .catch(() => ({ error: 'Failed to generate speech' }));
-        throw new Error(errorData.error || `HTTP ${response.status}`);
+        // Try to parse error response as JSON
+        let errorData: { error?: string; message?: string; details?: string } = {};
+        try {
+          errorData = await response.json();
+        } catch {
+          // If response isn't JSON, use status text
+          errorData = { error: response.statusText || 'Failed to generate speech' };
+        }
+
+        // For voice cloning service errors (503), show user-friendly message
+        if (response.status === 503 && errorData.message) {
+          throw new Error(errorData.message + (errorData.details ? ` ${errorData.details}` : ''));
+        }
+
+        throw new Error(errorData.error || errorData.message || `HTTP ${response.status}`);
       }
 
       // Create audio blob and URL
