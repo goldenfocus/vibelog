@@ -270,69 +270,66 @@ export async function POST(request: NextRequest) {
           .eq('voice_clone_id', voiceCloneIdToUse)
           .single();
 
-        if (profileError) {
-          console.error(
-            '❌ [MODAL] Failed to fetch profile for voice clone:',
-            profileError.message
-          );
-          throw new Error(`Profile lookup failed: ${profileError.message}`);
+        // Determine voice audio path based on whether this is a profile or anonymous voice
+        let voiceAudioPath: string;
+        if (profile && !profileError) {
+          // Registered user - use profile-based path
+          voiceAudioPath = `voices/${profile.id}/voice_sample.wav`;
+          console.log('🎵 [MODAL] Using profile voice sample from:', voiceAudioPath);
+        } else {
+          // Anonymous user or profile not found - use anonymous path
+          voiceAudioPath = `voices/anonymous/${voiceCloneIdToUse}/voice_sample.wav`;
+          console.log('🎵 [MODAL] Using anonymous voice sample from:', voiceAudioPath);
         }
 
-        if (profile) {
-          // Get the voice audio file from storage
-          const voiceAudioPath = `voices/${profile.id}/voice_sample.wav`;
-          console.log('🎵 [MODAL] Fetching voice sample from:', voiceAudioPath);
+        // Fetch the voice audio file from storage
+        const { data: voiceAudioData, error: storageError } = await supabaseAdmin.storage
+          .from('tts-audio')
+          .download(voiceAudioPath);
 
-          const { data: voiceAudioData, error: storageError } = await supabaseAdmin.storage
-            .from('tts-audio')
-            .download(voiceAudioPath);
+        if (storageError) {
+          console.error('❌ [MODAL] Failed to download voice sample:', storageError.message);
+          console.error('❌ [MODAL] Tried path:', voiceAudioPath);
+          throw new Error(`Voice sample download failed: ${storageError.message}`);
+        }
 
-          if (storageError) {
-            console.error('❌ [MODAL] Failed to download voice sample:', storageError.message);
-            throw new Error(`Voice sample download failed: ${storageError.message}`);
-          }
+        if (voiceAudioData) {
+          // Convert to base64
+          const voiceBuffer = Buffer.from(await voiceAudioData.arrayBuffer());
+          const voiceBase64 = voiceBuffer.toString('base64');
+          console.log('🎵 [MODAL] Voice sample size:', voiceBuffer.length, 'bytes');
 
-          if (voiceAudioData) {
-            // Convert to base64
-            const voiceBuffer = Buffer.from(await voiceAudioData.arrayBuffer());
-            const voiceBase64 = voiceBuffer.toString('base64');
-            console.log('🎵 [MODAL] Voice sample size:', voiceBuffer.length, 'bytes');
+          // Call Modal endpoint
+          console.log('🎵 [MODAL] Sending request to Modal endpoint...');
+          const modalResponse = await fetch(config.ai.modal.endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              text,
+              voiceAudio: voiceBase64,
+              language: 'en', // TODO: detect language from request
+            }),
+            signal: AbortSignal.timeout(30000), // 30 second timeout
+          });
 
-            // Call Modal endpoint
-            console.log('🎵 [MODAL] Sending request to Modal endpoint...');
-            const modalResponse = await fetch(config.ai.modal.endpoint, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                text,
-                voiceAudio: voiceBase64,
-                language: 'en', // TODO: detect language from request
-              }),
-              signal: AbortSignal.timeout(30000), // 30 second timeout
-            });
-
-            if (modalResponse.ok) {
-              const { audioBase64 } = await modalResponse.json();
-              audioBuffer = Buffer.from(audioBase64, 'base64');
-              ttsService = 'modal';
-              console.log(
-                '✅ [MODAL] TTS generated successfully! Audio size:',
-                audioBuffer.length,
-                'bytes'
-              );
-            } else {
-              const errorText = await modalResponse.text();
-              console.error('❌ [MODAL] Request failed with status:', modalResponse.status);
-              console.error('❌ [MODAL] Error response:', errorText);
-              console.warn('⚠️ [MODAL] Falling back to ElevenLabs...');
-            }
+          if (modalResponse.ok) {
+            const { audioBase64 } = await modalResponse.json();
+            audioBuffer = Buffer.from(audioBase64, 'base64');
+            ttsService = 'modal';
+            console.log(
+              '✅ [MODAL] TTS generated successfully! Audio size:',
+              audioBuffer.length,
+              'bytes'
+            );
           } else {
-            console.error('❌ [MODAL] Voice audio data is empty');
-            throw new Error('Voice sample file is empty');
+            const errorText = await modalResponse.text();
+            console.error('❌ [MODAL] Request failed with status:', modalResponse.status);
+            console.error('❌ [MODAL] Error response:', errorText);
+            console.warn('⚠️ [MODAL] Falling back to OpenAI...');
           }
         } else {
-          console.error('❌ [MODAL] No profile found for voice_clone_id:', voiceCloneIdToUse);
-          throw new Error('Profile not found for voice clone ID');
+          console.error('❌ [MODAL] Voice audio data is empty');
+          throw new Error('Voice sample file is empty');
         }
       } catch (error) {
         console.error(
