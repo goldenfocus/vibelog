@@ -326,49 +326,105 @@ export async function POST(request: NextRequest) {
           const voiceBase64 = voiceBuffer.toString('base64');
           console.log('🎵 [MODAL] Voice sample size:', voiceBuffer.length, 'bytes');
 
-          // Call Modal endpoint
-          console.log('🎵 [MODAL] Sending request to Modal endpoint...');
-          console.log('🎵 [MODAL] Request details:', {
-            endpoint: config.ai.modal.endpoint,
-            textLength: text.length,
-            voiceAudioSize: voiceBase64.length,
-            timeout: 120000,
-          });
+          // Retry logic for Modal requests (handles cold starts and timeouts)
+          const MAX_RETRIES = 2;
+          const TIMEOUT_MS = 180000; // 180 seconds (3 minutes) - allows for cold starts + model download
+          let lastError: Error | null = null;
 
-          const requestStartTime = Date.now();
-          const modalResponse = await fetch(config.ai.modal.endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              text,
-              voiceAudio: voiceBase64,
-              language: 'en', // TODO: detect language from request
-            }),
-            signal: AbortSignal.timeout(120000), // 120 second timeout (allows for cold starts + model download)
-          });
+          for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+              console.log(
+                `🎵 [MODAL] Attempt ${attempt}/${MAX_RETRIES} - Sending request to Modal endpoint...`
+              );
+              console.log('🎵 [MODAL] Request details:', {
+                endpoint: config.ai.modal.endpoint,
+                textLength: text.length,
+                voiceAudioSize: voiceBase64.length,
+                timeout: TIMEOUT_MS,
+                attempt,
+              });
 
-          const requestDuration = Date.now() - requestStartTime;
-          console.log(
-            `🎵 [MODAL] Request completed in ${requestDuration}ms, status: ${modalResponse.status}`
-          );
+              const requestStartTime = Date.now();
+              const modalResponse = await fetch(config.ai.modal.endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  text,
+                  voiceAudio: voiceBase64,
+                  language: 'en', // TODO: detect language from request
+                }),
+                signal: AbortSignal.timeout(TIMEOUT_MS),
+              });
 
-          if (modalResponse.ok) {
-            const { audioBase64 } = await modalResponse.json();
-            audioBuffer = Buffer.from(audioBase64, 'base64');
-            ttsService = 'modal';
-            console.log(
-              '✅ [MODAL] TTS generated successfully! Audio size:',
-              audioBuffer.length,
-              'bytes'
-            );
-          } else {
-            const errorText = await modalResponse.text();
-            console.error('❌ [MODAL] Request failed with status:', modalResponse.status);
-            console.error('❌ [MODAL] Error response:', errorText);
-            // Don't fall back to OpenAI - throw error so it's caught and handled properly
-            throw new Error(
-              `Modal TTS request failed: ${modalResponse.status} - ${errorText.substring(0, 200)}`
-            );
+              const requestDuration = Date.now() - requestStartTime;
+              console.log(
+                `🎵 [MODAL] Request completed in ${requestDuration}ms, status: ${modalResponse.status}`
+              );
+
+              if (modalResponse.ok) {
+                const { audioBase64 } = await modalResponse.json();
+                audioBuffer = Buffer.from(audioBase64, 'base64');
+                ttsService = 'modal';
+                console.log(
+                  `✅ [MODAL] TTS generated successfully on attempt ${attempt}! Audio size:`,
+                  audioBuffer.length,
+                  'bytes'
+                );
+                break; // Success, exit retry loop
+              } else {
+                const errorText = await modalResponse.text();
+                console.error(
+                  `❌ [MODAL] Attempt ${attempt} failed with status:`,
+                  modalResponse.status
+                );
+                console.error('❌ [MODAL] Error response:', errorText);
+
+                // If it's a server error (5xx), retry
+                if (modalResponse.status >= 500 && attempt < MAX_RETRIES) {
+                  const retryDelay = attempt * 2000; // 2s, 4s delays
+                  console.log(`🔄 [MODAL] Server error, retrying in ${retryDelay}ms...`);
+                  await new Promise(resolve => setTimeout(resolve, retryDelay));
+                  lastError = new Error(
+                    `Modal TTS request failed: ${modalResponse.status} - ${errorText.substring(0, 200)}`
+                  );
+                  continue;
+                }
+
+                // Don't fall back to OpenAI - throw error so it's caught and handled properly
+                throw new Error(
+                  `Modal TTS request failed: ${modalResponse.status} - ${errorText.substring(0, 200)}`
+                );
+              }
+            } catch (fetchError) {
+              const isTimeout =
+                fetchError instanceof Error &&
+                (fetchError.message.includes('timeout') ||
+                  fetchError.message.includes('aborted') ||
+                  fetchError.name === 'AbortError');
+
+              if (isTimeout && attempt < MAX_RETRIES) {
+                const retryDelay = attempt * 3000; // 3s, 6s delays for timeouts
+                console.warn(
+                  `⏱️ [MODAL] Request timed out on attempt ${attempt}, retrying in ${retryDelay}ms...`
+                );
+                console.warn(
+                  `⏱️ [MODAL] Timeout error:`,
+                  fetchError instanceof Error ? fetchError.message : fetchError
+                );
+                lastError =
+                  fetchError instanceof Error ? fetchError : new Error(String(fetchError));
+                await new Promise(resolve => setTimeout(resolve, retryDelay));
+                continue;
+              }
+
+              // If this was the last attempt or not a timeout, throw the error
+              throw fetchError;
+            }
+          }
+
+          // If we exhausted retries and still no audioBuffer, throw the last error
+          if (!audioBuffer && lastError) {
+            throw lastError;
           }
         } else {
           console.error('❌ [MODAL] Voice audio data is empty');
@@ -493,6 +549,7 @@ export async function POST(request: NextRequest) {
         let errorDetails = '';
         if (config.ai.modal.enabled && config.ai.modal.endpoint) {
           if (modalError) {
+            const isTimeout = modalError.includes('timeout') || modalError.includes('aborted');
             errorDetails =
               `Modal request failed: ${modalError}\n\n` +
               'Common causes:\n' +
@@ -500,7 +557,10 @@ export async function POST(request: NextRequest) {
               '- Voice sample file not found in storage\n' +
               '- Modal service error (check Modal logs with: modal app logs vibelog-tts)\n' +
               '- Network connectivity issues\n' +
-              '- Request timeout (120 seconds)';
+              (isTimeout
+                ? '- Request timeout (180 seconds) - Modal may be cold starting or processing a large request\n' +
+                  '  The request was retried automatically but still timed out. Try again in a few moments.'
+                : '- Request timeout (180 seconds)');
           } else {
             errorDetails =
               'Modal is enabled but the request failed. Check your server logs for detailed error messages.';
