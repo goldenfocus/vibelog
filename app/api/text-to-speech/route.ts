@@ -52,13 +52,15 @@ export async function POST(request: NextRequest) {
       return tooManyResponse(rl);
     }
 
-    const { text, voice = 'shimmer', vibelogId, voiceCloneId } = await request.json();
+    const { text, voice = 'shimmer', vibelogId, voiceCloneId, authorId } = await request.json();
 
     console.log('🎵 [TTS-API] Received request:', {
       voice,
       vibelogId,
       voiceCloneId,
+      authorId,
       hasVoiceCloneId: !!voiceCloneId,
+      hasAuthorId: !!authorId,
       textLength: text?.length,
       userId,
       isAuthenticated: !!userId,
@@ -71,10 +73,16 @@ export async function POST(request: NextRequest) {
     // Initialize adminSupabase early since we need it for voice clone ID lookup
     const adminSupabase = await createServerAdminClient();
 
-    // Check if vibelog has a voice_clone_id
-    // If voiceCloneId is provided directly, use it (for settings page testing)
+    // CRITICAL: Resolve voice clone ID with priority:
+    // 1. Directly provided voiceCloneId (from component prop)
+    // 2. Vibelog's voice_clone_id (from this specific recording)
+    // 3. Author's profile voice_clone_id (their default cloned voice)
+    // This ensures we always use the author's voice if available, even if this specific recording failed to clone
     let voiceCloneIdToUse = voiceCloneId;
-    if (!voiceCloneIdToUse && vibelogId) {
+
+    // If no voiceCloneId provided directly, check vibelog and author profile
+    // Also check authorId directly if provided (fallback when vibelogId lookup fails)
+    if (!voiceCloneIdToUse && (vibelogId || authorId)) {
       try {
         const { data: vibelog, error: vibelogError } = await adminSupabase
           .from('vibelogs')
@@ -84,35 +92,115 @@ export async function POST(request: NextRequest) {
 
         if (vibelogError) {
           console.log('[TTS] Vibelog lookup error:', vibelogError.message);
-        } else if (vibelog?.voice_clone_id) {
-          voiceCloneIdToUse = vibelog.voice_clone_id;
-          console.log('[TTS] Found voice_clone_id from vibelog:', voiceCloneIdToUse);
         } else {
-          console.log('[TTS] No voice_clone_id found in vibelog, will check profile');
-          // Also try to get from vibelog's author profile
+          // First try vibelog's own voice_clone_id
+          if (vibelog?.voice_clone_id) {
+            voiceCloneIdToUse = vibelog.voice_clone_id;
+            console.log('[TTS] Found voice_clone_id from vibelog:', voiceCloneIdToUse);
+          }
+
+          // ALWAYS check author's profile, even if vibelog has a voice_clone_id
+          // This ensures we use the author's latest cloned voice
+          // (vibelog's voice_clone_id might be from an old recording)
           if (vibelog?.user_id) {
             try {
-              const { data: profile } = await adminSupabase
+              const { data: profile, error: profileError } = await adminSupabase
                 .from('profiles')
                 .select('voice_clone_id')
                 .eq('id', vibelog.user_id)
                 .single();
 
-              if (profile?.voice_clone_id) {
+              if (profileError) {
+                console.log('[TTS] Profile lookup error:', profileError.message);
+              } else if (profile?.voice_clone_id) {
+                // Use author's profile voice_clone_id (prefer over vibelog's if different)
+                // This ensures we use their latest cloned voice
                 voiceCloneIdToUse = profile.voice_clone_id;
                 console.log(
                   '[TTS] Found voice_clone_id from vibelog author profile:',
-                  voiceCloneIdToUse
+                  voiceCloneIdToUse,
+                  vibelog.voice_clone_id
+                    ? '(overriding vibelog voice_clone_id)'
+                    : '(vibelog had none)'
                 );
+              } else {
+                console.log('[TTS] No voice_clone_id found in author profile');
               }
-            } catch {
-              // Ignore errors
+            } catch (error) {
+              console.error('[TTS] Error checking author profile:', error);
             }
+          } else {
+            console.log(
+              '[TTS] Vibelog has no user_id (anonymous), cannot check profile via vibelog'
+            );
+            // If vibelog has no user_id but authorId was provided, check author's profile directly
+            if (authorId) {
+              try {
+                console.log('[TTS] Checking author profile directly (vibelog has no user_id)');
+                const { data: profile, error: profileError } = await adminSupabase
+                  .from('profiles')
+                  .select('voice_clone_id')
+                  .eq('id', authorId)
+                  .single();
+
+                if (profileError) {
+                  console.log('[TTS] Author profile lookup error:', profileError.message);
+                } else if (profile?.voice_clone_id) {
+                  voiceCloneIdToUse = profile.voice_clone_id;
+                  console.log(
+                    '[TTS] Found voice_clone_id from author profile (vibelog had no user_id):',
+                    voiceCloneIdToUse
+                  );
+                } else {
+                  console.log('[TTS] No voice_clone_id found in author profile');
+                }
+              } catch (error) {
+                console.error('[TTS] Error checking author profile:', error);
+              }
+            }
+          }
+
+          // If still no voice_clone_id found, log it
+          if (!voiceCloneIdToUse) {
+            console.log('[TTS] No voice_clone_id found in vibelog or profile');
           }
         }
       } catch (error) {
         console.error('[TTS] Error looking up vibelog voice_clone_id:', error);
       }
+    }
+
+    // FALLBACK: If still no voice_clone_id and authorId was provided directly (but vibelogId wasn't), check author's profile
+    // This handles cases where vibelogId lookup failed or vibelog doesn't exist yet
+    // Note: We don't check again if vibelogId was provided (already checked above)
+    if (!voiceCloneIdToUse && authorId && !vibelogId) {
+      try {
+        console.log('[TTS] Checking author profile directly (authorId provided, no vibelogId)');
+        const { data: profile, error: profileError } = await adminSupabase
+          .from('profiles')
+          .select('voice_clone_id')
+          .eq('id', authorId)
+          .single();
+
+        if (profileError) {
+          console.log('[TTS] Author profile lookup error:', profileError.message);
+        } else if (profile?.voice_clone_id) {
+          voiceCloneIdToUse = profile.voice_clone_id;
+          console.log(
+            '[TTS] Found voice_clone_id from author profile (direct lookup):',
+            voiceCloneIdToUse
+          );
+        } else {
+          console.log('[TTS] No voice_clone_id found in author profile (direct lookup)');
+        }
+      } catch (error) {
+        console.error('[TTS] Error checking author profile (direct lookup):', error);
+      }
+    }
+
+    // Final check - if still no voice_clone_id found, log it
+    if (!voiceCloneIdToUse) {
+      console.log('[TTS] No voice_clone_id found anywhere - will use default voice');
     }
 
     // NOTE: We intentionally do NOT fallback to the current viewer's voice clone.

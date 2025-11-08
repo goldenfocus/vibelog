@@ -12,7 +12,8 @@ export interface UseTextToSpeechReturn {
     vibelogId?: string,
     voiceCloneId?: string,
     title?: string,
-    author?: string
+    author?: string,
+    authorId?: string
   ) => Promise<void>;
   stop: () => void;
   progress: number;
@@ -73,7 +74,8 @@ export function useTextToSpeech(
     vibelogId?: string,
     voiceCloneId?: string,
     title?: string,
-    author?: string
+    author?: string,
+    authorId?: string // Add authorId parameter to help TTS route find author's voice
   ) => {
     try {
       setIsLoading(true);
@@ -101,7 +103,7 @@ export function useTextToSpeech(
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ text, voice, vibelogId, voiceCloneId }),
+        body: JSON.stringify({ text, voice, vibelogId, voiceCloneId, authorId }),
       });
 
       if (!response.ok) {
