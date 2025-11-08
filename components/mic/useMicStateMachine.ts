@@ -47,6 +47,7 @@ interface UseMicStateMachineReturn {
   isLoggedIn: boolean;
   attribution: AttributionDetails;
   voiceCloneId?: string;
+  vibelogId?: string;
 
   // Actions
   startRecording: () => Promise<void>;
@@ -165,6 +166,7 @@ export function useMicStateMachine(
   const [coverImage, setCoverImage] = useState<CoverImage | null>(null);
   const [audioData, setAudioData] = useState<{ url: string; duration: number } | null>(null);
   const [voiceCloneId, setVoiceCloneId] = useState<string | undefined>();
+  const [vibelogId, setVibelogId] = useState<string | undefined>();
   const [recordingTime, setRecordingTime] = useState(0);
   const [toast, setToast] = useState<ToastState>({ message: '', visible: false });
   const [upgradePrompt, setUpgradePrompt] = useState<UpgradePromptState>({
@@ -775,6 +777,12 @@ export function useMicStateMachine(
       });
 
       if (result.success) {
+        // Store the vibelog ID for immediate playback
+        if (result.vibelogId) {
+          setVibelogId(result.vibelogId);
+          console.log('✅ [COMPLETE-PROCESSING] Stored vibelog ID:', result.vibelogId);
+        }
+
         if (result.warnings?.length) {
           const criticalWarnings = result.warnings.filter((warning: string) => {
             return (
@@ -868,6 +876,7 @@ export function useMicStateMachine(
     isLoggedIn,
     attribution,
     voiceCloneId,
+    vibelogId,
     startRecording,
     stopRecording,
     reset,
