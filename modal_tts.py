@@ -62,8 +62,25 @@ def generate_speech(text: str, voice_audio_b64: str, language: str = "en"):
     voice_audio_bytes = base64.b64decode(voice_audio_b64)
     print(f"✅ Decoded voice audio: {len(voice_audio_bytes)} bytes")
 
+    # Detect audio format from file signature (magic bytes)
+    # WAV: starts with "RIFF"
+    # WebM: starts with 0x1A 0x45 0xDF 0xA3
+    # MP4: starts with "ftyp" at offset 4
+    if voice_audio_bytes.startswith(b'RIFF'):
+        audio_ext = '.wav'
+    elif voice_audio_bytes.startswith(b'\x1a\x45\xdf\xa3'):
+        audio_ext = '.webm'
+    elif len(voice_audio_bytes) > 8 and voice_audio_bytes[4:8] == b'ftyp':
+        audio_ext = '.mp4'
+    else:
+        # Default to WAV, Coqui will try to parse it
+        audio_ext = '.wav'
+
+    print(f"🔍 Detected audio format: {audio_ext}")
+
     # Create temp files for voice sample and output
-    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as voice_file:
+    # Use detected format for input, WAV for output
+    with tempfile.NamedTemporaryFile(suffix=audio_ext, delete=False) as voice_file:
         voice_file.write(voice_audio_bytes)
         voice_path = voice_file.name
 
