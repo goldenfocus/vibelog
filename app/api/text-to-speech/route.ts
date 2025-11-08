@@ -309,7 +309,7 @@ export async function POST(request: NextRequest) {
               voiceAudio: voiceBase64,
               language: 'en', // TODO: detect language from request
             }),
-            signal: AbortSignal.timeout(30000), // 30 second timeout
+            signal: AbortSignal.timeout(120000), // 120 second timeout (allows for cold starts + model download)
           });
 
           if (modalResponse.ok) {
