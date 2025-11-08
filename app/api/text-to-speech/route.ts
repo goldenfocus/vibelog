@@ -245,15 +245,34 @@ export async function POST(request: NextRequest) {
 
     let audioBuffer: Buffer | undefined;
     let ttsService: 'modal' | 'elevenlabs' | 'openai' | 'mock' = 'openai'; // Track which service was used
+    let modalError: string | undefined; // Store Modal error details for better error messages
 
-    // Warn if voice cloning is requested but Modal is not configured
+    // CRITICAL: If voice cloning is requested but Modal is not configured, return error immediately
+    // This prevents falling back to default "shimmer" voice when voice cloning is expected
     if (voiceCloneIdToUse && !config.ai.modal.enabled) {
-      console.warn('⚠️ [CONFIG] Voice cloning requested but Modal is disabled in config');
-      console.warn('⚠️ [CONFIG] Set MODAL_ENABLED=true to use voice cloning with Modal');
+      console.error('❌ [CONFIG] Voice cloning requested but Modal is disabled in config');
+      console.error('❌ [CONFIG] Set MODAL_ENABLED=true to use voice cloning with Modal');
+      return NextResponse.json(
+        {
+          error: 'Voice cloning service not configured',
+          message:
+            'Voice cloning was requested but Modal is not enabled. Please configure Modal to use voice cloning.',
+          details: 'Set MODAL_ENABLED=true and MODAL_TTS_ENDPOINT in your environment variables.',
+        },
+        { status: 503 }
+      );
     }
     if (voiceCloneIdToUse && config.ai.modal.enabled && !config.ai.modal.endpoint) {
       console.error('❌ [CONFIG] Modal is enabled but MODAL_TTS_ENDPOINT is not set!');
-      console.error('❌ [CONFIG] Voice cloning will fall back to ElevenLabs or fail');
+      return NextResponse.json(
+        {
+          error: 'Voice cloning service misconfigured',
+          message:
+            'Modal is enabled but the endpoint is not configured. Please set MODAL_TTS_ENDPOINT.',
+          details: 'Set MODAL_TTS_ENDPOINT to your Modal TTS endpoint URL.',
+        },
+        { status: 503 }
+      );
     }
 
     // Try Modal.com first (self-hosted, much cheaper)
@@ -283,13 +302,21 @@ export async function POST(request: NextRequest) {
         }
 
         // Fetch the voice audio file from storage
+        console.log('🎵 [MODAL] Fetching voice sample from storage:', voiceAudioPath);
         const { data: voiceAudioData, error: storageError } = await supabaseAdmin.storage
           .from('tts-audio')
           .download(voiceAudioPath);
 
         if (storageError) {
           console.error('❌ [MODAL] Failed to download voice sample:', storageError.message);
+          console.error('❌ [MODAL] Storage error:', storageError);
           console.error('❌ [MODAL] Tried path:', voiceAudioPath);
+          console.error('❌ [MODAL] Voice clone ID:', voiceCloneIdToUse);
+          console.error('❌ [MODAL] Profile lookup result:', {
+            profile: profile?.id,
+            profileError,
+          });
+
           throw new Error(`Voice sample download failed: ${storageError.message}`);
         }
 
@@ -299,46 +326,123 @@ export async function POST(request: NextRequest) {
           const voiceBase64 = voiceBuffer.toString('base64');
           console.log('🎵 [MODAL] Voice sample size:', voiceBuffer.length, 'bytes');
 
-          // Call Modal endpoint
-          console.log('🎵 [MODAL] Sending request to Modal endpoint...');
-          const modalResponse = await fetch(config.ai.modal.endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              text,
-              voiceAudio: voiceBase64,
-              language: 'en', // TODO: detect language from request
-            }),
-            signal: AbortSignal.timeout(120000), // 120 second timeout (allows for cold starts + model download)
-          });
+          // Retry logic for Modal requests (handles cold starts and timeouts)
+          const MAX_RETRIES = 2;
+          const TIMEOUT_MS = 180000; // 180 seconds (3 minutes) - allows for cold starts + model download
+          let lastError: Error | null = null;
 
-          if (modalResponse.ok) {
-            const { audioBase64 } = await modalResponse.json();
-            audioBuffer = Buffer.from(audioBase64, 'base64');
-            ttsService = 'modal';
-            console.log(
-              '✅ [MODAL] TTS generated successfully! Audio size:',
-              audioBuffer.length,
-              'bytes'
-            );
-          } else {
-            const errorText = await modalResponse.text();
-            console.error('❌ [MODAL] Request failed with status:', modalResponse.status);
-            console.error('❌ [MODAL] Error response:', errorText);
-            console.warn('⚠️ [MODAL] Falling back to OpenAI...');
+          for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+              console.log(
+                `🎵 [MODAL] Attempt ${attempt}/${MAX_RETRIES} - Sending request to Modal endpoint...`
+              );
+              console.log('🎵 [MODAL] Request details:', {
+                endpoint: config.ai.modal.endpoint,
+                textLength: text.length,
+                voiceAudioSize: voiceBase64.length,
+                timeout: TIMEOUT_MS,
+                attempt,
+              });
+
+              const requestStartTime = Date.now();
+              const modalResponse = await fetch(config.ai.modal.endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  text,
+                  voiceAudio: voiceBase64,
+                  language: 'en', // TODO: detect language from request
+                }),
+                signal: AbortSignal.timeout(TIMEOUT_MS),
+              });
+
+              const requestDuration = Date.now() - requestStartTime;
+              console.log(
+                `🎵 [MODAL] Request completed in ${requestDuration}ms, status: ${modalResponse.status}`
+              );
+
+              if (modalResponse.ok) {
+                const { audioBase64 } = await modalResponse.json();
+                audioBuffer = Buffer.from(audioBase64, 'base64');
+                ttsService = 'modal';
+                console.log(
+                  `✅ [MODAL] TTS generated successfully on attempt ${attempt}! Audio size:`,
+                  audioBuffer.length,
+                  'bytes'
+                );
+                break; // Success, exit retry loop
+              } else {
+                const errorText = await modalResponse.text();
+                console.error(
+                  `❌ [MODAL] Attempt ${attempt} failed with status:`,
+                  modalResponse.status
+                );
+                console.error('❌ [MODAL] Error response:', errorText);
+
+                // If it's a server error (5xx), retry
+                if (modalResponse.status >= 500 && attempt < MAX_RETRIES) {
+                  const retryDelay = attempt * 2000; // 2s, 4s delays
+                  console.log(`🔄 [MODAL] Server error, retrying in ${retryDelay}ms...`);
+                  await new Promise(resolve => setTimeout(resolve, retryDelay));
+                  lastError = new Error(
+                    `Modal TTS request failed: ${modalResponse.status} - ${errorText.substring(0, 200)}`
+                  );
+                  continue;
+                }
+
+                // Don't fall back to OpenAI - throw error so it's caught and handled properly
+                throw new Error(
+                  `Modal TTS request failed: ${modalResponse.status} - ${errorText.substring(0, 200)}`
+                );
+              }
+            } catch (fetchError) {
+              const isTimeout =
+                fetchError instanceof Error &&
+                (fetchError.message.includes('timeout') ||
+                  fetchError.message.includes('aborted') ||
+                  fetchError.name === 'AbortError');
+
+              if (isTimeout && attempt < MAX_RETRIES) {
+                const retryDelay = attempt * 3000; // 3s, 6s delays for timeouts
+                console.warn(
+                  `⏱️ [MODAL] Request timed out on attempt ${attempt}, retrying in ${retryDelay}ms...`
+                );
+                console.warn(
+                  `⏱️ [MODAL] Timeout error:`,
+                  fetchError instanceof Error ? fetchError.message : fetchError
+                );
+                lastError =
+                  fetchError instanceof Error ? fetchError : new Error(String(fetchError));
+                await new Promise(resolve => setTimeout(resolve, retryDelay));
+                continue;
+              }
+
+              // If this was the last attempt or not a timeout, throw the error
+              throw fetchError;
+            }
+          }
+
+          // If we exhausted retries and still no audioBuffer, throw the last error
+          if (!audioBuffer && lastError) {
+            throw lastError;
           }
         } else {
           console.error('❌ [MODAL] Voice audio data is empty');
           throw new Error('Voice sample file is empty');
         }
       } catch (error) {
-        console.error(
-          '❌ [MODAL] Exception occurred:',
-          error instanceof Error ? error.message : error
-        );
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorStack = error instanceof Error ? error.stack : undefined;
+
+        console.error('❌ [MODAL] Exception occurred:', errorMessage);
         console.error('❌ [MODAL] Full error:', error);
-        console.warn('⚠️ [MODAL] Falling back to ElevenLabs due to error');
-        // Continue to ElevenLabs fallback
+        if (errorStack) {
+          console.error('❌ [MODAL] Stack trace:', errorStack);
+        }
+
+        // Store error details for the response below
+        modalError = errorMessage;
+        // audioBuffer remains undefined, which will trigger the error response
       }
     }
 
@@ -435,6 +539,52 @@ export async function POST(request: NextRequest) {
 
     // Fallback to OpenAI TTS if no cloned voice or if ElevenLabs failed
     if (!audioBuffer) {
+      // CRITICAL FIX: If voice cloning was requested but failed, don't fall back to default voice
+      // This prevents users from hearing "shimmer" when they expect their cloned voice
+      if (voiceCloneIdToUse) {
+        console.error('❌ [TTS] Voice cloning requested but Modal failed or is not configured');
+        console.error('❌ [TTS] Cannot fall back to default voice - returning error instead');
+
+        // Include the actual Modal error if available
+        let errorDetails = '';
+        if (config.ai.modal.enabled && config.ai.modal.endpoint) {
+          if (modalError) {
+            const isTimeout = modalError.includes('timeout') || modalError.includes('aborted');
+            errorDetails =
+              `Modal request failed: ${modalError}\n\n` +
+              'Common causes:\n' +
+              '- Modal endpoint is unreachable or timing out\n' +
+              '- Voice sample file not found in storage\n' +
+              '- Modal service error (check Modal logs with: modal app logs vibelog-tts)\n' +
+              '- Network connectivity issues\n' +
+              (isTimeout
+                ? '- Request timeout (180 seconds) - Modal may be cold starting or processing a large request\n' +
+                  '  The request was retried automatically but still timed out. Try again in a few moments.'
+                : '- Request timeout (180 seconds)');
+          } else {
+            errorDetails =
+              'Modal is enabled but the request failed. Check your server logs for detailed error messages.';
+          }
+        } else if (!config.ai.modal.enabled) {
+          errorDetails =
+            'Modal is not enabled. Set MODAL_ENABLED=true and MODAL_TTS_ENDPOINT to use voice cloning.';
+        } else if (!config.ai.modal.endpoint) {
+          errorDetails =
+            'Modal is enabled but MODAL_TTS_ENDPOINT is not set. Set the endpoint URL in your environment variables.';
+        }
+
+        return NextResponse.json(
+          {
+            error: 'Voice cloning service unavailable',
+            message:
+              'Voice cloning was requested but the service is not available. Please check Modal configuration.',
+            details: errorDetails,
+          },
+          { status: 503 }
+        );
+      }
+
+      // Only fall back to OpenAI TTS if no voice cloning was requested
       // Check if we have a real API key, otherwise return mock response
       if (
         !process.env.OPENAI_API_KEY ||
@@ -511,7 +661,7 @@ export async function POST(request: NextRequest) {
         timeout: 60_000,
       });
 
-      // Generate speech using OpenAI TTS
+      // Generate speech using OpenAI TTS (only when no voice cloning was requested)
       const mp3 = await openai.audio.speech.create({
         model: 'tts-1',
         voice: voice as 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer',
