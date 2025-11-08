@@ -12,6 +12,8 @@ export interface PublishActionsProps {
   content: string;
   title?: string;
   author?: string;
+  voiceCloneId?: string;
+  vibelogId?: string;
   isLoggedIn?: boolean;
   isTeaserContent?: boolean;
   onCopy: (content: string) => Promise<void> | void;
@@ -82,6 +84,8 @@ export default function PublishActions({
   content,
   title,
   author,
+  voiceCloneId,
+  vibelogId,
   isLoggedIn = false,
   isTeaserContent: _isTeaserContent = false,
   onCopy,
@@ -120,7 +124,7 @@ export default function PublishActions({
       .replace(/\n\s*\n/g, '\n')
       .trim();
 
-    await playText(cleanContent, 'shimmer');
+    await playText(cleanContent, 'shimmer', vibelogId, voiceCloneId, title, author);
   };
 
   const handleCopyClick = async () => {

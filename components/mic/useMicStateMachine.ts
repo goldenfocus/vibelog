@@ -46,6 +46,7 @@ interface UseMicStateMachineReturn {
   upgradePrompt: UpgradePromptState;
   isLoggedIn: boolean;
   attribution: AttributionDetails;
+  voiceCloneId?: string;
 
   // Actions
   startRecording: () => Promise<void>;
@@ -163,6 +164,7 @@ export function useMicStateMachine(
   const [isEditingFull, setIsEditingFull] = useState(false); // Track if editing full or teaser
   const [coverImage, setCoverImage] = useState<CoverImage | null>(null);
   const [audioData, setAudioData] = useState<{ url: string; duration: number } | null>(null);
+  const [voiceCloneId, setVoiceCloneId] = useState<string | undefined>();
   const [recordingTime, setRecordingTime] = useState(0);
   const [toast, setToast] = useState<ToastState>({ message: '', visible: false });
   const [upgradePrompt, setUpgradePrompt] = useState<UpgradePromptState>({
@@ -696,6 +698,7 @@ export function useMicStateMachine(
           if (cloneResult) {
             voiceCloneId = cloneResult.voiceId;
             serverVerifiedUserId = cloneResult.userId;
+            setVoiceCloneId(cloneResult.voiceId); // Store in state for immediate playback
             console.log('✅ [VOICE-CLONE] Voice cloned successfully:', voiceCloneId);
             console.log('✅ [VOICE-CLONE] Server-verified userId:', serverVerifiedUserId);
             showToast('✅ Voice cloned!');
@@ -864,6 +867,7 @@ export function useMicStateMachine(
     upgradePrompt,
     isLoggedIn,
     attribution,
+    voiceCloneId,
     startRecording,
     stopRecording,
     reset,

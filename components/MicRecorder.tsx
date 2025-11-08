@@ -42,6 +42,7 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
     upgradePrompt,
     isLoggedIn,
     attribution,
+    voiceCloneId,
     startRecording,
     stopRecording,
     reset,
@@ -188,6 +189,9 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
                 <PublishActions
                   content={displayContent}
                   title={displayParsed.title || undefined}
+                  author={attribution.handle}
+                  voiceCloneId={voiceCloneId}
+                  vibelogId={undefined}
                   isLoggedIn={isLoggedIn}
                   isTeaserContent={isTeaserContent}
                   onCopy={() => {
@@ -264,6 +268,9 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
                   <PublishActions
                     content={displayContent}
                     title={displayParsed.title || undefined}
+                    author={attribution.handle}
+                    voiceCloneId={voiceCloneId}
+                    vibelogId={undefined}
                     isLoggedIn={isLoggedIn}
                     isTeaserContent={isTeaserContent}
                     onCopy={() => {
