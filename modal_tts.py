@@ -3,19 +3,21 @@ VibeLog Voice Cloning with Coqui XTTS v2 on Modal
 Fast, self-hosted alternative to ElevenLabs
 """
 
-import modal
 import io
 import base64
 from pathlib import Path
 from fastapi import HTTPException
+from modal.app import App
+from modal.image import Image
+from modal.partial_function import fastapi_endpoint
 
 # Create Modal app
-app = modal.App("vibelog-tts")
+app = App("vibelog-tts")
 
 # Create image with Coqui TTS and dependencies
 # Use latest compatible versions to fix PyTorch _pytree errors
 image = (
-    modal.Image.debian_slim(python_version="3.11")
+    Image.debian_slim(python_version="3.11")
     .pip_install(
         "TTS==0.22.0",
         "torch==2.1.2",  # Use 2.1.2 to fix _pytree issues
@@ -117,7 +119,7 @@ def generate_speech(text: str, voice_audio_b64: str, language: str = "en"):
 
 # Web endpoint for API access
 @app.function(image=image)
-@modal.fastapi_endpoint(method="POST")
+@fastapi_endpoint(method="POST")
 def tts_endpoint(data: dict):
     """
     API endpoint for text-to-speech with voice cloning
@@ -187,7 +189,7 @@ def tts_endpoint(data: dict):
 
 # Health check endpoint
 @app.function(image=image)
-@modal.fastapi_endpoint(method="GET")
+@fastapi_endpoint(method="GET")
 def health():
     """Simple health check endpoint"""
     return {
