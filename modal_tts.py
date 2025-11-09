@@ -38,8 +38,15 @@ image = (
         "soundfile",
         "fastapi",  # Required for web endpoints
     )
+    .run_commands(
+        "python - <<'PY'\n"
+        "from TTS.api import TTS\n"
+        "print('📦 Pre-downloading XTTS model...')\n"
+        "TTS('tts_models/multilingual/multi-dataset/xtts_v2')\n"
+        "print('✅ XTTS model cached in image')\n"
+        "PY"
+    )
     .env({"COQUI_TOS_AGREED": "1"})  # Auto-accept Coqui TOS for non-commercial use
-    # Model will be downloaded on first use
 )
 
 # GPU function for voice cloning + TTS
@@ -48,6 +55,7 @@ image = (
     gpu="T4",  # NVIDIA T4 - good balance of cost and performance
     timeout=300,  # 5 minutes max
     scaledown_window=120,  # Keep warm for 2 minutes
+    min_containers=1,
     memory=8192,  # 8GB RAM
 )
 def generate_speech(text: str, voice_audio_b64: str, language: str = "en"):
@@ -99,24 +107,24 @@ def generate_speech(text: str, voice_audio_b64: str, language: str = "en"):
         voice_path = voice_file.name
 
     output_path = tempfile.mktemp(suffix=".wav")
-    converted_voice_path = voice_path
 
-    # Convert to WAV if source isn't WAV (torchaudio can't read webm reliably)
-    if audio_ext != '.wav':
-        converted_file = tempfile.NamedTemporaryFile(suffix='.wav', delete=False)
-        converted_voice_path = converted_file.name
-        converted_file.close()
-        try:
-            subprocess.run(
-                ['ffmpeg', '-y', '-i', voice_path, '-ar', '22050', '-ac', '1', converted_voice_path],
-                check=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
-            print(f"🔄 Converted {voice_path} to WAV: {converted_voice_path}")
-        except subprocess.CalledProcessError as ffmpeg_error:
-            print(f"❌ FFmpeg conversion failed: {ffmpeg_error.stderr.decode('utf-8', 'ignore')[:500]}")
-            raise HTTPException(status_code=500, detail='Failed to convert audio for voice cloning')
+    converted_file = tempfile.NamedTemporaryFile(suffix='.wav', delete=False)
+    converted_voice_path = converted_file.name
+    converted_file.close()
+
+    try:
+        ffmpeg_cmd = [
+            'ffmpeg', '-y', '-i', voice_path,
+            '-ar', '24000',  # Slightly higher sample rate for clarity
+            '-ac', '1',
+            '-af', 'loudnorm',
+            converted_voice_path,
+        ]
+        subprocess.run(ffmpeg_cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        print(f"🔄 Converted {voice_path} to WAV: {converted_voice_path}")
+    except subprocess.CalledProcessError as ffmpeg_error:
+        print(f"❌ FFmpeg conversion failed: {ffmpeg_error.stderr.decode('utf-8', 'ignore')[:500]}")
+        raise HTTPException(status_code=500, detail='Failed to convert audio for voice cloning')
 
     try:
         # Generate speech with voice cloning
