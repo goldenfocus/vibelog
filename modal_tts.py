@@ -24,8 +24,10 @@ image = (
     Image.debian_slim(python_version="3.11")
     .pip_install(
         "TTS==0.22.0",
-        "torch==2.1.2",  # Use 2.1.2 to fix _pytree issues
-        "torchaudio==2.1.2",  # Match torchaudio version
+        "torch==2.2.0",  # Use 2.2.0 to include torch.utils._pytree.register_pytree_node
+        "torchaudio==2.2.0",  # Match torchaudio version
+        "torchvision==0.17.0",  # Matches torch 2.2.0
+        "transformers==4.38.2",  # Required for BeamSearchScorer used by XTTS
         "numpy<2.0",  # TTS requires numpy <2.0
         "scipy",
         "librosa",
