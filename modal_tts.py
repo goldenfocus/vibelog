@@ -39,7 +39,7 @@ image = (
         "fastapi",  # Required for web endpoints
     )
     .run_commands([
-        "bash -lc 'export COQUI_TOS_AGREED=1; python - <<\"PY\"\nfrom TTS.api import TTS\nprint(\"📦 Pre-downloading XTTS model...\")\nTTS(\"tts_models/multilingual/multi-dataset/xtts_v2\")\nprint(\"✅ XTTS model cached in image\")\nPY'"
+        "COQUI_TOS_AGREED=1 python -c \"from TTS.api import TTS; print('📦 Pre-downloading XTTS model...'); TTS('tts_models/multilingual/multi-dataset/xtts_v2'); print('✅ XTTS model cached in image')\""
     ])
     .env({"COQUI_TOS_AGREED": "1"})  # Auto-accept Coqui TOS for non-commercial use
 )
