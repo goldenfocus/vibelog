@@ -6,6 +6,9 @@ Fast, self-hosted alternative to ElevenLabs
 import io
 import base64
 from pathlib import Path
+import subprocess
+import tempfile
+
 from fastapi import HTTPException
 import io
 import base64
@@ -22,6 +25,7 @@ app = App("vibelog-tts")
 # Use latest compatible versions to fix PyTorch _pytree errors
 image = (
     Image.debian_slim(python_version="3.11")
+    .apt_install('ffmpeg')
     .pip_install(
         "TTS==0.22.0",
         "torch==2.2.0",  # Use 2.2.0 to include torch.utils._pytree.register_pytree_node
@@ -95,13 +99,31 @@ def generate_speech(text: str, voice_audio_b64: str, language: str = "en"):
         voice_path = voice_file.name
 
     output_path = tempfile.mktemp(suffix=".wav")
+    converted_voice_path = voice_path
+
+    # Convert to WAV if source isn't WAV (torchaudio can't read webm reliably)
+    if audio_ext != '.wav':
+        converted_file = tempfile.NamedTemporaryFile(suffix='.wav', delete=False)
+        converted_voice_path = converted_file.name
+        converted_file.close()
+        try:
+            subprocess.run(
+                ['ffmpeg', '-y', '-i', voice_path, '-ar', '22050', '-ac', '1', converted_voice_path],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            print(f"🔄 Converted {voice_path} to WAV: {converted_voice_path}")
+        except subprocess.CalledProcessError as ffmpeg_error:
+            print(f"❌ FFmpeg conversion failed: {ffmpeg_error.stderr.decode('utf-8', 'ignore')[:500]}")
+            raise HTTPException(status_code=500, detail='Failed to convert audio for voice cloning')
 
     try:
         # Generate speech with voice cloning
         print(f"🎵 Generating speech in language: {language}")
         tts.tts_to_file(
             text=text,
-            speaker_wav=voice_path,
+            speaker_wav=converted_voice_path,
             language=language,
             file_path=output_path
         )
@@ -120,6 +142,8 @@ def generate_speech(text: str, voice_audio_b64: str, language: str = "en"):
         # Cleanup temp files
         if os.path.exists(voice_path):
             os.unlink(voice_path)
+        if converted_voice_path != voice_path and os.path.exists(converted_voice_path):
+            os.unlink(converted_voice_path)
         if os.path.exists(output_path):
             os.unlink(output_path)
 
