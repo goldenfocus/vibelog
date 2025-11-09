@@ -7,18 +7,20 @@ import modal
 import io
 import base64
 from pathlib import Path
+from fastapi import HTTPException
 
 # Create Modal app
 app = modal.App("vibelog-tts")
 
 # Create image with Coqui TTS and dependencies
+# Use latest compatible versions to fix PyTorch _pytree errors
 image = (
     modal.Image.debian_slim(python_version="3.11")
     .pip_install(
         "TTS==0.22.0",
-        "torch==2.1.0",
-        "torchaudio==2.1.0",
-        "numpy",
+        "torch==2.1.2",  # Use 2.1.2 to fix _pytree issues
+        "torchaudio==2.1.2",  # Match torchaudio version
+        "numpy<2.0",  # TTS requires numpy <2.0
         "scipy",
         "librosa",
         "soundfile",
@@ -140,11 +142,11 @@ def tts_endpoint(data: dict):
     voice_audio = data.get("voiceAudio")
     language = data.get("language", "en")
 
-    if not text:
-        return {"error": "Missing 'text' field"}, 400
+    if not text or not isinstance(text, str):
+        raise HTTPException(status_code=400, detail="Missing 'text' field")
 
-    if not voice_audio:
-        return {"error": "Missing 'voiceAudio' field"}, 400
+    if not voice_audio or not isinstance(voice_audio, str):
+        raise HTTPException(status_code=400, detail="Missing 'voiceAudio' field")
 
     # Validate language
     supported_languages = [
@@ -152,10 +154,13 @@ def tts_endpoint(data: dict):
         "ru", "nl", "cs", "ar", "zh-cn", "ja", "hu", "ko", "hi"
     ]
     if language not in supported_languages:
-        return {
-            "error": f"Unsupported language: {language}",
-            "supported": supported_languages
-        }, 400
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": f"Unsupported language: {language}",
+                "supported": supported_languages,
+            },
+        )
 
     try:
         # Time the generation
@@ -164,20 +169,21 @@ def tts_endpoint(data: dict):
         # Generate speech
         audio_b64 = generate_speech.remote(text, voice_audio, language)
 
+        if not audio_b64 or not isinstance(audio_b64, str):
+            raise HTTPException(status_code=500, detail="Modal TTS returned empty audio data")
+
         duration = time.time() - start_time
 
         return {
             "audioBase64": audio_b64,
             "duration": round(duration, 2),
             "language": language,
-            "textLength": len(text)
+            "textLength": len(text),
         }
 
     except Exception as e:
         print(f"❌ Error generating speech: {str(e)}")
-        return {
-            "error": f"Failed to generate speech: {str(e)}"
-        }, 500
+        raise HTTPException(status_code=500, detail=f"Failed to generate speech: {str(e)}")
 
 # Health check endpoint
 @app.function(image=image)
