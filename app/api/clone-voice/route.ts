@@ -21,12 +21,11 @@ export async function POST(request: NextRequest) {
     const { data: auth } = await supa.auth.getUser();
     const userId = auth?.user?.id;
 
-    // Limits: logged-in 100 per hour; anonymous 10 per day
-    const isDev = process.env.NODE_ENV !== 'production';
-    const baseOpts = userId
-      ? { limit: 100, window: '1 h' as const }
-      : { limit: 10, window: '24 h' as const };
-    const opts = isDev ? { limit: 1000, window: '15 m' as const } : baseOpts;
+    // TEMP: Relax rate limits for voice cloning while we stabilize the flow in prod.
+    // Previous limits: logged-in 100/h, anonymous 10/day.
+    // Effective no-op: set a very high limit so 429 is not triggered.
+    // TODO(vibe): Revisit and restore sane limits once voice cloning is stable.
+    const opts = { limit: 1_000_000, window: '24 h' as const };
     const rl = await rateLimit(request, 'clone-voice', opts, userId || undefined);
 
     if (!rl.success) {
