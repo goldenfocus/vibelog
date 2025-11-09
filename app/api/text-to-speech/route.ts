@@ -8,6 +8,15 @@ import { createServerSupabaseClient } from '@/lib/supabase';
 import { createServerAdminClient } from '@/lib/supabaseAdmin';
 import { hashTTSContent } from '@/lib/utils';
 
+type ModalTTSPayload = {
+  audioBase64?: string;
+  audio_base64?: string;
+  error?: unknown;
+  detail?: unknown;
+  message?: unknown;
+  [key: string]: unknown;
+};
+
 export async function POST(request: NextRequest) {
   try {
     // Rate limit per user if logged in; otherwise per IP
@@ -449,8 +458,29 @@ export async function POST(request: NextRequest) {
                 `🎵 [MODAL] Request completed in ${requestDuration}ms, status: ${modalResponse.status}`
               );
 
+              const responseText = await modalResponse.text();
+              let parsedResponse: ModalTTSPayload | null = null;
+              if (responseText) {
+                try {
+                  parsedResponse = JSON.parse(responseText);
+                } catch {
+                  console.warn('⚠️ [MODAL] Response was not valid JSON');
+                }
+              }
+
               if (modalResponse.ok) {
-                const { audioBase64 } = await modalResponse.json();
+                const audioBase64 =
+                  typeof parsedResponse?.audioBase64 === 'string'
+                    ? parsedResponse.audioBase64
+                    : typeof parsedResponse?.audio_base64 === 'string'
+                      ? parsedResponse.audio_base64
+                      : null;
+
+                if (!audioBase64) {
+                  const snippet = responseText.substring(0, 200) || '<empty response>';
+                  throw new Error(`Modal TTS response missing audioBase64: ${snippet}`);
+                }
+
                 audioBuffer = Buffer.from(audioBase64, 'base64');
                 ttsService = 'modal';
                 console.log(
@@ -460,12 +490,12 @@ export async function POST(request: NextRequest) {
                 );
                 break; // Success, exit retry loop
               } else {
-                const errorText = await modalResponse.text();
+                const errorSnippet = responseText.substring(0, 500) || '<empty response>';
                 console.error(
                   `❌ [MODAL] Attempt ${attempt} failed with status:`,
                   modalResponse.status
                 );
-                console.error('❌ [MODAL] Error response:', errorText);
+                console.error('❌ [MODAL] Error response:', errorSnippet);
 
                 // If it's a server error (5xx), retry
                 if (modalResponse.status >= 500 && attempt < MAX_RETRIES) {
@@ -473,14 +503,14 @@ export async function POST(request: NextRequest) {
                   console.log(`🔄 [MODAL] Server error, retrying in ${retryDelay}ms...`);
                   await new Promise(resolve => setTimeout(resolve, retryDelay));
                   lastError = new Error(
-                    `Modal TTS request failed: ${modalResponse.status} - ${errorText.substring(0, 200)}`
+                    `Modal TTS request failed: ${modalResponse.status} - ${errorSnippet}`
                   );
                   continue;
                 }
 
                 // Don't fall back to OpenAI - throw error so it's caught and handled properly
                 throw new Error(
-                  `Modal TTS request failed: ${modalResponse.status} - ${errorText.substring(0, 200)}`
+                  `Modal TTS request failed: ${modalResponse.status} - ${errorSnippet}`
                 );
               }
             } catch (fetchError) {
