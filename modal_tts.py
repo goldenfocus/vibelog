@@ -38,14 +38,9 @@ image = (
         "soundfile",
         "fastapi",  # Required for web endpoints
     )
-    .run_commands(
-        "python - <<'PY'\n"
-        "from TTS.api import TTS\n"
-        "print('📦 Pre-downloading XTTS model...')\n"
-        "TTS('tts_models/multilingual/multi-dataset/xtts_v2')\n"
-        "print('✅ XTTS model cached in image')\n"
-        "PY"
-    )
+    .run_commands([
+        "python -c \"from TTS.api import TTS; print('Pre-downloading XTTS model...'); TTS('tts_models/multilingual/multi-dataset/xtts_v2'); print('XTTS model cached in image')\""
+    ])
     .env({"COQUI_TOS_AGREED": "1"})  # Auto-accept Coqui TOS for non-commercial use
 )
 
