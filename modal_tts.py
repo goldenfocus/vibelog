@@ -109,10 +109,18 @@ def generate_speech(text: str, voice_audio_b64: str, language: str = "en"):
 
     try:
         ffmpeg_cmd = [
-            'ffmpeg', '-y', '-i', voice_path,
-            '-ar', '24000',  # Slightly higher sample rate for clarity
-            '-ac', '1',
-            '-af', 'loudnorm',
+            'ffmpeg',
+            '-y',
+            '-i',
+            voice_path,
+            '-acodec',
+            'pcm_s16le',
+            '-ar',
+            '44100',
+            '-ac',
+            '1',
+            '-af',
+            'loudnorm',
             converted_voice_path,
         ]
         subprocess.run(ffmpeg_cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)

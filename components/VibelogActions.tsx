@@ -219,7 +219,8 @@ export default function VibelogActions({
     }
 
     // Use teaser text if in teaserOnly mode, otherwise use full content
-    const textToPlay = teaserOnly && teaser ? teaser : content;
+    const useTeaserText = teaserOnly && teaser;
+    const textToPlay = useTeaserText ? teaser : content;
 
     // Clean markdown for TTS
     let cleanContent = textToPlay
@@ -231,10 +232,13 @@ export default function VibelogActions({
       .replace(/\n\s*\n/g, '\n') // Remove extra newlines
       .trim();
 
-    // Truncate to ~500 words to keep TTS generation under 20 seconds
-    const words = cleanContent.split(/\s+/);
-    if (words.length > 500) {
-      cleanContent = words.slice(0, 500).join(' ') + '...';
+    // Truncate in teaser/compact contexts to keep TTS generation under 20 seconds
+    const shouldLimitLength = teaserOnly || variant === 'compact';
+    if (shouldLimitLength) {
+      const words = cleanContent.split(/\s+/);
+      if (words.length > 500) {
+        cleanContent = words.slice(0, 500).join(' ') + '...';
+      }
     }
 
     // Pass authorVoiceCloneId directly so TTS route can use the cloned voice
