@@ -11,6 +11,7 @@ import {
   MoreVertical,
   Trash2,
   Heart,
+  Mic2,
 } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
@@ -308,6 +309,12 @@ export default function VibelogActions({
     setShowDeleteConfirm(false);
   };
 
+  const handleVoiceManageClick = () => {
+    if (typeof window !== 'undefined') {
+      window.open('/settings/profile#voice', '_blank', 'noopener,noreferrer');
+    }
+  };
+
   // Callback to update like count when LikersPopover fetches fresh data
   const handleCountUpdate = useCallback(
     (newCount: number) => {
@@ -428,6 +435,7 @@ export default function VibelogActions({
   const wrapperClass = isCompact
     ? 'flex flex-wrap items-center gap-3 border-t border-border/30 pt-4'
     : 'flex justify-center gap-3 sm:gap-4';
+  const voiceReady = Boolean(authorVoiceCloneId);
 
   return (
     <>
@@ -539,6 +547,22 @@ export default function VibelogActions({
               <Copy className={iconClass} />
               <span className={labelClass}>{copySuccess ? 'Copied!' : 'Copy'}</span>
             </button>
+
+            {isOwnVibelog && (
+              <button
+                onClick={handleVoiceManageClick}
+                className={baseButtonClass}
+                title={voiceReady ? 'Voice ready' : 'Clone your voice'}
+                data-testid="voice-clone-button"
+              >
+                {voiceReady ? (
+                  <Sparkles className={`${iconClass} text-electric`} />
+                ) : (
+                  <Mic2 className={iconClass} />
+                )}
+                <span className={labelClass}>{voiceReady ? 'Voice Ready' : 'Clone Voice'}</span>
+              </button>
+            )}
 
             {/* Listen Button with original audio or TTS */}
             <button

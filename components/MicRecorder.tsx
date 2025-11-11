@@ -7,6 +7,7 @@ import { useState, useMemo } from 'react';
 import AudioPlayer from '@/components/AudioPlayer';
 import Controls from '@/components/mic/Controls';
 import ProcessingAnimation from '@/components/mic/ProcessingAnimation';
+import ProcessingPeek from '@/components/mic/ProcessingPeek';
 import PublishActions from '@/components/mic/PublishActions';
 import ToneSettings from '@/components/mic/ToneSettings';
 import TranscriptionPanel from '@/components/mic/TranscriptionPanel';
@@ -172,6 +173,14 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
         onGenerateComplete={processVibelogGeneration}
         onCoverComplete={processCoverImage}
         onAnimationComplete={completeProcessing}
+      />
+
+      <ProcessingPeek
+        isVisible={recordingState === 'processing'}
+        transcription={transcription}
+        vibelogContent={vibelogContent}
+        coverImage={coverImage}
+        voiceCloneId={voiceCloneId}
       />
 
       {audioBlob && showCompletedUI && (
