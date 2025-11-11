@@ -6,6 +6,9 @@ Fast, self-hosted alternative to ElevenLabs
 import io
 import base64
 from pathlib import Path
+import subprocess
+import tempfile
+
 from fastapi import HTTPException
 import io
 import base64
@@ -22,18 +25,23 @@ app = App("vibelog-tts")
 # Use latest compatible versions to fix PyTorch _pytree errors
 image = (
     Image.debian_slim(python_version="3.11")
+    .apt_install('ffmpeg')
     .pip_install(
         "TTS==0.22.0",
-        "torch==2.1.2",  # Use 2.1.2 to fix _pytree issues
-        "torchaudio==2.1.2",  # Match torchaudio version
+        "torch==2.2.0",  # Use 2.2.0 to include torch.utils._pytree.register_pytree_node
+        "torchaudio==2.2.0",  # Match torchaudio version
+        "torchvision==0.17.0",  # Matches torch 2.2.0
+        "transformers==4.38.2",  # Required for BeamSearchScorer used by XTTS
         "numpy<2.0",  # TTS requires numpy <2.0
         "scipy",
         "librosa",
         "soundfile",
         "fastapi",  # Required for web endpoints
     )
+    .run_commands([
+        "COQUI_TOS_AGREED=1 python -c \"from TTS.api import TTS; print('📦 Pre-downloading XTTS model...'); TTS('tts_models/multilingual/multi-dataset/xtts_v2'); print('✅ XTTS model cached in image')\""
+    ])
     .env({"COQUI_TOS_AGREED": "1"})  # Auto-accept Coqui TOS for non-commercial use
-    # Model will be downloaded on first use
 )
 
 # GPU function for voice cloning + TTS
@@ -42,6 +50,7 @@ image = (
     gpu="T4",  # NVIDIA T4 - good balance of cost and performance
     timeout=300,  # 5 minutes max
     scaledown_window=120,  # Keep warm for 2 minutes
+    min_containers=1,
     memory=8192,  # 8GB RAM
 )
 def generate_speech(text: str, voice_audio_b64: str, language: str = "en"):
@@ -94,12 +103,38 @@ def generate_speech(text: str, voice_audio_b64: str, language: str = "en"):
 
     output_path = tempfile.mktemp(suffix=".wav")
 
+    converted_file = tempfile.NamedTemporaryFile(suffix='.wav', delete=False)
+    converted_voice_path = converted_file.name
+    converted_file.close()
+
+    try:
+        ffmpeg_cmd = [
+            'ffmpeg',
+            '-y',
+            '-i',
+            voice_path,
+            '-acodec',
+            'pcm_s16le',
+            '-ar',
+            '44100',
+            '-ac',
+            '1',
+            '-af',
+            'loudnorm',
+            converted_voice_path,
+        ]
+        subprocess.run(ffmpeg_cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        print(f"🔄 Converted {voice_path} to WAV: {converted_voice_path}")
+    except subprocess.CalledProcessError as ffmpeg_error:
+        print(f"❌ FFmpeg conversion failed: {ffmpeg_error.stderr.decode('utf-8', 'ignore')[:500]}")
+        raise HTTPException(status_code=500, detail='Failed to convert audio for voice cloning')
+
     try:
         # Generate speech with voice cloning
         print(f"🎵 Generating speech in language: {language}")
         tts.tts_to_file(
             text=text,
-            speaker_wav=voice_path,
+            speaker_wav=converted_voice_path,
             language=language,
             file_path=output_path
         )
@@ -118,6 +153,8 @@ def generate_speech(text: str, voice_audio_b64: str, language: str = "en"):
         # Cleanup temp files
         if os.path.exists(voice_path):
             os.unlink(voice_path)
+        if converted_voice_path != voice_path and os.path.exists(converted_voice_path):
+            os.unlink(converted_voice_path)
         if os.path.exists(output_path):
             os.unlink(output_path)
 
