@@ -206,7 +206,7 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
       if (micCollapseTimerRef.current) {
         clearTimeout(micCollapseTimerRef.current);
       }
-      micCollapseTimerRef.current = window.setTimeout(() => {
+      micCollapseTimerRef.current = setTimeout(() => {
         setIsMicCollapsed(true);
       }, 1400);
     } else {
