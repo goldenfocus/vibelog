@@ -51,6 +51,7 @@ interface VibelogActionsProps {
   onUpgradePrompt?: (message: string, benefits: string[]) => void;
   variant?: 'default' | 'compact'; // compact for cards, default for detail pages
   className?: string;
+  forceTTS?: boolean;
 }
 
 export default function VibelogActions({
@@ -77,6 +78,7 @@ export default function VibelogActions({
   onUpgradePrompt,
   variant = 'default',
   className = '',
+  forceTTS = false,
 }: VibelogActionsProps) {
   const { user } = useAuth();
   const [copySuccess, setCopySuccess] = useState(false);
@@ -178,7 +180,7 @@ export default function VibelogActions({
   const handlePlayClick = async () => {
     // VOICE CLONING FIX: If author has a cloned voice, always use TTS instead of old audio_url
     // This ensures we use the latest cloned voice rather than outdated pre-generated audio
-    const shouldUseTTS = authorVoiceCloneId || teaserOnly || !audioUrl;
+    const shouldUseTTS = forceTTS || authorVoiceCloneId || teaserOnly || !audioUrl;
 
     // If original audio is available AND author has no cloned voice, use global player
     // Note: In teaserOnly mode, we always use TTS (teaser text)
