@@ -222,7 +222,9 @@ export default function PublishActions({
         </button>
 
         <button
-          onClick={handlePlayClick}
+          onClick={() => {
+            void handlePlayClick();
+          }}
           disabled={isLoading}
           className="group relative flex min-w-[70px] flex-col items-center gap-2 overflow-hidden rounded-2xl border border-border/20 bg-muted/20 p-3 transition-all duration-200 hover:scale-105 hover:bg-muted/30 sm:min-w-[80px] sm:p-4"
           data-testid="play-button"
