@@ -52,7 +52,7 @@ function ProcessingRailComponent({
   activeStage,
 }: ProcessingRailProps) {
   const trackRef = useRef<HTMLDivElement>(null);
-  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const cardRefs = useRef<(HTMLElement | null)[]>([]);
 
   const activeIndex = stageOrder.indexOf(activeStage);
 
