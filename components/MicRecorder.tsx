@@ -85,7 +85,7 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
   const progressRailRef = useRef<HTMLDivElement>(null);
   const publishActionsRef = useRef<HTMLDivElement>(null);
   const prefetchedKeyRef = useRef<string | null>(null);
-  const micCollapseTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const micCollapseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // State to track whether user wants to see full content
   const [showingFullContent, setShowingFullContent] = useState(false);
