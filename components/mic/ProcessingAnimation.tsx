@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 
 import { useI18n } from '@/components/providers/I18nProvider';
 
@@ -37,6 +37,7 @@ export default function ProcessingAnimation({
   const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>([]);
   const [isAnimating, setIsAnimating] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  const hasStartedRef = useRef(false);
 
   // Currently active step for a concise status line
   const activeStep = processingSteps.find(s => !s.completed);
@@ -261,12 +262,13 @@ export default function ProcessingAnimation({
   ]);
 
   useEffect(() => {
-    if (!isVisible || isAnimating) {
+    if (!isVisible || isAnimating || hasStartedRef.current) {
       return;
     }
 
     // Defer starting processing to the next tick so initial render assertions pass
     const id = window.setTimeout(() => {
+      hasStartedRef.current = true;
       void runProcessing();
     }, 0);
     return () => clearTimeout(id);
@@ -277,6 +279,7 @@ export default function ProcessingAnimation({
     if (!isVisible) {
       setProcessingSteps([]);
       setIsAnimating(false);
+      hasStartedRef.current = false;
     }
   }, [isVisible]);
 
