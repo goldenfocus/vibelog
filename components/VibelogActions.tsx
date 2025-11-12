@@ -19,7 +19,11 @@ import { toast } from 'sonner';
 import ExportButton from '@/components/ExportButton';
 import LikersPopover from '@/components/LikersPopover';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { useTextToSpeech } from '@/hooks/useTextToSpeech';
+import {
+  createTextToSpeechCacheKey,
+  normalizeTextToSpeechInput,
+  useTextToSpeech,
+} from '@/hooks/useTextToSpeech';
 import type { ExportFormat } from '@/lib/export';
 import { useAudioPlayerStore } from '@/state/audio-player-store';
 
@@ -223,15 +227,7 @@ export default function VibelogActions({
     const useTeaserText = teaserOnly && teaser;
     const textToPlay = useTeaserText ? teaser : content;
 
-    // Clean markdown for TTS
-    let cleanContent = textToPlay
-      .replace(/#{1,6}\s/g, '') // Remove headers
-      .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
-      .replace(/\*(.*?)\*/g, '$1') // Remove italic
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove links
-      .replace(/`([^`]+)`/g, '$1') // Remove code
-      .replace(/\n\s*\n/g, '\n') // Remove extra newlines
-      .trim();
+    let cleanContent = normalizeTextToSpeechInput(textToPlay);
 
     // Truncate in teaser/compact contexts to keep TTS generation under 20 seconds
     const shouldLimitLength = teaserOnly || variant === 'compact';
@@ -245,6 +241,14 @@ export default function VibelogActions({
     // Pass authorVoiceCloneId directly so TTS route can use the cloned voice
     // This ensures we use the author's current voice clone without database lookup
     // Pass title and author so they display correctly in the audio player
+    const cacheKey = createTextToSpeechCacheKey({
+      text: cleanContent,
+      voice: 'shimmer',
+      vibelogId,
+      voiceCloneId: authorVoiceCloneId,
+      authorId,
+    });
+
     console.log('🎵 [TTS-BUTTON] Calling playText with:', {
       vibelogId,
       authorVoiceCloneId,
@@ -255,7 +259,16 @@ export default function VibelogActions({
     });
     // Pass authorId so TTS route can check author's profile for voice_clone_id
     // even if authorVoiceCloneId is undefined (e.g., when voice cloning failed)
-    await playText(cleanContent, 'shimmer', vibelogId, authorVoiceCloneId, title, author, authorId);
+    await playText({
+      text: cleanContent,
+      voice: 'shimmer',
+      vibelogId,
+      voiceCloneId: authorVoiceCloneId,
+      title,
+      author,
+      authorId,
+      cacheKey,
+    });
   };
 
   const handleCopyClick = async () => {

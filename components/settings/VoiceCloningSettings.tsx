@@ -78,7 +78,7 @@ export default function VoiceCloningSettings({ userId }: VoiceCloningSettingsPro
   useEffect(() => {
     console.log('🔄 [VOICE-CLONE] Component mounted, refreshing profile data...');
     refetchProfile();
-  }, []);
+  }, [refetchProfile]);
 
   // Check if user has a cloned voice and sync with profile
   useEffect(() => {
@@ -234,7 +234,11 @@ export default function VoiceCloningSettings({ userId }: VoiceCloningSettingsPro
       console.log('🎵 [VOICE-CLONE] Playing sample with FRESH voice ID:', voiceCloneId);
 
       // Use the TTS hook which now uses the global player
-      await playText(sampleText, 'shimmer', undefined, voiceCloneId);
+      await playText({
+        text: sampleText,
+        voice: 'shimmer',
+        voiceCloneId,
+      });
       console.log('✅ [VOICE-CLONE] Sample playback started');
     } catch (error) {
       console.error('TTS error:', error);
@@ -500,7 +504,7 @@ export default function VoiceCloningSettings({ userId }: VoiceCloningSettingsPro
             <div className="space-y-4">
               {PROCESSING_STEPS.map((step, index) => (
                 <div
-                  key={index}
+                  key={step.label}
                   className={`flex items-center gap-3 transition-all ${
                     processingStep >= index ? 'opacity-100' : 'opacity-30'
                   }`}

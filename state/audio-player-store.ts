@@ -8,6 +8,12 @@ export interface AudioTrack {
   title?: string; // Optional title for display
   author?: string; // Optional author name
   type: 'blob' | 'url' | 'tts'; // Type of audio source
+  meta?: {
+    cacheKey?: string;
+    vibelogId?: string;
+    voiceCloneId?: string;
+    [key: string]: unknown;
+  };
 }
 
 interface AudioPlayerState {

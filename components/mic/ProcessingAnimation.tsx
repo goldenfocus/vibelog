@@ -15,11 +15,12 @@ export interface ProcessingStep {
 export interface ProcessingAnimationProps {
   isVisible: boolean;
   recordingTime: number;
-  onTranscribeComplete: () => Promise<any>;
-  onGenerateComplete: () => Promise<any>;
-  onCoverComplete?: (vibelogContent?: string) => Promise<any>;
+  onTranscribeComplete: () => Promise<string>;
+  onGenerateComplete: () => Promise<string>;
+  onCoverComplete?: (vibelogContent?: string) => Promise<unknown>;
   onAnimationComplete?: () => void;
   className?: string;
+  renderMode?: 'visual' | 'headless';
 }
 
 export default function ProcessingAnimation({
@@ -30,6 +31,7 @@ export default function ProcessingAnimation({
   onCoverComplete,
   onAnimationComplete,
   className = '',
+  renderMode = 'visual',
 }: ProcessingAnimationProps) {
   const { t } = useI18n();
   const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>([]);
@@ -142,7 +144,7 @@ export default function ProcessingAnimation({
         _transcribeMs = performance.now() - t0;
       });
 
-    let generatePromise: Promise<any> | null = null;
+    let generatePromise: Promise<string> | null = null;
     let generateStarted = false;
     let generatedVibelogContent: string = '';
     const startGenerate = () => {
@@ -215,7 +217,9 @@ export default function ProcessingAnimation({
           startGenerate();
         }
         console.log('⏳ [PROCESSING-ANIMATION] Waiting for generation to complete...');
-        await generatePromise;
+        if (generatePromise) {
+          await generatePromise;
+        }
         console.log('✅ [PROCESSING-ANIMATION] Generation complete, ref should be set now');
         // Small UX dwell for smooth animation, but ref is already set synchronously
         await new Promise(res => setTimeout(res, minDwell));
@@ -252,6 +256,7 @@ export default function ProcessingAnimation({
     onCoverComplete,
     onAnimationComplete,
     recordingTime,
+    isAnimating,
   ]);
 
   useEffect(() => {
@@ -260,12 +265,11 @@ export default function ProcessingAnimation({
     }
 
     // Defer starting processing to the next tick so initial render assertions pass
-    const id = setTimeout(() => {
-      runProcessing();
+    const id = window.setTimeout(() => {
+      void runProcessing();
     }, 0);
     return () => clearTimeout(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isVisible]);
+  }, [isAnimating, isVisible, runProcessing]);
 
   // Reset state when component becomes invisible
   useEffect(() => {
@@ -276,6 +280,10 @@ export default function ProcessingAnimation({
   }, [isVisible]);
 
   if (!isVisible) {
+    return null;
+  }
+
+  if (renderMode === 'headless') {
     return null;
   }
 
@@ -316,11 +324,7 @@ export default function ProcessingAnimation({
             {visible.map((s, i) => {
               const isActive = visibleStart + i === currentIdx;
               return (
-                <li
-                  key={`${s.id}-${i}`}
-                  className="relative pl-8"
-                  data-testid={`timeline-step-${s.id}`}
-                >
+                <li key={s.id} className="relative pl-8" data-testid={`timeline-step-${s.id}`}>
                   <div
                     className="absolute left-0 top-1.5 h-3.5 w-3.5 rounded-full"
                     style={{
