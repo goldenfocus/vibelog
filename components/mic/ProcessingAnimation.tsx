@@ -15,8 +15,8 @@ export interface ProcessingStep {
 export interface ProcessingAnimationProps {
   isVisible: boolean;
   recordingTime: number;
-  onTranscribeComplete: () => Promise<string | undefined>;
-  onGenerateComplete: () => Promise<string | undefined>;
+  onTranscribeComplete: () => Promise<string>;
+  onGenerateComplete: () => Promise<string>;
   onCoverComplete?: (vibelogContent?: string) => Promise<unknown>;
   onAnimationComplete?: () => void;
   className?: string;
@@ -144,7 +144,7 @@ export default function ProcessingAnimation({
         _transcribeMs = performance.now() - t0;
       });
 
-    let generatePromise: Promise<string | undefined> | null = null;
+    let generatePromise: Promise<void> | null = null;
     let generateStarted = false;
     let generatedVibelogContent: string = '';
     const startGenerate = () => {
@@ -153,7 +153,8 @@ export default function ProcessingAnimation({
       }
       generateStarted = true;
       const g0 = performance.now();
-      generatePromise = onGenerateComplete()
+      const generationTask = onGenerateComplete();
+      generatePromise = generationTask
         .then(result => {
           _generateOk = true;
           // Capture the vibelog content for cover generation
