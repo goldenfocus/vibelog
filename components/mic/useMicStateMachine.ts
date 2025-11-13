@@ -177,6 +177,8 @@ export function useMicStateMachine(
 
   const toastTimeoutRef = useRef<number | null>(null);
   const recordingTimerRef = useRef<number | null>(null);
+  const saveInProgressRef = useRef(false);
+  const hasSavedRef = useRef(false);
 
   const showToast = useCallback((message: string) => {
     setToast({ message, visible: true });
@@ -246,6 +248,8 @@ export function useMicStateMachine(
   }, []);
 
   const resetRecordingState = useCallback(() => {
+    hasSavedRef.current = false;
+    saveInProgressRef.current = false;
     setRecordingState('idle');
     setTranscription('');
     setVibelogContent('');
@@ -569,6 +573,16 @@ export function useMicStateMachine(
   );
 
   const completeProcessing = useCallback(async () => {
+    if (hasSavedRef.current) {
+      console.log('⚠️ [COMPLETE-PROCESSING] Save already completed for this recording session.');
+      return;
+    }
+    if (saveInProgressRef.current) {
+      console.log('⏳ [COMPLETE-PROCESSING] Save already in progress, ignoring duplicate trigger.');
+      return;
+    }
+
+    saveInProgressRef.current = true;
     console.log('🎯 [COMPLETE-PROCESSING] Starting save process at', Date.now());
 
     // CRITICAL FIX: Wait for content to be available (with timeout)
@@ -624,17 +638,17 @@ export function useMicStateMachine(
       contentLength: contentToSave?.length || 0,
     });
 
-    if (!contentToSave) {
-      console.error('❌ [COMPLETE-PROCESSING] No content available to save');
-      if (DEBUG_MODE) {
-        console.warn('No content available to save after processing');
-      }
-      showToast(t('components.micRecorder.noContentToSave'));
-      setRecordingState('complete');
-      return;
-    }
-
     try {
+      if (!contentToSave) {
+        console.error('❌ [COMPLETE-PROCESSING] No content available to save');
+        if (DEBUG_MODE) {
+          console.warn('No content available to save after processing');
+        }
+        showToast(t('components.micRecorder.noContentToSave'));
+        setRecordingState('complete');
+        return;
+      }
+
       const fullContent = vibelogAPI.processingData.current.vibelogContentData || contentToSave;
 
       // CRITICAL: Wait for cover image generation to complete before saving
@@ -801,6 +815,8 @@ export function useMicStateMachine(
         } else {
           showToast(result.message || t('components.micRecorder.saved'));
         }
+
+        hasSavedRef.current = true;
       } else {
         showToast(t('components.micRecorder.saveFallback'));
       }
@@ -809,6 +825,8 @@ export function useMicStateMachine(
         console.error('Unexpected auto-save error', error);
       }
       showToast(t('components.micRecorder.saveFallback'));
+    } finally {
+      saveInProgressRef.current = false;
     }
 
     setTimeout(() => {

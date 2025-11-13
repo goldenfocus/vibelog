@@ -8,6 +8,12 @@ export interface AudioTrack {
   title?: string; // Optional title for display
   author?: string; // Optional author name
   type: 'blob' | 'url' | 'tts'; // Type of audio source
+  meta?: {
+    cacheKey?: string;
+    vibelogId?: string;
+    voiceCloneId?: string;
+    [key: string]: unknown;
+  };
 }
 
 interface AudioPlayerState {
@@ -81,7 +87,7 @@ export const useAudioPlayerStore = create<AudioPlayerState>(set => ({
       if (state.audioElement.readyState < 3) {
         state.audioElement.load();
         await new Promise<void>((resolve, reject) => {
-          const timeout = setTimeout(() => reject(new Error('Audio load timeout')), 5000);
+          const timeout = setTimeout(() => reject(new Error('Audio load timeout')), 20000);
           state.audioElement!.addEventListener(
             'canplaythrough',
             () => {
