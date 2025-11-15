@@ -27,6 +27,19 @@ export function GodModeProvider({ initialSession }: GodModeProviderProps) {
     setSession(initialSession);
   }, [initialSession]);
 
+  // Add padding to body when god mode is active to prevent banner from covering content
+  useEffect(() => {
+    if (session) {
+      document.body.style.paddingTop = '56px'; // Height of the banner
+    } else {
+      document.body.style.paddingTop = '0';
+    }
+
+    return () => {
+      document.body.style.paddingTop = '0';
+    };
+  }, [session]);
+
   const handleExitGodMode = async () => {
     try {
       const response = await fetch('/api/admin/god-mode', {

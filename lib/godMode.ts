@@ -44,10 +44,10 @@ export async function enterGodMode(
     expiresAt,
   };
 
-  // Set secure cookie
+  // Set secure cookie (NOT httpOnly so client can read it)
   const cookieStore = await cookies();
   cookieStore.set(GOD_MODE_COOKIE, JSON.stringify(session), {
-    httpOnly: true,
+    httpOnly: false, // Allow client-side reading for AuthProvider
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     maxAge: GOD_MODE_EXPIRY_HOURS * 60 * 60, // 1 hour
