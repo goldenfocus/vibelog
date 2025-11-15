@@ -2,28 +2,21 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { Mic2 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useState, useMemo } from 'react';
 
 import AudioPlayer from '@/components/AudioPlayer';
 import Controls from '@/components/mic/Controls';
 import ProcessingAnimation from '@/components/mic/ProcessingAnimation';
-import ProcessingRail from '@/components/mic/ProcessingRail';
+import ProcessingPeek from '@/components/mic/ProcessingPeek';
 import PublishActions from '@/components/mic/PublishActions';
 import ToneSettings from '@/components/mic/ToneSettings';
 import TranscriptionPanel from '@/components/mic/TranscriptionPanel';
 import { useMicStateMachine } from '@/components/mic/useMicStateMachine';
 import Waveform from '@/components/mic/Waveform';
-import { useAuth } from '@/components/providers/AuthProvider';
 import { useI18n } from '@/components/providers/I18nProvider';
 import UpgradePrompt from '@/components/UpgradePrompt';
 import VibelogContentRenderer from '@/components/VibelogContentRenderer';
 import VibelogEditModal from '@/components/VibelogEditModal';
-import {
-  createTextToSpeechCacheKey,
-  normalizeTextToSpeechInput,
-  prefetchTextToSpeech,
-} from '@/hooks/useTextToSpeech';
 
 interface MicRecorderProps {
   remixContent?: string | null;
@@ -31,7 +24,6 @@ interface MicRecorderProps {
 
 export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
   const { t } = useI18n();
-  const { user } = useAuth();
   const {
     recordingState,
     recordingTime,
@@ -74,19 +66,6 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
     completeProcessing,
   } = useMicStateMachine({ remixContent });
 
-  const [isMicCollapsed, setIsMicCollapsed] = useState(false);
-  const [autoPlayEnabled, setAutoPlayEnabled] = useState(true);
-  const [voicePrefetchState, setVoicePrefetchState] = useState<
-    'idle' | 'warming' | 'ready' | 'error'
-  >('idle');
-  const [autoPlayRequest, setAutoPlayRequest] = useState<{ id: string; cacheKey: string } | null>(
-    null
-  );
-  const progressRailRef = useRef<HTMLDivElement>(null);
-  const publishActionsRef = useRef<HTMLDivElement>(null);
-  const prefetchedKeyRef = useRef<string | null>(null);
-  const micCollapseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   // State to track whether user wants to see full content
   const [showingFullContent, setShowingFullContent] = useState(false);
 
@@ -112,17 +91,6 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
     setShowingFullContent(true);
   };
 
-  const handleVoiceSettingsClick = () => {
-    if (typeof window !== 'undefined') {
-      window.open('/settings/profile#voice', '_blank', 'noopener,noreferrer');
-    }
-  };
-
-  const handleCancelAutoPlay = () => {
-    setAutoPlayEnabled(false);
-    setAutoPlayRequest(null);
-  };
-
   // Determine which content to display
   const displayContent = showingFullContent ? fullVibelogContent || vibelogContent : vibelogContent;
   const shouldShowReadMore =
@@ -130,45 +98,6 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
     !showingFullContent &&
     fullVibelogContent &&
     fullVibelogContent !== vibelogContent;
-
-  const normalizedSpeechText = useMemo(
-    () => normalizeTextToSpeechInput(displayContent),
-    [displayContent]
-  );
-
-  const processingStage: 'transcribe' | 'story' | 'cover' | 'voice' = useMemo(() => {
-    if (!transcription) {
-      return 'transcribe';
-    }
-    if (!vibelogContent) {
-      return 'story';
-    }
-    if (!coverImage) {
-      return 'cover';
-    }
-    return 'voice';
-  }, [transcription, vibelogContent, coverImage]);
-
-  const voiceRailStatus: 'idle' | 'warming' | 'ready' | 'error' = (() => {
-    if (voicePrefetchState === 'error') {
-      return 'error';
-    }
-    if (voicePrefetchState === 'warming') {
-      return 'warming';
-    }
-    if (voicePrefetchState === 'ready' || voiceCloneId) {
-      return 'ready';
-    }
-    return 'idle';
-  })();
-
-  const stageLabels: Record<'transcribe' | 'story' | 'cover' | 'voice', string> = {
-    transcribe: 'Transcribing your riff',
-    story: 'Writing your story',
-    cover: 'Painting cover art',
-    voice: voicePrefetchState === 'ready' ? 'Voice ready' : 'Cloning your voice',
-  };
-  const statusLabel = stageLabels[processingStage];
 
   // Parse the displayed content (not just the teaser) to extract title and body
   const displayParsed = useMemo(() => {
@@ -201,200 +130,24 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
     });
   }
 
-  useEffect(() => {
-    if (recordingState === 'processing') {
-      if (micCollapseTimerRef.current) {
-        clearTimeout(micCollapseTimerRef.current);
-      }
-      micCollapseTimerRef.current = setTimeout(() => {
-        setIsMicCollapsed(true);
-      }, 1400);
-    } else {
-      if (micCollapseTimerRef.current) {
-        clearTimeout(micCollapseTimerRef.current);
-        micCollapseTimerRef.current = null;
-      }
-      setIsMicCollapsed(false);
-    }
-
-    return () => {
-      if (micCollapseTimerRef.current) {
-        clearTimeout(micCollapseTimerRef.current);
-        micCollapseTimerRef.current = null;
-      }
-    };
-  }, [recordingState]);
-
-  useEffect(() => {
-    if (recordingState === 'processing' && progressRailRef.current) {
-      progressRailRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  }, [recordingState]);
-
-  useEffect(() => {
-    if (recordingState !== 'processing') {
-      return;
-    }
-    if (typeof window === 'undefined') {
-      return;
-    }
-    if (window.matchMedia('(min-width: 768px)').matches) {
-      return;
-    }
-    progressRailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, [processingStage, recordingState]);
-
-  useEffect(() => {
-    if (recordingState !== 'complete' || !normalizedSpeechText) {
-      setVoicePrefetchState('idle');
-      prefetchedKeyRef.current = null;
-      setAutoPlayRequest(null);
-      return;
-    }
-
-    const cacheKey = createTextToSpeechCacheKey({
-      text: normalizedSpeechText,
-      voice: 'shimmer',
-      vibelogId,
-      voiceCloneId,
-      authorId: user?.id,
-    });
-
-    if (prefetchedKeyRef.current === cacheKey && voicePrefetchState === 'ready') {
-      if (autoPlayEnabled && !autoPlayRequest) {
-        setAutoPlayRequest({ id: `${cacheKey}-${Date.now()}`, cacheKey });
-      }
-      return;
-    }
-
-    let cancelled = false;
-    prefetchedKeyRef.current = cacheKey;
-    setVoicePrefetchState('warming');
-
-    prefetchTextToSpeech(
-      {
-        text: normalizedSpeechText,
-        voice: 'shimmer',
-        vibelogId,
-        voiceCloneId,
-        authorId: user?.id,
-        cacheKey,
-      },
-      {
-        onUpgradePrompt: (message, benefits) =>
-          setUpgradePrompt({
-            visible: true,
-            message,
-            benefits,
-          }),
-      }
-    )
-      .then(() => {
-        if (cancelled) {
-          return;
-        }
-        setVoicePrefetchState('ready');
-        if (autoPlayEnabled) {
-          setAutoPlayRequest({ id: `${cacheKey}-${Date.now()}`, cacheKey });
-        }
-      })
-      .catch(error => {
-        if (cancelled) {
-          return;
-        }
-        console.error('Failed to prefetch speech audio:', error);
-        setVoicePrefetchState('error');
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    autoPlayEnabled,
-    autoPlayRequest,
-    normalizedSpeechText,
-    recordingState,
-    setUpgradePrompt,
-    user?.id,
-    vibelogId,
-    voiceCloneId,
-    voicePrefetchState,
-  ]);
-
-  useEffect(() => {
-    if (autoPlayRequest && publishActionsRef.current) {
-      publishActionsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, [autoPlayRequest]);
-
-  useEffect(() => {
-    if (recordingState === 'idle' || recordingState === 'recording') {
-      setAutoPlayEnabled(true);
-      setAutoPlayRequest(null);
-    }
-  }, [recordingState]);
-
   return (
     <div className="w-full">
-      {recordingState === 'processing' && (
-        <button
-          type="button"
-          onClick={() =>
-            progressRailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-          }
-          className="mb-4 flex w-full items-center justify-center rounded-full border border-electric/30 bg-electric/10 px-4 py-2 text-xs font-semibold text-electric backdrop-blur md:hidden"
-        >
-          <span className="mr-2 h-2 w-2 animate-pulse rounded-full bg-electric" />
-          <span>Now: {statusLabel}</span>
-        </button>
-      )}
-
       {/* Recording controls with settings gear */}
       <div className="relative flex justify-center">
-        {(!isMicCollapsed || recordingState !== 'processing') && (
-          <>
-            <Controls
-              recordingState={recordingState}
-              recordingTime={recordingTime}
-              onStartRecording={startRecording}
-              onStopRecording={stopRecording}
-              onReset={reset}
-            />
-            {/* Settings gear - positioned to the right of mic button */}
-            <div className="absolute right-4 top-4 sm:right-8">
-              <ToneSettings
-                disabled={recordingState === 'recording' || recordingState === 'processing'}
-              />
-            </div>
-          </>
-        )}
-      </div>
-
-      {isMicCollapsed && recordingState === 'processing' && (
-        <div className="sticky top-4 z-30 mb-6 flex items-center justify-between gap-3 rounded-2xl border border-border/40 bg-card/80 p-3 shadow-lg backdrop-blur">
-          <button
-            type="button"
-            onClick={() => {
-              setIsMicCollapsed(false);
-              if (typeof window !== 'undefined') {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }
-            }}
-            className="flex flex-1 items-center gap-3 text-left"
-          >
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-electric text-white shadow-md">
-              <Mic2 className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-foreground">Processing</p>
-              <p className="text-xs text-muted-foreground">{statusLabel}</p>
-            </div>
-          </button>
-          <div className="flex-shrink-0">
-            <ToneSettings disabled />
-          </div>
+        <Controls
+          recordingState={recordingState}
+          recordingTime={recordingTime}
+          onStartRecording={startRecording}
+          onStopRecording={stopRecording}
+          onReset={reset}
+        />
+        {/* Settings gear - positioned to the right of mic button */}
+        <div className="absolute right-4 top-4 sm:right-8">
+          <ToneSettings
+            disabled={recordingState === 'recording' || recordingState === 'processing'}
+          />
         </div>
-      )}
+      </div>
 
       {showRecordingUI && <Waveform levels={audioLevels} isActive variant="recording" />}
 
@@ -420,51 +173,15 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
         onGenerateComplete={processVibelogGeneration}
         onCoverComplete={processCoverImage}
         onAnimationComplete={completeProcessing}
-        renderMode="headless"
       />
 
-      <div ref={progressRailRef}>
-        <ProcessingRail
-          isVisible={recordingState === 'processing'}
-          transcription={transcription}
-          liveTranscript={liveTranscript}
-          vibelogContent={vibelogContent}
-          coverImage={coverImage}
-          voiceCloneId={voiceCloneId}
-          voiceStatus={voiceRailStatus}
-          onVoiceAction={handleVoiceSettingsClick}
-          activeStage={processingStage}
-        />
-      </div>
-
-      {(voicePrefetchState === 'warming' ||
-        (voicePrefetchState === 'ready' && !autoPlayEnabled)) && (
-        <div className="mb-6 rounded-2xl border border-border/40 bg-muted/20 p-4 text-sm text-muted-foreground">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="font-semibold text-foreground">
-                {voicePrefetchState === 'warming'
-                  ? 'Your voice is warming up'
-                  : 'Voice is ready to play'}
-              </p>
-              <p>
-                {voicePrefetchState === 'warming'
-                  ? 'We will auto-play once the clone finishes rendering.'
-                  : 'Auto-play is off. Tap listen when you are ready.'}
-              </p>
-            </div>
-            {voicePrefetchState === 'warming' && autoPlayEnabled && (
-              <button
-                type="button"
-                onClick={handleCancelAutoPlay}
-                className="rounded-full border border-border px-3 py-1 text-xs font-semibold text-foreground hover:border-electric hover:text-electric"
-              >
-                Cancel auto-play
-              </button>
-            )}
-          </div>
-        </div>
-      )}
+      <ProcessingPeek
+        isVisible={recordingState === 'processing'}
+        transcription={transcription}
+        vibelogContent={vibelogContent}
+        coverImage={coverImage}
+        voiceCloneId={voiceCloneId}
+      />
 
       {audioBlob && showCompletedUI && (
         <AudioPlayer audioBlob={audioBlob} playback={audioPlayback} />
@@ -479,29 +196,25 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
                   <h3 className="text-xl font-semibold">{t('recorder.polishedVibelog')}</h3>
                 </div>
 
-                <div ref={publishActionsRef}>
-                  <PublishActions
-                    content={displayContent}
-                    title={displayParsed.title || undefined}
-                    author={attribution.handle}
-                    authorId={user?.id}
-                    voiceCloneId={voiceCloneId}
-                    vibelogId={vibelogId}
-                    isLoggedIn={isLoggedIn}
-                    isTeaserContent={isTeaserContent}
-                    autoPlayRequest={autoPlayRequest}
-                    onCopy={() => {
-                      void handleCopy(displayContent);
-                    }}
-                    onEdit={beginEdit}
-                    onShare={() => {
-                      void handleShare(displayContent);
-                    }}
-                    onUpgradePrompt={(message, benefits) =>
-                      setUpgradePrompt({ visible: true, message, benefits })
-                    }
-                  />
-                </div>
+                <PublishActions
+                  content={displayContent}
+                  title={displayParsed.title || undefined}
+                  author={attribution.handle}
+                  voiceCloneId={voiceCloneId}
+                  vibelogId={vibelogId}
+                  isLoggedIn={isLoggedIn}
+                  isTeaserContent={isTeaserContent}
+                  onCopy={() => {
+                    void handleCopy(displayContent);
+                  }}
+                  onEdit={beginEdit}
+                  onShare={() => {
+                    void handleShare(displayContent);
+                  }}
+                  onUpgradePrompt={(message, benefits) =>
+                    setUpgradePrompt({ visible: true, message, benefits })
+                  }
+                />
               </div>
 
               <div className="p-8">
@@ -566,7 +279,6 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
                     content={displayContent}
                     title={displayParsed.title || undefined}
                     author={attribution.handle}
-                    authorId={user?.id}
                     voiceCloneId={voiceCloneId}
                     vibelogId={vibelogId}
                     isLoggedIn={isLoggedIn}

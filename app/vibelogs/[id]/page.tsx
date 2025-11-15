@@ -269,7 +269,6 @@ export default function VibelogDetailPage() {
                 console.log('Export as:', format);
               }}
               variant="default"
-              forceTTS
             />
           </div>
 

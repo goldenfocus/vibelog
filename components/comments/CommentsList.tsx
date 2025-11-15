@@ -37,17 +37,13 @@ export default function CommentsList({ comments, isLoading }: CommentsListProps)
       stop();
     }
 
-    if (!voiceId) {
-      return;
+    if (voiceId) {
+      setPlayingVoiceId(voiceId);
+      // Use TTS with cloned voice - playText signature is (text, voice, vibelogId?, voiceCloneId?)
+      // We pass voiceId as the voiceCloneId parameter
+      await playText(text, 'shimmer', undefined, voiceId);
+      // Stop will be called when audio ends via useTextToSpeech hook
     }
-
-    setPlayingVoiceId(voiceId);
-    await playText({
-      text,
-      voice: 'shimmer',
-      voiceCloneId: voiceId,
-    });
-    // Stop will be called when audio ends via useTextToSpeech hook
   };
 
   // Stop playing when component unmounts or comments change
