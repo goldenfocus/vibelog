@@ -131,6 +131,7 @@ export function AutoPostSettings() {
           type="button"
           role="switch"
           aria-checked={autoPostEnabled}
+          aria-label="Enable auto-posting to X"
           onClick={() => setAutoPostEnabled(!autoPostEnabled)}
           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${autoPostEnabled ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'} `}
         >
