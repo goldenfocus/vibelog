@@ -13,7 +13,6 @@ interface VibelogAuthor {
   username: string;
   display_name: string;
   avatar_url: string | null;
-  voice_clone_id?: string | null;
 }
 
 interface Vibelog {
@@ -25,7 +24,6 @@ interface Vibelog {
   content: string;
   cover_image_url: string | null;
   audio_url?: string | null; // Original audio recording
-  voice_clone_id?: string | null; // Voice clone ID for this vibelog
   created_at: string;
   published_at: string;
   view_count: number;
@@ -223,7 +221,6 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
           author={vibelog.author.display_name}
           authorId={vibelog.user_id}
           authorUsername={vibelog.author.username}
-          authorVoiceCloneId={vibelog.voice_clone_id || vibelog.author.voice_clone_id || undefined}
           audioUrl={vibelog.audio_url || undefined}
           teaser={vibelog.teaser || displayContent}
           teaserOnly={true}

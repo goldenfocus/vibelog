@@ -8,7 +8,6 @@ import { AudioEngine } from '@/components/mic/AudioEngine';
 import Controls from '@/components/mic/Controls';
 import Waveform from '@/components/mic/Waveform';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { useVoiceCloning } from '@/hooks/useVoiceCloning';
 
 type RecordingState = 'idle' | 'recording' | 'processing' | 'complete';
 
@@ -29,7 +28,6 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
 
   const audioEngineRef = useRef<AudioEngine | null>(null);
   const recordingTimerRef = useRef<number | null>(null);
-  const { cloneVoice, isCloning } = useVoiceCloning();
 
   // Initialize audio engine
   useEffect(() => {
@@ -145,16 +143,6 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
         formData.append('audio', audioBlob, 'comment.webm');
         formData.append('vibelogId', vibelogId);
 
-        // Optionally clone voice for future TTS
-        let voiceId: string | undefined;
-        if (audioBlob.size > 1024 * 512) {
-          // Only clone if audio is substantial (512KB+)
-          const cloneResult = await cloneVoice(audioBlob, vibelogId, 'Comment Voice');
-          if (cloneResult?.voiceId) {
-            voiceId = cloneResult.voiceId;
-          }
-        }
-
         // Upload audio to storage
         const uploadResponse = await fetch('/api/storage/upload', {
           method: 'POST',
@@ -181,7 +169,6 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
           body: JSON.stringify({
             vibelogId,
             audioUrl,
-            voiceId,
           }),
         });
 
@@ -285,7 +272,7 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
             onStartRecording={startRecording}
             onStopRecording={stopRecording}
             onReset={resetRecording}
-            disabled={isSubmitting || isCloning}
+            disabled={isSubmitting}
           />
 
           {/* Waveform */}
@@ -298,13 +285,13 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
             <div className="flex justify-end">
               <button
                 onClick={handleSubmit}
-                disabled={isSubmitting || isCloning}
+                disabled={isSubmitting}
                 className="flex items-center gap-2 rounded-lg bg-electric px-4 py-2 text-white transition-all hover:bg-electric-glow disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {isSubmitting || isCloning ? (
+                {isSubmitting ? (
                   <>
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                    {isCloning ? 'Cloning voice...' : 'Posting...'}
+                    Posting...
                   </>
                 ) : (
                   <>

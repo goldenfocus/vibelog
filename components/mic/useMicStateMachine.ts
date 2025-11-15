@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { toast as sonnerToast } from 'sonner';
 
 import type { RecordingState } from '@/components/mic/Controls';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -14,8 +13,6 @@ import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useToneSettings } from '@/hooks/useToneSettings';
 import { useVibelogAPI } from '@/hooks/useVibelogAPI';
 import { useVoiceActivityDetection } from '@/hooks/useVoiceActivityDetection';
-import { useVoiceCloning } from '@/hooks/useVoiceCloning';
-import { config } from '@/lib/config';
 import type { CoverImage, ToastState, UpgradePromptState } from '@/types/micRecorder';
 
 interface AttributionDetails {
@@ -46,7 +43,6 @@ interface UseMicStateMachineReturn {
   upgradePrompt: UpgradePromptState;
   isLoggedIn: boolean;
   attribution: AttributionDetails;
-  voiceCloneId?: string;
   vibelogId?: string;
 
   // Actions
@@ -152,7 +148,7 @@ export function useMicStateMachine(
   const { user } = useAuth();
   const { profile } = useProfile(user?.id);
   const isLoggedIn = Boolean(user);
-  const { tone, keepFillerWords, voiceCloningEnabled } = useToneSettings();
+  const { tone, keepFillerWords } = useToneSettings();
 
   const [recordingState, setRecordingState] = useState<RecordingState>('idle');
   const [transcription, setTranscription] = useState('');
@@ -165,7 +161,6 @@ export function useMicStateMachine(
   const [isEditingFull, setIsEditingFull] = useState(false); // Track if editing full or teaser
   const [coverImage, setCoverImage] = useState<CoverImage | null>(null);
   const [audioData, setAudioData] = useState<{ url: string; duration: number } | null>(null);
-  const [voiceCloneId, setVoiceCloneId] = useState<string | undefined>();
   const [vibelogId, setVibelogId] = useState<string | undefined>();
   const [recordingTime, setRecordingTime] = useState(0);
   const [toast, setToast] = useState<ToastState>({ message: '', visible: false });
@@ -213,11 +208,6 @@ export function useMicStateMachine(
   const audioPlayback = useAudioPlayback(audioBlob);
   const vibelogAPI = useVibelogAPI(setUpgradePrompt);
   const { saveVibelog } = useBulletproofSave();
-  const { cloneVoice } = useVoiceCloning({
-    onUpgradePrompt: (message, benefits) => {
-      setUpgradePrompt({ visible: true, message, benefits });
-    },
-  });
 
   // Use current profile username (not cached user_metadata) for attribution
   const attribution = useMemo(
@@ -659,102 +649,12 @@ export function useMicStateMachine(
         );
       }
 
-      // Clone voice BEFORE saving vibelog (if we have substantial audio)
-      let voiceCloneId: string | undefined;
-      let serverVerifiedUserId: string | undefined;
-
-      // Debug: Log voice cloning conditions
-      const sizeThreshold = config.voiceCloning.minBytes; // now configurable
-      const durationThreshold = config.voiceCloning.minDuration;
-      const meetsSize = !!audioBlob && audioBlob.size >= sizeThreshold;
-      const meetsDuration = recordingTime >= durationThreshold;
-
-      console.log('🔍 [VOICE-CLONE-CHECK] Checking voice cloning conditions:', {
-        voiceCloningEnabled,
-        hasAudioBlob: !!audioBlob,
-        audioBlobSize: audioBlob?.size,
-        audioBlobSizeKB: audioBlob ? (audioBlob.size / 1024).toFixed(2) + ' KB' : 'N/A',
-        sizeThreshold,
-        sizeThresholdKB: (sizeThreshold / 1024).toFixed(0) + ' KB',
-        durationSec: recordingTime,
-        durationThresholdSec: durationThreshold,
-        meetsSize,
-        meetsDuration,
-        allConditionsMet: voiceCloningEnabled && !!audioBlob && (meetsSize || meetsDuration),
-      });
-
-      if (voiceCloningEnabled && audioBlob && (meetsSize || meetsDuration)) {
-        // Clone if voice cloning is enabled AND audio is substantial (>512KB, roughly >30 seconds)
-        // This works for both logged-in and anonymous users
-        try {
-          console.log('🎤 [VOICE-CLONE] Starting voice cloning before save...');
-          showToast('🎤 Cloning your voice...');
-
-          // Clone voice without vibelogId (will save to profile for logged-in users)
-          const cloneResult = await cloneVoice(
-            audioBlob,
-            undefined, // No vibelogId yet - will be added to vibelog when we save
-            `${profile?.username || user?.email?.split('@')[0] || 'Anonymous'}'s Voice`
-          );
-
-          if (cloneResult) {
-            voiceCloneId = cloneResult.voiceId;
-            serverVerifiedUserId = cloneResult.userId;
-            setVoiceCloneId(cloneResult.voiceId); // Store in state for immediate playback
-            console.log('✅ [VOICE-CLONE] Voice cloned successfully:', voiceCloneId);
-            console.log('✅ [VOICE-CLONE] Server-verified userId:', serverVerifiedUserId);
-            showToast('✅ Voice cloned!');
-          } else {
-            console.warn('⚠️ [VOICE-CLONE] Voice cloning returned no result');
-          }
-        } catch (error) {
-          console.error('❌ [VOICE-CLONE] Voice cloning failed:', error);
-          // Don't block the save - continue without voice cloning
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          showToast(`Voice cloning failed: ${errorMessage}. Using default voice for playback.`);
-        }
-      } else {
-        // Voice cloning skipped - log detailed reason
-        if (!voiceCloningEnabled) {
-          console.log('🔇 [VOICE-CLONE] Skipped: Voice cloning disabled in settings');
-          console.log('💡 [VOICE-CLONE] Tip: Enable voice cloning in the settings gear ⚙️');
-          sonnerToast('Voice cloning disabled. Enable in settings ⚙️ to use your voice.', {
-            duration: 4000,
-          });
-        } else if (!audioBlob) {
-          console.log('🔇 [VOICE-CLONE] Skipped: No audio blob available');
-          console.error('❌ [VOICE-CLONE] ERROR: Audio blob should exist at this point!');
-        } else if (!meetsSize || !meetsDuration) {
-          const sizeKB = (audioBlob.size / 1024).toFixed(2);
-          const requiredKB = (sizeThreshold / 1024).toFixed(0);
-          const reasons = [] as string[];
-          if (!meetsSize) {
-            reasons.push(`size ${sizeKB}KB < ${requiredKB}KB`);
-          }
-          if (!meetsDuration) {
-            reasons.push(`duration ${recordingTime}s < ${durationThreshold}s`);
-          }
-          console.log('🔇 [VOICE-CLONE] Skipped: Constraints not met', {
-            reasons,
-            sizeBytes: audioBlob.size,
-            minBytes: sizeThreshold,
-            durationSec: recordingTime,
-            minDurationSec: durationThreshold,
-          });
-          sonnerToast(
-            `Voice cloning skipped: ${reasons.join(', ')}. Try a slightly longer recording.`,
-            { duration: 5000 }
-          );
-        }
-      }
-
       console.log('💾 [COMPLETE-PROCESSING] Calling saveVibelog with:', {
         contentLength: contentToSave.length,
         fullContentLength: fullContent.length,
         hasTranscription: !!transcription,
         hasCoverImage: !!finalCoverImage,
         hasAudioData: !!audioData,
-        hasVoiceCloneId: !!voiceCloneId,
         userId: user?.id || 'anonymous',
       });
 
@@ -765,9 +665,7 @@ export function useMicStateMachine(
         coverImage: finalCoverImage || undefined,
         audioData: audioData || undefined,
         userId: user?.id,
-        serverVerifiedUserId, // Pass server-verified userId from voice clone API
         isTeaser: isTeaserContent,
-        voiceCloneId, // Include voice clone ID if available
         metadata: {
           recordingTime,
           processingSteps: ['transcribe', 'generate', 'format', 'image'],
@@ -827,7 +725,6 @@ export function useMicStateMachine(
     t,
     transcription,
     user?.id,
-    voiceCloningEnabled,
     // Note: vibelogAPI.processingData is a ref, not a state value, so it doesn't need to be in deps
     // Including it causes stale closure issues where the ref data isn't accessible
     vibelogContent,
@@ -875,7 +772,6 @@ export function useMicStateMachine(
     upgradePrompt,
     isLoggedIn,
     attribution,
-    voiceCloneId,
     vibelogId,
     startRecording,
     stopRecording,

@@ -16,9 +16,7 @@ interface SaveVibelogData {
     duration: number;
   };
   userId?: string;
-  serverVerifiedUserId?: string; // Server-verified userId from voice clone API (fallback if session expires)
   isTeaser?: boolean;
-  voiceCloneId?: string; // Voice clone ID from ElevenLabs (if voice was cloned)
   metadata?: Record<string, any>;
 }
 
@@ -260,10 +258,8 @@ export function useBulletproofSave() {
           coverImage: data.coverImage,
           audioData: data.audioData,
           userId: data.userId,
-          serverVerifiedUserId: data.serverVerifiedUserId, // Fallback userId if session expires
           sessionId,
           isTeaser: data.isTeaser,
-          voiceCloneId: data.voiceCloneId, // Pass voice clone ID if available
           metadata: {
             ...data.metadata,
             attempt: attempt,

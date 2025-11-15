@@ -11,7 +11,6 @@ import {
   MoreVertical,
   Trash2,
   Heart,
-  Mic2,
 } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
@@ -20,6 +19,7 @@ import ExportButton from '@/components/ExportButton';
 import LikersPopover from '@/components/LikersPopover';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useTextToSpeech } from '@/hooks/useTextToSpeech';
+import { AudioPreviewLimiter } from '@/lib/audioLimiter';
 import type { ExportFormat } from '@/lib/export';
 import { useAudioPlayerStore } from '@/state/audio-player-store';
 
@@ -30,7 +30,6 @@ interface VibelogActionsProps {
   author?: string;
   authorId?: string; // User ID of vibelog author
   authorUsername?: string;
-  authorVoiceCloneId?: string; // Author's current voice clone ID (for preferring TTS over old audio)
   vibelogUrl?: string;
   createdAt?: string;
   audioUrl?: string;
@@ -56,7 +55,6 @@ export default function VibelogActions({
   author,
   authorId,
   authorUsername,
-  authorVoiceCloneId,
   vibelogUrl,
   createdAt,
   audioUrl,
@@ -83,6 +81,7 @@ export default function VibelogActions({
   const [isLiking, setIsLiking] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const lastLikeRequestRef = useRef<Promise<void> | null>(null);
+  const previewLimiterRef = useRef<AudioPreviewLimiter | null>(null);
   const {
     isPlaying: isTTSPlaying,
     isLoading: isTTSLoading,
@@ -171,13 +170,24 @@ export default function VibelogActions({
     }
   }, [isMenuOpen]);
 
-  const handlePlayClick = async () => {
-    // VOICE CLONING FIX: If author has a cloned voice, always use TTS instead of old audio_url
-    // This ensures we use the latest cloned voice rather than outdated pre-generated audio
-    const shouldUseTTS = authorVoiceCloneId || teaserOnly || !audioUrl;
+  // Cleanup preview limiter on unmount
+  useEffect(() => {
+    return () => {
+      if (previewLimiterRef.current) {
+        previewLimiterRef.current.cleanup();
+        previewLimiterRef.current = null;
+      }
+    };
+  }, []);
 
-    // If original audio is available AND author has no cloned voice, use global player
-    // Note: In teaserOnly mode, we always use TTS (teaser text)
+  const handlePlayClick = async () => {
+    // ALWAYS prefer original audio if available - it's instant, free, and authentic!
+    // Only use TTS as fallback when:
+    // 1. No original audio available
+    // 2. Teaser mode (different text than original recording)
+    const shouldUseTTS = teaserOnly || !audioUrl;
+
+    // If original audio is available, use it (instant playback!)
     if (audioUrl && !shouldUseTTS) {
       // Use global audio player for pre-generated audio
       const current = useAudioPlayerStore.getState();
@@ -185,9 +195,27 @@ export default function VibelogActions({
         // This track is already set, just toggle play/pause
         if (globalIsPlaying) {
           globalPause();
+          // Clean up limiter if pausing
+          if (previewLimiterRef.current) {
+            previewLimiterRef.current.cleanup();
+            previewLimiterRef.current = null;
+          }
         } else {
           try {
             await globalPlay();
+            // Start preview limiter for anonymous users in teaser mode
+            if (!user && teaserOnly && previewLimiterRef.current === null) {
+              previewLimiterRef.current = new AudioPreviewLimiter({
+                trackId: `vibelog-${vibelogId}`,
+                onLimitReached: () => {
+                  console.log('[Preview] 9-second limit reached');
+                },
+                onSignInPrompt: () => {
+                  console.log('[Preview] Sign-in prompt triggered');
+                },
+              });
+              previewLimiterRef.current.start();
+            }
           } catch (error) {
             console.error('Audio playback failed:', error);
           }
@@ -206,6 +234,23 @@ export default function VibelogActions({
           // Small delay to ensure track is set
           await new Promise(resolve => setTimeout(resolve, 100));
           await globalPlay();
+
+          // Start preview limiter for anonymous users in teaser mode
+          if (!user && teaserOnly) {
+            if (previewLimiterRef.current) {
+              previewLimiterRef.current.cleanup();
+            }
+            previewLimiterRef.current = new AudioPreviewLimiter({
+              trackId: `vibelog-${vibelogId}`,
+              onLimitReached: () => {
+                console.log('[Preview] 9-second limit reached');
+              },
+              onSignInPrompt: () => {
+                console.log('[Preview] Sign-in prompt triggered');
+              },
+            });
+            previewLimiterRef.current.start();
+          }
         } catch (error) {
           console.error('Audio playback failed:', error);
         }
@@ -242,20 +287,14 @@ export default function VibelogActions({
       }
     }
 
-    // Pass authorVoiceCloneId directly so TTS route can use the cloned voice
-    // This ensures we use the author's current voice clone without database lookup
     // Pass title and author so they display correctly in the audio player
     console.log('🎵 [TTS-BUTTON] Calling playText with:', {
       vibelogId,
-      authorVoiceCloneId,
-      hasVoiceCloneId: !!authorVoiceCloneId,
       title,
       author,
       textLength: cleanContent.length,
     });
-    // Pass authorId so TTS route can check author's profile for voice_clone_id
-    // even if authorVoiceCloneId is undefined (e.g., when voice cloning failed)
-    await playText(cleanContent, 'shimmer', vibelogId, authorVoiceCloneId, title, author, authorId);
+    await playText(cleanContent, 'shimmer', vibelogId, undefined, title, author, authorId);
   };
 
   const handleCopyClick = async () => {
@@ -307,12 +346,6 @@ export default function VibelogActions({
 
   const handleCancelDelete = () => {
     setShowDeleteConfirm(false);
-  };
-
-  const handleVoiceManageClick = () => {
-    if (typeof window !== 'undefined') {
-      window.open('/settings/profile#voice', '_blank', 'noopener,noreferrer');
-    }
   };
 
   // Callback to update like count when LikersPopover fetches fresh data
@@ -435,7 +468,6 @@ export default function VibelogActions({
   const wrapperClass = isCompact
     ? 'flex flex-wrap items-center gap-3 border-t border-border/30 pt-4'
     : 'flex justify-center gap-3 sm:gap-4';
-  const voiceReady = Boolean(authorVoiceCloneId);
 
   return (
     <>
@@ -547,22 +579,6 @@ export default function VibelogActions({
               <Copy className={iconClass} />
               <span className={labelClass}>{copySuccess ? 'Copied!' : 'Copy'}</span>
             </button>
-
-            {isOwnVibelog && (
-              <button
-                onClick={handleVoiceManageClick}
-                className={baseButtonClass}
-                title={voiceReady ? 'Voice ready' : 'Clone your voice'}
-                data-testid="voice-clone-button"
-              >
-                {voiceReady ? (
-                  <Sparkles className={`${iconClass} text-electric`} />
-                ) : (
-                  <Mic2 className={iconClass} />
-                )}
-                <span className={labelClass}>{voiceReady ? 'Voice Ready' : 'Clone Voice'}</span>
-              </button>
-            )}
 
             {/* Listen Button with original audio or TTS */}
             <button
