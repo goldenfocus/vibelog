@@ -6,6 +6,7 @@ const LAB_ROUTES = new Set(['/mic-lab', '/transcript-lab', '/processing-lab', '/
 // App routes that should NOT be redirected to /@username format
 const APP_ROUTES = new Set([
   '/about',
+  '/admin',
   '/api',
   '/auth',
   '/community',

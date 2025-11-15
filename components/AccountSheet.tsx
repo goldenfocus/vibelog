@@ -1,8 +1,8 @@
 'use client';
 
-import { LogOut, Loader2, Settings } from 'lucide-react';
+import { LogOut, Loader2, Settings, Shield } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useI18n } from '@/components/providers/I18nProvider';
@@ -31,8 +31,30 @@ export function AccountSheet({
   getAvatarContainerStyle,
 }: AccountSheetProps) {
   const { t } = useI18n();
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Check if user is admin
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (!user?.id) {
+        setIsAdmin(false);
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/auth/check-admin');
+        const data = await response.json();
+        setIsAdmin(data.isAdmin === true);
+      } catch (error) {
+        console.error('Error checking admin status:', error);
+        setIsAdmin(false);
+      }
+    };
+
+    checkAdminStatus();
+  }, [user?.id]);
 
   const handleSignOut = async () => {
     setIsSigningOut(true);
@@ -103,6 +125,17 @@ export function AccountSheet({
           <Settings className="h-5 w-5" />
           Profile Settings
         </Link>
+
+        {isAdmin && (
+          <Link
+            href="/admin"
+            className="flex items-center gap-3 rounded-lg bg-gradient-to-r from-purple-500/10 to-violet-500/10 px-4 py-3 text-base font-medium text-purple-600 transition-colors hover:from-purple-500/20 hover:to-violet-500/20 active:from-purple-500/30 active:to-violet-500/30 dark:text-purple-400"
+            onClick={() => onOpenChange(false)}
+          >
+            <Shield className="h-5 w-5" />
+            Admin Panel
+          </Link>
+        )}
       </div>
 
       {/* Sign Out Button */}
