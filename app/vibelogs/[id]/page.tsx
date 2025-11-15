@@ -9,6 +9,7 @@ import Navigation from '@/components/Navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import VibelogActions from '@/components/VibelogActions';
 import VibelogContentRenderer from '@/components/VibelogContentRenderer';
+import { useAutoPlayVibelogAudio } from '@/hooks/useAutoPlayVibelogAudio';
 import { formatFullDate } from '@/lib/date-utils';
 import type { ExportFormat } from '@/lib/export';
 
@@ -94,6 +95,14 @@ export default function VibelogDetailPage() {
       router.push(`/auth/signin?returnTo=/vibelogs/${vibelogId}`);
     }
   }, [authLoading, user, error, router, vibelogId]);
+
+  useAutoPlayVibelogAudio({
+    vibelogId: vibelog?.id,
+    audioUrl: vibelog?.audio_url,
+    title: vibelog?.title,
+    author: vibelog?.author?.display_name,
+    enabled: !!vibelog?.audio_url,
+  });
 
   if (loading || authLoading) {
     return (
