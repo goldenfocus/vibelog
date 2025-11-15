@@ -1,18 +1,8 @@
 'use client';
 
-import {
-  ArrowLeft,
-  ArrowRight,
-  Loader2,
-  Music2,
-  Pause,
-  Play,
-  RefreshCw,
-  Sparkles,
-  UserPlus,
-} from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2, Music2, Pause, Play, UserPlus } from 'lucide-react';
 import Link from 'next/link';
-import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useAudioPlayerStore } from '@/state/audio-player-store';
@@ -54,11 +44,6 @@ interface HomeFeedMember {
   } | null;
 }
 
-interface HomeFeedStats {
-  vibesLast24h: number;
-  newMembersLast24h: number;
-}
-
 interface HomeCommunityShowcaseProps {
   onRemix?: (content: string) => void;
 }
@@ -66,10 +51,8 @@ interface HomeCommunityShowcaseProps {
 export default function HomeCommunityShowcase({ onRemix }: HomeCommunityShowcaseProps) {
   const [latestVibelogs, setLatestVibelogs] = useState<HomeFeedVibelog[]>([]);
   const [newMembers, setNewMembers] = useState<HomeFeedMember[]>([]);
-  const [stats, setStats] = useState<HomeFeedStats>({ vibesLast24h: 0, newMembersLast24h: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const latestRef = useRef<HTMLDivElement>(null);
   const memberRef = useRef<HTMLDivElement>(null);
@@ -77,7 +60,6 @@ export default function HomeCommunityShowcase({ onRemix }: HomeCommunityShowcase
   const { currentTrack, isPlaying, isLoading, play, pause, setTrack } = useAudioPlayerStore();
 
   const loadFeed = useCallback(async () => {
-    setIsRefreshing(true);
     try {
       setError(null);
       const response = await fetch('/api/home-feed', { cache: 'no-store' });
@@ -87,13 +69,11 @@ export default function HomeCommunityShowcase({ onRemix }: HomeCommunityShowcase
       const data = await response.json();
       setLatestVibelogs(data.latestVibelogs || []);
       setNewMembers(data.newestMembers || []);
-      setStats(data.stats || { vibesLast24h: 0, newMembersLast24h: 0 });
     } catch (err) {
       console.error('[HomeCommunityShowcase] fetch error', err);
       setError('Unable to load community highlights right now. Please try again in a bit.');
     } finally {
       setLoading(false);
-      setIsRefreshing(false);
     }
   }, []);
 
@@ -152,80 +132,18 @@ export default function HomeCommunityShowcase({ onRemix }: HomeCommunityShowcase
 
   const activeTrackId = currentTrack?.id;
 
-  const statsChips = useMemo(
-    () => [
-      {
-        icon: Sparkles,
-        label: `${stats.vibesLast24h} vibelogs shared in the last day`,
-      },
-      {
-        icon: UserPlus,
-        label: `${stats.newMembersLast24h} new members joined`,
-      },
-    ],
-    [stats]
-  );
-
   return (
-    <section className="mx-auto max-w-6xl rounded-[32px] border border-border/60 bg-gradient-to-b from-background via-background/80 to-background/40 px-4 py-16 sm:px-8">
-      <div className="mb-10 text-center">
-        <p className="mb-3 text-sm font-medium uppercase tracking-[0.3em] text-electric/80">
-          Live from the community
-        </p>
-        <h2 className="mb-4 text-3xl font-bold text-foreground sm:text-4xl">
-          Fresh vibes & new voices
-        </h2>
-        <p className="mx-auto max-w-3xl text-base text-muted-foreground sm:text-lg">
-          Drop into what everyone’s recording, remix it instantly, or welcome new members who just
-          joined the vibe.
-        </p>
-      </div>
-
-      <div className="mb-12 flex flex-wrap items-center justify-center gap-3">
-        {statsChips.map((chip, index) => (
-          <div
-            key={chip.label}
-            className="inline-flex items-center gap-2 rounded-full border border-electric/30 bg-electric/5 px-4 py-2 text-sm text-electric"
-            style={{ animationDelay: `${index * 80}ms` }}
-          >
-            <chip.icon className="h-4 w-4" />
-            <span>{chip.label}</span>
-          </div>
-        ))}
-        <button
-          onClick={loadFeed}
-          className="inline-flex items-center gap-2 rounded-full border border-border/40 px-4 py-2 text-sm text-muted-foreground transition-colors hover:border-electric/40 hover:text-electric"
-        >
-          {isRefreshing ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Refreshing…
-            </>
-          ) : (
-            <>
-              <RefreshCw className="h-4 w-4" />
-              Refresh
-            </>
-          )}
-        </button>
-      </div>
-
+    <section className="mx-auto max-w-6xl rounded-[32px] border border-border/40 bg-card/40 px-4 py-12 sm:px-8">
       {error && (
-        <div className="mb-10 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-red-200">
+        <div className="mb-8 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-100">
           {error}
         </div>
       )}
 
       {/* Latest Vibelogs */}
-      <div className="mb-16">
-        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-muted-foreground">Latest</p>
-            <h3 className="text-2xl font-semibold text-foreground">Latest vibelogs</h3>
-            <p className="text-sm text-muted-foreground">
-              Tap play to preview, remix on the spot, or dive in.
-            </p>
-          </div>
+      <div className="mb-12">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
+          <h3 className="text-xl font-semibold text-foreground">Latest vibelogs</h3>
           <div className="hidden gap-2 lg:flex">
             <button
               aria-label="Scroll latest vibelogs left"
@@ -343,14 +261,8 @@ export default function HomeCommunityShowcase({ onRemix }: HomeCommunityShowcase
 
       {/* Newest members */}
       <div>
-        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-muted-foreground">New here</p>
-            <h3 className="text-2xl font-semibold text-foreground">Newest members</h3>
-            <p className="text-sm text-muted-foreground">
-              Drop by, say hi, or riff on their first vibe.
-            </p>
-          </div>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
+          <h3 className="text-xl font-semibold text-foreground">Newest members</h3>
           <div className="hidden gap-2 lg:flex">
             <button
               aria-label="Scroll newest members left"
