@@ -1,6 +1,5 @@
 'use client';
 
-import { Eye, EyeOff } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 import { XLogo } from '@/components/icons/XLogo';
@@ -10,9 +9,6 @@ export function AutoPostSettings() {
   const [autoPostEnabled, setAutoPostEnabled] = useState(false);
   const [postFormat, setPostFormat] = useState<'teaser' | 'full' | 'custom'>('teaser');
   const [customTemplate, setCustomTemplate] = useState('');
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -35,9 +31,7 @@ export function AutoPostSettings() {
 
       const { data: profile, error } = await supabase
         .from('profiles')
-        .select(
-          'auto_post_twitter, twitter_post_format, twitter_custom_template, twitter_username, twitter_password'
-        )
+        .select('auto_post_twitter, twitter_post_format, twitter_custom_template')
         .eq('id', user.id)
         .single();
 
@@ -49,8 +43,6 @@ export function AutoPostSettings() {
         setAutoPostEnabled(profile.auto_post_twitter || false);
         setPostFormat(profile.twitter_post_format || 'teaser');
         setCustomTemplate(profile.twitter_custom_template || '');
-        setUsername(profile.twitter_username || '');
-        setPassword(profile.twitter_password || '');
       }
     } catch (error) {
       console.error('Failed to load settings:', error);
@@ -78,8 +70,6 @@ export function AutoPostSettings() {
           auto_post_twitter: autoPostEnabled,
           twitter_post_format: postFormat,
           twitter_custom_template: customTemplate,
-          twitter_username: username,
-          twitter_password: password,
         })
         .eq('id', user.id);
 
@@ -150,54 +140,13 @@ export function AutoPostSettings() {
         </button>
       </div>
 
-      {/* Credentials */}
+      {/* Info Note */}
       {autoPostEnabled && (
-        <div className="space-y-4 rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
-          <div>
-            <label
-              htmlFor="x-username"
-              className="mb-2 block font-medium text-gray-900 dark:text-gray-100"
-            >
-              X Username
-            </label>
-            <input
-              id="x-username"
-              type="text"
-              value={username}
-              onChange={e => setUsername(e.target.value)}
-              placeholder="@yourusername"
-              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-transparent focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100"
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="x-password"
-              className="mb-2 block font-medium text-gray-900 dark:text-gray-100"
-            >
-              X Password
-            </label>
-            <div className="relative">
-              <input
-                id="x-password"
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="Your X password"
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 pr-10 text-gray-900 focus:border-transparent focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              Your credentials are encrypted and stored securely
-            </p>
-          </div>
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
+          <p className="text-sm text-blue-900 dark:text-blue-300">
+            When you publish a vibelog, you&apos;ll be prompted to share it on X. No credentials
+            needed - just click to post!
+          </p>
         </div>
       )}
 
