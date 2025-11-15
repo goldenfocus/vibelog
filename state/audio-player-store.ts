@@ -14,6 +14,11 @@ interface AudioPlayerState {
   // Current track being played
   currentTrack: AudioTrack | null;
 
+  // Playlist support
+  playlist: AudioTrack[];
+  currentTrackIndex: number;
+  isLooping: boolean;
+
   // Playback state
   isPlaying: boolean;
   isLoading: boolean;
@@ -33,6 +38,10 @@ interface AudioPlayerState {
 
   // Actions
   setTrack: (track: AudioTrack | null) => void;
+  setPlaylist: (tracks: AudioTrack[], startIndex?: number) => void;
+  playNext: () => void;
+  playPrevious: () => void;
+  toggleLoop: () => void;
   play: () => Promise<void>;
   pause: () => void;
   seek: (time: number) => void;
@@ -48,6 +57,9 @@ interface AudioPlayerState {
 
 const initialState = {
   currentTrack: null,
+  playlist: [],
+  currentTrackIndex: -1,
+  isLooping: true, // Default to loop playlist
   isPlaying: false,
   isLoading: false,
   currentTime: 0,
@@ -61,11 +73,89 @@ export const useAudioPlayerStore = create<AudioPlayerState>(set => ({
   ...initialState,
 
   setTrack: track => {
-    set({ currentTrack: track });
+    set({ currentTrack: track, playlist: [], currentTrackIndex: -1 });
     // If switching tracks, reset playback state
     if (track) {
       set({ currentTime: 0, duration: 0 });
     }
+  },
+
+  setPlaylist: (tracks, startIndex = 0) => {
+    if (tracks.length === 0) {
+      set({ playlist: [], currentTrackIndex: -1, currentTrack: null });
+      return;
+    }
+
+    const validIndex = Math.max(0, Math.min(startIndex, tracks.length - 1));
+    set({
+      playlist: tracks,
+      currentTrackIndex: validIndex,
+      currentTrack: tracks[validIndex],
+      currentTime: 0,
+      duration: 0,
+    });
+  },
+
+  playNext: () => {
+    const state = useAudioPlayerStore.getState();
+    if (state.playlist.length === 0) {
+      return;
+    }
+
+    let nextIndex = state.currentTrackIndex + 1;
+
+    // Loop back to start if at end and looping is enabled
+    if (nextIndex >= state.playlist.length) {
+      if (state.isLooping) {
+        nextIndex = 0;
+      } else {
+        // Stop at end if not looping
+        set({ isPlaying: false });
+        return;
+      }
+    }
+
+    set({
+      currentTrackIndex: nextIndex,
+      currentTrack: state.playlist[nextIndex],
+      currentTime: 0,
+      duration: 0,
+    });
+
+    // Auto-play next track
+    if (state.isPlaying) {
+      useAudioPlayerStore.getState().play();
+    }
+  },
+
+  playPrevious: () => {
+    const state = useAudioPlayerStore.getState();
+    if (state.playlist.length === 0) {
+      return;
+    }
+
+    let prevIndex = state.currentTrackIndex - 1;
+
+    // Loop to end if at start and looping is enabled
+    if (prevIndex < 0) {
+      prevIndex = state.isLooping ? state.playlist.length - 1 : 0;
+    }
+
+    set({
+      currentTrackIndex: prevIndex,
+      currentTrack: state.playlist[prevIndex],
+      currentTime: 0,
+      duration: 0,
+    });
+
+    // Auto-play previous track
+    if (state.isPlaying) {
+      useAudioPlayerStore.getState().play();
+    }
+  },
+
+  toggleLoop: () => {
+    set(state => ({ isLooping: !state.isLooping }));
   },
 
   play: async () => {
