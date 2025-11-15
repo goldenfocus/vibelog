@@ -89,6 +89,12 @@ export default function GlobalAudioPlayer() {
           duration: 4000,
         });
       }
+
+      // Auto-play next track in playlist if available
+      const state = useAudioPlayerStore.getState();
+      if (state.playlist.length > 0) {
+        state.playNext();
+      }
     });
 
     audio.addEventListener('play', () => {

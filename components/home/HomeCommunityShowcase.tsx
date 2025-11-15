@@ -48,7 +48,7 @@ interface HomeCommunityShowcaseProps {
   onRemix?: (content: string) => void;
 }
 
-export default function HomeCommunityShowcase({ onRemix }: HomeCommunityShowcaseProps) {
+export default function HomeCommunityShowcase(_props: HomeCommunityShowcaseProps) {
   const [latestVibelogs, setLatestVibelogs] = useState<HomeFeedVibelog[]>([]);
   const [newMembers, setNewMembers] = useState<HomeFeedMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,7 +57,7 @@ export default function HomeCommunityShowcase({ onRemix }: HomeCommunityShowcase
   const latestRef = useRef<HTMLDivElement>(null);
   const memberRef = useRef<HTMLDivElement>(null);
 
-  const { currentTrack, isPlaying, isLoading, play, pause, setTrack } = useAudioPlayerStore();
+  const { currentTrack, isPlaying, isLoading, play, pause, setPlaylist } = useAudioPlayerStore();
 
   const loadFeed = useCallback(async () => {
     try {
@@ -111,23 +111,41 @@ export default function HomeCommunityShowcase({ onRemix }: HomeCommunityShowcase
         return;
       }
 
-      setTrack({
-        id: trackId,
-        url: vibelog.audio_url,
-        title: vibelog.title,
-        author: vibelog.author?.display_name,
-        type: 'url',
-      });
+      // Create playlist from artist's vibelogs (filter by same author)
+      const artistVibelogs = latestVibelogs.filter(
+        v => v.author?.username === vibelog.author?.username && v.audio_url
+      );
+
+      // Set up playlist starting from clicked vibelog
+      const clickedIndex = artistVibelogs.findIndex(v => v.id === vibelog.id);
+      const playlistOrder = [
+        ...artistVibelogs.slice(clickedIndex),
+        ...artistVibelogs.slice(0, clickedIndex),
+      ];
+
+      const tracks = playlistOrder.map(v => ({
+        id: `vibelog-${v.id}`,
+        url: v.audio_url!,
+        title: v.title,
+        author: v.author?.display_name,
+        type: 'url' as const,
+      }));
+
+      // Set the playlist starting from clicked vibelog (index 0 in reordered array)
+      setPlaylist(tracks, 0);
 
       try {
         await new Promise(resolve => setTimeout(resolve, 100));
         await play();
+        toast.success(
+          `Playing ${artistVibelogs.length} vibe${artistVibelogs.length > 1 ? 's' : ''} from ${vibelog.author?.display_name}`
+        );
       } catch (error) {
         toast.info('Tap play in the player to listen');
         console.warn('Starting playback failed', error);
       }
     },
-    [currentTrack?.id, isPlaying, pause, play, setTrack]
+    [currentTrack?.id, isPlaying, pause, play, setPlaylist, latestVibelogs]
   );
 
   const activeTrackId = currentTrack?.id;
@@ -188,70 +206,94 @@ export default function HomeCommunityShowcase({ onRemix }: HomeCommunityShowcase
                 const isActive = activeTrackId === trackId;
                 const isTrackPlaying = isActive && isPlaying;
 
+                const vibelogUrl = vibelog.public_slug
+                  ? `/@anonymous/${vibelog.public_slug}`
+                  : vibelog.slug
+                    ? `/@${vibelog.author?.username}/${vibelog.slug}`
+                    : `/vibelogs/${vibelog.id}`;
+
                 return (
                   <article
                     key={vibelog.id}
-                    className="group flex w-80 flex-shrink-0 snap-start flex-col rounded-3xl border border-border/40 bg-gradient-to-br from-card/90 via-card/60 to-card/30 p-6 shadow-inner shadow-black/20 transition hover:border-electric/40 hover:shadow-electric/10"
+                    className="group relative flex w-80 flex-shrink-0 snap-start flex-col overflow-hidden rounded-3xl border border-border/40 bg-gradient-to-br from-card/90 via-card/60 to-card/30 shadow-inner shadow-black/20 transition hover:border-electric/40 hover:shadow-electric/10"
                   >
-                    <div className="mb-4 flex items-center gap-3">
-                      {vibelog.author?.avatar_url ? (
+                    {/* Cover Image Thumbnail */}
+                    {vibelog.cover_image_url && (
+                      <Link
+                        href={vibelogUrl}
+                        className="relative block aspect-video w-full overflow-hidden bg-muted"
+                      >
                         <img
-                          src={vibelog.author.avatar_url}
-                          alt={vibelog.author.display_name}
-                          className="h-10 w-10 rounded-full border border-border/30 object-cover"
+                          src={vibelog.cover_image_url}
+                          alt={vibelog.title}
+                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                         />
-                      ) : (
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border/30 bg-primary/5 text-primary">
-                          <Music2 className="h-5 w-5" />
-                        </div>
-                      )}
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-foreground">
-                          {vibelog.author?.display_name}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          @{vibelog.author?.username} · {formatRelativeTime(vibelog.published_at)}
-                        </p>
-                      </div>
-                    </div>
+                      </Link>
+                    )}
 
-                    <h4 className="mb-3 text-xl font-semibold">{vibelog.title}</h4>
-                    <p className="line-clamp-3 text-sm text-muted-foreground">
-                      {vibelog.teaser || vibelog.content}
-                    </p>
-
-                    <div className="mt-6 flex flex-col gap-3">
-                      <button
-                        className={`inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric/60 ${
-                          isTrackPlaying
-                            ? 'bg-electric text-white'
-                            : 'border border-border/50 bg-white/5 text-foreground hover:border-electric/40 hover:text-electric'
-                        }`}
-                        onClick={() => handlePreview(vibelog)}
-                      >
-                        {isTrackPlaying ? (
-                          <>
-                            <Pause className="h-4 w-4" />
-                            Playing
-                          </>
+                    <div className="flex flex-1 flex-col p-6">
+                      <div className="mb-4 flex items-center gap-3">
+                        {vibelog.author?.avatar_url ? (
+                          <img
+                            src={vibelog.author.avatar_url}
+                            alt={vibelog.author.display_name}
+                            className="h-10 w-10 rounded-full border border-border/30 object-cover"
+                          />
                         ) : (
-                          <>
-                            {isActive && isLoading ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Play className="h-4 w-4" />
-                            )}
-                            Listen
-                          </>
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border/30 bg-primary/5 text-primary">
+                            <Music2 className="h-5 w-5" />
+                          </div>
                         )}
-                      </button>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-foreground">
+                            {vibelog.author?.display_name}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            @{vibelog.author?.username} · {formatRelativeTime(vibelog.published_at)}
+                          </p>
+                        </div>
+                      </div>
 
-                      <button
-                        className="inline-flex items-center justify-center gap-2 rounded-full border border-border/40 px-4 py-2 text-sm font-medium text-muted-foreground transition hover:border-electric/40 hover:text-electric"
-                        onClick={() => onRemix?.(vibelog.content)}
-                      >
-                        Remix this vibe
-                      </button>
+                      <Link href={vibelogUrl} className="mb-3 block">
+                        <h4 className="text-xl font-semibold transition-colors group-hover:text-electric">
+                          {vibelog.title}
+                        </h4>
+                      </Link>
+                      <Link href={vibelogUrl} className="mb-6 block">
+                        <p className="line-clamp-3 text-sm text-muted-foreground">
+                          {vibelog.teaser || vibelog.content}
+                        </p>
+                      </Link>
+
+                      <div className="mt-auto">
+                        <button
+                          className={`inline-flex w-full items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric/60 ${
+                            isTrackPlaying
+                              ? 'bg-electric text-white'
+                              : 'border border-border/50 bg-white/5 text-foreground hover:border-electric/40 hover:text-electric'
+                          }`}
+                          onClick={e => {
+                            e.stopPropagation();
+                            handlePreview(vibelog);
+                          }}
+                        >
+                          {isTrackPlaying ? (
+                            <>
+                              <Pause className="h-4 w-4" />
+                              Playing
+                            </>
+                          ) : (
+                            <>
+                              {isActive && isLoading ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Play className="h-4 w-4" />
+                              )}
+                              Listen
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </article>
                 );
