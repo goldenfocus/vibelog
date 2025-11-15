@@ -24,7 +24,7 @@ export function SocialLinks({
   animated?: boolean;
 }) {
   const socialLinks = [
-    { url: profile.twitter_url, label: 'Twitter', icon: '𝕏', isWebsite: false },
+    { url: profile.twitter_url, label: 'X', icon: '𝕏', isWebsite: false },
     { url: profile.instagram_url, label: 'Instagram', icon: '📷', isWebsite: false },
     { url: profile.linkedin_url, label: 'LinkedIn', icon: '💼', isWebsite: false },
     { url: profile.github_url, label: 'GitHub', icon: '🐙', isWebsite: false },
