@@ -186,7 +186,6 @@ export default function VibelogActions({
     // 1. No original audio available
     // 2. Teaser mode (different text than original recording)
     const shouldUseTTS = teaserOnly || !audioUrl;
-
     // If original audio is available, use it (instant playback!)
     if (audioUrl && !shouldUseTTS) {
       // Use global audio player for pre-generated audio
