@@ -19,10 +19,14 @@ const GenerateVideoSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  let vibelogId: string | undefined;
+
   try {
     // Parse and validate request body
     const body = await request.json();
-    const { vibelogId, prompt, imageUrl, aspectRatio } = GenerateVideoSchema.parse(body);
+    const validated = GenerateVideoSchema.parse(body);
+    vibelogId = validated.vibelogId;
+    const { prompt, imageUrl, aspectRatio } = validated;
 
     console.log('[Video API] Generate video request:', {
       vibelogId,
@@ -117,8 +121,7 @@ export async function POST(request: NextRequest) {
     console.error('[Video API] Error:', error);
 
     // Update status to failed if we have vibelogId
-    const body = await request.json().catch(() => ({}));
-    if (body.vibelogId) {
+    if (vibelogId) {
       const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -130,7 +133,7 @@ export async function POST(request: NextRequest) {
           video_generation_status: 'failed',
           video_generation_error: error.message || 'Unknown error',
         })
-        .eq('id', body.vibelogId);
+        .eq('id', vibelogId);
     }
 
     return NextResponse.json(
