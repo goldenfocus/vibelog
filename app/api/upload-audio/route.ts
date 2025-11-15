@@ -2,8 +2,9 @@ import crypto from 'crypto';
 
 import { NextRequest, NextResponse } from 'next/server';
 
-import { storage } from '@/lib/storage';
+import { VIBELOGS_BUCKET } from '@/lib/storage';
 import { createServerSupabaseClient } from '@/lib/supabase';
+import { createServerAdminClient } from '@/lib/supabaseAdmin';
 
 export const runtime = 'nodejs';
 
@@ -56,19 +57,36 @@ export async function POST(request: NextRequest) {
     // Generate storage path using server-verified userId
     const path = generateAudioPath(sessionId, userId || undefined);
 
-    // Upload to Supabase Storage
-    const result = await storage.put(path, buffer, audioFile.type || 'audio/webm');
+    // Upload to VIBELOGS bucket (not vibelog-covers)
+    const supabaseAdmin = await createServerAdminClient();
+    const { error: uploadError } = await supabaseAdmin.storage
+      .from(VIBELOGS_BUCKET)
+      .upload(path, buffer, {
+        contentType: audioFile.type || 'audio/webm',
+        upsert: true,
+      });
+
+    if (uploadError) {
+      throw uploadError;
+    }
+
+    // Generate public URL
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const url = supabaseUrl
+      ? `${supabaseUrl}/storage/v1/object/public/${VIBELOGS_BUCKET}/${path}`
+      : `/${path}`;
 
     console.log('✅ [AUDIO-UPLOAD] Upload successful:', {
-      url: result.url,
-      path: result.path,
+      url,
+      path,
+      bucket: VIBELOGS_BUCKET,
       size: buffer.length,
     });
 
     return NextResponse.json({
       success: true,
-      url: result.url,
-      path: result.path,
+      url,
+      path,
       size: buffer.length,
       duration: null, // Will be set by the frontend
     });
