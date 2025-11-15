@@ -37,9 +37,9 @@ export async function uploadVideoToStorage(
 
     console.log('[Video Storage] Uploading to Supabase Storage:', filename);
 
-    // Upload to Supabase Storage
+    // Upload to Supabase Storage (use 'vibelogs' bucket)
     const { error } = await supabase.storage
-      .from('vibelog-assets')
+      .from('vibelogs')
       .upload(filename, videoBuffer, {
         contentType: 'video/mp4',
         upsert: false,
@@ -52,7 +52,7 @@ export async function uploadVideoToStorage(
 
     // Get public URL
     const { data: { publicUrl } } = supabase.storage
-      .from('vibelog-assets')
+      .from('vibelogs')
       .getPublicUrl(filename);
 
     console.log('[Video Storage] Video uploaded successfully:', publicUrl);
@@ -71,7 +71,7 @@ export async function deleteVideoFromStorage(videoUrl: string): Promise<void> {
   try {
     // Extract path from URL
     const url = new URL(videoUrl);
-    const pathMatch = url.pathname.match(/\/storage\/v1\/object\/public\/vibelog-assets\/(.+)/);
+    const pathMatch = url.pathname.match(/\/storage\/v1\/object\/public\/vibelogs\/(.+)/);
 
     if (!pathMatch) {
       throw new Error('Invalid video URL format');
@@ -82,7 +82,7 @@ export async function deleteVideoFromStorage(videoUrl: string): Promise<void> {
     console.log('[Video Storage] Deleting video:', filePath);
 
     const { error } = await supabase.storage
-      .from('vibelog-assets')
+      .from('vibelogs')
       .remove([filePath]);
 
     if (error) {
