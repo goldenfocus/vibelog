@@ -21,9 +21,7 @@ interface SaveVibelogRequest {
     duration: number;
   };
   sessionId?: string; // SECURITY: Never accept userId from client
-  serverVerifiedUserId?: string; // Server-verified userId from voice clone API (fallback if session expires)
   isTeaser?: boolean;
-  voiceCloneId?: string; // Voice clone ID from ElevenLabs (if voice was cloned)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   metadata?: Record<string, any>;
 }
@@ -133,15 +131,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       data: { user },
     } = await supabase.auth.getUser();
 
-    // Use session userId if available, otherwise fall back to server-verified userId from voice clone
-    // This handles cases where session cookies expire between voice clone and save
-    let userId = user?.id || null;
-    if (!userId && requestBody.serverVerifiedUserId) {
-      console.log(
-        '⚠️ [VIBELOG-SAVE] Session expired, using server-verified userId from voice clone'
-      );
-      userId = requestBody.serverVerifiedUserId;
-    }
+    const userId = user?.id || null;
 
     const isAnonymous = !userId;
 
@@ -151,30 +141,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // Generate SEO metadata using centralized utility
     const seoMetadata = generateVibelogSEO(title, fullContent, teaserContent);
-
-    // If no voice was cloned this time (short audio), use user's existing profile voice
-    let voiceCloneIdToSave = requestBody.voiceCloneId;
-    if (!voiceCloneIdToSave && userId) {
-      // Short audio - check if user has a cloned voice from previous recordings
-      try {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('voice_clone_id')
-          .eq('id', userId)
-          .single();
-
-        if (profile?.voice_clone_id) {
-          voiceCloneIdToSave = profile.voice_clone_id;
-          console.log(
-            '✅ [VIBELOG-SAVE] Using existing profile voice for short recording:',
-            voiceCloneIdToSave
-          );
-        }
-      } catch (profileError) {
-        // Non-critical - continue without profile voice
-        console.warn('⚠️ [VIBELOG-SAVE] Could not fetch profile voice:', profileError);
-      }
-    }
 
     // Prepare data object with both teaser and full content
     vibelogData = {
@@ -194,7 +160,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       audio_duration: requestBody.audioData?.duration
         ? Math.round(requestBody.audioData.duration)
         : null,
-      voice_clone_id: voiceCloneIdToSave || null, // Voice clone ID for TTS playback (from this recording or profile)
       language: 'en',
       word_count: wordCount,
       read_time: readTime,
@@ -290,7 +255,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
                 text: ttsText,
                 voice: 'shimmer', // Default fallback if no cloned voice
                 vibelogId: vibelogId,
-                voiceCloneId: voiceCloneIdToSave, // Pass the cloned voice ID
               }),
             });
 

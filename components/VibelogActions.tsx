@@ -11,7 +11,6 @@ import {
   MoreVertical,
   Trash2,
   Heart,
-  Mic2,
 } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
@@ -30,7 +29,6 @@ interface VibelogActionsProps {
   author?: string;
   authorId?: string; // User ID of vibelog author
   authorUsername?: string;
-  authorVoiceCloneId?: string; // Author's current voice clone ID (for preferring TTS over old audio)
   vibelogUrl?: string;
   createdAt?: string;
   audioUrl?: string;
@@ -56,7 +54,6 @@ export default function VibelogActions({
   author,
   authorId,
   authorUsername,
-  authorVoiceCloneId,
   vibelogUrl,
   createdAt,
   audioUrl,
@@ -172,12 +169,13 @@ export default function VibelogActions({
   }, [isMenuOpen]);
 
   const handlePlayClick = async () => {
-    // VOICE CLONING FIX: If author has a cloned voice, always use TTS instead of old audio_url
-    // This ensures we use the latest cloned voice rather than outdated pre-generated audio
-    const shouldUseTTS = authorVoiceCloneId || teaserOnly || !audioUrl;
+    // ALWAYS prefer original audio if available - it's instant, free, and authentic!
+    // Only use TTS as fallback when:
+    // 1. No original audio available
+    // 2. Teaser mode (different text than original recording)
+    const shouldUseTTS = teaserOnly || !audioUrl;
 
-    // If original audio is available AND author has no cloned voice, use global player
-    // Note: In teaserOnly mode, we always use TTS (teaser text)
+    // If original audio is available, use it (instant playback!)
     if (audioUrl && !shouldUseTTS) {
       // Use global audio player for pre-generated audio
       const current = useAudioPlayerStore.getState();
@@ -242,20 +240,14 @@ export default function VibelogActions({
       }
     }
 
-    // Pass authorVoiceCloneId directly so TTS route can use the cloned voice
-    // This ensures we use the author's current voice clone without database lookup
     // Pass title and author so they display correctly in the audio player
     console.log('🎵 [TTS-BUTTON] Calling playText with:', {
       vibelogId,
-      authorVoiceCloneId,
-      hasVoiceCloneId: !!authorVoiceCloneId,
       title,
       author,
       textLength: cleanContent.length,
     });
-    // Pass authorId so TTS route can check author's profile for voice_clone_id
-    // even if authorVoiceCloneId is undefined (e.g., when voice cloning failed)
-    await playText(cleanContent, 'shimmer', vibelogId, authorVoiceCloneId, title, author, authorId);
+    await playText(cleanContent, 'shimmer', vibelogId, undefined, title, author, authorId);
   };
 
   const handleCopyClick = async () => {
@@ -307,12 +299,6 @@ export default function VibelogActions({
 
   const handleCancelDelete = () => {
     setShowDeleteConfirm(false);
-  };
-
-  const handleVoiceManageClick = () => {
-    if (typeof window !== 'undefined') {
-      window.open('/settings/profile#voice', '_blank', 'noopener,noreferrer');
-    }
   };
 
   // Callback to update like count when LikersPopover fetches fresh data
@@ -435,7 +421,6 @@ export default function VibelogActions({
   const wrapperClass = isCompact
     ? 'flex flex-wrap items-center gap-3 border-t border-border/30 pt-4'
     : 'flex justify-center gap-3 sm:gap-4';
-  const voiceReady = Boolean(authorVoiceCloneId);
 
   return (
     <>
@@ -547,22 +532,6 @@ export default function VibelogActions({
               <Copy className={iconClass} />
               <span className={labelClass}>{copySuccess ? 'Copied!' : 'Copy'}</span>
             </button>
-
-            {isOwnVibelog && (
-              <button
-                onClick={handleVoiceManageClick}
-                className={baseButtonClass}
-                title={voiceReady ? 'Voice ready' : 'Clone your voice'}
-                data-testid="voice-clone-button"
-              >
-                {voiceReady ? (
-                  <Sparkles className={`${iconClass} text-electric`} />
-                ) : (
-                  <Mic2 className={iconClass} />
-                )}
-                <span className={labelClass}>{voiceReady ? 'Voice Ready' : 'Clone Voice'}</span>
-              </button>
-            )}
 
             {/* Listen Button with original audio or TTS */}
             <button
