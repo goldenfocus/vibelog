@@ -133,6 +133,7 @@ export default async function AdminDashboard() {
         </p>
       </div>
 
+      <h2 className="sr-only">Overview Statistics</h2>
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Users"

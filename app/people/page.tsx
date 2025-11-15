@@ -261,7 +261,7 @@ export default function PeoplePage() {
                   <Search className="h-12 w-12 text-muted-foreground" />
                 </div>
               </div>
-              <h3 className="mb-2 text-xl font-semibold">No creators found</h3>
+              <h2 className="mb-2 text-xl font-semibold">No creators found</h2>
               <p className="text-muted-foreground">
                 {searchQuery
                   ? `No creators match "${searchQuery}"`

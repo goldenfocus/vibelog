@@ -65,6 +65,7 @@ export default function Home() {
           </div>
 
           {/* Features Preview */}
+          <h2 className="sr-only">Features</h2>
           <div className="mx-auto mb-20 grid max-w-4xl grid-cols-3 gap-3 sm:gap-6 md:gap-8">
             <div className="rounded-xl border border-border/50 bg-card/80 p-3 text-center backdrop-blur-sm transition-all duration-300 hover:bg-card/90 sm:rounded-2xl sm:p-6 md:p-8">
               <div className="mb-3 flex items-center justify-center sm:mb-6">
