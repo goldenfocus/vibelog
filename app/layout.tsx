@@ -14,6 +14,9 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
+  display: 'swap',
+  preload: true,
+  adjustFontFallback: true,
 });
 
 export const metadata: Metadata = {
