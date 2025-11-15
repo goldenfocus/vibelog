@@ -356,6 +356,7 @@ export default function GlobalAudioPlayer() {
           <button
             onClick={handlePlayPause}
             disabled={isLoading}
+            aria-label={isLoading ? 'Loading audio' : isPlaying ? 'Pause audio' : 'Play audio'}
             className={`flex h-12 w-12 items-center justify-center rounded-full bg-gradient-electric text-white transition-all duration-200 hover:shadow-[0_10px_20px_rgba(97,144,255,0.3)] ${
               isLoading ? 'cursor-wait opacity-70' : ''
             }`}
@@ -363,9 +364,9 @@ export default function GlobalAudioPlayer() {
             {isLoading ? (
               <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/30 border-t-white" />
             ) : isPlaying ? (
-              <Pause className="h-6 w-6" />
+              <Pause className="h-6 w-6" aria-hidden="true" />
             ) : (
-              <Play className="ml-1 h-6 w-6" />
+              <Play className="ml-1 h-6 w-6" aria-hidden="true" />
             )}
           </button>
 
