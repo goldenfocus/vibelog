@@ -122,7 +122,7 @@ export default function MicLabPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background p-8">
+    <main className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-6xl">
         {/* Header */}
         <div className="mb-12 text-center">
@@ -217,6 +217,6 @@ export default function MicLabPage() {
           </p>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
