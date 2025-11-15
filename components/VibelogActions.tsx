@@ -423,6 +423,21 @@ export default function VibelogActions({
     ? 'hidden sm:inline'
     : 'text-xs font-medium text-muted-foreground group-hover:text-foreground';
 
+  // Ensure UI never shows "0" when the user has liked the vibelog by guaranteeing a minimum of 1
+  // while still letting the actual state value track the server response. This prevents moments
+  // where the icon shows a liked state but the count renders 0 due to stale data.
+  const displayLikeCount = isLiked ? Math.max(1, likeCount) : Math.max(0, likeCount);
+
+  const likeIconClass =
+    isLiked && !isCompact
+      ? `${iconClass} !text-red-500 group-hover:!text-red-600 active:!text-red-700`
+      : iconClass;
+
+  const likeLabelClass =
+    isLiked && !isCompact
+      ? `${labelClass} !text-red-500 group-hover:!text-red-600 active:!text-red-700`
+      : labelClass;
+
   const wrapperClass = isCompact
     ? 'flex flex-wrap items-center gap-3 border-t border-border/30 pt-4'
     : 'flex justify-center gap-3 sm:gap-4';
@@ -561,7 +576,7 @@ export default function VibelogActions({
             {/* Like Button */}
             <LikersPopover
               vibelogId={vibelogId}
-              likeCount={likeCount}
+              likeCount={displayLikeCount}
               onCountUpdate={handleCountUpdate}
             >
               <button
@@ -574,9 +589,9 @@ export default function VibelogActions({
                 {isLiking ? (
                   <Loader2 className={`${iconClass} animate-spin`} />
                 ) : (
-                  <Heart className={iconClass} fill={isLiked ? 'currentColor' : 'none'} />
+                  <Heart className={likeIconClass} fill={isLiked ? 'currentColor' : 'none'} />
                 )}
-                <span className={labelClass}>{isLiking ? '...' : likeCount}</span>
+                <span className={likeLabelClass}>{isLiking ? '...' : displayLikeCount}</span>
               </button>
             </LikersPopover>
 

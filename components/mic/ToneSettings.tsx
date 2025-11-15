@@ -1,23 +1,67 @@
 'use client';
 
-import { Settings, X } from 'lucide-react';
+import {
+  Settings,
+  X,
+  Heart,
+  Briefcase,
+  Coffee,
+  Laugh,
+  Sparkles,
+  BarChart3,
+  BookOpen,
+  Theater,
+  Feather,
+  type LucideIcon,
+} from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import { useToneSettings, type WritingTone } from '@/hooks/useToneSettings';
 
-const TONE_OPTIONS: Array<{ value: WritingTone; label: string; description: string }> = [
-  { value: 'authentic', label: 'Authentic', description: 'Minimal editing, natural voice' },
-  { value: 'professional', label: 'Professional', description: 'Formal and structured' },
-  { value: 'casual', label: 'Casual', description: 'Friendly and conversational' },
-  { value: 'humorous', label: 'Humorous', description: 'Funny and lighthearted' },
-  { value: 'inspiring', label: 'Inspiring', description: 'Uplifting and motivational' },
-  { value: 'analytical', label: 'Analytical', description: 'Data-driven and logical' },
-  { value: 'storytelling', label: 'Storytelling', description: 'Narrative with scenes' },
-  { value: 'dramatic', label: 'Dramatic', description: 'Heightened emotions' },
+const TONE_OPTIONS: Array<{
+  value: WritingTone;
+  label: string;
+  description: string;
+  icon: LucideIcon;
+}> = [
+  {
+    value: 'authentic',
+    label: 'Authentic',
+    description: 'Minimal editing, natural voice',
+    icon: Heart,
+  },
+  {
+    value: 'professional',
+    label: 'Professional',
+    description: 'Formal and structured',
+    icon: Briefcase,
+  },
+  { value: 'casual', label: 'Casual', description: 'Friendly and conversational', icon: Coffee },
+  { value: 'humorous', label: 'Humorous', description: 'Funny and lighthearted', icon: Laugh },
+  {
+    value: 'inspiring',
+    label: 'Inspiring',
+    description: 'Uplifting and motivational',
+    icon: Sparkles,
+  },
+  {
+    value: 'analytical',
+    label: 'Analytical',
+    description: 'Data-driven and logical',
+    icon: BarChart3,
+  },
+  {
+    value: 'storytelling',
+    label: 'Storytelling',
+    description: 'Narrative with scenes',
+    icon: BookOpen,
+  },
+  { value: 'dramatic', label: 'Dramatic', description: 'Heightened emotions', icon: Theater },
   {
     value: 'poetic',
     label: 'Poetic',
     description: 'Contemplative literary prose, serious and reflective',
+    icon: Feather,
   },
 ];
 
@@ -35,15 +79,7 @@ export default function ToneSettings({ disabled = false }: ToneSettingsProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
-  const {
-    tone,
-    keepFillerWords,
-    voiceCloningEnabled,
-    setTone,
-    setKeepFillerWords,
-    setVoiceCloningEnabled,
-    loading,
-  } = useToneSettings();
+  const { tone, keepFillerWords, setTone, setKeepFillerWords, loading } = useToneSettings();
 
   // Close panel when clicking outside
   useEffect(() => {
@@ -97,10 +133,6 @@ export default function ToneSettings({ disabled = false }: ToneSettingsProps) {
     await setKeepFillerWords(checked);
   };
 
-  const handleVoiceCloningChange = async (checked: boolean) => {
-    await setVoiceCloningEnabled(checked);
-  };
-
   return (
     <div className="relative">
       {/* Gear Icon Button */}
@@ -151,48 +183,34 @@ export default function ToneSettings({ disabled = false }: ToneSettingsProps) {
             <div className="space-y-4 p-4">
               {/* Tone Selector */}
               <div>
-                <label htmlFor="tone-select" className="mb-2 block text-sm font-medium">
-                  Writing Tone
-                </label>
-                <select
-                  id="tone-select"
-                  value={tone}
-                  onChange={e => handleToneChange(e.target.value as WritingTone)}
-                  disabled={loading}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {TONE_OPTIONS.map(option => (
-                    <option key={option.value} value={option.value}>
-                      {option.label} - {option.description}
-                    </option>
-                  ))}
-                </select>
-                <p className="mt-1 text-xs text-muted-foreground">
+                <label className="mb-3 block text-sm font-medium">Writing Tone</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {TONE_OPTIONS.map(option => {
+                    const Icon = option.icon;
+                    const isSelected = tone === option.value;
+                    return (
+                      <button
+                        key={option.value}
+                        onClick={() => handleToneChange(option.value)}
+                        disabled={loading}
+                        className={[
+                          'flex flex-col items-center gap-2 rounded-lg border p-3 transition-all',
+                          isSelected
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-border bg-background text-muted-foreground hover:border-primary/50 hover:bg-accent hover:text-foreground',
+                          'disabled:cursor-not-allowed disabled:opacity-50',
+                        ].join(' ')}
+                        title={option.description}
+                      >
+                        <Icon className="h-5 w-5" />
+                        <span className="text-xs font-medium">{option.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">
                   How AI will polish your vibelog
                 </p>
-              </div>
-
-              {/* Voice Cloning Toggle */}
-              <div className="flex items-start space-x-3">
-                <input
-                  type="checkbox"
-                  id="voice-cloning"
-                  checked={voiceCloningEnabled}
-                  onChange={e => handleVoiceCloningChange(e.target.checked)}
-                  disabled={loading}
-                  className="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                />
-                <div className="flex-1">
-                  <label
-                    htmlFor="voice-cloning"
-                    className="block cursor-pointer text-sm font-medium"
-                  >
-                    Clone my voice
-                  </label>
-                  <p className="text-xs text-muted-foreground">
-                    Generate audio using your cloned voice
-                  </p>
-                </div>
               </div>
 
               {/* Keep Filler Words Toggle */}
