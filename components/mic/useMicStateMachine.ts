@@ -472,19 +472,17 @@ export function useMicStateMachine(
     setTranscription(transcriptionResult);
     setDetectedLanguage(detectedLang);
 
-    vibelogAPI
-      .uploadAudio(audioBlob, sessionId, user?.id)
-      .then(result => {
-        setAudioData(result);
-        if (DEBUG_MODE) {
-          console.debug('Audio uploaded', result.url);
-        }
-      })
-      .catch(error => {
-        if (DEBUG_MODE) {
-          console.warn('Audio upload failed', error);
-        }
-      });
+    // CRITICAL: Upload audio BEFORE saving vibelog to ensure audio_url is available
+    try {
+      console.log('🎵 [AUDIO-UPLOAD] Uploading audio before saving vibelog...');
+      const audioUploadResult = await vibelogAPI.uploadAudio(audioBlob, sessionId, user?.id);
+      setAudioData(audioUploadResult);
+      console.log('✅ [AUDIO-UPLOAD] Audio uploaded successfully:', audioUploadResult.url);
+    } catch (error) {
+      console.error('❌ [AUDIO-UPLOAD] Audio upload failed:', error);
+      // Continue with transcription even if audio upload fails
+      // Vibelog will be saved without audio
+    }
 
     // Voice cloning will happen after vibelog is saved (in completeProcessing)
     // This ensures we have a vibelogId to associate the voice clone with
