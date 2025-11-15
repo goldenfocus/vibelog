@@ -17,7 +17,7 @@ interface CommentInputProps {
 }
 
 export default function CommentInput({ vibelogId, onCommentAdded }: CommentInputProps) {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [inputMode, setInputMode] = useState<'text' | 'voice'>('text');
   const [textContent, setTextContent] = useState('');
   const [recordingState, setRecordingState] = useState<RecordingState>('idle');
@@ -188,6 +188,18 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
       setIsSubmitting(false);
     }
   };
+
+  if (authLoading) {
+    return (
+      <div className="rounded-2xl border border-border/30 bg-card/50 p-6">
+        <div className="mb-4 h-10 w-48 animate-pulse rounded-lg bg-muted/60" />
+        <div className="space-y-3">
+          <div className="h-12 w-full animate-pulse rounded-lg bg-muted/60" />
+          <div className="h-10 w-32 animate-pulse rounded-lg bg-muted/60" />
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     return (

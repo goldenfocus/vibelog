@@ -35,7 +35,10 @@ export default function Comments({ vibelogId }: CommentsProps) {
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch(`/api/comments/${vibelogId}`);
+      const response = await fetch(`/api/comments/${vibelogId}`, {
+        credentials: 'include',
+      });
+
       if (!response.ok) {
         throw new Error('Failed to fetch comments');
       }
@@ -60,16 +63,8 @@ export default function Comments({ vibelogId }: CommentsProps) {
     fetchComments();
   };
 
-  console.log('Comments component rendering with vibelogId:', vibelogId);
-  console.log('Comments data:', { comments, isLoading, error });
-
   return (
-    <div className="mt-12 space-y-6 border-4 border-red-500">
-      {/* DEBUG: Visible test marker */}
-      <div className="bg-yellow-500 p-4 font-bold text-black">
-        🔍 COMMENTS COMPONENT IS RENDERING - vibelogId: {vibelogId}
-      </div>
-
+    <div className="mt-12 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
         <MessageSquare className="h-6 w-6 text-electric" />
