@@ -1,0 +1,492 @@
+'use client';
+
+import {
+  ArrowLeft,
+  ArrowRight,
+  Loader2,
+  Music2,
+  Pause,
+  Play,
+  RefreshCw,
+  Sparkles,
+  UserPlus,
+} from 'lucide-react';
+import Link from 'next/link';
+import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { toast } from 'sonner';
+
+import { useAudioPlayerStore } from '@/state/audio-player-store';
+
+interface HomeFeedVibelog {
+  id: string;
+  title: string;
+  slug?: string | null;
+  public_slug?: string | null;
+  teaser?: string | null;
+  content: string;
+  cover_image_url?: string | null;
+  audio_url?: string | null;
+  published_at: string;
+  read_time?: number | null;
+  author: {
+    username: string;
+    display_name: string;
+    avatar_url: string | null;
+  };
+}
+
+interface HomeFeedMember {
+  id: string;
+  username: string;
+  display_name: string;
+  avatar_url: string | null;
+  bio?: string | null;
+  total_vibelogs?: number | null;
+  created_at: string;
+  latest_vibelog?: {
+    id: string;
+    title: string;
+    teaser?: string | null;
+    slug?: string | null;
+    public_slug?: string | null;
+    published_at?: string | null;
+    audio_url?: string | null;
+  } | null;
+}
+
+interface HomeFeedStats {
+  vibesLast24h: number;
+  newMembersLast24h: number;
+}
+
+interface HomeCommunityShowcaseProps {
+  onRemix?: (content: string) => void;
+}
+
+export default function HomeCommunityShowcase({ onRemix }: HomeCommunityShowcaseProps) {
+  const [latestVibelogs, setLatestVibelogs] = useState<HomeFeedVibelog[]>([]);
+  const [newMembers, setNewMembers] = useState<HomeFeedMember[]>([]);
+  const [stats, setStats] = useState<HomeFeedStats>({ vibesLast24h: 0, newMembersLast24h: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const latestRef = useRef<HTMLDivElement>(null);
+  const memberRef = useRef<HTMLDivElement>(null);
+
+  const { currentTrack, isPlaying, isLoading, play, pause, setTrack } = useAudioPlayerStore();
+
+  const loadFeed = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      setError(null);
+      const response = await fetch('/api/home-feed', { cache: 'no-store' });
+      if (!response.ok) {
+        throw new Error('Failed to load community highlights');
+      }
+      const data = await response.json();
+      setLatestVibelogs(data.latestVibelogs || []);
+      setNewMembers(data.newestMembers || []);
+      setStats(data.stats || { vibesLast24h: 0, newMembersLast24h: 0 });
+    } catch (err) {
+      console.error('[HomeCommunityShowcase] fetch error', err);
+      setError('Unable to load community highlights right now. Please try again in a bit.');
+    } finally {
+      setLoading(false);
+      setIsRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadFeed();
+  }, [loadFeed]);
+
+  const scrollCarousel = useCallback((ref: RefObject<HTMLDivElement>, direction: 1 | -1) => {
+    if (!ref.current) {
+      return;
+    }
+    const scrollAmount = ref.current.clientWidth * 0.8 * direction;
+    ref.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+  }, []);
+
+  const handlePreview = useCallback(
+    async (vibelog: HomeFeedVibelog) => {
+      if (!vibelog.audio_url) {
+        toast.info('This vibe does not have audio yet');
+        return;
+      }
+
+      const trackId = `vibelog-${vibelog.id}`;
+      if (currentTrack?.id === trackId) {
+        if (isPlaying) {
+          pause();
+        } else {
+          try {
+            await play();
+          } catch (error) {
+            toast.info('Tap play in the player to listen');
+            console.warn('Resuming playback failed', error);
+          }
+        }
+        return;
+      }
+
+      setTrack({
+        id: trackId,
+        url: vibelog.audio_url,
+        title: vibelog.title,
+        author: vibelog.author?.display_name,
+        type: 'url',
+      });
+
+      try {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        await play();
+      } catch (error) {
+        toast.info('Tap play in the player to listen');
+        console.warn('Starting playback failed', error);
+      }
+    },
+    [currentTrack?.id, isPlaying, pause, play, setTrack]
+  );
+
+  const activeTrackId = currentTrack?.id;
+
+  const statsChips = useMemo(
+    () => [
+      {
+        icon: Sparkles,
+        label: `${stats.vibesLast24h} vibelogs shared in the last day`,
+      },
+      {
+        icon: UserPlus,
+        label: `${stats.newMembersLast24h} new members joined`,
+      },
+    ],
+    [stats]
+  );
+
+  return (
+    <section className="mx-auto max-w-6xl rounded-[32px] border border-border/60 bg-gradient-to-b from-background via-background/80 to-background/40 px-4 py-16 sm:px-8">
+      <div className="mb-10 text-center">
+        <p className="mb-3 text-sm font-medium uppercase tracking-[0.3em] text-electric/80">
+          Live from the community
+        </p>
+        <h2 className="mb-4 text-3xl font-bold text-foreground sm:text-4xl">
+          Fresh vibes & new voices
+        </h2>
+        <p className="mx-auto max-w-3xl text-base text-muted-foreground sm:text-lg">
+          Drop into what everyone’s recording, remix it instantly, or welcome new members who just
+          joined the vibe.
+        </p>
+      </div>
+
+      <div className="mb-12 flex flex-wrap items-center justify-center gap-3">
+        {statsChips.map((chip, index) => (
+          <div
+            key={chip.label}
+            className="inline-flex items-center gap-2 rounded-full border border-electric/30 bg-electric/5 px-4 py-2 text-sm text-electric"
+            style={{ animationDelay: `${index * 80}ms` }}
+          >
+            <chip.icon className="h-4 w-4" />
+            <span>{chip.label}</span>
+          </div>
+        ))}
+        <button
+          onClick={loadFeed}
+          className="inline-flex items-center gap-2 rounded-full border border-border/40 px-4 py-2 text-sm text-muted-foreground transition-colors hover:border-electric/40 hover:text-electric"
+        >
+          {isRefreshing ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Refreshing…
+            </>
+          ) : (
+            <>
+              <RefreshCw className="h-4 w-4" />
+              Refresh
+            </>
+          )}
+        </button>
+      </div>
+
+      {error && (
+        <div className="mb-10 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-red-200">
+          {error}
+        </div>
+      )}
+
+      {/* Latest Vibelogs */}
+      <div className="mb-16">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-sm uppercase tracking-[0.3em] text-muted-foreground">Latest</p>
+            <h3 className="text-2xl font-semibold text-foreground">Latest vibelogs</h3>
+            <p className="text-sm text-muted-foreground">
+              Tap play to preview, remix on the spot, or dive in.
+            </p>
+          </div>
+          <div className="hidden gap-2 lg:flex">
+            <button
+              aria-label="Scroll latest vibelogs left"
+              className="rounded-full border border-border/40 p-3 text-foreground transition hover:border-electric/40 hover:text-electric"
+              onClick={() => scrollCarousel(latestRef, -1)}
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+            <button
+              aria-label="Scroll latest vibelogs right"
+              className="rounded-full border border-border/40 p-3 text-foreground transition hover:border-electric/40 hover:text-electric"
+              onClick={() => scrollCarousel(latestRef, 1)}
+            >
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        <div
+          ref={latestRef}
+          className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-6"
+          style={{ scrollBehavior: 'smooth' }}
+        >
+          {loading
+            ? Array.from({ length: 4 }).map((_, index) => (
+                <div
+                  key={`latest-skeleton-${index}`}
+                  className="h-72 w-80 flex-shrink-0 animate-pulse rounded-3xl border border-border/40 bg-card/60 p-6 backdrop-blur"
+                >
+                  <div className="mb-4 h-6 w-32 rounded-full bg-border/70" />
+                  <div className="mb-6 h-4 w-48 rounded-full bg-border/60" />
+                  <div className="space-y-3">
+                    <div className="h-3 rounded-full bg-border/50" />
+                    <div className="h-3 rounded-full bg-border/40" />
+                    <div className="h-3 w-2/3 rounded-full bg-border/30" />
+                  </div>
+                  <div className="mt-auto h-10 w-full rounded-full bg-border/40" />
+                </div>
+              ))
+            : latestVibelogs.map(vibelog => {
+                const trackId = `vibelog-${vibelog.id}`;
+                const isActive = activeTrackId === trackId;
+                const isTrackPlaying = isActive && isPlaying;
+
+                return (
+                  <article
+                    key={vibelog.id}
+                    className="group flex w-80 flex-shrink-0 snap-start flex-col rounded-3xl border border-border/40 bg-gradient-to-br from-card/90 via-card/60 to-card/30 p-6 shadow-inner shadow-black/20 transition hover:border-electric/40 hover:shadow-electric/10"
+                  >
+                    <div className="mb-4 flex items-center gap-3">
+                      {vibelog.author?.avatar_url ? (
+                        <img
+                          src={vibelog.author.avatar_url}
+                          alt={vibelog.author.display_name}
+                          className="h-10 w-10 rounded-full border border-border/30 object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border/30 bg-primary/5 text-primary">
+                          <Music2 className="h-5 w-5" />
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-foreground">
+                          {vibelog.author?.display_name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          @{vibelog.author?.username} · {formatRelativeTime(vibelog.published_at)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <h4 className="mb-3 text-xl font-semibold">{vibelog.title}</h4>
+                    <p className="line-clamp-3 text-sm text-muted-foreground">
+                      {vibelog.teaser || vibelog.content}
+                    </p>
+
+                    <div className="mt-6 flex flex-col gap-3">
+                      <button
+                        className={`inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric/60 ${
+                          isTrackPlaying
+                            ? 'bg-electric text-white'
+                            : 'border border-border/50 bg-white/5 text-foreground hover:border-electric/40 hover:text-electric'
+                        }`}
+                        onClick={() => handlePreview(vibelog)}
+                      >
+                        {isTrackPlaying ? (
+                          <>
+                            <Pause className="h-4 w-4" />
+                            Playing
+                          </>
+                        ) : (
+                          <>
+                            {isActive && isLoading ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Play className="h-4 w-4" />
+                            )}
+                            Listen
+                          </>
+                        )}
+                      </button>
+
+                      <button
+                        className="inline-flex items-center justify-center gap-2 rounded-full border border-border/40 px-4 py-2 text-sm font-medium text-muted-foreground transition hover:border-electric/40 hover:text-electric"
+                        onClick={() => onRemix?.(vibelog.content)}
+                      >
+                        Remix this vibe
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+        </div>
+      </div>
+
+      {/* Newest members */}
+      <div>
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-sm uppercase tracking-[0.3em] text-muted-foreground">New here</p>
+            <h3 className="text-2xl font-semibold text-foreground">Newest members</h3>
+            <p className="text-sm text-muted-foreground">
+              Drop by, say hi, or riff on their first vibe.
+            </p>
+          </div>
+          <div className="hidden gap-2 lg:flex">
+            <button
+              aria-label="Scroll newest members left"
+              className="rounded-full border border-border/40 p-3 text-foreground transition hover:border-electric/40 hover:text-electric"
+              onClick={() => scrollCarousel(memberRef, -1)}
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+            <button
+              aria-label="Scroll newest members right"
+              className="rounded-full border border-border/40 p-3 text-foreground transition hover:border-electric/40 hover:text-electric"
+              onClick={() => scrollCarousel(memberRef, 1)}
+            >
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        <div
+          ref={memberRef}
+          className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2"
+          style={{ scrollBehavior: 'smooth' }}
+        >
+          {loading
+            ? Array.from({ length: 3 }).map((_, index) => (
+                <div
+                  key={`member-skeleton-${index}`}
+                  className="h-56 w-64 flex-shrink-0 animate-pulse rounded-3xl border border-border/40 bg-card/60 p-6 backdrop-blur"
+                >
+                  <div className="mb-4 flex items-center gap-3">
+                    <div className="h-12 w-12 rounded-full bg-border/50" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-3 rounded-full bg-border/50" />
+                      <div className="h-3 w-1/2 rounded-full bg-border/40" />
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="h-3 rounded-full bg-border/50" />
+                    <div className="h-3 rounded-full bg-border/40" />
+                    <div className="h-3 w-2/3 rounded-full bg-border/30" />
+                  </div>
+                </div>
+              ))
+            : newMembers.map(member => (
+                <article
+                  key={member.id}
+                  className="flex w-64 flex-shrink-0 snap-start flex-col rounded-3xl border border-border/40 bg-card/70 p-5 transition hover:border-electric/40 hover:shadow-electric/10"
+                >
+                  <div className="mb-4 flex items-center gap-3">
+                    {member.avatar_url ? (
+                      <img
+                        src={member.avatar_url}
+                        alt={member.display_name}
+                        className="h-12 w-12 rounded-full border border-border/20 object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full border border-border/20 bg-primary/5 text-primary">
+                        <UserPlus className="h-5 w-5" />
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold">{member.display_name}</p>
+                      <p className="text-xs text-muted-foreground">@{member.username}</p>
+                    </div>
+                  </div>
+
+                  <p className="mb-4 line-clamp-3 text-sm text-muted-foreground">
+                    {member.bio || 'Just joined the vibe. Say hi!'}
+                  </p>
+
+                  {member.latest_vibelog ? (
+                    <div className="mb-4 rounded-2xl border border-border/30 bg-background/40 p-3 text-xs text-muted-foreground">
+                      <p className="mb-1 font-semibold text-foreground">Latest vibe</p>
+                      <p className="line-clamp-2 text-xs">{member.latest_vibelog.title}</p>
+                    </div>
+                  ) : (
+                    <div className="mb-4 rounded-2xl border border-dashed border-border/30 p-3 text-center text-xs text-muted-foreground">
+                      New vibe coming soon ✨
+                    </div>
+                  )}
+
+                  <div className="mt-auto flex flex-col gap-2 text-sm">
+                    <Link
+                      href={`/@${member.username}`}
+                      className="inline-flex w-full items-center justify-center rounded-full border border-border/40 px-4 py-2 font-medium transition hover:border-electric/40 hover:text-electric"
+                    >
+                      View profile
+                    </Link>
+                    {member.latest_vibelog && (
+                      <Link
+                        href={getVibelogHref(member.username, member.latest_vibelog)}
+                        className="inline-flex w-full items-center justify-center rounded-full bg-electric/10 px-4 py-2 font-medium text-electric transition hover:bg-electric/20"
+                      >
+                        Listen
+                      </Link>
+                    )}
+                  </div>
+                </article>
+              ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function formatRelativeTime(isoString: string) {
+  const date = new Date(isoString);
+  const diffMs = Date.now() - date.getTime();
+  const minutes = Math.floor(diffMs / 60000);
+  const hours = Math.floor(diffMs / 3600000);
+  const days = Math.floor(diffMs / 86400000);
+
+  if (minutes < 1) {
+    return 'just now';
+  }
+  if (minutes < 60) {
+    return `${minutes}m ago`;
+  }
+  if (hours < 24) {
+    return `${hours}h ago`;
+  }
+  if (days < 7) {
+    return `${days}d ago`;
+  }
+  return date.toLocaleDateString();
+}
+
+function getVibelogHref(username: string, vibelog: NonNullable<HomeFeedMember['latest_vibelog']>) {
+  if (username === 'anonymous' && vibelog.public_slug) {
+    return `/@anonymous/${vibelog.public_slug}`;
+  }
+  if (vibelog.slug) {
+    return `/@${username}/${vibelog.slug}`;
+  }
+  if (vibelog.public_slug) {
+    return `/@${username}/${vibelog.public_slug}`;
+  }
+  return `/vibelogs/${vibelog.id}`;
+}

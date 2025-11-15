@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import VibelogActions from '@/components/VibelogActions';
 import VibelogContentRenderer from '@/components/VibelogContentRenderer';
 import VibelogEditModalFull from '@/components/VibelogEditModalFull';
+import { useAutoPlayVibelogAudio } from '@/hooks/useAutoPlayVibelogAudio';
 import type { ExportFormat } from '@/lib/export';
 
 interface PublicVibelogContentProps {
@@ -112,6 +113,14 @@ export default function PublicVibelogContent({ vibelog }: PublicVibelogContentPr
     console.log('Export format:', format);
     // Export handled by ExportButton component
   };
+
+  useAutoPlayVibelogAudio({
+    vibelogId: vibelog.id,
+    audioUrl: vibelog.audio_url,
+    title: vibelog.title,
+    author: vibelog.author?.display_name,
+    enabled: !!vibelog.audio_url,
+  });
 
   // Remove duplicate title from content if it starts with the same title
   const contentWithoutDuplicateTitle = vibelog.content.replace(

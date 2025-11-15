@@ -4,6 +4,7 @@ import { MessageCircle, Bot, Share2 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useState, useEffect, Suspense } from 'react';
 
+import HomeCommunityShowcase from '@/components/home/HomeCommunityShowcase';
 import MicRecorder from '@/components/MicRecorder';
 import Navigation from '@/components/Navigation';
 import { useI18n } from '@/components/providers/I18nProvider';
@@ -115,6 +116,8 @@ export default function Home() {
               </p>
             </div>
           </div>
+
+          <HomeCommunityShowcase onRemix={setRemixContent} />
         </div>
       </main>
     </div>
