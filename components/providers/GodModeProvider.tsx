@@ -1,6 +1,5 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -19,7 +18,6 @@ interface GodModeProviderProps {
 }
 
 export function GodModeProvider({ initialSession }: GodModeProviderProps) {
-  const router = useRouter();
   const [session, setSession] = useState<GodModeSession | null>(initialSession);
 
   useEffect(() => {
@@ -52,9 +50,8 @@ export function GodModeProvider({ initialSession }: GodModeProviderProps) {
 
       toast.success('Exited God Mode');
 
-      // Redirect to admin panel
-      router.push('/admin/users');
-      router.refresh();
+      // Force full page reload to ensure all state is cleared
+      window.location.href = '/admin/users';
     } catch (error) {
       console.error('Error exiting god mode:', error);
       toast.error('Failed to exit god mode');
