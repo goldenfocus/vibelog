@@ -7,6 +7,8 @@ import { toast } from 'sonner';
 import VibelogActions from '@/components/VibelogActions';
 import VibelogContentRenderer from '@/components/VibelogContentRenderer';
 import VibelogEditModalFull from '@/components/VibelogEditModalFull';
+import { VideoPlayer, VideoGenerator } from '@/components/video';
+import { useAuth } from '@/components/providers/AuthProvider';
 import { useAutoPlayVibelogAudio } from '@/hooks/useAutoPlayVibelogAudio';
 import type { ExportFormat } from '@/lib/export';
 
@@ -20,6 +22,8 @@ interface PublicVibelogContentProps {
     user_id: string | null;
     public_slug: string;
     audio_url?: string | null;
+    video_url?: string | null;
+    video_generation_status?: 'pending' | 'generating' | 'completed' | 'failed' | null;
     created_at?: string;
     author?: {
       username: string;
@@ -30,7 +34,9 @@ interface PublicVibelogContentProps {
 
 export default function PublicVibelogContent({ vibelog }: PublicVibelogContentProps) {
   const router = useRouter();
+  const { user } = useAuth();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [videoUrl, setVideoUrl] = useState<string | null>(vibelog.video_url || null);
 
   // Initialize with a placeholder URL to prevent hydration mismatch
   // Will be updated in useEffect with actual window.location.origin
@@ -130,6 +136,30 @@ export default function PublicVibelogContent({ vibelog }: PublicVibelogContentPr
 
   return (
     <div>
+      {/* Video Player */}
+      {videoUrl && (
+        <div className="mb-8">
+          <VideoPlayer videoUrl={videoUrl} />
+        </div>
+      )}
+
+      {/* Video Generator - Only show if user is the author, no video exists, and not generating */}
+      {user?.id === vibelog.user_id &&
+       !videoUrl &&
+       vibelog.video_generation_status !== 'generating' &&
+       vibelog.video_generation_status !== 'completed' && (
+        <div className="mb-8">
+          <VideoGenerator
+            vibelogId={vibelog.id}
+            onVideoGenerated={(url) => {
+              setVideoUrl(url);
+              // Refresh to show video
+              router.refresh();
+            }}
+          />
+        </div>
+      )}
+
       {/* Content with beautiful formatting */}
       <VibelogContentRenderer content={contentWithoutDuplicateTitle} showCTA={false} />
 

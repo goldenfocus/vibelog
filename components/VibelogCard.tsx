@@ -8,6 +8,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import VibelogActions from '@/components/VibelogActions';
 import VibelogContentRenderer from '@/components/VibelogContentRenderer';
 import VibelogEditModalFull from '@/components/VibelogEditModalFull';
+import { VideoPlayer, VideoGenerator } from '@/components/video';
 
 interface VibelogAuthor {
   username: string;
@@ -24,6 +25,8 @@ interface Vibelog {
   content: string;
   cover_image_url: string | null;
   audio_url?: string | null; // Original audio recording
+  video_url?: string | null; // AI-generated video
+  video_generation_status?: 'pending' | 'generating' | 'completed' | 'failed' | null;
   created_at: string;
   published_at: string;
   view_count: number;
@@ -44,6 +47,7 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
   const { user } = useAuth(); // Check if user is logged in
   const isLoggedIn = !!user;
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [videoUrl, setVideoUrl] = useState<string | null>(vibelog.video_url || null);
 
   // Defer date formatting to client side to avoid hydration mismatch
   const [formattedDate, setFormattedDate] = useState<string>('');
@@ -158,8 +162,15 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
       }`}
       onClick={isLoggedIn ? handleReadMore : undefined}
     >
-      {/* Cover Image */}
-      {vibelog.cover_image_url && (
+      {/* Video (if available) */}
+      {videoUrl && (
+        <div className="mb-4">
+          <VideoPlayer videoUrl={videoUrl} />
+        </div>
+      )}
+
+      {/* Cover Image (shown if no video) */}
+      {!videoUrl && vibelog.cover_image_url && (
         <div className="mb-4 overflow-hidden rounded-xl">
           <img
             src={vibelog.cover_image_url}
@@ -211,6 +222,26 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
           showCTA={!isLoggedIn} // Only show CTA for anonymous users
         />
       </div>
+
+      {/* Video Generator - Only show if user is the author, no video exists, and not generating */}
+      {isLoggedIn &&
+       user?.id === vibelog.user_id &&
+       !videoUrl &&
+       vibelog.video_generation_status !== 'generating' &&
+       vibelog.video_generation_status !== 'completed' && (
+        <div className="mb-4" onClick={e => e.stopPropagation()}>
+          <VideoGenerator
+            vibelogId={vibelog.id}
+            onVideoGenerated={(url) => {
+              setVideoUrl(url);
+              // Force refresh to update status
+              if (typeof window !== 'undefined') {
+                window.location.reload();
+              }
+            }}
+          />
+        </div>
+      )}
 
       {/* Actions - Unified Component - Stop click propagation */}
       <div onClick={e => e.stopPropagation()}>

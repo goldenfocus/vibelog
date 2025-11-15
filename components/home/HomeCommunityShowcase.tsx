@@ -358,78 +358,68 @@ export default function HomeCommunityShowcase(_props: HomeCommunityShowcaseProps
                 const hasAudio = member.latest_vibelog?.audio_url;
 
                 return (
-                  <article
+                  <Link
                     key={member.id}
-                    className="group relative flex w-80 flex-shrink-0 snap-start flex-col overflow-hidden rounded-3xl border border-border/40 bg-gradient-to-br from-card/90 via-card/60 to-card/30 shadow-inner shadow-black/20 transition hover:border-electric/40 hover:shadow-electric/10"
+                    href={profileUrl}
+                    className="group relative flex w-80 flex-shrink-0 snap-start flex-col overflow-hidden rounded-3xl border border-border/40 bg-gradient-to-br from-card/90 via-card/60 to-card/30 p-6 shadow-inner shadow-black/20 transition hover:border-electric/40 hover:shadow-electric/10"
                   >
-                    {/* Clickable card overlay */}
-                    <Link
-                      href={profileUrl}
-                      className="absolute inset-0 z-0"
-                      aria-label={`View ${member.display_name}'s profile`}
-                    />
-
-                    <div className="relative z-10 flex flex-1 flex-col p-6">
-                      <div className="mb-4 flex items-center gap-3">
-                        {member.avatar_url ? (
-                          <img
-                            src={member.avatar_url}
-                            alt={member.display_name}
-                            className="h-16 w-16 rounded-full border-2 border-border/30 object-cover ring-2 ring-transparent transition-all group-hover:ring-electric/20"
-                          />
-                        ) : (
-                          <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-border/30 bg-primary/5 text-primary ring-2 ring-transparent transition-all group-hover:ring-electric/20">
-                            <UserPlus className="h-7 w-7" />
-                          </div>
-                        )}
-                        <div className="min-w-0">
-                          <p className="truncate text-base font-semibold text-foreground transition-colors group-hover:text-electric">
-                            {member.display_name}
-                          </p>
-                          <p className="text-sm text-muted-foreground">@{member.username}</p>
-                          {member.total_vibelogs !== null &&
-                            member.total_vibelogs !== undefined && (
-                              <p className="text-xs text-muted-foreground">
-                                {member.total_vibelogs} vibe{member.total_vibelogs !== 1 ? 's' : ''}
-                              </p>
-                            )}
-                        </div>
-                      </div>
-
-                      <p className="mb-4 line-clamp-3 text-sm text-muted-foreground">
-                        {member.bio || 'Just joined the vibe. Say hi!'}
-                      </p>
-
-                      {member.latest_vibelog ? (
-                        <div className="mb-4 rounded-2xl border border-border/30 bg-background/40 p-3">
-                          <p className="mb-1 text-xs font-semibold text-muted-foreground">
-                            Latest vibe
-                          </p>
-                          <p className="line-clamp-2 text-sm font-medium text-foreground">
-                            {member.latest_vibelog.title}
-                          </p>
-                        </div>
+                    <div className="mb-4 flex items-center gap-3">
+                      {member.avatar_url ? (
+                        <img
+                          src={member.avatar_url}
+                          alt={member.display_name}
+                          className="h-16 w-16 rounded-full border-2 border-border/30 object-cover ring-2 ring-transparent transition-all group-hover:ring-electric/20"
+                        />
                       ) : (
-                        <div className="mb-4 rounded-2xl border border-dashed border-border/30 p-3 text-center text-sm text-muted-foreground">
-                          New vibe coming soon ✨
+                        <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-border/30 bg-primary/5 text-primary ring-2 ring-transparent transition-all group-hover:ring-electric/20">
+                          <UserPlus className="h-7 w-7" />
                         </div>
                       )}
-
-                      {/* Listen button - only show if user has audio */}
-                      {hasAudio && member.latest_vibelog && (
-                        <div className="relative z-20 mt-auto">
-                          <Link
-                            href={getVibelogHref(member.username, member.latest_vibelog)}
-                            onClick={e => e.stopPropagation()}
-                            className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-border/50 bg-white/5 px-4 py-2 text-sm font-semibold text-foreground transition hover:border-electric/40 hover:text-electric focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric/60"
-                          >
-                            <Play className="h-4 w-4" />
-                            Listen
-                          </Link>
-                        </div>
-                      )}
+                      <div className="min-w-0">
+                        <p className="truncate text-base font-semibold text-foreground transition-colors group-hover:text-electric">
+                          {member.display_name}
+                        </p>
+                        <p className="text-sm text-muted-foreground">@{member.username}</p>
+                        {member.total_vibelogs !== null && member.total_vibelogs !== undefined && (
+                          <p className="text-xs text-muted-foreground">
+                            {member.total_vibelogs} vibe{member.total_vibelogs !== 1 ? 's' : ''}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  </article>
+
+                    <p className="mb-4 line-clamp-3 text-sm text-muted-foreground">
+                      {member.bio || 'Just joined the vibe. Say hi!'}
+                    </p>
+
+                    {member.latest_vibelog ? (
+                      <div className="mb-4 rounded-2xl border border-border/30 bg-background/40 p-3">
+                        <p className="mb-1 text-xs font-semibold text-muted-foreground">
+                          Latest vibe
+                        </p>
+                        <p className="line-clamp-2 text-sm font-medium text-foreground">
+                          {member.latest_vibelog.title}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="mb-4 rounded-2xl border border-dashed border-border/30 p-3 text-center text-sm text-muted-foreground">
+                        New vibe coming soon ✨
+                      </div>
+                    )}
+
+                    {/* Listen button - only show if user has audio */}
+                    {hasAudio && member.latest_vibelog && (
+                      <div className="relative z-10 mt-auto" onClick={e => e.preventDefault()}>
+                        <Link
+                          href={getVibelogHref(member.username, member.latest_vibelog)}
+                          className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-border/50 bg-white/5 px-4 py-2 text-sm font-semibold text-foreground transition hover:border-electric/40 hover:text-electric focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric/60"
+                        >
+                          <Play className="h-4 w-4" />
+                          Listen
+                        </Link>
+                      </div>
+                    )}
+                  </Link>
                 );
               })}
         </div>
