@@ -19,7 +19,7 @@ interface ConfigState {
 
 const CONFIG_SCHEMA: ConfigItem[] = [
   {
-    key: 'anonymous_tts_daily_limit',
+    key: 'tts_quota_anonymous',
     label: 'Anonymous TTS Daily Limit',
     description: 'Maximum TTS requests per day for anonymous users',
     type: 'number',
@@ -27,7 +27,7 @@ const CONFIG_SCHEMA: ConfigItem[] = [
     max: 100,
   },
   {
-    key: 'registered_tts_daily_limit',
+    key: 'tts_quota_registered',
     label: 'Registered TTS Daily Limit',
     description: 'Maximum TTS requests per day for registered users',
     type: 'number',
@@ -35,23 +35,7 @@ const CONFIG_SCHEMA: ConfigItem[] = [
     max: 1000,
   },
   {
-    key: 'anonymous_voice_clone_daily_limit',
-    label: 'Anonymous Voice Clone Daily Limit',
-    description: 'Maximum voice clones per day for anonymous users (deprecated)',
-    type: 'number',
-    min: 0,
-    max: 100,
-  },
-  {
-    key: 'registered_voice_clone_daily_limit',
-    label: 'Registered Voice Clone Daily Limit',
-    description: 'Maximum voice clones per day for registered users (deprecated)',
-    type: 'number',
-    min: 0,
-    max: 1000,
-  },
-  {
-    key: 'cost_alert_threshold_usd',
+    key: 'cost_alert_threshold',
     label: 'Cost Alert Threshold (USD)',
     description: 'Alert when monthly costs exceed this amount',
     type: 'number',
@@ -59,7 +43,7 @@ const CONFIG_SCHEMA: ConfigItem[] = [
     max: 10000,
   },
   {
-    key: 'preview_audio_limit_seconds',
+    key: 'preview_duration_seconds',
     label: 'Preview Audio Limit (seconds)',
     description: 'Maximum playback duration for anonymous preview mode',
     type: 'number',
