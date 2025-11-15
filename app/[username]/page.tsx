@@ -10,6 +10,10 @@ import { ZoomableImage } from '@/components/profile/ZoomableImage';
 import { formatMonthYear } from '@/lib/date-utils';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
+// Force dynamic rendering to show updated profile images immediately
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 interface PageProps {
   params: Promise<{
     username: string;
