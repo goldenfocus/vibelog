@@ -21,10 +21,17 @@ async function getGodModeUser(actualUser: User): Promise<User | null> {
 
     const cookieValue = godModeCookie.split('=')[1];
     if (!cookieValue) {
+      console.warn('[God Mode] Empty cookie value');
       return null;
     }
 
-    const session = JSON.parse(decodeURIComponent(cookieValue));
+    let session;
+    try {
+      session = JSON.parse(decodeURIComponent(cookieValue));
+    } catch (parseError) {
+      console.error('[God Mode] Failed to parse cookie:', parseError);
+      return null;
+    }
 
     // Check if session is expired
     if (Date.now() > session.expiresAt) {
