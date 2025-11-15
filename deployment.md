@@ -7,6 +7,7 @@
 ## 🏗️ Infrastructure Overview
 
 ### Architecture
+
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
 │   Vercel CDN    │    │   Supabase DB    │    │   OpenAI API    │
@@ -18,29 +19,30 @@
 ```
 
 ### Environments
+
 ```typescript
 const environments = {
   development: {
     domain: 'localhost:3000',
     database: 'local_postgres',
     ai_services: 'openai_dev_key',
-    monitoring: 'disabled'
+    monitoring: 'disabled',
   },
 
   staging: {
     domain: 'staging.vibelog.io',
     database: 'supabase_staging',
     ai_services: 'openai_staging_key',
-    monitoring: 'limited'
+    monitoring: 'limited',
   },
 
   production: {
     domain: 'vibelog.io',
     database: 'supabase_production',
     ai_services: 'openai_production_key',
-    monitoring: 'full'
-  }
-}
+    monitoring: 'full',
+  },
+};
 ```
 
 ---
@@ -48,6 +50,7 @@ const environments = {
 ## 🚀 Deployment Process
 
 ### CI/CD Pipeline
+
 ```yaml
 # .github/workflows/deploy.yml
 name: Deploy to Production
@@ -114,26 +117,29 @@ jobs:
 ```
 
 ### Deployment Checklist
+
 ```markdown
 ## Pre-Deployment
+
 - [ ] All tests passing (unit, E2E, visual)
-- [ ] Database migrations reviewed and tested
+- [ ] Database migrations reviewed and tested (`pnpm db:status` to check pending)
 - [ ] Environment variables updated
 - [ ] Third-party service limits checked
 - [ ] Feature flags configured
 - [ ] Monitoring alerts updated
 
 ## Deployment
-- [ ] Deploy to staging first
-- [ ] Smoke tests pass on staging
-- [ ] Database migrations applied
-- [ ] Deploy to production
-- [ ] Verify deployment with health checks
-- [ ] Smoke tests pass on production
+
+- [ ] Merge PR to `main` (triggers automatic Vercel deploy)
+- [ ] Wait for Vercel deployment to complete
+- [ ] Apply database migrations: `pnpm db:migrate`
+- [ ] Verify migrations applied: `pnpm db:status`
+- [ ] Run smoke tests on production
 
 ## Post-Deployment
+
 - [ ] Monitor error rates for 30 minutes
-- [ ] Check core user flows
+- [ ] Check core user flows (record, publish, view)
 - [ ] Verify performance metrics
 - [ ] Update status page if needed
 - [ ] Notify team of successful deployment
@@ -144,43 +150,70 @@ jobs:
 ## 🗄️ Database Management
 
 ### Migration Strategy
+
+**Quick Reference:**
+
+```bash
+# Apply migrations after code deploy
+pnpm db:migrate
+
+# Check migration status
+pnpm db:status
+```
+
+**Workflow:**
+
 ```typescript
 // Database migration workflow
 const migrationProcess = {
   development: {
-    apply: 'automatic',
+    apply: 'pnpm db:reset',
     rollback: 'manual',
-    testing: 'seed_data_reset'
+    testing: 'seed_data_reset',
   },
 
   staging: {
-    apply: 'automatic_on_deploy',
+    apply: 'pnpm db:migrate (manual)',
     rollback: 'manual_with_approval',
-    testing: 'full_test_suite'
+    testing: 'full_test_suite',
   },
 
   production: {
-    apply: 'manual_with_review',
+    apply: 'pnpm db:migrate (manual with review)',
     rollback: 'two_person_approval',
-    testing: 'pre_migration_backup'
-  }
-}
+    testing: 'pre_migration_backup',
+  },
+};
 ```
 
+**How It Works:**
+
+1. Code changes are deployed automatically via Vercel on merge to `main`
+2. Database migrations must be applied manually using `pnpm db:migrate`
+3. This gives you control over when schema changes are applied
+4. See `supabase/MIGRATION_INSTRUCTIONS.md` for detailed migration guide
+
+**Deployment Order:**
+
+1. ✅ **Code Deploy** — Vercel automatically deploys code changes
+2. ⏸️ **Manual Step** — You or Claude runs `pnpm db:migrate`
+3. ✅ **Verify** — Run `pnpm db:status` to confirm migrations applied
+
 ### Backup & Recovery
+
 ```typescript
 const backupStrategy = {
   // Automated backups
   daily: {
     schedule: '02:00 UTC',
     retention: '30 days',
-    verification: 'restore_test_weekly'
+    verification: 'restore_test_weekly',
   },
 
   weekly: {
     schedule: 'Sunday 01:00 UTC',
     retention: '12 weeks',
-    storage: 'separate_region'
+    storage: 'separate_region',
   },
 
   // Point-in-time recovery
@@ -188,12 +221,13 @@ const backupStrategy = {
     enabled: true,
     retention: '7 days',
     recovery_time_objective: '4 hours',
-    recovery_point_objective: '15 minutes'
-  }
-}
+    recovery_point_objective: '15 minutes',
+  },
+};
 ```
 
 ### Database Maintenance
+
 ```sql
 -- Weekly maintenance tasks
 -- 1. Update table statistics
@@ -217,19 +251,20 @@ DELETE FROM audit_logs WHERE created_at < NOW() - INTERVAL '1 year';
 ## 🔄 Rollback Procedures
 
 ### Automated Rollback Triggers
+
 ```typescript
 const rollbackTriggers = {
   // Automatic rollback conditions
   error_rate: {
     threshold: '5%',
     window: '5 minutes',
-    action: 'immediate_rollback'
+    action: 'immediate_rollback',
   },
 
   response_time: {
     threshold: 'p95 > 5 seconds',
     window: '10 minutes',
-    action: 'staged_rollback'
+    action: 'staged_rollback',
   },
 
   // Manual rollback scenarios
@@ -237,12 +272,13 @@ const rollbackTriggers = {
     'critical_bug_discovered',
     'security_vulnerability',
     'data_corruption_detected',
-    'third_party_service_failure'
-  ]
-}
+    'third_party_service_failure',
+  ],
+};
 ```
 
 ### Rollback Process
+
 ```bash
 #!/bin/bash
 # scripts/rollback.sh
@@ -286,6 +322,7 @@ echo "✅ Rollback completed successfully"
 ## 📊 Environment Configuration
 
 ### Environment Variables
+
 ```typescript
 // Environment variable schema
 const envSchema = z.object({
@@ -317,10 +354,11 @@ const envSchema = z.object({
   // External Services
   RESEND_API_KEY: z.string().optional(),
   STRIPE_SECRET_KEY: z.string().optional(),
-})
+});
 ```
 
 ### Feature Flags
+
 ```typescript
 // Feature flag configuration
 const featureFlags = {
@@ -328,23 +366,23 @@ const featureFlags = {
     NEW_EDITOR: true,
     BATCH_PROCESSING: true,
     TEAM_FEATURES: true,
-    DEBUG_MODE: true
+    DEBUG_MODE: true,
   },
 
   staging: {
     NEW_EDITOR: true,
     BATCH_PROCESSING: false,
     TEAM_FEATURES: false,
-    DEBUG_MODE: false
+    DEBUG_MODE: false,
   },
 
   production: {
-    NEW_EDITOR: false,  // Gradual rollout
+    NEW_EDITOR: false, // Gradual rollout
     BATCH_PROCESSING: false,
     TEAM_FEATURES: false,
-    DEBUG_MODE: false
-  }
-}
+    DEBUG_MODE: false,
+  },
+};
 ```
 
 ---
@@ -352,6 +390,7 @@ const featureFlags = {
 ## 🔍 Health Checks & Monitoring
 
 ### Health Check Endpoints
+
 ```typescript
 // /api/health
 export async function GET() {
@@ -367,50 +406,54 @@ export async function GET() {
     checkDiskSpace(),
 
     // Memory usage
-    checkMemoryUsage()
-  ])
+    checkMemoryUsage(),
+  ]);
 
   const results = checks.map((check, index) => ({
     service: ['database', 'openai', 'supabase', 'disk', 'memory'][index],
     status: check.status === 'fulfilled' ? 'healthy' : 'unhealthy',
-    details: check.status === 'fulfilled' ? check.value : check.reason
-  }))
+    details: check.status === 'fulfilled' ? check.value : check.reason,
+  }));
 
-  const isHealthy = results.every(r => r.status === 'healthy')
+  const isHealthy = results.every(r => r.status === 'healthy');
 
-  return Response.json({
-    status: isHealthy ? 'healthy' : 'unhealthy',
-    timestamp: new Date().toISOString(),
-    checks: results
-  }, {
-    status: isHealthy ? 200 : 503
-  })
+  return Response.json(
+    {
+      status: isHealthy ? 'healthy' : 'unhealthy',
+      timestamp: new Date().toISOString(),
+      checks: results,
+    },
+    {
+      status: isHealthy ? 200 : 503,
+    }
+  );
 }
 ```
 
 ### Smoke Tests
+
 ```typescript
 // tests/smoke.spec.ts
 test.describe('Production Smoke Tests', () => {
   test('homepage loads', async ({ page }) => {
-    await page.goto('/')
-    await expect(page.locator('h1')).toContainText('VibeLog')
-  })
+    await page.goto('/');
+    await expect(page.locator('h1')).toContainText('VibeLog');
+  });
 
   test('can start recording', async ({ page }) => {
-    await page.goto('/')
-    await page.click('[data-testid="start-recording"]')
-    await expect(page.locator('[data-testid="recording-indicator"]')).toBeVisible()
-  })
+    await page.goto('/');
+    await page.click('[data-testid="start-recording"]');
+    await expect(page.locator('[data-testid="recording-indicator"]')).toBeVisible();
+  });
 
   test('API endpoints respond', async ({ request }) => {
-    const health = await request.get('/api/health')
-    expect(health.status()).toBe(200)
+    const health = await request.get('/api/health');
+    expect(health.status()).toBe(200);
 
-    const vibelog = await request.get('/api/vibelogs')
-    expect(vibelog.status()).toBeLessThan(500)
-  })
-})
+    const vibelog = await request.get('/api/vibelogs');
+    expect(vibelog.status()).toBeLessThan(500);
+  });
+});
 ```
 
 ---
@@ -418,52 +461,55 @@ test.describe('Production Smoke Tests', () => {
 ## 🚨 Incident Response
 
 ### Incident Classification
+
 ```typescript
 const incidentSeverity = {
   P0: {
     description: 'Complete service outage',
     response_time: '15 minutes',
     escalation: 'immediate',
-    examples: ['Site completely down', 'Database unavailable', 'Auth system broken']
+    examples: ['Site completely down', 'Database unavailable', 'Auth system broken'],
   },
 
   P1: {
     description: 'Major feature broken',
     response_time: '1 hour',
     escalation: 'within 2 hours',
-    examples: ['Recording not working', 'AI generation failing', 'Payment processing down']
+    examples: ['Recording not working', 'AI generation failing', 'Payment processing down'],
   },
 
   P2: {
     description: 'Minor feature degraded',
     response_time: '4 hours',
     escalation: 'next business day',
-    examples: ['Slow loading', 'UI glitches', 'Non-critical API errors']
-  }
-}
+    examples: ['Slow loading', 'UI glitches', 'Non-critical API errors'],
+  },
+};
 ```
 
 ### Communication Plan
+
 ```typescript
 const communicationPlan = {
   internal: {
     P0: ['slack_alert', 'pagerduty', 'email_leadership'],
     P1: ['slack_alert', 'email_team'],
-    P2: ['slack_alert']
+    P2: ['slack_alert'],
   },
 
   external: {
     P0: ['status_page', 'twitter', 'email_customers'],
     P1: ['status_page', 'in_app_banner'],
-    P2: ['status_page']
+    P2: ['status_page'],
   },
 
   templates: {
-    investigating: "We're investigating reports of issues with {service}. We'll provide updates as we learn more.",
+    investigating:
+      "We're investigating reports of issues with {service}. We'll provide updates as we learn more.",
     identified: "We've identified the issue affecting {service} and are working on a fix.",
-    resolved: "The issue with {service} has been resolved. We apologize for any inconvenience."
-  }
-}
+    resolved: 'The issue with {service} has been resolved. We apologize for any inconvenience.',
+  },
+};
 ```
 
 ---
@@ -471,49 +517,51 @@ const communicationPlan = {
 ## 📈 Scaling Strategy
 
 ### Horizontal Scaling
+
 ```typescript
 const scalingThresholds = {
   vercel_functions: {
     trigger: 'response_time_p95 > 3s',
     action: 'increase_function_memory',
-    limit: '1GB max'
+    limit: '1GB max',
   },
 
   database: {
     trigger: 'connection_pool_utilization > 80%',
     action: 'increase_pool_size',
-    limit: 'supabase_plan_limits'
+    limit: 'supabase_plan_limits',
   },
 
   storage: {
     trigger: 'storage_usage > 80%',
     action: 'archive_old_files',
-    fallback: 'upgrade_plan'
-  }
-}
+    fallback: 'upgrade_plan',
+  },
+};
 ```
 
 ### Performance Optimization
+
 ```typescript
 const optimizationStrategy = {
   caching: {
     static_assets: 'CDN + browser cache (1 year)',
     api_responses: 'Redis cache (TTL varies)',
-    database_queries: 'Query result caching (5 minutes)'
+    database_queries: 'Query result caching (5 minutes)',
   },
 
   bundling: {
     code_splitting: 'route_based + component_based',
     tree_shaking: 'enabled',
-    compression: 'gzip + brotli'
+    compression: 'gzip + brotli',
   },
 
   images: {
     format: 'WebP with JPEG fallback',
     sizing: 'responsive with srcset',
-    loading: 'lazy loading below fold'
-  }
-}
+    loading: 'lazy loading below fold',
+  },
+};
 ```
 
 ---
@@ -521,25 +569,27 @@ const optimizationStrategy = {
 ## 🚨 Disaster Recovery
 
 ### Recovery Objectives
+
 ```typescript
 const recoveryObjectives = {
   // Recovery Point Objective (how much data can we lose)
   rpo: {
-    database: '15 minutes',        // Point-in-time recovery
-    user_uploads: '1 hour',        // File backup frequency
-    application_state: '5 minutes' // Redis/cache backup
+    database: '15 minutes', // Point-in-time recovery
+    user_uploads: '1 hour', // File backup frequency
+    application_state: '5 minutes', // Redis/cache backup
   },
 
   // Recovery Time Objective (how long to recover)
   rto: {
-    critical_services: '30 minutes',  // Auth, recording, basic publishing
-    full_functionality: '4 hours',    // All features restored
-    performance_baseline: '8 hours'   // Back to normal performance
-  }
-}
+    critical_services: '30 minutes', // Auth, recording, basic publishing
+    full_functionality: '4 hours', // All features restored
+    performance_baseline: '8 hours', // Back to normal performance
+  },
+};
 ```
 
 ### Disaster Scenarios
+
 ```typescript
 const disasterScenarios = {
   // Regional outage
@@ -547,7 +597,7 @@ const disasterScenarios = {
     trigger: 'primary_region_unavailable',
     response: 'failover_to_secondary_region',
     estimated_downtime: '15-30 minutes',
-    data_loss_risk: 'minimal'
+    data_loss_risk: 'minimal',
   },
 
   // Database corruption
@@ -555,7 +605,7 @@ const disasterScenarios = {
     trigger: 'data_integrity_check_fails',
     response: 'restore_from_latest_backup',
     estimated_downtime: '2-4 hours',
-    data_loss_risk: 'up_to_15_minutes'
+    data_loss_risk: 'up_to_15_minutes',
   },
 
   // Third-party service failure
@@ -563,7 +613,7 @@ const disasterScenarios = {
     trigger: 'openai_api_unavailable',
     response: 'fallback_to_alternative_provider',
     estimated_downtime: '5-10 minutes',
-    data_loss_risk: 'none'
+    data_loss_risk: 'none',
   },
 
   // Security breach
@@ -571,12 +621,13 @@ const disasterScenarios = {
     trigger: 'unauthorized_access_detected',
     response: 'isolate_and_investigate',
     estimated_downtime: '1-6 hours',
-    data_loss_risk: 'potential_exposure'
-  }
-}
+    data_loss_risk: 'potential_exposure',
+  },
+};
 ```
 
 ### Backup Strategy
+
 ```typescript
 const backupStrategy = {
   // Database backups
@@ -584,19 +635,19 @@ const backupStrategy = {
     continuous: {
       method: 'point_in_time_recovery',
       retention: '7_days',
-      storage: 'supabase_automatic'
+      storage: 'supabase_automatic',
     },
     daily: {
       method: 'full_dump',
       retention: '30_days',
       storage: 'separate_cloud_provider',
-      verification: 'weekly_restore_test'
+      verification: 'weekly_restore_test',
     },
     weekly: {
       method: 'compressed_archive',
       retention: '1_year',
-      storage: 'offline_cold_storage'
-    }
+      storage: 'offline_cold_storage',
+    },
   },
 
   // File storage backups
@@ -604,25 +655,26 @@ const backupStrategy = {
     real_time: {
       method: 'cross_region_replication',
       retention: 'permanent',
-      storage: 'supabase_multi_region'
+      storage: 'supabase_multi_region',
     },
     daily: {
       method: 'incremental_backup',
       retention: '90_days',
-      storage: 'aws_glacier'
-    }
+      storage: 'aws_glacier',
+    },
   },
 
   // Application state
   configuration: {
     git_repository: 'version_controlled',
     environment_vars: 'encrypted_backup_daily',
-    secrets: 'vault_with_multiple_regions'
-  }
-}
+    secrets: 'vault_with_multiple_regions',
+  },
+};
 ```
 
 ### Failover Procedures
+
 ```typescript
 const failoverProcedures = {
   // Automated failover
@@ -630,13 +682,9 @@ const failoverProcedures = {
     triggers: [
       'health_check_fails_3_consecutive',
       'response_time_p95_over_30s',
-      'error_rate_over_10_percent'
+      'error_rate_over_10_percent',
     ],
-    actions: [
-      'route_traffic_to_backup',
-      'scale_backup_infrastructure',
-      'notify_on_call_engineer'
-    ]
+    actions: ['route_traffic_to_backup', 'scale_backup_infrastructure', 'notify_on_call_engineer'],
   },
 
   // Manual failover
@@ -644,12 +692,13 @@ const failoverProcedures = {
     decision_makers: ['tech_lead', 'on_call_engineer'],
     approval_time: '< 5 minutes',
     execution_time: '< 15 minutes',
-    rollback_plan: 'immediate_if_issues'
-  }
-}
+    rollback_plan: 'immediate_if_issues',
+  },
+};
 ```
 
 ### Data Recovery Procedures
+
 ```bash
 #!/bin/bash
 # scripts/disaster-recovery.sh
@@ -709,6 +758,7 @@ echo "📋 Next steps: Update incident report and notify stakeholders"
 ```
 
 ### Business Continuity
+
 ```typescript
 const businessContinuity = {
   // Critical business functions
@@ -717,7 +767,7 @@ const businessContinuity = {
     'voice_recording',
     'basic_transcription',
     'content_saving',
-    'payment_processing'
+    'payment_processing',
   ],
 
   // Reduced functionality mode
@@ -727,9 +777,9 @@ const businessContinuity = {
       'ai_content_generation',
       'multi_platform_publishing',
       'advanced_editing',
-      'team_collaboration'
+      'team_collaboration',
     ],
-    communication: 'status_page_and_in_app_banner'
+    communication: 'status_page_and_in_app_banner',
   },
 
   // Stakeholder communication
@@ -737,20 +787,20 @@ const businessContinuity = {
     customers: {
       channels: ['status_page', 'email', 'in_app_notifications'],
       frequency: 'every_30_minutes_during_incident',
-      responsible: 'customer_success_team'
+      responsible: 'customer_success_team',
     },
     investors: {
       channels: ['email', 'phone_call_if_critical'],
       frequency: 'major_updates_only',
-      responsible: 'ceo'
+      responsible: 'ceo',
     },
     team: {
       channels: ['slack', 'incident_channel'],
       frequency: 'real_time_updates',
-      responsible: 'incident_commander'
-    }
-  }
-}
+      responsible: 'incident_commander',
+    },
+  },
+};
 ```
 
 ---
@@ -758,6 +808,7 @@ const businessContinuity = {
 ## 🔧 Implementation Checklist
 
 ### Infrastructure Setup
+
 - [ ] Vercel project configured
 - [ ] Supabase database set up
 - [ ] Domain and SSL configured
@@ -766,6 +817,7 @@ const businessContinuity = {
 - [ ] Monitoring dashboards created
 
 ### CI/CD Pipeline
+
 - [ ] GitHub Actions workflow configured
 - [ ] Automated testing in pipeline
 - [ ] Staging environment deployment
@@ -773,6 +825,7 @@ const businessContinuity = {
 - [ ] Rollback procedures tested
 
 ### Operations
+
 - [ ] Health check endpoints implemented
 - [ ] Smoke tests automated
 - [ ] Backup procedures verified

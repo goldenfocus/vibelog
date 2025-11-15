@@ -103,8 +103,9 @@ pnpm typecheck        # TypeScript checking
 pnpm format           # Prettier formatting
 
 # Database
-pnpm db:push          # Push schema changes
-pnpm db:studio        # Open Prisma Studio
+pnpm db:migrate       # Apply database migrations
+pnpm db:status        # Check migration status
+pnpm db:reset         # Reset local database (dev only!)
 ```
 
 ---

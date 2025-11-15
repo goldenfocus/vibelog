@@ -17,7 +17,10 @@
     "test:ci": "vitest run && playwright test --reporter=line",
     "test:all": "npm run test:unit && npm run test:e2e",
     "analyze": "ANALYZE=true npm run build",
-    "prepare": "husky"
+    "prepare": "husky",
+    "db:migrate": "supabase db push --linked",
+    "db:status": "supabase migration list --linked",
+    "db:reset": "supabase db reset --linked"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [
