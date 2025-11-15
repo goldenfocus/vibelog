@@ -210,7 +210,7 @@ export default function ConfigPage() {
                 <input
                   id={item.key}
                   type="number"
-                  value={config[item.key] ?? 0}
+                  value={typeof config[item.key] === 'number' ? config[item.key] : 0}
                   onChange={e =>
                     setConfig({
                       ...config,
@@ -234,7 +234,7 @@ export default function ConfigPage() {
                 <input
                   id={item.key}
                   type="checkbox"
-                  checked={config[item.key] ?? false}
+                  checked={typeof config[item.key] === 'boolean' ? config[item.key] : false}
                   onChange={e =>
                     setConfig({
                       ...config,
