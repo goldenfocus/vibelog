@@ -2,6 +2,7 @@
 
 import { Play, Pause, X } from 'lucide-react';
 import React, { useEffect, useRef } from 'react';
+import { toast } from 'sonner';
 
 import Waveform from '@/components/mic/Waveform';
 import { useAudioPlayerStore } from '@/state/audio-player-store';
@@ -80,6 +81,14 @@ export default function GlobalAudioPlayer() {
     audio.addEventListener('ended', () => {
       setIsPlaying(false);
       setCurrentTime(0);
+
+      // Show attribution message when full vibelog finishes
+      const track = useAudioPlayerStore.getState().currentTrack;
+      if (track?.author) {
+        toast(`VibeLogged by ${track.author} on vibelog.io`, {
+          duration: 4000,
+        });
+      }
     });
 
     audio.addEventListener('play', () => {
