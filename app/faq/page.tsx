@@ -145,10 +145,16 @@ export default function FAQ() {
         <div className="mx-auto max-w-4xl">
           {/* Header */}
           <div className="mb-16 text-center">
-            <h1 className="mb-6 bg-gradient-electric bg-clip-text text-4xl font-bold text-transparent sm:text-5xl">
+            <h1
+              className="mb-6 bg-gradient-electric bg-clip-text text-4xl font-bold text-transparent sm:text-5xl"
+              style={{ minHeight: '60px' }}
+            >
               {t('pages.faq.title')}
             </h1>
-            <p className="mx-auto max-w-2xl text-xl text-muted-foreground">
+            <p
+              className="mx-auto max-w-2xl text-xl text-muted-foreground"
+              style={{ minHeight: '60px' }}
+            >
               {t('pages.faq.subtitle')}
             </p>
           </div>
@@ -203,7 +209,10 @@ export default function FAQ() {
           <div className="rounded-3xl border border-border/20 bg-gradient-to-br from-card/40 to-card/20 p-8 backdrop-blur-sm sm:p-12">
             <div className="mx-auto max-w-2xl">
               <div className="mb-8 text-center">
-                <h2 className="mb-2 text-2xl font-bold text-foreground">
+                <h2
+                  className="mb-2 text-2xl font-bold text-foreground"
+                  style={{ minHeight: '40px' }}
+                >
                   {t('pages.faq.support.title')}
                 </h2>
               </div>

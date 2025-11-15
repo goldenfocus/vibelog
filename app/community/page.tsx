@@ -76,10 +76,15 @@ export default function Community() {
       <main className="px-4 pb-16 pt-24 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-5xl">
           <div className="mb-12 text-center">
-            <h1 className="mb-4 bg-gradient-electric bg-clip-text text-4xl font-bold text-transparent sm:text-5xl">
+            <h1
+              className="mb-4 bg-gradient-electric bg-clip-text text-4xl font-bold text-transparent sm:text-5xl"
+              style={{ minHeight: '60px' }}
+            >
               {t('pages.community.title')}
             </h1>
-            <p className="text-xl text-muted-foreground">{t('pages.community.subtitle')}</p>
+            <p className="text-xl text-muted-foreground" style={{ minHeight: '60px' }}>
+              {t('pages.community.subtitle')}
+            </p>
           </div>
 
           {loading && (

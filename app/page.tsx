@@ -48,13 +48,19 @@ export default function Home() {
       <main className="px-4 pb-16 pt-20 sm:px-6 sm:pt-32 lg:px-8">
         <div className="mx-auto max-w-6xl">
           <div className="mb-16 text-center sm:mb-24">
-            <h1 className="mb-8 text-4xl font-bold leading-tight tracking-tight sm:mb-12 sm:text-6xl md:text-7xl lg:text-8xl">
+            <h1
+              className="mb-8 text-4xl font-bold leading-tight tracking-tight sm:mb-12 sm:text-6xl md:text-7xl lg:text-8xl"
+              style={{ minHeight: '120px' }}
+            >
               {t('hero.title.part1')}{' '}
               <span className="bg-gradient-electric bg-clip-text text-transparent">
                 {t('hero.title.part2')}
               </span>
             </h1>
-            <p className="mx-auto max-w-3xl px-4 text-lg font-normal leading-relaxed text-muted-foreground sm:text-xl md:text-2xl">
+            <p
+              className="mx-auto max-w-3xl px-4 text-lg font-normal leading-relaxed text-muted-foreground sm:text-xl md:text-2xl"
+              style={{ minHeight: '80px' }}
+            >
               {t('hero.subtitle')}
             </p>
           </div>
