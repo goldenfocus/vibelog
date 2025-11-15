@@ -430,29 +430,31 @@ export default function VibelogActions({
   return (
     <>
       <div className={`${wrapperClass} ${className}`} data-testid="vibelog-actions">
-        {/* If teaserOnly mode, only show the play button */}
+        {/* If teaserOnly mode, only show the play button if audio exists */}
         {teaserOnly ? (
-          <button
-            onClick={handlePlayClick}
-            disabled={isLoading}
-            className={`${baseButtonClass} relative ${isCompact ? '' : 'overflow-hidden'}`}
-            title={isPlaying ? 'Pause' : 'Listen'}
-            data-testid="listen-button"
-          >
-            <div className="relative flex items-center justify-center">
-              {isLoading ? (
-                <Loader2 className={`${iconClass} animate-spin`} />
-              ) : isPlaying ? (
-                <Pause className={iconClass} />
-              ) : (
-                <Play className={iconClass} />
-              )}
-            </div>
+          audioUrl && audioUrl.trim() !== '' ? (
+            <button
+              onClick={handlePlayClick}
+              disabled={isLoading}
+              className={`${baseButtonClass} relative ${isCompact ? '' : 'overflow-hidden'}`}
+              title={isPlaying ? 'Pause' : 'Listen'}
+              data-testid="listen-button"
+            >
+              <div className="relative flex items-center justify-center">
+                {isLoading ? (
+                  <Loader2 className={`${iconClass} animate-spin`} />
+                ) : isPlaying ? (
+                  <Pause className={iconClass} />
+                ) : (
+                  <Play className={iconClass} />
+                )}
+              </div>
 
-            <span className={labelClass}>
-              {isLoading ? 'Generating...' : isPlaying ? 'Pause' : 'Listen'}
-            </span>
-          </button>
+              <span className={labelClass}>
+                {isLoading ? 'Generating...' : isPlaying ? 'Pause' : 'Listen'}
+              </span>
+            </button>
+          ) : null
         ) : (
           <>
             {/* Owner Menu Dropdown (Edit/Delete) */}
@@ -531,28 +533,30 @@ export default function VibelogActions({
               <span className={labelClass}>{copySuccess ? 'Copied!' : 'Copy'}</span>
             </button>
 
-            {/* Listen Button with original audio or TTS */}
-            <button
-              onClick={handlePlayClick}
-              disabled={isLoading}
-              className={`${baseButtonClass} relative ${isCompact ? '' : 'overflow-hidden'}`}
-              title={isPlaying ? 'Pause' : 'Listen'}
-              data-testid="listen-button"
-            >
-              <div className="relative flex items-center justify-center">
-                {isLoading ? (
-                  <Loader2 className={`${iconClass} animate-spin`} />
-                ) : isPlaying ? (
-                  <Pause className={iconClass} />
-                ) : (
-                  <Play className={iconClass} />
-                )}
-              </div>
+            {/* Listen Button with original audio or TTS - only show if audio exists */}
+            {audioUrl && audioUrl.trim() !== '' && (
+              <button
+                onClick={handlePlayClick}
+                disabled={isLoading}
+                className={`${baseButtonClass} relative ${isCompact ? '' : 'overflow-hidden'}`}
+                title={isPlaying ? 'Pause' : 'Listen'}
+                data-testid="listen-button"
+              >
+                <div className="relative flex items-center justify-center">
+                  {isLoading ? (
+                    <Loader2 className={`${iconClass} animate-spin`} />
+                  ) : isPlaying ? (
+                    <Pause className={iconClass} />
+                  ) : (
+                    <Play className={iconClass} />
+                  )}
+                </div>
 
-              <span className={labelClass}>
-                {isLoading ? 'Generating...' : isPlaying ? 'Pause' : 'Listen'}
-              </span>
-            </button>
+                <span className={labelClass}>
+                  {isLoading ? 'Generating...' : isPlaying ? 'Pause' : 'Listen'}
+                </span>
+              </button>
+            )}
 
             {/* Like Button */}
             <LikersPopover

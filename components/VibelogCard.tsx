@@ -222,7 +222,7 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
           authorId={vibelog.user_id}
           authorUsername={vibelog.author.username}
           audioUrl={vibelog.audio_url || undefined}
-          teaserOnly={false}
+          teaserOnly={!isLoggedIn} // Anonymous users get teaser-only mode with 9s audio limit
           createdAt={vibelog.created_at}
           likeCount={vibelog.like_count}
           onEdit={handleEdit}
