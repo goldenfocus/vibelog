@@ -122,7 +122,7 @@ export default function PublishActions({
       .replace(/\n\s*\n/g, '\n')
       .trim();
 
-    await playText(cleanContent, 'shimmer', vibelogId, voiceCloneId, title, author);
+    await playText(cleanContent, 'shimmer', vibelogId, undefined, title, author);
   };
 
   const handleCopyClick = async () => {
