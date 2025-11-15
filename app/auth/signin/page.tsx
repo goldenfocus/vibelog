@@ -56,7 +56,7 @@ function SignInContent() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-black">
+    <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-black">
       <div className="w-full max-w-md rounded-2xl border border-electric/20 bg-card/95 p-8 shadow-2xl backdrop-blur-lg">
         <div className="mb-8 text-center">
           <h1 className="mb-2 text-2xl font-bold text-foreground">Continue with VibeLog</h1>
@@ -117,7 +117,7 @@ function SignInContent() {
           </p>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
 

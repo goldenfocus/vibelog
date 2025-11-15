@@ -70,6 +70,7 @@ export default function GodModeBanner({ targetUserName, onExit, expiresAt }: God
               onClick={handleExit}
               disabled={isExiting}
               className="flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm transition-all duration-200 hover:bg-white/30 disabled:opacity-50"
+              aria-label="Exit God Mode"
             >
               <LogOut className="h-4 w-4" />
               <span className="hidden sm:inline">Exit God Mode</span>

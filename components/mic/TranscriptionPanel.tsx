@@ -52,6 +52,7 @@ const EditModal: React.FC<EditModalProps> = ({ content, isOpen, onSave, onCancel
             <button
               onClick={onCancel}
               className="p-2 text-muted-foreground transition-colors hover:text-foreground"
+              aria-label="Close transcription editor"
             >
               <X className="h-5 w-5" />
             </button>

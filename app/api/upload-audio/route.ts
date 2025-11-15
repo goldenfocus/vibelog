@@ -57,12 +57,16 @@ export async function POST(request: NextRequest) {
     // Generate storage path using server-verified userId
     const path = generateAudioPath(sessionId, userId || undefined);
 
+    // Normalize content type (strip codecs parameter)
+    // Browser sends "audio/webm;codecs=opus" but Supabase needs "audio/webm"
+    const contentType = (audioFile.type || 'audio/webm').split(';')[0].trim();
+
     // Upload to VIBELOGS bucket (not vibelog-covers)
     const supabaseAdmin = await createServerAdminClient();
     const { error: uploadError } = await supabaseAdmin.storage
       .from(VIBELOGS_BUCKET)
       .upload(path, buffer, {
-        contentType: audioFile.type || 'audio/webm',
+        contentType,
         upsert: true,
       });
 
