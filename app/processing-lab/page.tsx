@@ -145,7 +145,7 @@ export default function ProcessingLabPage() {
   const [selectedState, setSelectedState] = useState<string | null>(null);
 
   return (
-    <div className="min-h-screen bg-background p-8">
+    <main className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-6xl">
         {/* Header */}
         <div className="mb-12 text-center">
@@ -319,6 +319,6 @@ export default function ProcessingLabPage() {
           </p>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

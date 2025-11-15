@@ -221,7 +221,7 @@ export default function PublishLabPage() {
   const [selectedState, setSelectedState] = useState<string | null>(null);
 
   return (
-    <div className="min-h-screen bg-background p-8">
+    <main className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-6xl">
         {/* Header */}
         <div className="mb-12 text-center">
@@ -340,6 +340,6 @@ export default function PublishLabPage() {
           </p>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
