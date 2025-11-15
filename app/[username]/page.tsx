@@ -234,133 +234,135 @@ export default async function ProfilePage({ params }: PageProps) {
     <div className="min-h-screen bg-background">
       <Navigation />
 
-      {/* Profile Header */}
-      <div className="relative">
-        {/* Header Image */}
-        {profile.header_image && (
-          <div className="group relative h-48 overflow-hidden sm:h-64 md:h-80">
-            <ZoomableImage
-              src={profile.header_image}
-              alt={`${displayName}'s header image`}
-              className="h-full w-full object-cover"
-              wrapperClassName="h-full"
-            />
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/30 to-black/50" />
-          </div>
-        )}
-        {!profile.header_image && (
-          <div className="h-48 bg-gradient-to-br from-electric/20 via-background to-background sm:h-64 md:h-80" />
-        )}
+      <main>
+        {/* Profile Header */}
+        <div className="relative">
+          {/* Header Image */}
+          {profile.header_image && (
+            <div className="group relative h-48 overflow-hidden sm:h-64 md:h-80">
+              <ZoomableImage
+                src={profile.header_image}
+                alt={`${displayName}'s header image`}
+                className="h-full w-full object-cover"
+                wrapperClassName="h-full"
+              />
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/30 to-black/50" />
+            </div>
+          )}
+          {!profile.header_image && (
+            <div className="h-48 bg-gradient-to-br from-electric/20 via-background to-background sm:h-64 md:h-80" />
+          )}
 
-        {/* Profile Info Container */}
-        <div className="mx-auto max-w-5xl px-4">
-          <div className="relative">
-            {/* Avatar - overlaps header */}
-            <div className="absolute -top-16 left-0 sm:-top-20">
-              <div className="relative">
-                <div className="bg-surface h-32 w-32 overflow-hidden rounded-full border-4 border-background shadow-xl sm:h-40 sm:w-40">
-                  {profile.avatar_url ? (
-                    <ZoomableImage
-                      src={profile.avatar_url}
-                      alt={displayName}
-                      className="h-full w-full object-cover"
-                      rounded={true}
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-electric/30 to-electric/10">
-                      <span className="text-4xl font-bold text-electric sm:text-5xl">
-                        {displayName.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
+          {/* Profile Info Container */}
+          <div className="mx-auto max-w-5xl px-4">
+            <div className="relative">
+              {/* Avatar - overlaps header */}
+              <div className="absolute -top-16 left-0 sm:-top-20">
+                <div className="relative">
+                  <div className="bg-surface h-32 w-32 overflow-hidden rounded-full border-4 border-background shadow-xl sm:h-40 sm:w-40">
+                    {profile.avatar_url ? (
+                      <ZoomableImage
+                        src={profile.avatar_url}
+                        alt={displayName}
+                        className="h-full w-full object-cover"
+                        rounded={true}
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-electric/30 to-electric/10">
+                        <span className="text-4xl font-bold text-electric sm:text-5xl">
+                          {displayName.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Profile Details */}
+              <div className="pb-8 pt-20 sm:pt-24">
+                <div className="flex flex-col gap-6">
+                  {/* Name and Username */}
+                  <div className="space-y-2">
+                    <h1 className="animate-fadeInUp text-3xl font-bold text-foreground sm:text-4xl">
+                      {displayName}
+                    </h1>
+                    <p
+                      className="animate-fadeInUp text-lg text-muted-foreground"
+                      style={{ animationDelay: '50ms' }}
+                    >
+                      @{profile.username}
+                    </p>
+                  </div>
+
+                  {/* Bio */}
+                  {profile.bio && (
+                    <p
+                      className="animate-fadeInUp max-w-2xl text-base leading-relaxed text-foreground/90 sm:text-lg"
+                      style={{ animationDelay: '100ms' }}
+                    >
+                      {profile.bio}
+                    </p>
                   )}
-                </div>
-              </div>
-            </div>
 
-            {/* Profile Details */}
-            <div className="pb-8 pt-20 sm:pt-24">
-              <div className="flex flex-col gap-6">
-                {/* Name and Username */}
-                <div className="space-y-2">
-                  <h1 className="animate-fadeInUp text-3xl font-bold text-foreground sm:text-4xl">
-                    {displayName}
-                  </h1>
-                  <p
-                    className="animate-fadeInUp text-lg text-muted-foreground"
-                    style={{ animationDelay: '50ms' }}
+                  {/* Stats and Social Links */}
+                  <div
+                    className="animate-fadeInUp flex flex-col gap-6 sm:flex-row sm:gap-8"
+                    style={{ animationDelay: '150ms' }}
                   >
-                    @{profile.username}
-                  </p>
-                </div>
-
-                {/* Bio */}
-                {profile.bio && (
-                  <p
-                    className="animate-fadeInUp max-w-2xl text-base leading-relaxed text-foreground/90 sm:text-lg"
-                    style={{ animationDelay: '100ms' }}
-                  >
-                    {profile.bio}
-                  </p>
-                )}
-
-                {/* Stats and Social Links */}
-                <div
-                  className="animate-fadeInUp flex flex-col gap-6 sm:flex-row sm:gap-8"
-                  style={{ animationDelay: '150ms' }}
-                >
-                  {/* Stats */}
-                  <div className="flex items-center gap-6 text-sm">
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-electric" />
-                      <span className="font-semibold text-foreground">
-                        {profile.total_vibelogs}
-                      </span>
-                      <span className="text-muted-foreground">
-                        {profile.total_vibelogs === 1 ? 'vibelog' : 'vibelogs'}
-                      </span>
+                    {/* Stats */}
+                    <div className="flex items-center gap-6 text-sm">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-electric" />
+                        <span className="font-semibold text-foreground">
+                          {profile.total_vibelogs}
+                        </span>
+                        <span className="text-muted-foreground">
+                          {profile.total_vibelogs === 1 ? 'vibelog' : 'vibelogs'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Eye className="h-4 w-4 text-electric" />
+                        <span className="font-semibold text-foreground">
+                          {profile.total_views.toLocaleString()}
+                        </span>
+                        <span className="text-muted-foreground">views</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-electric" />
+                        <span className="text-muted-foreground">Joined {joinDate}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Eye className="h-4 w-4 text-electric" />
-                      <span className="font-semibold text-foreground">
-                        {profile.total_views.toLocaleString()}
-                      </span>
-                      <span className="text-muted-foreground">views</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-electric" />
-                      <span className="text-muted-foreground">Joined {joinDate}</span>
-                    </div>
-                  </div>
 
-                  {/* Social Links */}
-                  <div className="animate-fadeInUp" style={{ animationDelay: '200ms' }}>
-                    <SocialLinks profile={profile} animated={true} />
+                    {/* Social Links */}
+                    <div className="animate-fadeInUp" style={{ animationDelay: '200ms' }}>
+                      <SocialLinks profile={profile} animated={true} />
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Vibelogs Section */}
-      <div className="border-t border-border/50 bg-gradient-to-b from-background to-surface-subtle">
-        <div className="mx-auto max-w-5xl px-4 py-12">
-          <ProfileVibelogs
-            vibelogs={vibelogs}
-            username={profile.username}
-            displayName={displayName}
-            avatarUrl={profile.avatar_url}
-          />
+        {/* Vibelogs Section */}
+        <div className="border-t border-border/50 bg-gradient-to-b from-background to-surface-subtle">
+          <div className="mx-auto max-w-5xl px-4 py-12">
+            <ProfileVibelogs
+              vibelogs={vibelogs}
+              username={profile.username}
+              displayName={displayName}
+              avatarUrl={profile.avatar_url}
+            />
+          </div>
         </div>
-      </div>
 
-      {/* Liked Vibelogs Section */}
-      <div className="border-t border-border/50 bg-gradient-to-b from-surface-subtle to-background">
-        <div className="mx-auto max-w-5xl px-4 py-12">
-          <LikedVibelogs userId={profile.id} />
+        {/* Liked Vibelogs Section */}
+        <div className="border-t border-border/50 bg-gradient-to-b from-surface-subtle to-background">
+          <div className="mx-auto max-w-5xl px-4 py-12">
+            <LikedVibelogs userId={profile.id} />
+          </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
