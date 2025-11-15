@@ -206,7 +206,7 @@ export default async function PublicVibelogPage({ params }: PageProps) {
         {/* Audio player if available */}
         {vibelogWithAuthor.audio_url && (
           <div className="mt-12">
-            <h3 className="mb-4 text-lg font-semibold">Listen to this VibeLog</h3>
+            <h2 className="mb-4 text-lg font-semibold">Listen to this VibeLog</h2>
             <audio controls className="w-full" preload="auto">
               <source src={vibelogWithAuthor.audio_url} type="audio/webm" />
               <source src={vibelogWithAuthor.audio_url} type="audio/mp3" />
