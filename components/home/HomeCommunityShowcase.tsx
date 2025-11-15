@@ -265,35 +265,37 @@ export default function HomeCommunityShowcase(_props: HomeCommunityShowcaseProps
                         </p>
                       </Link>
 
-                      <div className="mt-auto">
-                        <button
-                          className={`inline-flex w-full items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric/60 ${
-                            isTrackPlaying
-                              ? 'bg-electric text-white'
-                              : 'border border-border/50 bg-white/5 text-foreground hover:border-electric/40 hover:text-electric'
-                          }`}
-                          onClick={e => {
-                            e.stopPropagation();
-                            handlePreview(vibelog);
-                          }}
-                        >
-                          {isTrackPlaying ? (
-                            <>
-                              <Pause className="h-4 w-4" />
-                              Playing
-                            </>
-                          ) : (
-                            <>
-                              {isActive && isLoading ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Play className="h-4 w-4" />
-                              )}
-                              Listen
-                            </>
-                          )}
-                        </button>
-                      </div>
+                      {vibelog.audio_url && (
+                        <div className="mt-auto">
+                          <button
+                            className={`inline-flex w-full items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric/60 ${
+                              isTrackPlaying
+                                ? 'bg-electric text-white'
+                                : 'border border-border/50 bg-white/5 text-foreground hover:border-electric/40 hover:text-electric'
+                            }`}
+                            onClick={e => {
+                              e.stopPropagation();
+                              handlePreview(vibelog);
+                            }}
+                          >
+                            {isTrackPlaying ? (
+                              <>
+                                <Pause className="h-4 w-4" />
+                                Playing
+                              </>
+                            ) : (
+                              <>
+                                {isActive && isLoading ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Play className="h-4 w-4" />
+                                )}
+                                Listen
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </article>
                 );
