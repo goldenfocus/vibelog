@@ -1,6 +1,6 @@
 'use client';
 
-import { Copy, Share, Edit, X, LogIn, Play, Pause, Loader2, Mic2, Sparkles } from 'lucide-react';
+import { Copy, Share, Edit, X, LogIn, Play, Pause, Loader2 } from 'lucide-react';
 import React, { useState } from 'react';
 
 import ExportButton from '@/components/ExportButton';
@@ -12,7 +12,6 @@ export interface PublishActionsProps {
   content: string;
   title?: string;
   author?: string;
-  voiceCloneId?: string;
   vibelogId?: string;
   isLoggedIn?: boolean;
   isTeaserContent?: boolean;
@@ -84,7 +83,6 @@ export default function PublishActions({
   content,
   title,
   author,
-  voiceCloneId,
   vibelogId,
   isLoggedIn = false,
   isTeaserContent: _isTeaserContent = false,
@@ -100,11 +98,6 @@ export default function PublishActions({
   const [showEditPopup, setShowEditPopup] = useState(false);
 
   const { isPlaying, isLoading, playText, stop, progress } = useTextToSpeech(onUpgradePrompt);
-  const handleVoiceCloneClick = () => {
-    if (typeof window !== 'undefined') {
-      window.open('/settings/profile#voice', '_blank', 'noopener,noreferrer');
-    }
-  };
 
   const handleEditClick = () => {
     if (!isLoggedIn) {
@@ -129,7 +122,7 @@ export default function PublishActions({
       .replace(/\n\s*\n/g, '\n')
       .trim();
 
-    await playText(cleanContent, 'shimmer', vibelogId, voiceCloneId, title, author);
+    await playText(cleanContent, 'shimmer', vibelogId, undefined, title, author);
   };
 
   const handleCopyClick = async () => {
@@ -169,21 +162,6 @@ export default function PublishActions({
           <Copy className="h-5 w-5 text-foreground transition-colors group-hover:text-electric sm:h-6 sm:w-6" />
           <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">
             {t('actions.copy')}
-          </span>
-        </button>
-
-        <button
-          onClick={handleVoiceCloneClick}
-          className="group flex min-w-[70px] flex-col items-center gap-2 rounded-2xl border border-border/20 bg-muted/20 p-3 transition-all duration-200 hover:scale-105 hover:bg-muted/30 sm:min-w-[80px] sm:p-4"
-          data-testid="voice-clone-button"
-        >
-          {voiceCloneId ? (
-            <Sparkles className="h-5 w-5 text-electric transition-colors group-hover:text-electric-glow sm:h-6 sm:w-6" />
-          ) : (
-            <Mic2 className="h-5 w-5 text-foreground transition-colors group-hover:text-electric sm:h-6 sm:w-6" />
-          )}
-          <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">
-            {voiceCloneId ? 'Voice Ready' : 'Clone Voice'}
           </span>
         </button>
 
