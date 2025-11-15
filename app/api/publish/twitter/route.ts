@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { TwitterAutomation } from '@/lib/publishers/twitter-automation';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
-export const maxDuration = 60; // Twitter posting can take up to 60 seconds
+export const maxDuration = 60;
 
-interface TwitterPublishRequest {
+interface TwitterShareRequest {
   vibelogId: string;
-  content?: string; // Optional: override default content
   format?: 'teaser' | 'full' | 'custom';
 }
 
@@ -24,8 +22,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body: TwitterPublishRequest = await request.json();
-    const { vibelogId, content: overrideContent, format } = body;
+    const body: TwitterShareRequest = await request.json();
+    const { vibelogId, format } = body;
 
     if (!vibelogId) {
       return NextResponse.json({ error: 'vibelogId is required' }, { status: 400 });
@@ -50,84 +48,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user has credentials configured
-    const profile = vibelog.profiles;
-    if (!profile?.twitter_username || !profile?.twitter_password) {
-      return NextResponse.json(
-        {
-          error:
-            'X credentials not configured. Please add your username and password in Settings → Profile',
-        },
-        { status: 400 }
-      );
-    }
-
-    // Check if already posted
-    const { data: existingPost } = await supabase
-      .from('vibelog_social_posts')
-      .select('*')
-      .eq('vibelog_id', vibelogId)
-      .eq('platform', 'twitter')
-      .eq('status', 'posted')
-      .single();
-
-    if (existingPost) {
-      return NextResponse.json({
-        success: true,
-        alreadyPosted: true,
-        postUrl: existingPost.post_url,
-        postId: existingPost.post_id,
-        postedAt: existingPost.posted_at,
-      });
-    }
-
-    // Create or update pending post record
-    const { data: postRecord, error: insertError } = await supabase
-      .from('vibelog_social_posts')
-      .upsert(
-        {
-          vibelog_id: vibelogId,
-          user_id: user.id,
-          platform: 'twitter',
-          status: 'posting',
-        },
-        {
-          onConflict: 'vibelog_id,platform',
-        }
-      )
-      .select()
-      .single();
-
-    if (insertError) {
-      console.error('Failed to create post record:', insertError);
-      return NextResponse.json({ error: 'Failed to initialize post record' }, { status: 500 });
-    }
-
     // Determine tweet content
+    const profile = vibelog.profiles;
+    const postFormat = format || profile?.twitter_post_format || 'teaser';
+    const vibelogUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://vibelog.app'}/${vibelog.slug}`;
+
     let tweetContent: string;
 
-    if (overrideContent) {
-      tweetContent = overrideContent;
+    if (postFormat === 'custom' && profile?.twitter_custom_template) {
+      // Use custom template with placeholders
+      tweetContent = profile.twitter_custom_template
+        .replace(/{title}/g, vibelog.title || '')
+        .replace(/{content}/g, vibelog.teaser_content || vibelog.full_content || '')
+        .replace(/{url}/g, vibelogUrl);
+    } else if (postFormat === 'full') {
+      // Full content with URL
+      const fullText = vibelog.full_content || vibelog.teaser_content || '';
+      tweetContent = `${vibelog.title ? vibelog.title + '\n\n' : ''}${fullText}\n\n${vibelogUrl}`;
     } else {
-      const profile = vibelog.profiles;
-      const postFormat = format || profile?.twitter_post_format || 'teaser';
-      const vibelogUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://vibelog.app'}/${vibelog.slug}`;
-
-      if (postFormat === 'custom' && profile?.twitter_custom_template) {
-        // Use custom template with placeholders
-        tweetContent = profile.twitter_custom_template
-          .replace(/{title}/g, vibelog.title || '')
-          .replace(/{content}/g, vibelog.teaser_content || vibelog.full_content || '')
-          .replace(/{url}/g, vibelogUrl);
-      } else if (postFormat === 'full') {
-        // Full content with URL
-        const fullText = vibelog.full_content || vibelog.teaser_content || '';
-        tweetContent = `${vibelog.title ? vibelog.title + '\n\n' : ''}${fullText}\n\n${vibelogUrl}`;
-      } else {
-        // Default: teaser format
-        const teaserText = vibelog.teaser_content || vibelog.full_content?.substring(0, 200) || '';
-        tweetContent = `${vibelog.title ? vibelog.title + '\n\n' : ''}${teaserText}\n\nRead more: ${vibelogUrl}`;
-      }
+      // Default: teaser format
+      const teaserText = vibelog.teaser_content || vibelog.full_content?.substring(0, 200) || '';
+      tweetContent = `${vibelog.title ? vibelog.title + '\n\n' : ''}${teaserText}\n\nRead more: ${vibelogUrl}`;
     }
 
     // Truncate to Twitter's character limit (280 chars)
@@ -144,69 +85,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Initialize Twitter automation
-    const twitter = new TwitterAutomation(user.id);
+    // Generate Twitter Web Intent URL
+    const twitterIntentUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetContent)}`;
 
-    try {
-      // Post tweet
-      const result = await twitter.postTweet({
-        text: tweetContent,
-      });
-
-      // Extract tweet ID and URL from result
-      const tweetId = result.tweetIds?.[0] || '';
-      const tweetUrl = result.threadUrl || '';
-
-      // Update post record with success
-      const { error: updateError } = await supabase
-        .from('vibelog_social_posts')
-        .update({
-          status: 'posted',
-          post_id: tweetId,
-          post_url: tweetUrl,
-          posted_at: new Date().toISOString(),
-          post_data: {
-            content: tweetContent,
-            characterCount: tweetContent.length,
-            tweetIds: result.tweetIds,
-          },
-        })
-        .eq('id', postRecord.id);
-
-      if (updateError) {
-        console.error('Failed to update post record:', updateError);
-      }
-
-      return NextResponse.json({
-        success: true,
-        postUrl: tweetUrl,
-        postId: tweetId,
-        content: tweetContent,
-      });
-    } catch (twitterError) {
-      const errorMessage = twitterError instanceof Error ? twitterError.message : 'Unknown error';
-      console.error('Twitter posting failed:', twitterError);
-
-      // Update post record with failure
-      await supabase
-        .from('vibelog_social_posts')
-        .update({
-          status: 'failed',
-          error_message: errorMessage,
-        })
-        .eq('id', postRecord.id);
-
-      return NextResponse.json(
-        {
-          error: 'Failed to post to Twitter',
-          details: errorMessage,
-        },
-        { status: 500 }
-      );
-    }
+    return NextResponse.json({
+      success: true,
+      shareUrl: twitterIntentUrl,
+      content: tweetContent,
+    });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Twitter publish endpoint error:', error);
+    console.error('Twitter share URL generation error:', error);
     return NextResponse.json(
       { error: 'Internal server error', details: errorMessage },
       { status: 500 }
