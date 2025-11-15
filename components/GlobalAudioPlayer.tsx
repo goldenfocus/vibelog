@@ -330,6 +330,22 @@ export default function GlobalAudioPlayer() {
     reset();
   };
 
+  // Add bottom padding to body when player is visible to prevent content from being hidden
+  useEffect(() => {
+    if (currentTrack) {
+      // Add padding to body to account for fixed player height
+      document.body.style.paddingBottom = '180px'; // Approximate player height
+    } else {
+      // Remove padding when player is hidden
+      document.body.style.paddingBottom = '0';
+    }
+
+    // Cleanup on unmount
+    return () => {
+      document.body.style.paddingBottom = '0';
+    };
+  }, [currentTrack]);
+
   // Don't render if no track is set
   if (!currentTrack) {
     return null;

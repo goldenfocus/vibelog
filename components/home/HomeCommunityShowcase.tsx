@@ -334,78 +334,104 @@ export default function HomeCommunityShowcase(_props: HomeCommunityShowcaseProps
             ? Array.from({ length: 3 }).map((_, index) => (
                 <div
                   key={`member-skeleton-${index}`}
-                  className="h-56 w-64 flex-shrink-0 animate-pulse rounded-3xl border border-border/40 bg-card/60 p-6 backdrop-blur"
+                  className="h-80 w-80 flex-shrink-0 animate-pulse rounded-3xl border border-border/40 bg-gradient-to-br from-card/90 via-card/60 to-card/30 p-6 shadow-inner shadow-black/20"
                 >
                   <div className="mb-4 flex items-center gap-3">
-                    <div className="h-12 w-12 rounded-full bg-border/50" />
+                    <div className="h-16 w-16 rounded-full bg-border/50" />
                     <div className="flex-1 space-y-2">
-                      <div className="h-3 rounded-full bg-border/50" />
-                      <div className="h-3 w-1/2 rounded-full bg-border/40" />
+                      <div className="h-4 w-32 rounded-full bg-border/50" />
+                      <div className="h-3 w-24 rounded-full bg-border/40" />
+                      <div className="h-3 w-16 rounded-full bg-border/30" />
                     </div>
                   </div>
-                  <div className="space-y-3">
+                  <div className="mb-4 space-y-2">
                     <div className="h-3 rounded-full bg-border/50" />
                     <div className="h-3 rounded-full bg-border/40" />
                     <div className="h-3 w-2/3 rounded-full bg-border/30" />
                   </div>
+                  <div className="mb-4 h-16 rounded-2xl bg-border/40" />
+                  <div className="mt-auto h-10 w-full rounded-full bg-border/40" />
                 </div>
               ))
-            : newMembers.map(member => (
-                <article
-                  key={member.id}
-                  className="flex w-64 flex-shrink-0 snap-start flex-col rounded-3xl border border-border/40 bg-card/70 p-5 transition hover:border-electric/40 hover:shadow-electric/10"
-                >
-                  <div className="mb-4 flex items-center gap-3">
-                    {member.avatar_url ? (
-                      <img
-                        src={member.avatar_url}
-                        alt={member.display_name}
-                        className="h-12 w-12 rounded-full border border-border/20 object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full border border-border/20 bg-primary/5 text-primary">
-                        <UserPlus className="h-5 w-5" />
-                      </div>
-                    )}
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold">{member.display_name}</p>
-                      <p className="text-xs text-muted-foreground">@{member.username}</p>
-                    </div>
-                  </div>
+            : newMembers.map(member => {
+                const profileUrl = `/@${member.username}`;
+                const hasAudio = member.latest_vibelog?.audio_url;
 
-                  <p className="mb-4 line-clamp-3 text-sm text-muted-foreground">
-                    {member.bio || 'Just joined the vibe. Say hi!'}
-                  </p>
-
-                  {member.latest_vibelog ? (
-                    <div className="mb-4 rounded-2xl border border-border/30 bg-background/40 p-3 text-xs text-muted-foreground">
-                      <p className="mb-1 font-semibold text-foreground">Latest vibe</p>
-                      <p className="line-clamp-2 text-xs">{member.latest_vibelog.title}</p>
-                    </div>
-                  ) : (
-                    <div className="mb-4 rounded-2xl border border-dashed border-border/30 p-3 text-center text-xs text-muted-foreground">
-                      New vibe coming soon ✨
-                    </div>
-                  )}
-
-                  <div className="mt-auto flex flex-col gap-2 text-sm">
+                return (
+                  <article
+                    key={member.id}
+                    className="group relative flex w-80 flex-shrink-0 snap-start flex-col overflow-hidden rounded-3xl border border-border/40 bg-gradient-to-br from-card/90 via-card/60 to-card/30 shadow-inner shadow-black/20 transition hover:border-electric/40 hover:shadow-electric/10"
+                  >
+                    {/* Clickable card overlay */}
                     <Link
-                      href={`/@${member.username}`}
-                      className="inline-flex w-full items-center justify-center rounded-full border border-border/40 px-4 py-2 font-medium transition hover:border-electric/40 hover:text-electric"
-                    >
-                      View profile
-                    </Link>
-                    {member.latest_vibelog && (
-                      <Link
-                        href={getVibelogHref(member.username, member.latest_vibelog)}
-                        className="inline-flex w-full items-center justify-center rounded-full bg-electric/10 px-4 py-2 font-medium text-electric transition hover:bg-electric/20"
-                      >
-                        Listen
-                      </Link>
-                    )}
-                  </div>
-                </article>
-              ))}
+                      href={profileUrl}
+                      className="absolute inset-0 z-0"
+                      aria-label={`View ${member.display_name}'s profile`}
+                    />
+
+                    <div className="relative z-10 flex flex-1 flex-col p-6">
+                      <div className="mb-4 flex items-center gap-3">
+                        {member.avatar_url ? (
+                          <img
+                            src={member.avatar_url}
+                            alt={member.display_name}
+                            className="h-16 w-16 rounded-full border-2 border-border/30 object-cover ring-2 ring-transparent transition-all group-hover:ring-electric/20"
+                          />
+                        ) : (
+                          <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-border/30 bg-primary/5 text-primary ring-2 ring-transparent transition-all group-hover:ring-electric/20">
+                            <UserPlus className="h-7 w-7" />
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <p className="truncate text-base font-semibold text-foreground transition-colors group-hover:text-electric">
+                            {member.display_name}
+                          </p>
+                          <p className="text-sm text-muted-foreground">@{member.username}</p>
+                          {member.total_vibelogs !== null &&
+                            member.total_vibelogs !== undefined && (
+                              <p className="text-xs text-muted-foreground">
+                                {member.total_vibelogs} vibe{member.total_vibelogs !== 1 ? 's' : ''}
+                              </p>
+                            )}
+                        </div>
+                      </div>
+
+                      <p className="mb-4 line-clamp-3 text-sm text-muted-foreground">
+                        {member.bio || 'Just joined the vibe. Say hi!'}
+                      </p>
+
+                      {member.latest_vibelog ? (
+                        <div className="mb-4 rounded-2xl border border-border/30 bg-background/40 p-3">
+                          <p className="mb-1 text-xs font-semibold text-muted-foreground">
+                            Latest vibe
+                          </p>
+                          <p className="line-clamp-2 text-sm font-medium text-foreground">
+                            {member.latest_vibelog.title}
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="mb-4 rounded-2xl border border-dashed border-border/30 p-3 text-center text-sm text-muted-foreground">
+                          New vibe coming soon ✨
+                        </div>
+                      )}
+
+                      {/* Listen button - only show if user has audio */}
+                      {hasAudio && member.latest_vibelog && (
+                        <div className="relative z-20 mt-auto">
+                          <Link
+                            href={getVibelogHref(member.username, member.latest_vibelog)}
+                            onClick={e => e.stopPropagation()}
+                            className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-border/50 bg-white/5 px-4 py-2 text-sm font-semibold text-foreground transition hover:border-electric/40 hover:text-electric focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric/60"
+                          >
+                            <Play className="h-4 w-4" />
+                            Listen
+                          </Link>
+                        </div>
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
         </div>
       </div>
     </section>
