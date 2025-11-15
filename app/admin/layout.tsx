@@ -10,6 +10,10 @@ export const metadata = {
   description: 'Administrative dashboard for Vibelog',
 };
 
+// Force dynamic rendering to avoid caching admin checks
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 async function AdminSidebar({ currentPath }: { currentPath?: string }) {
   const navItems = [
     {
