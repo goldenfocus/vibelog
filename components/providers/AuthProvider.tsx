@@ -229,9 +229,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Session was updated in another tab - refresh our state
           const cachedUser = getCachedSession();
           if (cachedUser) {
-            console.log('🔄 [AUTH] Session updated in another tab, syncing...');
-            setUser(cachedUser);
-            setLoading(false);
+            // Prevent infinite loop: only sync if user ID actually changed
+            if (cachedUser.id !== user?.id) {
+              console.log('🔄 [AUTH] Session updated in another tab, syncing...');
+              setUser(cachedUser);
+              setLoading(false);
+            }
           }
         } else if (e.oldValue && !e.newValue) {
           // Session was cleared in another tab - sign out here too
