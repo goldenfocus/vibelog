@@ -48,8 +48,13 @@ export default function Pricing() {
       <main className="px-4 pb-16 pt-24 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="mb-16 text-center">
-            <h1 className="mb-6 text-4xl font-bold sm:text-5xl">{t('pages.pricing.title')}</h1>
-            <p className="mx-auto mb-8 max-w-2xl text-xl text-muted-foreground">
+            <h1 className="mb-6 text-4xl font-bold sm:text-5xl" style={{ minHeight: '60px' }}>
+              {t('pages.pricing.title')}
+            </h1>
+            <p
+              className="mx-auto mb-8 max-w-2xl text-xl text-muted-foreground"
+              style={{ minHeight: '60px' }}
+            >
               {t('pages.pricing.subtitle')}
             </p>
 
@@ -103,8 +108,12 @@ export default function Pricing() {
                 )}
 
                 <div className="mb-8 text-center">
-                  <h3 className="mb-2 text-2xl font-bold">{plan.name}</h3>
-                  <p className="mb-6 text-muted-foreground">{plan.description}</p>
+                  <h3 className="mb-2 text-2xl font-bold" style={{ minHeight: '40px' }}>
+                    {plan.name}
+                  </h3>
+                  <p className="mb-6 text-muted-foreground" style={{ minHeight: '50px' }}>
+                    {plan.description}
+                  </p>
 
                   <div className="mb-6">
                     <span className="text-4xl font-bold">
@@ -144,7 +153,7 @@ export default function Pricing() {
                   </Button>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-4" style={{ minHeight: '300px' }}>
                   {(() => {
                     try {
                       const features = plan.features;

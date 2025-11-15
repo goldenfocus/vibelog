@@ -64,7 +64,10 @@ export default function About() {
           {/* The Problem */}
           <section className="mb-16">
             <h2 className="mb-6 text-3xl font-bold">{t('pages.about.problem.title')}</h2>
-            <div className="prose prose-lg max-w-none space-y-4 text-muted-foreground">
+            <div
+              className="prose prose-lg max-w-none space-y-4 text-muted-foreground"
+              style={{ minHeight: '200px' }}
+            >
               {(() => {
                 try {
                   const paragraphs = t('pages.about.problem.paragraphs');
@@ -84,7 +87,10 @@ export default function About() {
           {/* The Spark */}
           <section className="mb-16">
             <h2 className="mb-6 text-3xl font-bold">{t('pages.about.spark.title')}</h2>
-            <div className="prose prose-lg max-w-none space-y-4 text-muted-foreground">
+            <div
+              className="prose prose-lg max-w-none space-y-4 text-muted-foreground"
+              style={{ minHeight: '200px' }}
+            >
               {(() => {
                 try {
                   const paragraphs = t('pages.about.spark.paragraphs');
@@ -104,7 +110,10 @@ export default function About() {
           {/* The Solution */}
           <section className="mb-16">
             <h2 className="mb-6 text-3xl font-bold">{t('pages.about.solution.title')}</h2>
-            <div className="prose prose-lg max-w-none space-y-4 text-muted-foreground">
+            <div
+              className="prose prose-lg max-w-none space-y-4 text-muted-foreground"
+              style={{ minHeight: '200px' }}
+            >
               {(() => {
                 try {
                   const paragraphs = t('pages.about.solution.paragraphs');
@@ -124,7 +133,10 @@ export default function About() {
           {/* The Mission */}
           <section className="mb-16">
             <h2 className="mb-6 text-3xl font-bold">{t('pages.about.mission.title')}</h2>
-            <div className="prose prose-lg max-w-none space-y-4 text-muted-foreground">
+            <div
+              className="prose prose-lg max-w-none space-y-4 text-muted-foreground"
+              style={{ minHeight: '200px' }}
+            >
               {(() => {
                 try {
                   const paragraphs = t('pages.about.mission.paragraphs');
