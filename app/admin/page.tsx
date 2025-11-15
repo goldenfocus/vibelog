@@ -29,8 +29,8 @@ async function getStats() {
   const { data: costAlertConfig } = await adminClient
     .from('app_config')
     .select('value')
-    .eq('key', 'cost_alert_threshold_usd')
-    .single();
+    .eq('key', 'cost_alert_threshold')
+    .maybeSingle();
 
   return {
     userCount: userCount || 0,
