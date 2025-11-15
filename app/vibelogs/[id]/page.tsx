@@ -245,7 +245,6 @@ export default function VibelogDetailPage() {
               vibelogUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/vibelogs/${vibelog.id}`}
               createdAt={vibelog.created_at}
               audioUrl={vibelog.audio_url || undefined}
-              teaser={vibelog.teaser}
               teaserOnly={!user}
               likeCount={vibelog.like_count}
               onShare={async () => {

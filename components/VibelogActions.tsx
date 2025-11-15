@@ -18,7 +18,6 @@ import { toast } from 'sonner';
 import ExportButton from '@/components/ExportButton';
 import LikersPopover from '@/components/LikersPopover';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { useTextToSpeech } from '@/hooks/useTextToSpeech';
 import { AudioPreviewLimiter } from '@/lib/audioLimiter';
 import type { ExportFormat } from '@/lib/export';
 import { useAudioPlayerStore } from '@/state/audio-player-store';
@@ -33,8 +32,7 @@ interface VibelogActionsProps {
   vibelogUrl?: string;
   createdAt?: string;
   audioUrl?: string;
-  teaser?: string; // Teaser text for preview mode
-  teaserOnly?: boolean; // If true, only show play button and use teaser text
+  teaserOnly?: boolean; // If true, only show play button and apply preview limiter
   likeCount?: number; // Initial like count
   isLiked?: boolean; // Initial liked state
   onEdit?: () => void;
@@ -43,7 +41,6 @@ interface VibelogActionsProps {
   onCopy?: () => Promise<void> | void;
   onShare?: () => Promise<void> | void;
   onExport?: (format: ExportFormat) => void;
-  onUpgradePrompt?: (message: string, benefits: string[]) => void;
   variant?: 'default' | 'compact'; // compact for cards, default for detail pages
   className?: string;
 }
@@ -58,7 +55,6 @@ export default function VibelogActions({
   vibelogUrl,
   createdAt,
   audioUrl,
-  teaser,
   teaserOnly = false,
   likeCount: initialLikeCount = 0,
   isLiked: initialIsLiked = false,
@@ -68,7 +64,6 @@ export default function VibelogActions({
   onCopy,
   onShare,
   onExport,
-  onUpgradePrompt,
   variant = 'default',
   className = '',
 }: VibelogActionsProps) {
@@ -82,13 +77,6 @@ export default function VibelogActions({
   const menuRef = useRef<HTMLDivElement>(null);
   const lastLikeRequestRef = useRef<Promise<void> | null>(null);
   const previewLimiterRef = useRef<AudioPreviewLimiter | null>(null);
-  const {
-    isPlaying: isTTSPlaying,
-    isLoading: isTTSLoading,
-    playText,
-    stop,
-    progress,
-  } = useTextToSpeech(onUpgradePrompt);
 
   // Global audio player store
   const {
@@ -102,8 +90,8 @@ export default function VibelogActions({
 
   // Check if this vibelog's audio is currently playing in global player
   const isUsingGlobalPlayer = currentTrack?.id === `vibelog-${vibelogId}`;
-  const isLoading = isUsingGlobalPlayer ? globalIsLoading : isTTSLoading;
-  const isPlaying = isUsingGlobalPlayer ? globalIsPlaying : isTTSPlaying;
+  const isLoading = globalIsLoading;
+  const isPlaying = isUsingGlobalPlayer && globalIsPlaying;
 
   // Determine if this is user's own vibelog
   const isOwnVibelog = user?.id && authorId && user.id === authorId;
@@ -181,73 +169,32 @@ export default function VibelogActions({
   }, []);
 
   const handlePlayClick = async () => {
-    // ALWAYS prefer original audio if available - it's instant, free, and authentic!
-    // Only use TTS as fallback when:
-    // 1. No original audio available
-    // 2. Teaser mode (different text than original recording)
-    const shouldUseTTS = teaserOnly || !audioUrl;
-    // If original audio is available, use it (instant playback!)
-    if (audioUrl && !shouldUseTTS) {
-      // Use global audio player for pre-generated audio
-      const current = useAudioPlayerStore.getState();
-      if (current.currentTrack?.id === `vibelog-${vibelogId}`) {
-        // This track is already set, just toggle play/pause
-        if (globalIsPlaying) {
-          globalPause();
-          // Clean up limiter if pausing
-          if (previewLimiterRef.current) {
-            previewLimiterRef.current.cleanup();
-            previewLimiterRef.current = null;
-          }
-        } else {
-          try {
-            await globalPlay();
-            // Start preview limiter for anonymous users in teaser mode
-            if (!user && teaserOnly && previewLimiterRef.current === null) {
-              previewLimiterRef.current = new AudioPreviewLimiter({
-                trackId: `vibelog-${vibelogId}`,
-                onLimitReached: () => {
-                  console.log('[Preview] 9-second limit reached');
-                },
-                onSignInPrompt: () => {
-                  console.log('[Preview] Sign-in prompt triggered');
-                },
-              });
-              previewLimiterRef.current.start();
-            }
-          } catch (error) {
-            console.error('Audio playback failed:', error);
-          }
+    // Only use creator's original audio - NO TTS!
+    if (!audioUrl) {
+      toast.error('No audio available for this vibelog');
+      return;
+    }
+
+    // Use global audio player for original audio
+    const current = useAudioPlayerStore.getState();
+    if (current.currentTrack?.id === `vibelog-${vibelogId}`) {
+      // This track is already set, just toggle play/pause
+      if (globalIsPlaying) {
+        globalPause();
+        // Clean up limiter if pausing
+        if (previewLimiterRef.current) {
+          previewLimiterRef.current.cleanup();
+          previewLimiterRef.current = null;
         }
-        return;
       } else {
-        // Validate audio URL exists
-        if (!audioUrl || audioUrl.trim() === '') {
-          console.error('[VibelogActions] No audio URL available', { vibelogId, audioUrl });
-          toast.error('Audio not available for this vibelog');
-          return;
-        }
-
-        // Set track and play
-        setTrack({
-          id: `vibelog-${vibelogId}`,
-          url: audioUrl,
-          title: title || 'Vibelog Audio',
-          author: author,
-          type: 'url',
-        });
         try {
-          // Small delay to ensure track is set
-          await new Promise(resolve => setTimeout(resolve, 100));
           await globalPlay();
-
           // Start preview limiter for anonymous users in teaser mode
-          if (!user && teaserOnly) {
-            if (previewLimiterRef.current) {
-              previewLimiterRef.current.cleanup();
-            }
+          if (!user && teaserOnly && previewLimiterRef.current === null) {
             previewLimiterRef.current = new AudioPreviewLimiter({
               trackId: `vibelog-${vibelogId}`,
+              creatorDisplayName: author,
+              creatorUsername: authorUsername,
               onLimitReached: () => {
                 console.log('[Preview] 9-second limit reached');
               },
@@ -260,47 +207,52 @@ export default function VibelogActions({
         } catch (error) {
           console.error('Audio playback failed:', error);
         }
-        return;
       }
-    }
-
-    // Fall back to TTS if no original audio
-    if (isTTSPlaying) {
-      stop();
       return;
     }
 
-    // Use teaser text if in teaserOnly mode, otherwise use full content
-    const useTeaserText = teaserOnly && teaser;
-    const textToPlay = useTeaserText ? teaser : content;
-
-    // Clean markdown for TTS
-    let cleanContent = textToPlay
-      .replace(/#{1,6}\s/g, '') // Remove headers
-      .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
-      .replace(/\*(.*?)\*/g, '$1') // Remove italic
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove links
-      .replace(/`([^`]+)`/g, '$1') // Remove code
-      .replace(/\n\s*\n/g, '\n') // Remove extra newlines
-      .trim();
-
-    // Truncate in teaser/compact contexts to keep TTS generation under 20 seconds
-    const shouldLimitLength = teaserOnly || variant === 'compact';
-    if (shouldLimitLength) {
-      const words = cleanContent.split(/\s+/);
-      if (words.length > 500) {
-        cleanContent = words.slice(0, 500).join(' ') + '...';
-      }
+    // Validate audio URL exists
+    if (!audioUrl || audioUrl.trim() === '') {
+      console.error('[VibelogActions] No audio URL available', { vibelogId, audioUrl });
+      toast.error('Audio not available for this vibelog');
+      return;
     }
 
-    // Pass title and author so they display correctly in the audio player
-    console.log('🎵 [TTS-BUTTON] Calling playText with:', {
-      vibelogId,
-      title,
-      author,
-      textLength: cleanContent.length,
+    // Set track and play
+    setTrack({
+      id: `vibelog-${vibelogId}`,
+      url: audioUrl,
+      title: title || 'Vibelog Audio',
+      author: author,
+      type: 'url',
     });
-    await playText(cleanContent, 'shimmer', vibelogId, undefined, title, author, authorId);
+
+    try {
+      // Small delay to ensure track is set
+      await new Promise(resolve => setTimeout(resolve, 100));
+      await globalPlay();
+
+      // Start preview limiter for anonymous users in teaser mode
+      if (!user && teaserOnly) {
+        if (previewLimiterRef.current) {
+          previewLimiterRef.current.cleanup();
+        }
+        previewLimiterRef.current = new AudioPreviewLimiter({
+          trackId: `vibelog-${vibelogId}`,
+          creatorDisplayName: author,
+          creatorUsername: authorUsername,
+          onLimitReached: () => {
+            console.log('[Preview] 9-second limit reached');
+          },
+          onSignInPrompt: () => {
+            console.log('[Preview] Sign-in prompt triggered');
+          },
+        });
+        previewLimiterRef.current.start();
+      }
+    } catch (error) {
+      console.error('Audio playback failed:', error);
+    }
   };
 
   const handleCopyClick = async () => {
@@ -487,13 +439,6 @@ export default function VibelogActions({
             title={isPlaying ? 'Pause' : 'Listen'}
             data-testid="listen-button"
           >
-            {!isCompact && isPlaying && (
-              <div
-                className="absolute bottom-0 left-0 h-1 bg-electric transition-all duration-100 ease-out"
-                style={{ width: `${progress}%` }}
-              />
-            )}
-
             <div className="relative flex items-center justify-center">
               {isLoading ? (
                 <Loader2 className={`${iconClass} animate-spin`} />
@@ -594,13 +539,6 @@ export default function VibelogActions({
               title={isPlaying ? 'Pause' : 'Listen'}
               data-testid="listen-button"
             >
-              {!isCompact && isPlaying && (
-                <div
-                  className="absolute bottom-0 left-0 h-1 bg-electric transition-all duration-100 ease-out"
-                  style={{ width: `${isUsingGlobalPlayer ? 0 : progress}%` }}
-                />
-              )}
-
               <div className="relative flex items-center justify-center">
                 {isLoading ? (
                   <Loader2 className={`${iconClass} animate-spin`} />
