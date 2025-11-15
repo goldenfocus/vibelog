@@ -1,22 +1,17 @@
 'use client';
 
 import { Copy, Share, Edit, X, LogIn, Play, Pause, Loader2, Mic2, Sparkles } from 'lucide-react';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 
 import ExportButton from '@/components/ExportButton';
 import { useI18n } from '@/components/providers/I18nProvider';
-import {
-  createTextToSpeechCacheKey,
-  normalizeTextToSpeechInput,
-  useTextToSpeech,
-} from '@/hooks/useTextToSpeech';
+import { useTextToSpeech } from '@/hooks/useTextToSpeech';
 import type { ExportFormat } from '@/lib/export';
 
 export interface PublishActionsProps {
   content: string;
   title?: string;
   author?: string;
-  authorId?: string;
   voiceCloneId?: string;
   vibelogId?: string;
   isLoggedIn?: boolean;
@@ -27,7 +22,6 @@ export interface PublishActionsProps {
   onUpgradePrompt?: (message: string, benefits: string[]) => void;
   onExport?: (format: ExportFormat) => void;
   className?: string;
-  autoPlayRequest?: { id: string; cacheKey?: string } | null;
 }
 
 interface LoginPopupProps {
@@ -90,7 +84,6 @@ export default function PublishActions({
   content,
   title,
   author,
-  authorId,
   voiceCloneId,
   vibelogId,
   isLoggedIn = false,
@@ -101,12 +94,10 @@ export default function PublishActions({
   onUpgradePrompt,
   onExport,
   className = '',
-  autoPlayRequest = null,
 }: PublishActionsProps) {
   const DEBUG_MODE = process.env.NODE_ENV !== 'production';
   const { t } = useI18n();
   const [showEditPopup, setShowEditPopup] = useState(false);
-  const autoPlayHandledRef = useRef<string | null>(null);
 
   const { isPlaying, isLoading, playText, stop, progress } = useTextToSpeech(onUpgradePrompt);
   const handleVoiceCloneClick = () => {
@@ -123,48 +114,23 @@ export default function PublishActions({
     onEdit();
   };
 
-  const handlePlayClick = useCallback(
-    async (opts?: { cacheKey?: string }) => {
-      if (isPlaying) {
-        stop();
-        return;
-      }
-
-      const cleanContent = normalizeTextToSpeechInput(content);
-      const cacheKey =
-        opts?.cacheKey ??
-        createTextToSpeechCacheKey({
-          text: cleanContent,
-          voice: 'shimmer',
-          vibelogId,
-          voiceCloneId,
-        });
-
-      await playText({
-        text: cleanContent,
-        voice: 'shimmer',
-        vibelogId,
-        voiceCloneId,
-        title,
-        author,
-        authorId,
-        cacheKey,
-        autoPlay: true,
-      });
-    },
-    [author, authorId, content, isPlaying, playText, stop, title, vibelogId, voiceCloneId]
-  );
-
-  useEffect(() => {
-    if (!autoPlayRequest) {
+  const handlePlayClick = async () => {
+    if (isPlaying) {
+      stop();
       return;
     }
-    if (autoPlayHandledRef.current === autoPlayRequest.id) {
-      return;
-    }
-    autoPlayHandledRef.current = autoPlayRequest.id;
-    void handlePlayClick({ cacheKey: autoPlayRequest.cacheKey });
-  }, [autoPlayRequest, handlePlayClick]);
+
+    const cleanContent = content
+      .replace(/#{1,6}\s/g, '')
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .replace(/\*(.*?)\*/g, '$1')
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      .replace(/`([^`]+)`/g, '$1')
+      .replace(/\n\s*\n/g, '\n')
+      .trim();
+
+    await playText(cleanContent, 'shimmer', vibelogId, voiceCloneId, title, author);
+  };
 
   const handleCopyClick = async () => {
     try {
@@ -222,9 +188,7 @@ export default function PublishActions({
         </button>
 
         <button
-          onClick={() => {
-            void handlePlayClick();
-          }}
+          onClick={handlePlayClick}
           disabled={isLoading}
           className="group relative flex min-w-[70px] flex-col items-center gap-2 overflow-hidden rounded-2xl border border-border/20 bg-muted/20 p-3 transition-all duration-200 hover:scale-105 hover:bg-muted/30 sm:min-w-[80px] sm:p-4"
           data-testid="play-button"
