@@ -47,6 +47,7 @@ export function useVibelogAPI(
   const processingDataRef = useRef<ProcessingData>({
     transcriptionData: '',
     vibelogContentData: '',
+    audioData: null,
   });
 
   const createTeaserContent = (fullContent: string): TeaserResult => {
@@ -510,10 +511,15 @@ export function useVibelogAPI(
       // Calculate duration from blob (approximate)
       const duration = await getAudioDuration(audioBlob);
 
-      return {
+      const audioData = {
         url: data.url,
         duration: duration || 0,
       };
+
+      // CRITICAL: Store in ref immediately so it's available in completeProcessing
+      processingDataRef.current.audioData = audioData;
+
+      return audioData;
     } catch (error) {
       console.error('Audio upload error:', error);
       // Don't fail the whole process if audio upload fails

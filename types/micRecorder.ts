@@ -22,6 +22,7 @@ export interface AudioPlaybackState {
 export interface ProcessingData {
   transcriptionData: string;
   vibelogContentData: string;
+  audioData: { url: string; duration: number } | null;
 }
 
 export interface TeaserResult {
