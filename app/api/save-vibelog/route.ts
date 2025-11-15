@@ -230,7 +230,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           },
           body: JSON.stringify({
             vibelogId: vibelogId,
-            prompt: fullContent || content,
+            prompt: fullContent || teaserContent,
             imageUrl: vibelogData.cover_image_url,
             aspectRatio: '16:9',
           }),
