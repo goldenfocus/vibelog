@@ -222,7 +222,6 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
           authorId={vibelog.user_id}
           authorUsername={vibelog.author.username}
           audioUrl={vibelog.audio_url || undefined}
-          teaser={vibelog.teaser || displayContent}
           teaserOnly={false}
           createdAt={vibelog.created_at}
           likeCount={vibelog.like_count}
