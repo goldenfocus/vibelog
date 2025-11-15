@@ -439,13 +439,6 @@ export default function VibelogActions({
             title={isPlaying ? 'Pause' : 'Listen'}
             data-testid="listen-button"
           >
-            {!isCompact && isPlaying && (
-              <div
-                className="absolute bottom-0 left-0 h-1 bg-electric transition-all duration-100 ease-out"
-                style={{ width: `${progress}%` }}
-              />
-            )}
-
             <div className="relative flex items-center justify-center">
               {isLoading ? (
                 <Loader2 className={`${iconClass} animate-spin`} />
@@ -546,13 +539,6 @@ export default function VibelogActions({
               title={isPlaying ? 'Pause' : 'Listen'}
               data-testid="listen-button"
             >
-              {!isCompact && isPlaying && (
-                <div
-                  className="absolute bottom-0 left-0 h-1 bg-electric transition-all duration-100 ease-out"
-                  style={{ width: `${isUsingGlobalPlayer ? 0 : progress}%` }}
-                />
-              )}
-
               <div className="relative flex items-center justify-center">
                 {isLoading ? (
                   <Loader2 className={`${iconClass} animate-spin`} />
