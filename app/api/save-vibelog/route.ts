@@ -218,6 +218,28 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       // NO TTS GENERATION - Use only creator's original audio
       // Vibelogs without audio_url will simply not have audio playback
 
+      // Auto-generate video for authenticated users (non-blocking)
+      if (userId && vibelogId && vibelogData.cover_image_url) {
+        console.log('🎬 [VIDEO] Triggering automatic video generation for vibelog:', vibelogId);
+
+        // Fire-and-forget video generation (doesn't block response)
+        fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/video/generate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            vibelogId: vibelogId,
+            prompt: fullContent || teaserContent,
+            imageUrl: vibelogData.cover_image_url,
+            aspectRatio: '16:9',
+          }),
+        }).catch(err => {
+          console.error('🎬 [VIDEO] Auto-generation failed (non-critical):', err.message);
+          // Don't fail the vibelog save if video generation fails
+        });
+      }
+
       return NextResponse.json({
         success: true,
         vibelogId: vibelogId,
