@@ -256,7 +256,7 @@ export default function ProfileSettingsPage() {
             <div className="space-y-6 p-6">
               {/* Account Info (Read-only) */}
               <div className="rounded-lg border border-border/50 bg-card/50 p-4">
-                <h3 className="mb-2 font-semibold">Account Information</h3>
+                <h2 className="mb-2 font-semibold">Account Information</h2>
                 <p className="text-sm text-muted-foreground">{user.email}</p>
                 <p className="text-sm text-muted-foreground">
                   Signed in with {user.app_metadata?.provider || 'Email'}
