@@ -56,8 +56,11 @@ async function getGodModeUser(actualUser: User): Promise<User | null> {
       id: data.id,
       email: data.email || actualUser.email,
       user_metadata: {
-        ...actualUser.user_metadata,
+        // Clear admin's OAuth avatars so Navigation uses target user's database avatar
+        avatar_url: undefined,
+        picture: undefined,
         name: data.username,
+        full_name: data.username,
       },
     };
   } catch (error) {
