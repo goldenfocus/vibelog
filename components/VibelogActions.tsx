@@ -19,6 +19,7 @@ import ExportButton from '@/components/ExportButton';
 import LikersPopover from '@/components/LikersPopover';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useTextToSpeech } from '@/hooks/useTextToSpeech';
+import { AudioPreviewLimiter } from '@/lib/audioLimiter';
 import type { ExportFormat } from '@/lib/export';
 import { useAudioPlayerStore } from '@/state/audio-player-store';
 
@@ -80,6 +81,7 @@ export default function VibelogActions({
   const [isLiking, setIsLiking] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const lastLikeRequestRef = useRef<Promise<void> | null>(null);
+  const previewLimiterRef = useRef<AudioPreviewLimiter | null>(null);
   const {
     isPlaying: isTTSPlaying,
     isLoading: isTTSLoading,
@@ -168,6 +170,16 @@ export default function VibelogActions({
     }
   }, [isMenuOpen]);
 
+  // Cleanup preview limiter on unmount
+  useEffect(() => {
+    return () => {
+      if (previewLimiterRef.current) {
+        previewLimiterRef.current.cleanup();
+        previewLimiterRef.current = null;
+      }
+    };
+  }, []);
+
   const handlePlayClick = async () => {
     // ALWAYS prefer original audio if available - it's instant, free, and authentic!
     // Only use TTS as fallback when:
@@ -183,9 +195,27 @@ export default function VibelogActions({
         // This track is already set, just toggle play/pause
         if (globalIsPlaying) {
           globalPause();
+          // Clean up limiter if pausing
+          if (previewLimiterRef.current) {
+            previewLimiterRef.current.cleanup();
+            previewLimiterRef.current = null;
+          }
         } else {
           try {
             await globalPlay();
+            // Start preview limiter for anonymous users in teaser mode
+            if (!user && teaserOnly && previewLimiterRef.current === null) {
+              previewLimiterRef.current = new AudioPreviewLimiter({
+                trackId: `vibelog-${vibelogId}`,
+                onLimitReached: () => {
+                  console.log('[Preview] 9-second limit reached');
+                },
+                onSignInPrompt: () => {
+                  console.log('[Preview] Sign-in prompt triggered');
+                },
+              });
+              previewLimiterRef.current.start();
+            }
           } catch (error) {
             console.error('Audio playback failed:', error);
           }
@@ -204,6 +234,23 @@ export default function VibelogActions({
           // Small delay to ensure track is set
           await new Promise(resolve => setTimeout(resolve, 100));
           await globalPlay();
+
+          // Start preview limiter for anonymous users in teaser mode
+          if (!user && teaserOnly) {
+            if (previewLimiterRef.current) {
+              previewLimiterRef.current.cleanup();
+            }
+            previewLimiterRef.current = new AudioPreviewLimiter({
+              trackId: `vibelog-${vibelogId}`,
+              onLimitReached: () => {
+                console.log('[Preview] 9-second limit reached');
+              },
+              onSignInPrompt: () => {
+                console.log('[Preview] Sign-in prompt triggered');
+              },
+            });
+            previewLimiterRef.current.start();
+          }
         } catch (error) {
           console.error('Audio playback failed:', error);
         }
