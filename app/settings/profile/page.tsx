@@ -9,6 +9,7 @@ import { ImageUploadZone } from '@/components/profile/ImageUploadZone';
 import { SocialLinksEditor } from '@/components/profile/SocialLinksEditor';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useI18n } from '@/components/providers/I18nProvider';
+import { AutoPostSettings } from '@/components/settings/AutoPostSettings';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -238,6 +239,13 @@ export default function ProfileSettingsPage() {
                 </p>
               </div>
               <SocialLinksEditor initialLinks={socialLinks} onChange={setSocialLinks} />
+            </div>
+          </div>
+
+          {/* Twitter Auto-Posting Section */}
+          <div className="mb-8 overflow-hidden rounded-2xl border border-border/50 bg-card/30 backdrop-blur-sm">
+            <div className="space-y-6 p-6">
+              <AutoPostSettings />
             </div>
           </div>
 
