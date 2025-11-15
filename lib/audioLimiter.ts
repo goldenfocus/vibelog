@@ -8,13 +8,15 @@ import { toast } from 'sonner';
 import { useAudioPlayerStore } from '@/state/audio-player-store';
 
 const PREVIEW_LIMIT_SECONDS = 9; // Anonymous users can listen for 9 seconds
-const FADE_OUT_DURATION = 1000; // 1 second fade out before hard stop
-const FADE_START_SECONDS = PREVIEW_LIMIT_SECONDS - 1; // Start fading at 8 seconds
+const FADE_OUT_DURATION = 3000; // 3 second fade out (from 6s to 9s)
+const FADE_START_SECONDS = 6; // Start fading at 6 seconds
 
 interface PreviewLimiterOptions {
   onLimitReached?: () => void;
   onSignInPrompt?: () => void;
   trackId: string;
+  creatorDisplayName?: string;
+  creatorUsername?: string;
 }
 
 export class AudioPreviewLimiter {
@@ -47,7 +49,7 @@ export class AudioPreviewLimiter {
         return;
       }
 
-      // Start fading out at 8 seconds
+      // Start fading out at 6 seconds
       if (currentTime >= FADE_START_SECONDS && currentTime < PREVIEW_LIMIT_SECONDS) {
         this.startFadeOut();
       }
@@ -69,9 +71,10 @@ export class AudioPreviewLimiter {
     audioElement.addEventListener('timeupdate', nativeHandler);
 
     // Store handler for cleanup
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (this.timeUpdateHandler as any).__nativeHandler = nativeHandler;
 
-    console.log('[AudioLimiter] Started monitoring playback (limit: 9s)');
+    console.log('[AudioLimiter] Started monitoring playback (limit: 9s, fade at 6s)');
   }
 
   /**
@@ -88,7 +91,7 @@ export class AudioPreviewLimiter {
       return;
     }
 
-    const fadeSteps = 10;
+    const fadeSteps = 30; // More steps for smoother 3-second fade
     const fadeStepDuration = FADE_OUT_DURATION / fadeSteps;
     const volumeStep = this.originalVolume / fadeSteps;
     let currentStep = 0;
@@ -109,7 +112,7 @@ export class AudioPreviewLimiter {
       }
     }, fadeStepDuration);
 
-    console.log('[AudioLimiter] Started fade out');
+    console.log('[AudioLimiter] Started fade out at 6s');
   }
 
   /**
@@ -140,20 +143,13 @@ export class AudioPreviewLimiter {
   }
 
   /**
-   * Show funny toast message encouraging sign-in
+   * Show toast message encouraging sign-in with creator name
    */
   private showSignInPrompt() {
-    const messages = [
-      { emoji: '🎧', text: 'Loving it? Sign in for the full vibe!' },
-      { emoji: '🎶', text: "That's just a taste! Sign in to hear it all" },
-      { emoji: '✨', text: 'Want more? Sign in to unlock the full audio' },
-      { emoji: '🔥', text: 'Sign in to keep the vibes going!' },
-      { emoji: '💫', text: 'Hooked? Sign in for the complete experience!' },
-    ];
+    const creatorName =
+      this.options.creatorDisplayName || this.options.creatorUsername || 'this creator';
 
-    const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-
-    toast(`${randomMessage.emoji} ${randomMessage.text}`, {
+    toast(`Login to listen to the full VibeLog of ${creatorName}`, {
       duration: 5000,
       action: {
         label: 'Sign In',
@@ -184,9 +180,11 @@ export class AudioPreviewLimiter {
       const store = useAudioPlayerStore.getState();
       const audioElement = store.audioElement;
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if (audioElement && (this.timeUpdateHandler as any).__nativeHandler) {
         audioElement.removeEventListener(
           'timeupdate',
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (this.timeUpdateHandler as any).__nativeHandler
         );
       }
