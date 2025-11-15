@@ -121,9 +121,6 @@ export interface Profile {
   provider?: string | null;
   provider_id?: string | null;
 
-  // Voice cloning
-  voice_clone_id?: string | null;
-
   // Metrics
   total_vibelogs?: number;
 }
