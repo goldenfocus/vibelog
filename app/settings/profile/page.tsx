@@ -71,6 +71,8 @@ export default function ProfileSettingsPage() {
     setMessage(null);
 
     try {
+      // Note: user.id is already the target user ID when in god mode
+      // (AuthProvider.getGodModeUser() returns target user's ID)
       const { error } = await supabase
         .from('profiles')
         .update({

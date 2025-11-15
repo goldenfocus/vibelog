@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import sharp from 'sharp';
 
+import { getGodModeSession } from '@/lib/godMode';
 import { getFilterById } from '@/lib/image-filters';
 import { VIBELOGS_BUCKET } from '@/lib/storage';
 import { createServerSupabaseClient } from '@/lib/supabase';
@@ -32,6 +33,19 @@ export async function POST(request: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    // Check for God Mode - use target user ID if admin is impersonating
+    const godModeSession = await getGodModeSession();
+    const effectiveUserId =
+      godModeSession && godModeSession.adminUserId === user.id
+        ? godModeSession.targetUserId
+        : user.id;
+
+    console.log(
+      godModeSession
+        ? `[God Mode] Admin ${user.id} uploading image for user ${effectiveUserId}`
+        : `Uploading image for user ${user.id}`
+    );
 
     // Parse multipart form data
     const formData = await request.formData();
@@ -85,7 +99,7 @@ export async function POST(request: NextRequest) {
     // Generate storage path: userId/profile/{avatar|header}-timestamp.ext
     const extension = normalizedFileType.split('/')[1];
     const timestamp = Date.now();
-    const storagePath = `${user.id}/profile/${imageType}-${timestamp}.${extension}`;
+    const storagePath = `${effectiveUserId}/profile/${imageType}-${timestamp}.${extension}`;
 
     console.log(
       `📸 Uploading ${imageType} image:`,
@@ -194,7 +208,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update storage path to use .webp extension
-    const webpStoragePath = `${user.id}/profile/${imageType}-${timestamp}.webp`;
+    const webpStoragePath = `${effectiveUserId}/profile/${imageType}-${timestamp}.webp`;
 
     // Upload to Supabase Storage
     const { error: uploadError } = await supabase.storage
@@ -230,7 +244,7 @@ export async function POST(request: NextRequest) {
         ...updateData,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', user.id);
+      .eq('id', effectiveUserId);
 
     if (dbError) {
       console.error('❌ Profile update failed:', dbError);
