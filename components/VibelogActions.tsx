@@ -643,6 +643,7 @@ export default function VibelogActions({
                 onClick={handleConfirmDelete}
                 className="touch-manipulation rounded-lg bg-destructive px-4 py-3 text-sm font-medium text-destructive-foreground transition-colors hover:bg-destructive/90 active:bg-destructive/80"
                 data-testid="delete-confirm-button"
+                aria-label="Delete vibelog"
               >
                 Delete
               </button>
