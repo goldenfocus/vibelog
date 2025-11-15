@@ -412,7 +412,7 @@ export default async function VibelogPage({ params }: PageProps) {
 
         {/* Author bio section */}
         <div className="mt-8 rounded-2xl border border-border/50 bg-gradient-to-br from-background via-background to-background/50 p-6">
-          <h3 className="mb-4 text-xl font-semibold text-foreground">About the Author</h3>
+          <h2 className="mb-4 text-xl font-semibold text-foreground">About the Author</h2>
           <Link
             href={`/@${vibelog.author.username}`}
             className="flex items-start gap-4 transition-opacity hover:opacity-80"

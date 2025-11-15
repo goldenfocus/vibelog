@@ -154,6 +154,7 @@ export default function FAQ() {
           </div>
 
           {/* FAQ Accordion */}
+          <h2 className="sr-only">Frequently Asked Questions</h2>
           <div className="mb-16 space-y-4">
             {Array.isArray(faqData) &&
               faqData.map((item, index) => {
