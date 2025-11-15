@@ -221,6 +221,13 @@ export default function VibelogActions({
         }
         return;
       } else {
+        // Validate audio URL exists
+        if (!audioUrl || audioUrl.trim() === '') {
+          console.error('[VibelogActions] No audio URL available', { vibelogId, audioUrl });
+          toast.error('Audio not available for this vibelog');
+          return;
+        }
+
         // Set track and play
         setTrack({
           id: `vibelog-${vibelogId}`,
