@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { isAdmin } from '@/lib/auth-admin';
+import { getGodModeSession } from '@/lib/godMode';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
 export const metadata = {
@@ -92,7 +93,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect('/');
   }
 
-  const userIsAdmin = await isAdmin(user.id);
+  // Check for god mode - always use REAL admin user for admin panel access
+  const godModeSession = await getGodModeSession();
+  const effectiveUserId =
+    godModeSession && godModeSession.adminUserId === user.id
+      ? godModeSession.adminUserId // Use real admin user ID, not target user
+      : user.id;
+
+  const userIsAdmin = await isAdmin(effectiveUserId);
   if (!userIsAdmin) {
     redirect('/');
   }
