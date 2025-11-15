@@ -50,6 +50,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if user has credentials configured
+    const profile = vibelog.profiles;
+    if (!profile?.twitter_username || !profile?.twitter_password) {
+      return NextResponse.json(
+        {
+          error:
+            'X credentials not configured. Please add your username and password in Settings → Profile',
+        },
+        { status: 400 }
+      );
+    }
+
     // Check if already posted
     const { data: existingPost } = await supabase
       .from('vibelog_social_posts')
