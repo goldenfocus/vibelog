@@ -43,7 +43,6 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
     upgradePrompt,
     isLoggedIn,
     attribution,
-    voiceCloneId,
     vibelogId,
     startRecording,
     stopRecording,
@@ -180,7 +179,6 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
         transcription={transcription}
         vibelogContent={vibelogContent}
         coverImage={coverImage}
-        voiceCloneId={voiceCloneId}
       />
 
       {audioBlob && showCompletedUI && (
@@ -200,7 +198,6 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
                   content={displayContent}
                   title={displayParsed.title || undefined}
                   author={attribution.handle}
-                  voiceCloneId={voiceCloneId}
                   vibelogId={vibelogId}
                   isLoggedIn={isLoggedIn}
                   isTeaserContent={isTeaserContent}
@@ -279,7 +276,6 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
                     content={displayContent}
                     title={displayParsed.title || undefined}
                     author={attribution.handle}
-                    voiceCloneId={voiceCloneId}
                     vibelogId={vibelogId}
                     isLoggedIn={isLoggedIn}
                     isTeaserContent={isTeaserContent}

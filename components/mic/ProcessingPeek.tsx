@@ -2,7 +2,7 @@
 
 import { BookOpen, ImageIcon, Mic2 } from 'lucide-react';
 import Image from 'next/image';
-import { memo, useMemo } from 'react';
+import { memo } from 'react';
 
 import type { CoverImage } from '@/types/micRecorder';
 
@@ -10,7 +10,6 @@ type ProcessingPeekProps = {
   transcription: string;
   vibelogContent: string;
   coverImage: CoverImage | null;
-  voiceCloneId?: string;
   isVisible: boolean;
 };
 
@@ -18,25 +17,9 @@ function ProcessingPeekComponent({
   transcription,
   vibelogContent,
   coverImage,
-  voiceCloneId,
   isVisible,
 }: ProcessingPeekProps) {
-  const hasAnyContent = Boolean(transcription || vibelogContent || coverImage || voiceCloneId);
-
-  const voiceStatus = useMemo(() => {
-    if (!voiceCloneId) {
-      return {
-        label: 'Cloning your voice…',
-        description: 'Give us a few seconds to teach the AI',
-        ready: false,
-      };
-    }
-    return {
-      label: 'Voice clone ready',
-      description: 'Future plays will use your real voice',
-      ready: true,
-    };
-  }, [voiceCloneId]);
+  const hasAnyContent = Boolean(transcription || vibelogContent || coverImage);
 
   if (!isVisible || !hasAnyContent) {
     return null;
@@ -55,7 +38,7 @@ function ProcessingPeekComponent({
         Sneak peek
       </p>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2">
         {transcription ? (
           <article className="rounded-2xl border border-border/20 bg-muted/30 p-4 shadow-inner">
             <header className="mb-2 flex items-center gap-2 text-xs font-semibold text-muted-foreground">
@@ -91,16 +74,6 @@ function ProcessingPeekComponent({
             Turning your words into a polished story…
           </article>
         )}
-
-        <article className="rounded-2xl border border-border/20 bg-muted/30 p-4 shadow-inner">
-          <header className="mb-2 flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-            <Mic2
-              className={`h-4 w-4 ${voiceStatus.ready ? 'text-electric' : 'text-muted-foreground'}`}
-            />
-            {voiceStatus.label}
-          </header>
-          <p className="text-sm text-foreground/90">{voiceStatus.description}</p>
-        </article>
       </div>
 
       {coverImage ? (
