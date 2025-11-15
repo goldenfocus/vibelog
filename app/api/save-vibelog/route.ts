@@ -215,62 +215,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       console.log('✅ [VIBELOG-SAVE] Direct insert successful:', vibelogId, 'Slug:', finalSlug);
       console.log('📍 [VIBELOG-SAVE] Public URL:', publicUrl);
 
-      // === STEP 4: GENERATE TTS AUDIO IN BACKGROUND (if no audio provided) ===
-      // Generate TTS audio automatically for instant playback
-      // Use the /api/text-to-speech endpoint which handles voice cloning properly
-      if (!vibelogData.audio_url && fullContent) {
-        // Fire and forget - don't block the response
-        (async () => {
-          try {
-            console.log('🎙️ [VIBELOG-SAVE] Generating TTS audio in background...');
-
-            // Clean content for TTS (remove markdown)
-            const cleanContent = fullContent
-              .replace(/#{1,6}\s/g, '') // Remove headers
-              .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
-              .replace(/\*(.*?)\*/g, '$1') // Remove italic
-              .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove links
-              .replace(/`([^`]+)`/g, '$1') // Remove code
-              .replace(/\n\s*\n/g, '\n') // Remove extra newlines
-              .trim();
-
-            // Truncate if too long (OpenAI TTS has 4096 char limit)
-            const ttsText =
-              cleanContent.length > 4000 ? cleanContent.substring(0, 4000) + '...' : cleanContent;
-
-            if (!ttsText || ttsText.length < 10) {
-              console.log('⚠️ [VIBELOG-SAVE] Content too short for TTS, skipping');
-              return;
-            }
-
-            // Call the TTS API endpoint which handles voice cloning properly
-            // This will use the user's cloned voice if available, otherwise default voice
-            const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-            const ttsResponse = await fetch(`${baseUrl}/api/text-to-speech`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                text: ttsText,
-                voice: 'shimmer', // Default fallback if no cloned voice
-                vibelogId: vibelogId,
-              }),
-            });
-
-            if (!ttsResponse.ok) {
-              console.error('⚠️ [VIBELOG-SAVE] TTS generation failed:', await ttsResponse.text());
-              return;
-            }
-
-            console.log('✅ [VIBELOG-SAVE] TTS audio generated successfully');
-            // The TTS endpoint automatically saves the audio_url to the vibelog
-          } catch (error) {
-            // Don't fail the save if TTS generation fails
-            console.error('⚠️ [VIBELOG-SAVE] TTS generation failed (non-critical):', error);
-          }
-        })();
-      }
+      // NO TTS GENERATION - Use only creator's original audio
+      // Vibelogs without audio_url will simply not have audio playback
 
       return NextResponse.json({
         success: true,

@@ -1,11 +1,10 @@
 'use client';
 
-import { Copy, Share, Edit, X, LogIn, Play, Pause, Loader2 } from 'lucide-react';
+import { Copy, Share, Edit, X, LogIn } from 'lucide-react';
 import React, { useState } from 'react';
 
 import ExportButton from '@/components/ExportButton';
 import { useI18n } from '@/components/providers/I18nProvider';
-import { useTextToSpeech } from '@/hooks/useTextToSpeech';
 import type { ExportFormat } from '@/lib/export';
 
 export interface PublishActionsProps {
@@ -83,13 +82,13 @@ export default function PublishActions({
   content,
   title,
   author,
-  vibelogId,
+  vibelogId: _vibelogId,
   isLoggedIn = false,
   isTeaserContent: _isTeaserContent = false,
   onCopy,
   onEdit,
   onShare,
-  onUpgradePrompt,
+  onUpgradePrompt: _onUpgradePrompt,
   onExport,
   className = '',
 }: PublishActionsProps) {
@@ -97,7 +96,7 @@ export default function PublishActions({
   const { t } = useI18n();
   const [showEditPopup, setShowEditPopup] = useState(false);
 
-  const { isPlaying, isLoading, playText, stop, progress } = useTextToSpeech(onUpgradePrompt);
+  // TTS preview removed - use only original audio
 
   const handleEditClick = () => {
     if (!isLoggedIn) {
@@ -105,24 +104,6 @@ export default function PublishActions({
       return;
     }
     onEdit();
-  };
-
-  const handlePlayClick = async () => {
-    if (isPlaying) {
-      stop();
-      return;
-    }
-
-    const cleanContent = content
-      .replace(/#{1,6}\s/g, '')
-      .replace(/\*\*(.*?)\*\*/g, '$1')
-      .replace(/\*(.*?)\*/g, '$1')
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-      .replace(/`([^`]+)`/g, '$1')
-      .replace(/\n\s*\n/g, '\n')
-      .trim();
-
-    await playText(cleanContent, 'shimmer', vibelogId, undefined, title, author);
   };
 
   const handleCopyClick = async () => {
@@ -165,33 +146,7 @@ export default function PublishActions({
           </span>
         </button>
 
-        <button
-          onClick={handlePlayClick}
-          disabled={isLoading}
-          className="group relative flex min-w-[70px] flex-col items-center gap-2 overflow-hidden rounded-2xl border border-border/20 bg-muted/20 p-3 transition-all duration-200 hover:scale-105 hover:bg-muted/30 sm:min-w-[80px] sm:p-4"
-          data-testid="play-button"
-        >
-          {isPlaying && (
-            <div
-              className="absolute bottom-0 left-0 h-1 bg-electric transition-all duration-100 ease-out"
-              style={{ width: `${progress}%` }}
-            />
-          )}
-
-          <div className="relative flex items-center justify-center">
-            {isLoading ? (
-              <Loader2 className="h-5 w-5 animate-spin text-foreground sm:h-6 sm:w-6" />
-            ) : isPlaying ? (
-              <Pause className="h-5 w-5 text-foreground transition-colors group-hover:text-electric sm:h-6 sm:w-6" />
-            ) : (
-              <Play className="h-5 w-5 text-foreground transition-colors group-hover:text-electric sm:h-6 sm:w-6" />
-            )}
-          </div>
-
-          <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">
-            {isPlaying ? 'Pause' : 'Listen'}
-          </span>
-        </button>
+        {/* TTS Preview removed - use only original audio */}
 
         <button
           onClick={onShare}

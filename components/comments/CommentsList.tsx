@@ -1,9 +1,6 @@
 'use client';
 
 import { Loader2 } from 'lucide-react';
-import { useState, useEffect } from 'react';
-
-import { useTextToSpeech } from '@/hooks/useTextToSpeech';
 
 import CommentItem from './CommentItem';
 
@@ -28,30 +25,11 @@ interface CommentsListProps {
 }
 
 export default function CommentsList({ comments, isLoading }: CommentsListProps) {
-  const [playingVoiceId, setPlayingVoiceId] = useState<string | null>(null);
-  const { playText, stop } = useTextToSpeech();
-
-  const handlePlayAudio = async (text: string, voiceId: string | null) => {
-    // Stop any currently playing audio
-    if (playingVoiceId) {
-      stop();
-    }
-
-    if (voiceId) {
-      setPlayingVoiceId(voiceId);
-      // Use TTS with cloned voice - playText signature is (text, voice, vibelogId?, voiceCloneId?)
-      // We pass voiceId as the voiceCloneId parameter
-      await playText(text, 'shimmer', undefined, voiceId);
-      // Stop will be called when audio ends via useTextToSpeech hook
-    }
+  // TTS disabled - comment audio playback removed
+  const handlePlayAudio = async (_text: string, _voiceId: string | null) => {
+    // No-op: TTS playback disabled
+    console.log('[CommentsList] Audio playback disabled - use only original audio');
   };
-
-  // Stop playing when component unmounts or comments change
-  useEffect(() => {
-    return () => {
-      stop();
-    };
-  }, [stop]);
 
   if (isLoading) {
     return (
