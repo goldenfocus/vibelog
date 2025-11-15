@@ -647,12 +647,17 @@ export function useMicStateMachine(
         );
       }
 
+      // CRITICAL: Use ref as fallback for audio data (React state may not be updated yet)
+      const finalAudioData = audioData || vibelogAPI.processingData.current.audioData;
+
       console.log('💾 [COMPLETE-PROCESSING] Calling saveVibelog with:', {
         contentLength: contentToSave.length,
         fullContentLength: fullContent.length,
         hasTranscription: !!transcription,
         hasCoverImage: !!finalCoverImage,
-        hasAudioData: !!audioData,
+        hasAudioData: !!finalAudioData,
+        audioDataSource: audioData ? 'state' : 'ref',
+        audioUrl: finalAudioData?.url || '(none)',
         userId: user?.id || 'anonymous',
       });
 
@@ -661,7 +666,7 @@ export function useMicStateMachine(
         fullContent,
         transcription: transcription || '',
         coverImage: finalCoverImage || undefined,
-        audioData: audioData || undefined,
+        audioData: finalAudioData || undefined,
         userId: user?.id,
         isTeaser: isTeaserContent,
         metadata: {
