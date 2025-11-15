@@ -119,7 +119,10 @@ function AuditLogItem({ log }: { log: any }) {
 
 export default async function AdminDashboard() {
   const stats = await getStats();
-  const auditLog = await getAdminAuditLog(10);
+  const auditLog = await getAdminAuditLog(10).catch(err => {
+    console.error('[Admin Dashboard] Failed to load audit log:', err);
+    return [];
+  });
 
   return (
     <div className="space-y-8">
