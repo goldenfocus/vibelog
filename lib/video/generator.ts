@@ -235,19 +235,98 @@ export async function submitVideoGeneration(
 }
 
 /**
- * LEGACY: Check status of async video generation job (DEPRECATED)
+ * Check status of async video generation job by polling fal.ai
+ * Used by /api/video/status endpoint to check job progress
  */
-export async function checkVideoGenerationStatus(_requestId: string): Promise<{
+export async function checkVideoGenerationStatus(requestId: string): Promise<{
   status: 'queued' | 'generating' | 'completed' | 'failed';
   videoUrl?: string;
   error?: string;
 }> {
-  console.warn('[Video Generator] checkVideoGenerationStatus is deprecated.');
+  if (!FAL_API_KEY) {
+    throw new Error('FAL_API_KEY is not configured');
+  }
 
-  return {
-    status: 'failed',
-    error: 'Async queue generation is deprecated. Please regenerate video.',
-  };
+  try {
+    const statusUrl = `${FAL_QUEUE_STATUS_BASE}/${requestId}/status`;
+    console.log('[Video Generator] Polling fal.ai status:', statusUrl);
+
+    const statusResponse = await fetch(statusUrl, {
+      method: 'POST',
+      headers: {
+        Authorization: `Key ${FAL_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({}),
+    });
+
+    if (!statusResponse.ok) {
+      const errorText = await statusResponse.text();
+      console.error('[Video Generator] Status poll failed:', {
+        status: statusResponse.status,
+        error: errorText,
+      });
+      throw new Error(`Status poll failed: ${statusResponse.status}`);
+    }
+
+    const statusResult = (await statusResponse.json()) as FalQueueStatusResponse;
+    console.log('[Video Generator] Status response:', statusResult);
+
+    // Map fal.ai status to our status
+    if (statusResult.status === 'FAILED') {
+      return {
+        status: 'failed',
+        error: statusResult.error || 'Video generation failed',
+      };
+    }
+
+    if (statusResult.status === 'COMPLETED' && statusResult.response_url) {
+      // Fetch final result
+      console.log('[Video Generator] Fetching completed video from:', statusResult.response_url);
+
+      const resultResponse = await fetch(statusResult.response_url, {
+        headers: {
+          Authorization: `Key ${FAL_API_KEY}`,
+        },
+      });
+
+      if (!resultResponse.ok) {
+        const errorText = await resultResponse.text();
+        console.error('[Video Generator] Failed to fetch result:', errorText);
+        throw new Error('Failed to fetch completed video');
+      }
+
+      const videoResult = (await resultResponse.json()) as FalVideoResult;
+
+      if (!videoResult.video || !videoResult.video.url) {
+        console.error('[Video Generator] Invalid result structure:', videoResult);
+        throw new Error('Completed result missing video URL');
+      }
+
+      return {
+        status: 'completed',
+        videoUrl: videoResult.video.url,
+      };
+    }
+
+    // Map IN_PROGRESS and IN_QUEUE to our statuses
+    if (statusResult.status === 'IN_PROGRESS') {
+      return { status: 'generating' };
+    }
+
+    if (statusResult.status === 'IN_QUEUE') {
+      return { status: 'queued' };
+    }
+
+    // Unknown status
+    return {
+      status: 'failed',
+      error: `Unknown fal.ai status: ${statusResult.status}`,
+    };
+  } catch (error) {
+    console.error('[Video Generator] checkVideoGenerationStatus error:', error);
+    throw error;
+  }
 }
 
 /**
