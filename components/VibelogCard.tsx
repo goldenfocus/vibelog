@@ -76,20 +76,26 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
     setFormattedDate(formatDate(vibelog.published_at));
   }, [vibelog.published_at]);
 
-  // Show ONLY first 200 chars of teaser as preview
-  // Remove the title from content (it's usually the first line starting with #)
-  const teaserText = vibelog.teaser || vibelog.content;
-  const contentWithoutTitle = teaserText
-    .split('\n')
-    .filter(line => !line.startsWith('# ')) // Remove H1 titles
-    .join('\n')
-    .trim();
+  // Use AI-generated teaser (already optimized for engagement with proper tone)
+  // If no teaser exists, fallback to truncated content
+  let displayContent: string;
 
-  const preview =
-    contentWithoutTitle.length > 200
-      ? contentWithoutTitle.substring(0, 200) + '...'
-      : contentWithoutTitle;
-  const displayContent = preview;
+  if (vibelog.teaser) {
+    // Use the full AI-generated teaser as-is (already crafted as a hook with correct tone)
+    displayContent = vibelog.teaser.trim();
+  } else {
+    // Fallback: create a preview from content (remove title, truncate to 200 chars)
+    const contentWithoutTitle = vibelog.content
+      .split('\n')
+      .filter(line => !line.startsWith('# ')) // Remove H1 titles
+      .join('\n')
+      .trim();
+    displayContent =
+      contentWithoutTitle.length > 200
+        ? contentWithoutTitle.substring(0, 200) + '...'
+        : contentWithoutTitle;
+  }
+
   const isTeaser = true; // Always show as teaser in card view
 
   const handleReadMore = () => {
