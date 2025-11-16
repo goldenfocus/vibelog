@@ -23,32 +23,64 @@ export function VideoGenerator({ vibelogId, onVideoGenerated }: VideoGeneratorPr
       setStatus('generating');
       setError(null);
 
-      const response = await fetch('/api/video/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          vibelogId,
-          aspectRatio: '16:9',
-        }),
-      });
+      console.log('[VideoGenerator] Starting video generation for vibelog:', vibelogId);
 
-      const data = await response.json();
+      // Add timeout (6 minutes to account for 5min generation + 1min buffer)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 6 * 60 * 1000);
 
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to generate video');
+      try {
+        const response = await fetch('/api/video/generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            vibelogId,
+            aspectRatio: '16:9',
+          }),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        console.log('[VideoGenerator] Response status:', response.status);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('[VideoGenerator] API error response:', errorText);
+          throw new Error(`Server error: ${response.status} ${errorText}`);
+        }
+
+        const data = await response.json();
+        console.log('[VideoGenerator] Response data:', data);
+
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to generate video');
+        }
+
+        setVideoUrl(data.data.videoUrl);
+        setStatus('completed');
+        console.log('[VideoGenerator] Video generated successfully:', data.data.videoUrl);
+
+        if (onVideoGenerated) {
+          onVideoGenerated(data.data.videoUrl);
+        }
+
+        // Reload page to show the video
+        window.location.reload();
+      } catch (fetchError: unknown) {
+        clearTimeout(timeoutId);
+
+        if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+          throw new Error('Video generation timed out. The video may still be processing.');
+        }
+        throw fetchError;
       }
-
-      setVideoUrl(data.data.videoUrl);
-      setStatus('completed');
-
-      if (onVideoGenerated) {
-        onVideoGenerated(data.data.videoUrl);
-      }
-    } catch (err: any) {
-      console.error('Video generation error:', err);
-      setError(err.message || 'Failed to generate video');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to generate video';
+      console.error('[VideoGenerator] Video generation error:', errorMessage, err);
+      setError(errorMessage);
       setStatus('failed');
     }
   };

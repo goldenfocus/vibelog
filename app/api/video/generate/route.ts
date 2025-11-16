@@ -72,7 +72,27 @@ export async function POST(request: NextRequest) {
     const videoPrompt = prompt || vibelog.content || vibelog.teaser;
     const videoImageUrl = imageUrl || vibelog.cover_image_url || undefined;
 
-    console.log('[Video API] Generating video with fal.ai...');
+    // Validate we have a prompt
+    if (!videoPrompt || videoPrompt.trim().length < 10) {
+      console.error('[Video API] No valid prompt available for video generation');
+      await supabase
+        .from('vibelogs')
+        .update({
+          video_generation_status: 'failed',
+          video_generation_error: 'No content available for video generation. Vibelog must have content or teaser.',
+        })
+        .eq('id', vibelogId);
+
+      return NextResponse.json(
+        { success: false, error: 'No content available for video generation. Vibelog must have content or teaser.' },
+        { status: 400 }
+      );
+    }
+
+    console.log('[Video API] Generating video with fal.ai...', {
+      promptLength: videoPrompt.length,
+      hasImage: !!videoImageUrl,
+    });
 
     // Generate video with fal.ai
     const videoResult = await generateVideo({
