@@ -1,4 +1,4 @@
-import { Clock, Heart, Share2, User } from 'lucide-react';
+import { User } from 'lucide-react';
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -362,20 +362,6 @@ export default async function VibelogPage({ params }: PageProps) {
                   user_id: vibelog.user_id,
                 }}
               />
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  <span>{vibelog.read_time} min read</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Heart className="h-4 w-4" />
-                  <span>{vibelog.like_count}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Share2 className="h-4 w-4" />
-                  <span>{vibelog.share_count}</span>
-                </div>
-              </div>
             </div>
           </div>
 
@@ -391,6 +377,9 @@ export default async function VibelogPage({ params }: PageProps) {
               public_slug: vibelog.public_slug || vibelog.slug,
               audio_url: vibelog.audio_url,
               created_at: vibelog.created_at,
+              read_time: vibelog.read_time,
+              like_count: vibelog.like_count,
+              share_count: vibelog.share_count,
               author: vibelog.author,
             }}
           />

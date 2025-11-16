@@ -41,6 +41,7 @@ interface VibelogActionsProps {
   onCopy?: () => Promise<void> | void;
   onShare?: () => Promise<void> | void;
   onExport?: (format: ExportFormat) => void;
+  onLikeCountChange?: (newCount: number) => void; // Callback when like count changes
   variant?: 'default' | 'compact'; // compact for cards, default for detail pages
   className?: string;
 }
@@ -64,6 +65,7 @@ export default function VibelogActions({
   onCopy,
   onShare,
   onExport,
+  onLikeCountChange,
   variant = 'default',
   className = '',
 }: VibelogActionsProps) {
@@ -380,15 +382,19 @@ export default function VibelogActions({
         }
 
         // Update with server response (source of truth)
+        const finalLikeCount = data.like_count ?? newLikeCount;
         setIsLiked(data.liked ?? newLikedState);
-        setLikeCount(data.like_count ?? newLikeCount);
+        setLikeCount(finalLikeCount);
+
+        // Notify parent of like count change
+        onLikeCountChange?.(finalLikeCount);
 
         // Log success for debugging
         if (process.env.NODE_ENV !== 'production') {
           console.log('Like updated successfully:', {
             vibelogId,
             liked: data.liked,
-            likeCount: data.like_count,
+            likeCount: finalLikeCount,
           });
         }
 
@@ -408,7 +414,7 @@ export default function VibelogActions({
 
     lastLikeRequestRef.current = likeRequest;
     await likeRequest;
-  }, [user, isLiking, isLiked, likeCount, vibelogId]);
+  }, [user, isLiking, isLiked, likeCount, vibelogId, onLikeCountChange]);
 
   const isCompact = variant === 'compact';
   const baseButtonClass = isCompact

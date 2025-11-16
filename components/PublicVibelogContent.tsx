@@ -1,14 +1,15 @@
 'use client';
 
+import { Clock, Heart, Share2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
+import { useAuth } from '@/components/providers/AuthProvider';
 import VibelogActions from '@/components/VibelogActions';
 import VibelogContentRenderer from '@/components/VibelogContentRenderer';
 import VibelogEditModalFull from '@/components/VibelogEditModalFull';
 import { VideoPlayer, VideoGenerator } from '@/components/video';
-import { useAuth } from '@/components/providers/AuthProvider';
 import { useAutoPlayVibelogAudio } from '@/hooks/useAutoPlayVibelogAudio';
 import type { ExportFormat } from '@/lib/export';
 
@@ -25,6 +26,9 @@ interface PublicVibelogContentProps {
     video_url?: string | null;
     video_generation_status?: 'pending' | 'generating' | 'completed' | 'failed' | null;
     created_at?: string;
+    read_time?: number;
+    like_count?: number;
+    share_count?: number;
     author?: {
       username: string;
       display_name: string;
@@ -37,6 +41,7 @@ export default function PublicVibelogContent({ vibelog }: PublicVibelogContentPr
   const { user } = useAuth();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [videoUrl, setVideoUrl] = useState<string | null>(vibelog.video_url || null);
+  const [likeCount, setLikeCount] = useState(vibelog.like_count || 0);
 
   // Initialize with a placeholder URL to prevent hydration mismatch
   // Will be updated in useEffect with actual window.location.origin
@@ -115,6 +120,11 @@ export default function PublicVibelogContent({ vibelog }: PublicVibelogContentPr
     }
   };
 
+  // Callback to update like count when VibelogActions changes it
+  const handleLikeCountChange = (newCount: number) => {
+    setLikeCount(newCount);
+  };
+
   const handleExport = (format: ExportFormat) => {
     console.log('Export format:', format);
     // Export handled by ExportButton component
@@ -145,20 +155,40 @@ export default function PublicVibelogContent({ vibelog }: PublicVibelogContentPr
 
       {/* Video Generator - Only show if user is the author, no video exists, and not generating */}
       {user?.id === vibelog.user_id &&
-       !videoUrl &&
-       vibelog.video_generation_status !== 'generating' &&
-       vibelog.video_generation_status !== 'completed' && (
-        <div className="mb-8">
-          <VideoGenerator
-            vibelogId={vibelog.id}
-            onVideoGenerated={(url) => {
-              setVideoUrl(url);
-              // Refresh to show video
-              router.refresh();
-            }}
-          />
+        !videoUrl &&
+        vibelog.video_generation_status !== 'generating' &&
+        vibelog.video_generation_status !== 'completed' && (
+          <div className="mb-8">
+            <VideoGenerator
+              vibelogId={vibelog.id}
+              onVideoGenerated={url => {
+                setVideoUrl(url);
+                // Refresh to show video
+                router.refresh();
+              }}
+            />
+          </div>
+        )}
+
+      {/* Metadata header - synced with VibelogActions */}
+      <div className="mb-6 flex items-center gap-4 text-sm text-muted-foreground">
+        {vibelog.read_time && (
+          <div className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            <span>{vibelog.read_time} min read</span>
+          </div>
+        )}
+        <div className="flex items-center gap-2">
+          <Heart className="h-4 w-4" />
+          <span>{likeCount}</span>
         </div>
-      )}
+        {vibelog.share_count !== undefined && (
+          <div className="flex items-center gap-2">
+            <Share2 className="h-4 w-4" />
+            <span>{vibelog.share_count}</span>
+          </div>
+        )}
+      </div>
 
       {/* Content with beautiful formatting */}
       <VibelogContentRenderer content={contentWithoutDuplicateTitle} showCTA={false} />
@@ -175,11 +205,13 @@ export default function PublicVibelogContent({ vibelog }: PublicVibelogContentPr
           vibelogUrl={vibelogUrl}
           createdAt={vibelog.created_at}
           audioUrl={vibelog.audio_url || undefined}
+          likeCount={vibelog.like_count}
           onEdit={handleEdit}
           onDelete={handleDelete}
           onRemix={handleRemix}
           onShare={handleShare}
           onExport={handleExport}
+          onLikeCountChange={handleLikeCountChange}
           variant="default"
         />
       </div>
