@@ -218,26 +218,35 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       // NO TTS GENERATION - Use only creator's original audio
       // Vibelogs without audio_url will simply not have audio playback
 
-      // Auto-generate video for authenticated users (non-blocking)
-      if (userId && vibelogId && vibelogData.cover_image_url) {
-        console.log('🎬 [VIDEO] Triggering automatic video generation for vibelog:', vibelogId);
+      // Enqueue video generation (async, no cron needed)
+      try {
+        await supabase
+          .from('vibelogs')
+          .update({ video_generation_status: 'queued' })
+          .eq('id', vibelogId);
 
-        // Fire-and-forget video generation (doesn't block response)
-        fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/video/generate`, {
+        // Use audio duration as a hint; cap to 90s for now
+        const targetDurationSeconds = vibelogData.audio_duration
+          ? Math.min(vibelogData.audio_duration, 90)
+          : 90;
+
+        await supabase
+          .from('video_queue')
+          .insert({
+            vibelog_id: vibelogId,
+            status: 'pending',
+            target_duration_seconds: targetDurationSeconds,
+          });
+
+        // Fire-and-forget nudge to process the queue
+        fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/video/process-next`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            vibelogId: vibelogId,
-            prompt: fullContent || teaserContent,
-            imageUrl: vibelogData.cover_image_url,
-            aspectRatio: '16:9',
-          }),
+          headers: { 'Content-Type': 'application/json' },
         }).catch(err => {
-          console.error('🎬 [VIDEO] Auto-generation failed (non-critical):', err.message);
-          // Don't fail the vibelog save if video generation fails
+          console.warn('🎬 [VIDEO] Background processor nudge failed (non-critical):', err.message);
         });
+      } catch (queueError) {
+        console.warn('🎬 [VIDEO] Queue enqueue failed (non-critical):', queueError);
       }
 
       return NextResponse.json({
