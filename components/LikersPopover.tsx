@@ -33,12 +33,17 @@ export default function LikersPopover({
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Update actualCount when likeCount prop changes (from parent updates)
+  // If count drops to 0, reset the cached data so it can be refetched if user likes again
   useEffect(() => {
-    if (!hasLoaded) {
-      // Only update if we haven't fetched actual data yet
-      setActualCount(likeCount);
+    setActualCount(likeCount);
+
+    // Reset cache when count reaches 0 (user unliked the post)
+    if (likeCount === 0) {
+      setHasLoaded(false);
+      setLikers([]);
+      setIsOpen(false);
     }
-  }, [likeCount, hasLoaded]);
+  }, [likeCount]);
 
   // Close popover when clicking outside
   useEffect(() => {
