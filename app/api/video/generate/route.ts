@@ -1,15 +1,15 @@
 /**
  * Video Generation API Route
  * POST /api/video/generate
- * Generate AI video for a vibelog using fal.ai (SYNCHRONOUS - Fixed)
+ * Submits video generation job to fal.ai queue (ASYNC - returns immediately)
+ * Client should poll /api/video/status/[vibelogId] for completion
  */
 
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { generateVideoSync } from '@/lib/video/generator';
-import { uploadVideoToStorage } from '@/lib/video/storage';
+import { submitVideoGenerationAsync } from '@/lib/video/generator';
 
 // Validation schema
 const GenerateVideoSchema = z.object({
@@ -73,11 +73,34 @@ export async function POST(request: NextRequest) {
       .eq('id', vibelogId);
 
     // Prepare video generation request
-    let videoPrompt = prompt || vibelog.content || vibelog.teaser;
-    const videoImageUrl = imageUrl || vibelog.cover_image_url || undefined;
+    // OPTIMIZATION: Prioritize shorter prompts for faster fal.ai processing
+    // 1. Use custom prompt if provided (already optimized by user)
+    // 2. Prefer teaser (AI-generated hook, concise and engaging)
+    // 3. Fall back to smart truncation of content
+    let videoPrompt: string;
 
-    // Validate we have a prompt
-    if (!videoPrompt || videoPrompt.trim().length < 10) {
+    if (prompt) {
+      // Custom prompt provided - use as-is
+      videoPrompt = prompt;
+      console.log('[Video API] Using custom prompt:', videoPrompt.substring(0, 100));
+    } else if (vibelog.teaser && vibelog.teaser.trim().length >= 10) {
+      // Teaser exists and is valid - prefer it for speed
+      videoPrompt = vibelog.teaser;
+      console.log('[Video API] Using teaser for faster generation:', videoPrompt.substring(0, 100));
+    } else if (vibelog.content) {
+      // Extract smart excerpt: title + first 200 chars of content
+      const title = vibelog.title || '';
+      const contentWithoutTitle = vibelog.content
+        .replace(new RegExp(`^#\\s+${title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\n`, 'i'), '')
+        .trim();
+
+      const excerpt = contentWithoutTitle.substring(0, 200);
+      videoPrompt = title ? `${title}\n\n${excerpt}` : excerpt;
+      console.log(
+        '[Video API] Using smart excerpt (title + 200 chars):',
+        videoPrompt.substring(0, 100)
+      );
+    } else {
       console.error('[Video API] No valid prompt available for video generation');
       await supabase
         .from('vibelogs')
@@ -97,67 +120,72 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Truncate prompt to 2000 chars (fal.ai limit)
-    // Prefer teaser if available and content is too long
-    if (videoPrompt.length > 2000) {
-      console.log('[Video API] Prompt too long, trying teaser...');
-      if (vibelog.teaser && vibelog.teaser.length <= 2000) {
-        videoPrompt = vibelog.teaser;
-        console.log('[Video API] Using teaser instead of content');
-      } else {
-        // Truncate to 2000 chars with ellipsis
-        videoPrompt = videoPrompt.substring(0, 1997) + '...';
-        console.log('[Video API] Truncated prompt to 2000 chars');
-      }
+    const videoImageUrl = imageUrl || vibelog.cover_image_url || undefined;
+
+    // Validate final prompt
+    if (!videoPrompt || videoPrompt.trim().length < 10) {
+      console.error('[Video API] Prompt too short after processing');
+      await supabase
+        .from('vibelogs')
+        .update({
+          video_generation_status: 'failed',
+          video_generation_error: 'Generated prompt is too short for video generation.',
+        })
+        .eq('id', vibelogId);
+
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Generated prompt is too short for video generation.',
+        },
+        { status: 400 }
+      );
     }
 
-    console.log('[Video API] Starting SYNCHRONOUS video generation...', {
+    // Final safety check: ensure prompt is within fal.ai limit (2000 chars)
+    if (videoPrompt.length > 2000) {
+      console.log('[Video API] Prompt exceeds 2000 chars, truncating...');
+      videoPrompt = videoPrompt.substring(0, 1997) + '...';
+    }
+
+    console.log('[Video API] Submitting ASYNC video generation to fal.ai...', {
       promptLength: videoPrompt.length,
       hasImage: !!videoImageUrl,
     });
 
-    // Generate video synchronously (waits for completion)
-    const { videoUrl: falVideoUrl, duration } = await generateVideoSync({
+    // Submit video generation to fal.ai queue (returns immediately)
+    const { requestId } = await submitVideoGenerationAsync({
       prompt: videoPrompt,
       imageUrl: videoImageUrl,
       aspectRatio: '16:9',
     });
 
-    console.log('[Video API] Video generated! Uploading to storage...', { falVideoUrl });
+    console.log('[Video API] Submitted to fal.ai queue:', requestId);
 
-    // Upload video to Supabase Storage
-    const storedVideoUrl = await uploadVideoToStorage(falVideoUrl, vibelogId);
-
-    console.log('[Video API] Video stored successfully:', storedVideoUrl);
-
-    // Update database with completed video
+    // Update database with request_id and generating status
     await supabase
       .from('vibelogs')
       .update({
-        video_url: storedVideoUrl,
-        video_duration: duration,
-        video_width: 1280,
-        video_height: 720,
-        video_generation_status: 'completed',
-        video_generated_at: new Date().toISOString(),
-        video_request_id: null, // Clear old request ID
+        video_request_id: requestId,
+        video_generation_status: 'generating',
+        video_requested_at: new Date().toISOString(),
       })
       .eq('id', vibelogId);
 
-    console.log('[Video API] Video generation completed successfully');
+    console.log('[Video API] Video generation job submitted successfully');
 
-    // Return success with video URL
+    // Return success with request_id (client will poll /api/video/status)
     return NextResponse.json(
       {
         success: true,
-        message: 'Video generated successfully',
+        message: 'Video generation started. Poll /api/video/status for completion.',
         data: {
           vibelogId,
-          videoUrl: storedVideoUrl,
-          status: 'completed',
+          requestId,
+          status: 'generating',
         },
       },
-      { status: 200 }
+      { status: 202 } // 202 Accepted - request accepted but not completed
     );
   } catch (error: unknown) {
     console.error('[Video API] Error:', error);

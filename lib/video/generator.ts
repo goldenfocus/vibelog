@@ -40,7 +40,57 @@ interface FalVideoResult {
 }
 
 /**
- * Submit video generation to async queue (returns immediately)
+ * Submit video generation to async queue (returns immediately with request_id)
+ * Use this for async workflow - client polls /api/video/status for completion
+ */
+export async function submitVideoGenerationAsync(
+  request: VideoGenerationRequest
+): Promise<{ requestId: string }> {
+  if (!FAL_API_KEY) {
+    throw new Error('FAL_API_KEY is not configured');
+  }
+
+  try {
+    console.log('[Video Generator] Submitting to async queue:', {
+      prompt: request.prompt.substring(0, 100),
+      hasImage: !!request.imageUrl,
+    });
+
+    const payload = {
+      prompt: request.prompt,
+      prompt_optimizer: true,
+    };
+
+    // Submit to queue
+    const submitResponse = await fetch(FAL_QUEUE_SUBMIT_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Key ${FAL_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!submitResponse.ok) {
+      const errorText = await submitResponse.text();
+      console.error('[Video Generator] Queue submission error:', errorText);
+      throw new Error(`Queue submission failed: ${submitResponse.status} ${errorText}`);
+    }
+
+    const submitResult = (await submitResponse.json()) as FalQueueSubmitResponse;
+    console.log('[Video Generator] Submitted to queue:', submitResult.request_id);
+
+    return { requestId: submitResult.request_id };
+  } catch (error) {
+    console.error('[Video Generator] Submission error:', error);
+    throw error;
+  }
+}
+
+/**
+ * DEPRECATED: Synchronous generation that polls in the API endpoint
+ * DO NOT USE - causes Vercel timeout after 5 minutes
+ * Use submitVideoGenerationAsync + client-side polling instead
  */
 export async function generateVideoSync(
   request: VideoGenerationRequest
@@ -50,6 +100,9 @@ export async function generateVideoSync(
   }
 
   try {
+    console.warn(
+      '[Video Generator] generateVideoSync is deprecated - use submitVideoGenerationAsync instead'
+    );
     console.log('[Video Generator] Submitting to async queue:', {
       prompt: request.prompt.substring(0, 100),
       hasImage: !!request.imageUrl,
