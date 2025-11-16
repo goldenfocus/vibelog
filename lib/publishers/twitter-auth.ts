@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import fs from 'fs/promises';
 import path from 'path';
 
-import { chromium, type Browser, type Page, type Cookie } from 'playwright';
+import type { Browser, Page, Cookie } from '@playwright/test';
 
 /**
  * Twitter authentication credentials
@@ -50,6 +50,8 @@ export class TwitterAuth {
    */
   private async initBrowser(): Promise<Browser> {
     if (!this.browser) {
+      // Dynamic import to avoid bundling playwright in production builds
+      const { chromium } = await import('@playwright/test');
       this.browser = await chromium.launch({
         headless: process.env.NODE_ENV === 'production',
       });
