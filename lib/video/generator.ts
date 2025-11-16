@@ -1,16 +1,28 @@
 /**
  * Video Generation with fal.ai
  * Integrates MiniMax Video-01 for AI video generation
- * FIXED: Uses direct generation with real-time status updates
+ * PROPER ASYNC: Submit to queue, then poll in separate endpoint
  */
 
 import type { VideoGenerationRequest, VideoGenerationResponse } from './types';
 
 const FAL_API_KEY = process.env.FAL_API_KEY;
-const FAL_API_URL = 'https://fal.run/fal-ai/minimax/video-01';
+const FAL_QUEUE_SUBMIT_URL = 'https://queue.fal.run/fal-ai/minimax/video-01';
+const FAL_QUEUE_STATUS_BASE = 'https://queue.fal.run/fal-ai/minimax/video-01/requests';
 
 if (!FAL_API_KEY) {
   console.warn('FAL_API_KEY not configured. Video generation will not work.');
+}
+
+interface FalQueueSubmitResponse {
+  request_id: string;
+  status_url: string;
+}
+
+interface FalQueueStatusResponse {
+  status: 'IN_QUEUE' | 'IN_PROGRESS' | 'COMPLETED';
+  response_url?: string;
+  error?: string;
 }
 
 interface FalVideoResult {
@@ -28,8 +40,7 @@ interface FalVideoResult {
 }
 
 /**
- * Generate video synchronously with real-time progress
- * This replaces the broken async queue approach
+ * Submit video generation to async queue (returns immediately)
  */
 export async function generateVideoSync(
   request: VideoGenerationRequest
@@ -39,7 +50,7 @@ export async function generateVideoSync(
   }
 
   try {
-    console.log('[Video Generator] Starting SYNC video generation:', {
+    console.log('[Video Generator] Submitting to async queue:', {
       prompt: request.prompt.substring(0, 100),
       hasImage: !!request.imageUrl,
     });
@@ -49,7 +60,8 @@ export async function generateVideoSync(
       prompt_optimizer: true,
     };
 
-    const response = await fetch(FAL_API_URL, {
+    // Submit to queue
+    const submitResponse = await fetch(FAL_QUEUE_SUBMIT_URL, {
       method: 'POST',
       headers: {
         Authorization: `Key ${FAL_API_KEY}`,
@@ -58,28 +70,66 @@ export async function generateVideoSync(
       body: JSON.stringify(payload),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('[Video Generator] fal.ai error:', errorText);
-      throw new Error(`Video generation failed: ${response.status} ${errorText}`);
+    if (!submitResponse.ok) {
+      const errorText = await submitResponse.text();
+      console.error('[Video Generator] Queue submission error:', errorText);
+      throw new Error(`Queue submission failed: ${submitResponse.status} ${errorText}`);
     }
 
-    const result = (await response.json()) as FalVideoResult;
+    const submitResult = (await submitResponse.json()) as FalQueueSubmitResponse;
+    console.log('[Video Generator] Submitted to queue:', submitResult.request_id);
 
-    if (!result.video || !result.video.url) {
-      throw new Error('Video generation completed but no video URL returned');
+    // Poll for completion (server-side only, with proper timeout)
+    const maxAttempts = 60; // 5 minutes max (5 second intervals)
+    const pollInterval = 5000; // 5 seconds
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      await new Promise(resolve => setTimeout(resolve, pollInterval));
+
+      const statusUrl = `${FAL_QUEUE_STATUS_BASE}/${submitResult.request_id}/status`;
+      const statusResponse = await fetch(statusUrl, {
+        method: 'GET',
+        headers: {
+          Authorization: `Key ${FAL_API_KEY}`,
+        },
+      });
+
+      if (!statusResponse.ok) {
+        console.warn('[Video Generator] Status poll failed, retrying...');
+        continue;
+      }
+
+      const statusResult = (await statusResponse.json()) as FalQueueStatusResponse;
+      console.log('[Video Generator] Status:', statusResult.status);
+
+      if (statusResult.status === 'COMPLETED' && statusResult.response_url) {
+        // Fetch final result
+        const resultResponse = await fetch(statusResult.response_url, {
+          headers: {
+            Authorization: `Key ${FAL_API_KEY}`,
+          },
+        });
+
+        if (!resultResponse.ok) {
+          throw new Error('Failed to fetch completed video');
+        }
+
+        const videoResult = (await resultResponse.json()) as FalVideoResult;
+
+        if (!videoResult.video || !videoResult.video.url) {
+          throw new Error('Completed result missing video URL');
+        }
+
+        console.log('[Video Generator] Video generated successfully');
+
+        return {
+          videoUrl: videoResult.video.url,
+          duration: 6,
+        };
+      }
     }
 
-    console.log('[Video Generator] Video generated successfully:', {
-      url: result.video.url,
-      size: result.video.file_size,
-      inference_time: result.timings.inference,
-    });
-
-    return {
-      videoUrl: result.video.url,
-      duration: 6, // MiniMax default duration
-    };
+    throw new Error('Video generation timed out after 5 minutes');
   } catch (error) {
     console.error('[Video Generator] Generation error:', error);
     throw error;
