@@ -98,6 +98,24 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
 
   const isTeaser = true; // Always show as teaser in card view
 
+  const stripLeadingHeadings = (text: string) => {
+    let cleaned = text;
+    while (/^\s*#{1,6}\s+/.test(cleaned)) {
+      cleaned = cleaned.replace(/^\s*#{1,6}\s+.*(\r?\n)?/, '');
+    }
+    return cleaned.trimStart();
+  };
+
+  const clampTeaser = (text: string, maxLength: number) => {
+    if (text.length <= maxLength) {
+      return text.trim();
+    }
+    const truncated = text.slice(0, maxLength).trimEnd();
+    return `${truncated}...`;
+  };
+
+  displayContent = clampTeaser(stripLeadingHeadings(displayContent), 600);
+
   const handleReadMore = () => {
     // Anonymous vibelogs use /@anonymous/{public_slug} route
     // Authenticated user vibelogs use /@{username}/{slug} route
@@ -231,23 +249,23 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
 
       {/* Video Generator - Only show if user is the author, no video exists, and not generating */}
       {isLoggedIn &&
-       user?.id === vibelog.user_id &&
-       !videoUrl &&
-       vibelog.video_generation_status !== 'generating' &&
-       vibelog.video_generation_status !== 'completed' && (
-        <div className="mb-4" onClick={e => e.stopPropagation()}>
-          <VideoGenerator
-            vibelogId={vibelog.id}
-            onVideoGenerated={(url) => {
-              setVideoUrl(url);
-              // Force refresh to update status
-              if (typeof window !== 'undefined') {
-                window.location.reload();
-              }
-            }}
-          />
-        </div>
-      )}
+        user?.id === vibelog.user_id &&
+        !videoUrl &&
+        vibelog.video_generation_status !== 'generating' &&
+        vibelog.video_generation_status !== 'completed' && (
+          <div className="mb-4" onClick={e => e.stopPropagation()}>
+            <VideoGenerator
+              vibelogId={vibelog.id}
+              onVideoGenerated={url => {
+                setVideoUrl(url);
+                // Force refresh to update status
+                if (typeof window !== 'undefined') {
+                  window.location.reload();
+                }
+              }}
+            />
+          </div>
+        )}
 
       {/* Actions - Unified Component - Stop click propagation */}
       <div onClick={e => e.stopPropagation()}>
