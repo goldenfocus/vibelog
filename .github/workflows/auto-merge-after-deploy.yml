@@ -147,7 +147,8 @@ jobs:
               core.setOutput('deploy_success', allPassed ? 'true' : 'false');
             }
 
-            console.log(`Deployment check: ${core.getOutput('deploy_success')}`);
+            const deploySuccess = allPassed || (deployStatus && deployStatus.state === 'success');
+            console.log(`Deployment check: ${deploySuccess ? 'true' : 'false'}`);
             console.log(`Vercel checks found: ${vercelChecks.length}`);
 
       - name: Squash and merge PR
