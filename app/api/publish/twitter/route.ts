@@ -32,7 +32,9 @@ export async function POST(request: NextRequest) {
     // Fetch vibelog details
     const { data: vibelog, error: vibelogError } = await supabase
       .from('vibelogs')
-      .select('*, profiles(*)')
+      .select(
+        '*, profiles(id, username, display_name, twitter_post_format, twitter_custom_template)'
+      )
       .eq('id', vibelogId)
       .single();
 
