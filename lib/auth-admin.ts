@@ -94,7 +94,7 @@ export async function getAdminProfile(userId: string) {
   const { data, error } = await supabase
     .from('profiles')
     .select(
-      'id, username, display_name, avatar_url, bio, header_image, website, twitter_handle, github_handle, default_writing_tone, keep_filler_words, twitter_post_format, twitter_custom_template, is_admin, is_public, total_vibelogs, total_views, created_at, updated_at'
+      'id, username, display_name, avatar_url, bio, header_image, default_writing_tone, keep_filler_words, is_public, total_vibelogs, total_views, created_at, updated_at'
     )
     .eq('id', userId)
     .eq('is_admin', true)
