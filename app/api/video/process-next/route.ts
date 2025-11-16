@@ -68,7 +68,11 @@ export async function POST(_req: NextRequest) {
 
       await supabase
         .from('vibelogs')
-        .update({ video_request_id: requestId, video_generation_status: 'generating' })
+        .update({
+          video_request_id: requestId,
+          video_generation_status: 'generating',
+          video_requested_at: new Date().toISOString(),
+        })
         .eq('id', vibelogId);
     }
 

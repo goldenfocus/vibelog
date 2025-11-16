@@ -28,7 +28,9 @@ export async function GET(
     // Fetch vibelog with video status
     const { data: vibelog, error: fetchError } = await supabase
       .from('vibelogs')
-      .select('id, video_request_id, video_generation_status, video_url, video_generation_error')
+      .select(
+        'id, video_request_id, video_generation_status, video_url, video_generation_error, video_requested_at'
+      )
       .eq('id', vibelogId)
       .single();
 
@@ -59,6 +61,33 @@ export async function GET(
         success: true,
         status: vibelog.video_generation_status || 'unknown',
       });
+    }
+
+    // Timeout protection: if queued/generating too long, fail and allow retry
+    if (
+      vibelog.video_generation_status &&
+      ['queued', 'generating'].includes(vibelog.video_generation_status) &&
+      vibelog.video_requested_at
+    ) {
+      const requestedAt = new Date(vibelog.video_requested_at).getTime();
+      const elapsedMs = Date.now() - requestedAt;
+      const timeoutMs = 15 * 60 * 1000; // 15 minutes
+      if (elapsedMs > timeoutMs) {
+        await supabase
+          .from('vibelogs')
+          .update({
+            video_generation_status: 'failed',
+            video_generation_error: 'Timed out waiting for video provider. Please retry.',
+            video_request_id: null,
+          })
+          .eq('id', vibelogId);
+
+        return NextResponse.json({
+          success: false,
+          status: 'failed',
+          error: 'Timed out waiting for video provider. Please retry.',
+        });
+      }
     }
 
     // Check status with fal.ai

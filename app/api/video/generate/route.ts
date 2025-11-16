@@ -64,7 +64,11 @@ export async function POST(request: NextRequest) {
     // Update status to generating
     await supabase
       .from('vibelogs')
-      .update({ video_generation_status: 'generating', video_generation_error: null })
+      .update({
+        video_generation_status: 'generating',
+        video_generation_error: null,
+        video_requested_at: new Date().toISOString(),
+      })
       .eq('id', vibelogId);
 
     // Prepare video generation request
@@ -122,6 +126,7 @@ export async function POST(request: NextRequest) {
       .update({
         video_request_id: requestId,
         video_generation_status: 'generating',
+        video_requested_at: new Date().toISOString(),
       })
       .eq('id', vibelogId);
 
