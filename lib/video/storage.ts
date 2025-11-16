@@ -1,6 +1,8 @@
 /**
- * Video Storage
- * Upload generated videos to Supabase Storage
+ * Video Storage Utilities
+ * Handles both AI-generated and user-uploaded videos
+ * - uploadVideoToStorage: For AI-generated videos (downloads from fal.ai)
+ * - User uploads: Handled directly in /api/vibelog/upload-video endpoint
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -13,10 +15,7 @@ const supabase = createClient(
 /**
  * Download video from fal.ai URL and upload to Supabase Storage
  */
-export async function uploadVideoToStorage(
-  videoUrl: string,
-  vibelogId: string
-): Promise<string> {
+export async function uploadVideoToStorage(videoUrl: string, vibelogId: string): Promise<string> {
   try {
     console.log('[Video Storage] Downloading video from fal.ai:', videoUrl);
 
@@ -38,12 +37,10 @@ export async function uploadVideoToStorage(
     console.log('[Video Storage] Uploading to Supabase Storage:', filename);
 
     // Upload to Supabase Storage (use 'vibelogs' bucket)
-    const { error } = await supabase.storage
-      .from('vibelogs')
-      .upload(filename, videoBuffer, {
-        contentType: 'video/mp4',
-        upsert: false,
-      });
+    const { error } = await supabase.storage.from('vibelogs').upload(filename, videoBuffer, {
+      contentType: 'video/mp4',
+      upsert: false,
+    });
 
     if (error) {
       console.error('[Video Storage] Upload error:', error);
@@ -51,9 +48,9 @@ export async function uploadVideoToStorage(
     }
 
     // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('vibelogs')
-      .getPublicUrl(filename);
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from('vibelogs').getPublicUrl(filename);
 
     console.log('[Video Storage] Video uploaded successfully:', publicUrl);
 
@@ -81,9 +78,7 @@ export async function deleteVideoFromStorage(videoUrl: string): Promise<void> {
 
     console.log('[Video Storage] Deleting video:', filePath);
 
-    const { error } = await supabase.storage
-      .from('vibelogs')
-      .remove([filePath]);
+    const { error } = await supabase.storage.from('vibelogs').remove([filePath]);
 
     if (error) {
       throw new Error(`Failed to delete video: ${error.message}`);
