@@ -39,19 +39,30 @@ COMMENT ON COLUMN public.admin_audit_log.details IS 'JSON object with action-spe
 -- Only admins can read audit logs, service role can write
 ALTER TABLE public.admin_audit_log ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "admin_audit_log select for admins" ON public.admin_audit_log
-  FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE profiles.id = auth.uid() AND profiles.is_admin = true
-    )
-  );
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'admin_audit_log' AND policyname = 'admin_audit_log select for admins'
+  ) THEN
+    CREATE POLICY "admin_audit_log select for admins" ON public.admin_audit_log
+      FOR SELECT
+      USING (
+        EXISTS (
+          SELECT 1 FROM public.profiles
+          WHERE profiles.id = auth.uid() AND profiles.is_admin = true
+        )
+      );
+  END IF;
 
-CREATE POLICY "admin_audit_log insert for service role" ON public.admin_audit_log
-  FOR INSERT
-  TO service_role
-  WITH CHECK (true);
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'admin_audit_log' AND policyname = 'admin_audit_log insert for service role'
+  ) THEN
+    CREATE POLICY "admin_audit_log insert for service role" ON public.admin_audit_log
+      FOR INSERT
+      TO service_role
+      WITH CHECK (true);
+  END IF;
+END $$;
 
 -- Helper function to log admin actions (callable from API routes)
 CREATE OR REPLACE FUNCTION public.log_admin_action(

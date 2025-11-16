@@ -1,31 +1,43 @@
 /**
  * Video Generation with fal.ai
  * Integrates MiniMax Video-01 for AI video generation
+ * Uses ASYNC API to avoid serverless function timeouts
  */
 
 import type { VideoGenerationRequest, VideoGenerationResponse } from './types';
 
 const FAL_API_KEY = process.env.FAL_API_KEY;
-const FAL_API_URL = 'https://fal.run/fal-ai/minimax/video-01';
+const FAL_QUEUE_SUBMIT_URL = 'https://queue.fal.run/fal-ai/minimax/video-01';
+const FAL_QUEUE_STATUS_BASE = 'https://queue.fal.run/fal-ai/minimax/video-01/requests';
 
 if (!FAL_API_KEY) {
   console.warn('FAL_API_KEY not configured. Video generation will not work.');
 }
 
+interface FalQueueSubmitResponse {
+  request_id: string;
+  status_url: string;
+}
+
+interface FalQueueStatusResponse {
+  status: 'IN_QUEUE' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED';
+  response_url?: string;
+  error?: string;
+}
+
 /**
- * Generate video using fal.ai MiniMax Video-01
- * Uses synchronous endpoint - will wait for completion (takes ~1-2 minutes)
- * Includes timeout protection to prevent infinite hangs
+ * Submit video generation job to fal.ai queue (ASYNC - returns immediately)
+ * Returns request_id for tracking the job
  */
-export async function generateVideo(
+export async function submitVideoGeneration(
   request: VideoGenerationRequest
-): Promise<VideoGenerationResponse> {
+): Promise<{ requestId: string }> {
   if (!FAL_API_KEY) {
     throw new Error('FAL_API_KEY is not configured');
   }
 
   try {
-    console.log('[Video Generator] Generating video with fal.ai MiniMax:', {
+    console.log('[Video Generator] Submitting async video job to fal.ai:', {
       prompt: request.prompt.substring(0, 100),
       hasImage: !!request.imageUrl,
     });
@@ -36,61 +48,125 @@ export async function generateVideo(
       prompt_optimizer: true, // Enable prompt optimization
     };
 
-    // Note: MiniMax Video-01 text-to-video doesn't support image_url
-    // For image-to-video, use fal-ai/minimax/video-01/image-to-video instead
+    const response = await fetch(FAL_QUEUE_SUBMIT_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Key ${FAL_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
 
-    // Add timeout protection (5 minutes max)
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5 * 60 * 1000);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[Video Generator] fal.ai submit error:', errorText);
+      throw new Error(`fal.ai submit failed: ${response.status} ${errorText}`);
+    }
 
-    try {
-      // Call fal.ai synchronous endpoint (blocking until complete)
-      const response = await fetch(FAL_API_URL, {
-        method: 'POST',
+    const result = (await response.json()) as FalQueueSubmitResponse;
+
+    console.log('[Video Generator] Job submitted successfully:', {
+      requestId: result.request_id,
+    });
+
+    return {
+      requestId: result.request_id,
+    };
+  } catch (error) {
+    console.error('[Video Generator] Submit error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Check status of async video generation job
+ * Returns the current status and video URL if completed
+ */
+export async function checkVideoGenerationStatus(
+  requestId: string
+): Promise<{
+  status: 'queued' | 'generating' | 'completed' | 'failed';
+  videoUrl?: string;
+  error?: string;
+}> {
+  if (!FAL_API_KEY) {
+    throw new Error('FAL_API_KEY is not configured');
+  }
+
+  try {
+    console.log('[Video Generator] Checking status for request:', requestId);
+
+    const statusUrl = `${FAL_QUEUE_STATUS_BASE}/${requestId}/status`;
+    const response = await fetch(statusUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Key ${FAL_API_KEY}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[Video Generator] Status check error:', errorText);
+      throw new Error(`Status check failed: ${response.status} ${errorText}`);
+    }
+
+    const result = (await response.json()) as FalQueueStatusResponse;
+
+    console.log('[Video Generator] Status:', result.status);
+
+    // Map fal.ai status to our status
+    if (result.status === 'COMPLETED' && result.response_url) {
+      // Fetch the actual result
+      const resultResponse = await fetch(result.response_url, {
         headers: {
           'Authorization': `Key ${FAL_API_KEY}`,
-          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(payload),
-        signal: controller.signal,
       });
 
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('[Video Generator] fal.ai error:', errorText);
-        throw new Error(`fal.ai failed: ${response.status} ${errorText}`);
+      if (!resultResponse.ok) {
+        throw new Error('Failed to fetch completed video result');
       }
 
-      const result = await response.json();
+      const videoResult = await resultResponse.json();
 
-      console.log('[Video Generator] Video generation completed:', {
-        videoUrl: result.video?.url,
-      });
-
-      if (!result.video || !result.video.url) {
-        throw new Error('fal.ai returned invalid response - no video URL');
+      if (!videoResult.video || !videoResult.video.url) {
+        throw new Error('Completed result missing video URL');
       }
 
       return {
-        videoUrl: result.video.url,
-        duration: 6, // MiniMax typically generates 6-second videos
-        width: 1280,
-        height: 720,
+        status: 'completed',
+        videoUrl: videoResult.video.url,
       };
-    } catch (fetchError: unknown) {
-      clearTimeout(timeoutId);
-
-      if (fetchError instanceof Error && fetchError.name === 'AbortError') {
-        throw new Error('Video generation timed out after 5 minutes');
-      }
-      throw fetchError;
+    } else if (result.status === 'FAILED') {
+      return {
+        status: 'failed',
+        error: result.error || 'Video generation failed',
+      };
+    } else if (result.status === 'IN_PROGRESS') {
+      return {
+        status: 'generating',
+      };
+    } else {
+      return {
+        status: 'queued',
+      };
     }
   } catch (error) {
-    console.error('[Video Generator] Error:', error);
+    console.error('[Video Generator] Status check error:', error);
     throw error;
   }
+}
+
+/**
+ * DEPRECATED: Old synchronous method - kept for backward compatibility
+ * Use submitVideoGeneration() instead
+ */
+export async function generateVideo(
+  request: VideoGenerationRequest
+): Promise<VideoGenerationResponse> {
+  throw new Error(
+    'Synchronous generateVideo() is deprecated. Use submitVideoGeneration() + checkVideoGenerationStatus() instead.'
+  );
 }
 
 /**
