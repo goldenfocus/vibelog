@@ -12,19 +12,28 @@ interface CommentAuthor {
 
 interface Comment {
   id: string;
+  user_id: string;
   content: string | null;
   audio_url: string | null;
   voice_id: string | null;
   created_at: string;
+  updated_at?: string;
   author: CommentAuthor;
 }
 
 interface CommentsListProps {
   comments: Comment[];
   isLoading?: boolean;
+  onRefresh?: () => void;
+  userIsAdmin?: boolean;
 }
 
-export default function CommentsList({ comments, isLoading }: CommentsListProps) {
+export default function CommentsList({
+  comments,
+  isLoading,
+  onRefresh,
+  userIsAdmin = false,
+}: CommentsListProps) {
   // TTS disabled - comment audio playback removed
   const handlePlayAudio = async (_text: string, _voiceId: string | null) => {
     // No-op: TTS playback disabled
@@ -50,7 +59,14 @@ export default function CommentsList({ comments, isLoading }: CommentsListProps)
   return (
     <div className="space-y-4">
       {comments.map(comment => (
-        <CommentItem key={comment.id} comment={comment} onPlayAudio={handlePlayAudio} />
+        <CommentItem
+          key={comment.id}
+          comment={comment}
+          onPlayAudio={handlePlayAudio}
+          onUpdate={onRefresh}
+          onDelete={onRefresh}
+          userIsAdmin={userIsAdmin}
+        />
       ))}
     </div>
   );
