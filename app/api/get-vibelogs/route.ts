@@ -25,7 +25,6 @@ export async function GET(request: NextRequest) {
         content,
         cover_image_url,
         audio_url,
-        voice_clone_id,
         created_at,
         published_at,
         view_count,
@@ -56,7 +55,7 @@ export async function GET(request: NextRequest) {
     if (userIds.length > 0) {
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, username, display_name, avatar_url, voice_clone_id')
+        .select('id, username, display_name, avatar_url')
         .in('id', userIds);
 
       if (profiles) {
@@ -77,13 +76,11 @@ export async function GET(request: NextRequest) {
               username: profile.username || 'user',
               display_name: profile.display_name || 'Vibelog User',
               avatar_url: profile.avatar_url || null,
-              voice_clone_id: profile.voice_clone_id || null,
             }
           : {
               username: 'anonymous',
               display_name: 'Anonymous',
               avatar_url: null,
-              voice_clone_id: null,
             },
         // Keep user_id for Edit/Remix logic in VibelogActions component
       };
