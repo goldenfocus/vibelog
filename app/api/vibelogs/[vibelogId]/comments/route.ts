@@ -4,7 +4,7 @@ import { createServerSupabaseClient } from '@/lib/supabase';
 import { createServerAdminClient } from '@/lib/supabaseAdmin';
 
 /**
- * GET /api/comments/[vibelogId]
+ * GET /api/vibelogs/[vibelogId]/comments
  *
  * Fetch all comments for a specific vibelog
  */

@@ -67,7 +67,7 @@ export default function Comments({ vibelogId }: CommentsProps) {
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch(`/api/comments/${vibelogId}`, {
+      const response = await fetch(`/api/vibelogs/${vibelogId}/comments`, {
         credentials: 'include',
       });
 
