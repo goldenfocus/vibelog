@@ -55,8 +55,7 @@ export function VideoGenerator({ vibelogId, onVideoGenerated }: VideoGeneratorPr
         onVideoGenerated(data.data.videoUrl);
       }
 
-      // Reload page to show the video
-      setTimeout(() => window.location.reload(), 500);
+      // No need to reload - parent components will update via callback
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to generate video';
       console.error('[VideoGenerator] Video generation error:', errorMessage, err);

@@ -258,10 +258,6 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
               vibelogId={vibelog.id}
               onVideoGenerated={url => {
                 setVideoUrl(url);
-                // Force refresh to update status
-                if (typeof window !== 'undefined') {
-                  window.location.reload();
-                }
               }}
             />
           </div>
