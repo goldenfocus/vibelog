@@ -17,7 +17,6 @@ export type WritingTone =
 export interface ToneSettings {
   tone: WritingTone;
   keepFillerWords: boolean;
-  voiceCloningEnabled: boolean;
 }
 
 export interface UseToneSettingsReturn extends ToneSettings {
@@ -25,7 +24,6 @@ export interface UseToneSettingsReturn extends ToneSettings {
   error: string | null;
   setTone: (tone: WritingTone) => Promise<void>;
   setKeepFillerWords: (keep: boolean) => Promise<void>;
-  setVoiceCloningEnabled: (enabled: boolean) => Promise<void>;
   updateSettings: (settings: Partial<ToneSettings>) => Promise<void>;
 }
 
@@ -33,7 +31,6 @@ const STORAGE_KEY = 'vibelog_tone_settings';
 const DEFAULT_SETTINGS: ToneSettings = {
   tone: 'authentic',
   keepFillerWords: false,
-  voiceCloningEnabled: true,
 };
 
 /**
@@ -78,7 +75,6 @@ export function useToneSettings(): UseToneSettingsReturn {
         return {
           tone: parsed.tone || DEFAULT_SETTINGS.tone,
           keepFillerWords: parsed.keepFillerWords ?? DEFAULT_SETTINGS.keepFillerWords,
-          voiceCloningEnabled: parsed.voiceCloningEnabled ?? DEFAULT_SETTINGS.voiceCloningEnabled,
         };
       }
     } catch (err) {
@@ -121,7 +117,7 @@ export function useToneSettings(): UseToneSettingsReturn {
         const supabase = createClient();
         const { data, error: fetchError } = await supabase
           .from('profiles')
-          .select('default_writing_tone, keep_filler_words, voice_cloning_enabled')
+          .select('default_writing_tone, keep_filler_words')
           .eq('id', user.id)
           .single();
 
@@ -143,7 +139,6 @@ export function useToneSettings(): UseToneSettingsReturn {
           const dbSettings: ToneSettings = {
             tone: (data.default_writing_tone as WritingTone) || DEFAULT_SETTINGS.tone,
             keepFillerWords: data.keep_filler_words ?? DEFAULT_SETTINGS.keepFillerWords,
-            voiceCloningEnabled: data.voice_cloning_enabled ?? DEFAULT_SETTINGS.voiceCloningEnabled,
           };
           setSettings(dbSettings);
           setError(null);
@@ -195,9 +190,6 @@ export function useToneSettings(): UseToneSettingsReturn {
             ...(newSettings.keepFillerWords !== undefined && {
               keep_filler_words: newSettings.keepFillerWords,
             }),
-            ...(newSettings.voiceCloningEnabled !== undefined && {
-              voice_cloning_enabled: newSettings.voiceCloningEnabled,
-            }),
           })
           .eq('id', user.id);
 
@@ -235,20 +227,12 @@ export function useToneSettings(): UseToneSettingsReturn {
     [updateSettings]
   );
 
-  const setVoiceCloningEnabled = useCallback(
-    async (voiceCloningEnabled: boolean) => {
-      await updateSettings({ voiceCloningEnabled });
-    },
-    [updateSettings]
-  );
-
   return {
     ...settings,
     loading,
     error,
     setTone,
     setKeepFillerWords,
-    setVoiceCloningEnabled,
     updateSettings,
   };
 }
