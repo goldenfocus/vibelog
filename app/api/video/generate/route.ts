@@ -1,13 +1,15 @@
 /**
  * Video Generation API Route
  * POST /api/video/generate
- * Generate AI video for a vibelog using fal.ai
+ * Generate AI video for a vibelog using fal.ai (SYNCHRONOUS - Fixed)
  */
 
-import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { submitVideoGeneration } from '@/lib/video/generator';
+
+import { generateVideoSync } from '@/lib/video/generator';
+import { uploadVideoToStorage } from '@/lib/video/storage';
 
 // Validation schema
 const GenerateVideoSchema = z.object({
@@ -17,6 +19,8 @@ const GenerateVideoSchema = z.object({
   aspectRatio: z.enum(['16:9', '9:16']).optional(),
 });
 
+export const maxDuration = 300; // 5 minutes for video generation
+
 export async function POST(request: NextRequest) {
   let vibelogId: string | undefined;
 
@@ -25,7 +29,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validated = GenerateVideoSchema.parse(body);
     vibelogId = validated.vibelogId;
-    const { prompt, imageUrl, aspectRatio } = validated;
+    const { prompt, imageUrl } = validated;
 
     console.log('[Video API] Generate video request:', {
       vibelogId,
@@ -47,10 +51,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (fetchError || !vibelog) {
-      return NextResponse.json(
-        { success: false, error: 'Vibelog not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, error: 'Vibelog not found' }, { status: 404 });
     }
 
     // Check if video is already being generated
@@ -82,12 +83,16 @@ export async function POST(request: NextRequest) {
         .from('vibelogs')
         .update({
           video_generation_status: 'failed',
-          video_generation_error: 'No content available for video generation. Vibelog must have content or teaser.',
+          video_generation_error:
+            'No content available for video generation. Vibelog must have content or teaser.',
         })
         .eq('id', vibelogId);
 
       return NextResponse.json(
-        { success: false, error: 'No content available for video generation. Vibelog must have content or teaser.' },
+        {
+          success: false,
+          error: 'No content available for video generation. Vibelog must have content or teaser.',
+        },
         { status: 400 }
       );
     }
@@ -106,55 +111,58 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log('[Video API] Submitting async video generation job to fal.ai...', {
+    console.log('[Video API] Starting SYNCHRONOUS video generation...', {
       promptLength: videoPrompt.length,
       hasImage: !!videoImageUrl,
     });
 
-    // Submit async video generation job (returns immediately)
-    const { requestId } = await submitVideoGeneration({
+    // Generate video synchronously (waits for completion)
+    const { videoUrl: falVideoUrl, duration } = await generateVideoSync({
       prompt: videoPrompt,
       imageUrl: videoImageUrl,
-      aspectRatio: aspectRatio || '16:9',
+      aspectRatio: '16:9',
     });
 
-    console.log('[Video API] Job submitted, updating database with request ID...');
+    console.log('[Video API] Video generated! Uploading to storage...', { falVideoUrl });
 
-    // Store the request ID in the database
-    const { error: updateError } = await supabase
+    // Upload video to Supabase Storage
+    const storedVideoUrl = await uploadVideoToStorage(falVideoUrl, vibelogId);
+
+    console.log('[Video API] Video stored successfully:', storedVideoUrl);
+
+    // Update database with completed video
+    await supabase
       .from('vibelogs')
       .update({
-        video_request_id: requestId,
-        video_generation_status: 'generating',
-        video_requested_at: new Date().toISOString(),
+        video_url: storedVideoUrl,
+        video_duration: duration,
+        video_width: 1280,
+        video_height: 720,
+        video_generation_status: 'completed',
+        video_generated_at: new Date().toISOString(),
+        video_request_id: null, // Clear old request ID
       })
       .eq('id', vibelogId);
 
-    if (updateError) {
-      console.error('[Video API] Database update error:', updateError);
-      throw new Error(`Failed to update vibelog: ${updateError.message}`);
-    }
+    console.log('[Video API] Video generation completed successfully');
 
-    console.log('[Video API] Video generation job queued successfully');
-
-    // Return 202 Accepted - job is processing asynchronously
+    // Return success with video URL
     return NextResponse.json(
       {
         success: true,
-        message: 'Video generation started. Check status via /api/video/status endpoint.',
+        message: 'Video generated successfully',
         data: {
           vibelogId,
-          requestId,
-          status: 'generating',
+          videoUrl: storedVideoUrl,
+          status: 'completed',
         },
       },
-      { status: 202 }
+      { status: 200 }
     );
   } catch (error: unknown) {
     console.error('[Video API] Error:', error);
 
     // CRITICAL: Always update status to failed if we have vibelogId
-    // This prevents the status from being stuck in 'generating'
     if (vibelogId) {
       try {
         const supabase = createClient(
@@ -172,12 +180,18 @@ export async function POST(request: NextRequest) {
           .eq('id', vibelogId);
 
         if (failedUpdateError) {
-          console.error('[Video API] CRITICAL: Failed to update status to failed:', failedUpdateError);
+          console.error(
+            '[Video API] CRITICAL: Failed to update status to failed:',
+            failedUpdateError
+          );
         } else {
           console.log('[Video API] Status updated to failed for vibelog:', vibelogId);
         }
       } catch (updateError) {
-        console.error('[Video API] CRITICAL: Exception while updating status to failed:', updateError);
+        console.error(
+          '[Video API] CRITICAL: Exception while updating status to failed:',
+          updateError
+        );
       }
     }
 
