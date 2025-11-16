@@ -163,8 +163,6 @@ export default function PublicVibelogContent({ vibelog }: PublicVibelogContentPr
               vibelogId={vibelog.id}
               onVideoGenerated={url => {
                 setVideoUrl(url);
-                // Refresh to show video
-                router.refresh();
               }}
             />
           </div>
