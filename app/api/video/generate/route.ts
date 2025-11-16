@@ -7,8 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
-import { generateVideo } from '@/lib/video/generator';
-import { uploadVideoToStorage } from '@/lib/video/storage';
+import { submitVideoGeneration } from '@/lib/video/generator';
 
 // Validation schema
 const GenerateVideoSchema = z.object({
@@ -103,35 +102,26 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log('[Video API] Generating video with fal.ai...', {
+    console.log('[Video API] Submitting async video generation job to fal.ai...', {
       promptLength: videoPrompt.length,
       hasImage: !!videoImageUrl,
     });
 
-    // Generate video with fal.ai
-    const videoResult = await generateVideo({
+    // Submit async video generation job (returns immediately)
+    const { requestId } = await submitVideoGeneration({
       prompt: videoPrompt,
       imageUrl: videoImageUrl,
       aspectRatio: aspectRatio || '16:9',
     });
 
-    console.log('[Video API] Video generated, uploading to storage...');
+    console.log('[Video API] Job submitted, updating database with request ID...');
 
-    // Upload video to Supabase Storage
-    const storedVideoUrl = await uploadVideoToStorage(videoResult.videoUrl, vibelogId);
-
-    console.log('[Video API] Video uploaded, updating database...');
-
-    // Update vibelog with video data
+    // Store the request ID in the database
     const { error: updateError } = await supabase
       .from('vibelogs')
       .update({
-        video_url: storedVideoUrl,
-        video_duration: videoResult.duration,
-        video_width: videoResult.width,
-        video_height: videoResult.height,
-        video_generation_status: 'completed',
-        video_generated_at: new Date().toISOString(),
+        video_request_id: requestId,
+        video_generation_status: 'generating',
       })
       .eq('id', vibelogId);
 
@@ -140,17 +130,21 @@ export async function POST(request: NextRequest) {
       throw new Error(`Failed to update vibelog: ${updateError.message}`);
     }
 
-    console.log('[Video API] Video generation completed successfully');
+    console.log('[Video API] Video generation job queued successfully');
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        videoUrl: storedVideoUrl,
-        duration: videoResult.duration,
-        width: videoResult.width,
-        height: videoResult.height,
+    // Return 202 Accepted - job is processing asynchronously
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'Video generation started. Check status via /api/video/status endpoint.',
+        data: {
+          vibelogId,
+          requestId,
+          status: 'generating',
+        },
       },
-    });
+      { status: 202 }
+    );
   } catch (error: unknown) {
     console.error('[Video API] Error:', error);
 

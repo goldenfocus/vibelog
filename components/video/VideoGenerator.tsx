@@ -3,9 +3,10 @@
 /**
  * Video Generator Component
  * UI for triggering video generation and displaying status
+ * ASYNC VERSION - Polls for status instead of waiting
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Loader2, Video, AlertCircle } from 'lucide-react';
 
 interface VideoGeneratorProps {
@@ -17,66 +18,112 @@ export function VideoGenerator({ vibelogId, onVideoGenerated }: VideoGeneratorPr
   const [status, setStatus] = useState<'idle' | 'generating' | 'completed' | 'failed'>('idle');
   const [error, setError] = useState<string | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [pollingMessage, setPollingMessage] = useState('Submitting job...');
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Poll for video status
+  const pollVideoStatus = async () => {
+    try {
+      console.log('[VideoGenerator] Polling video status...');
+
+      const response = await fetch(`/api/video/status/${vibelogId}`);
+      const data = await response.json();
+
+      console.log('[VideoGenerator] Status poll response:', data);
+
+      if (data.status === 'completed' && data.videoUrl) {
+        console.log('[VideoGenerator] Video completed!', data.videoUrl);
+        setStatus('completed');
+        setVideoUrl(data.videoUrl);
+
+        // Stop polling
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current);
+          pollingIntervalRef.current = null;
+        }
+
+        if (onVideoGenerated) {
+          onVideoGenerated(data.videoUrl);
+        }
+
+        // Reload page to show the video
+        setTimeout(() => window.location.reload(), 500);
+      } else if (data.status === 'failed') {
+        console.error('[VideoGenerator] Video generation failed:', data.error);
+        setStatus('failed');
+        setError(data.error || 'Video generation failed');
+
+        // Stop polling
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current);
+          pollingIntervalRef.current = null;
+        }
+      } else {
+        // Update message based on status
+        if (data.status === 'queued') {
+          setPollingMessage('Video queued for generation...');
+        } else if (data.status === 'generating') {
+          setPollingMessage('AI is generating your video...');
+        }
+      }
+    } catch (err: unknown) {
+      console.error('[VideoGenerator] Status poll error:', err);
+      // Don't stop polling on network errors, might be transient
+    }
+  };
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, []);
 
   const handleGenerateVideo = async () => {
     try {
       setStatus('generating');
       setError(null);
+      setPollingMessage('Submitting video generation job...');
 
-      console.log('[VideoGenerator] Starting video generation for vibelog:', vibelogId);
+      console.log('[VideoGenerator] Starting async video generation for vibelog:', vibelogId);
 
-      // Add timeout (6 minutes to account for 5min generation + 1min buffer)
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 6 * 60 * 1000);
+      // Submit the job (returns immediately with 202 Accepted)
+      const response = await fetch('/api/video/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          vibelogId,
+          aspectRatio: '16:9',
+        }),
+      });
 
-      try {
-        const response = await fetch('/api/video/generate', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            vibelogId,
-            aspectRatio: '16:9',
-          }),
-          signal: controller.signal,
-        });
+      console.log('[VideoGenerator] Response status:', response.status);
 
-        clearTimeout(timeoutId);
-
-        console.log('[VideoGenerator] Response status:', response.status);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('[VideoGenerator] API error response:', errorText);
-          throw new Error(`Server error: ${response.status} ${errorText}`);
-        }
-
-        const data = await response.json();
-        console.log('[VideoGenerator] Response data:', data);
-
-        if (!data.success) {
-          throw new Error(data.error || 'Failed to generate video');
-        }
-
-        setVideoUrl(data.data.videoUrl);
-        setStatus('completed');
-        console.log('[VideoGenerator] Video generated successfully:', data.data.videoUrl);
-
-        if (onVideoGenerated) {
-          onVideoGenerated(data.data.videoUrl);
-        }
-
-        // Reload page to show the video
-        window.location.reload();
-      } catch (fetchError: unknown) {
-        clearTimeout(timeoutId);
-
-        if (fetchError instanceof Error && fetchError.name === 'AbortError') {
-          throw new Error('Video generation timed out. The video may still be processing.');
-        }
-        throw fetchError;
+      if (!response.ok && response.status !== 202) {
+        const errorText = await response.text();
+        console.error('[VideoGenerator] API error response:', errorText);
+        throw new Error(`Server error: ${response.status} ${errorText}`);
       }
+
+      const data = await response.json();
+      console.log('[VideoGenerator] Response data:', data);
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to start video generation');
+      }
+
+      console.log('[VideoGenerator] Job submitted successfully, starting polling...');
+      setPollingMessage('Video generation started...');
+
+      // Start polling every 10 seconds
+      pollingIntervalRef.current = setInterval(pollVideoStatus, 10000);
+
+      // Also poll immediately
+      pollVideoStatus();
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to generate video';
       console.error('[VideoGenerator] Video generation error:', errorMessage, err);
@@ -91,10 +138,10 @@ export function VideoGenerator({ vibelogId, onVideoGenerated }: VideoGeneratorPr
         <Loader2 className="h-5 w-5 animate-spin text-blue-600 dark:text-blue-400" />
         <div>
           <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-            Generating video...
+            {pollingMessage}
           </p>
           <p className="text-xs text-blue-700 dark:text-blue-300">
-            This may take 1-2 minutes. Please wait.
+            This may take 2-5 minutes. You can navigate away and come back later.
           </p>
         </div>
       </div>

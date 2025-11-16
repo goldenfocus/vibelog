@@ -64,51 +64,84 @@ COMMENT ON TABLE public.app_config IS 'Application-wide configuration settings';
 -- tts_usage_log: Admins can read all, service role can write
 ALTER TABLE public.tts_usage_log ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "tts_usage_log select for admins" ON public.tts_usage_log
-  FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE profiles.id = auth.uid() AND profiles.is_admin = true
-    )
-  );
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'tts_usage_log' AND policyname = 'tts_usage_log select for admins'
+  ) THEN
+    CREATE POLICY "tts_usage_log select for admins" ON public.tts_usage_log
+      FOR SELECT
+      USING (
+        EXISTS (
+          SELECT 1 FROM public.profiles
+          WHERE profiles.id = auth.uid() AND profiles.is_admin = true
+        )
+      );
+  END IF;
 
-CREATE POLICY "tts_usage_log insert for service role" ON public.tts_usage_log
-  FOR INSERT
-  TO service_role
-  WITH CHECK (true);
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'tts_usage_log' AND policyname = 'tts_usage_log insert for service role'
+  ) THEN
+    CREATE POLICY "tts_usage_log insert for service role" ON public.tts_usage_log
+      FOR INSERT
+      TO service_role
+      WITH CHECK (true);
+  END IF;
+END $$;
 
 -- user_quotas: Users can read their own, service role can manage
 ALTER TABLE public.user_quotas ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "user_quotas select own" ON public.user_quotas
-  FOR SELECT
-  USING (auth.uid() = user_id);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'user_quotas' AND policyname = 'user_quotas select own'
+  ) THEN
+    CREATE POLICY "user_quotas select own" ON public.user_quotas
+      FOR SELECT
+      USING (auth.uid() = user_id);
+  END IF;
 
-CREATE POLICY "user_quotas manage for service role" ON public.user_quotas
-  FOR ALL
-  TO service_role
-  USING (true)
-  WITH CHECK (true);
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'user_quotas' AND policyname = 'user_quotas manage for service role'
+  ) THEN
+    CREATE POLICY "user_quotas manage for service role" ON public.user_quotas
+      FOR ALL
+      TO service_role
+      USING (true)
+      WITH CHECK (true);
+  END IF;
+END $$;
 
 -- app_config: Public read, admins can update
 ALTER TABLE public.app_config ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "app_config select public" ON public.app_config
-  FOR SELECT
-  USING (true);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'app_config' AND policyname = 'app_config select public'
+  ) THEN
+    CREATE POLICY "app_config select public" ON public.app_config
+      FOR SELECT
+      USING (true);
+  END IF;
 
-CREATE POLICY "app_config update for admins" ON public.app_config
-  FOR UPDATE
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE profiles.id = auth.uid() AND profiles.is_admin = true
-    )
-  )
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE profiles.id = auth.uid() AND profiles.is_admin = true
-    )
-  );
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'app_config' AND policyname = 'app_config update for admins'
+  ) THEN
+    CREATE POLICY "app_config update for admins" ON public.app_config
+      FOR UPDATE
+      USING (
+        EXISTS (
+          SELECT 1 FROM public.profiles
+          WHERE profiles.id = auth.uid() AND profiles.is_admin = true
+        )
+      )
+      WITH CHECK (
+        EXISTS (
+          SELECT 1 FROM public.profiles
+          WHERE profiles.id = auth.uid() AND profiles.is_admin = true
+        )
+      );
+  END IF;
+END $$;
