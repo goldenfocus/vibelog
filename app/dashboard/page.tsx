@@ -66,7 +66,6 @@ export default function DashboardPage() {
           content,
           cover_image_url,
           audio_url,
-          voice_clone_id,
           video_url,
           video_generation_status,
           created_at,
@@ -97,7 +96,7 @@ export default function DashboardPage() {
       // Fetch user's profile
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('username, display_name, avatar_url, voice_clone_id')
+        .select('username, display_name, avatar_url')
         .eq('id', user.id)
         .single();
 
@@ -113,7 +112,6 @@ export default function DashboardPage() {
             user.email?.split('@')[0] ||
             'User',
           avatar_url: profileData?.avatar_url || null, // Database is source of truth
-          voice_clone_id: profileData?.voice_clone_id || null, // Include user's voice clone ID
         },
       }));
 
@@ -133,7 +131,9 @@ export default function DashboardPage() {
 
   // Batch generate videos for last 5 vibelogs
   const handleBatchGenerateVideos = async () => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      return;
+    }
 
     setGeneratingVideos(true);
     toast.info('Generating videos for your last 5 vibelogs...', {
@@ -152,7 +152,8 @@ export default function DashboardPage() {
 
         if (successCount > 0) {
           toast.success(`Generated ${successCount} video${successCount !== 1 ? 's' : ''}!`, {
-            description: failCount > 0 ? `${failCount} failed` : 'All videos generated successfully',
+            description:
+              failCount > 0 ? `${failCount} failed` : 'All videos generated successfully',
           });
 
           // Refresh vibelogs to show new videos
@@ -240,7 +241,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Quick Actions */}
-          <div className="mb-12 flex justify-center gap-4 flex-wrap">
+          <div className="mb-12 flex flex-wrap justify-center gap-4">
             <Button
               onClick={() => router.push('/')}
               variant="outline"
@@ -254,7 +255,7 @@ export default function DashboardPage() {
               onClick={handleBatchGenerateVideos}
               disabled={generatingVideos}
               variant="outline"
-              className="flex items-center gap-2 bg-gradient-to-r from-purple-600/10 to-pink-600/10 border-purple-500/30 hover:from-purple-600/20 hover:to-pink-600/20"
+              className="flex items-center gap-2 border-purple-500/30 bg-gradient-to-r from-purple-600/10 to-pink-600/10 hover:from-purple-600/20 hover:to-pink-600/20"
             >
               {generatingVideos ? (
                 <>

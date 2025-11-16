@@ -30,8 +30,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         read_time,
         user_id,
         is_published,
-        is_public,
-        voice_clone_id
+        is_public
       `
       )
       .eq('id', id)
@@ -72,7 +71,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (vibelog.user_id) {
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('username, display_name, avatar_url, voice_clone_id')
+        .select('username, display_name, avatar_url')
         .eq('id', vibelog.user_id)
         .single();
 
@@ -87,13 +86,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             username: profile.username || 'user',
             display_name: profile.display_name || 'Vibelog User',
             avatar_url: profile.avatar_url || null,
-            voice_clone_id: profile.voice_clone_id || null,
           }
         : {
             username: 'anonymous',
             display_name: 'Anonymous',
             avatar_url: null,
-            voice_clone_id: null,
           },
       // Remove internal fields
       user_id: undefined, // Don't expose user_id to client
