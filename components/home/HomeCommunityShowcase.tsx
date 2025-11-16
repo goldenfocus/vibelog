@@ -16,6 +16,8 @@ interface HomeFeedVibelog {
   content: string;
   cover_image_url?: string | null;
   audio_url?: string | null;
+  video_url?: string | null;
+  video_generation_status?: 'pending' | 'generating' | 'completed' | 'failed' | null;
   published_at: string;
   read_time?: number | null;
   author: {
