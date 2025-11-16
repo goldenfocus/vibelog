@@ -4,17 +4,18 @@
  * Check status of async video generation job
  */
 
-import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { NextRequest, NextResponse } from 'next/server';
+
 import { checkVideoGenerationStatus } from '@/lib/video/generator';
 import { uploadVideoToStorage } from '@/lib/video/storage';
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { vibelogId: string } }
+  context: { params: Promise<{ vibelogId: string }> }
 ) {
   try {
-    const { vibelogId } = params;
+    const { vibelogId } = await context.params;
 
     console.log('[Video Status API] Checking status for vibelog:', vibelogId);
 
@@ -27,17 +28,12 @@ export async function GET(
     // Fetch vibelog with video status
     const { data: vibelog, error: fetchError } = await supabase
       .from('vibelogs')
-      .select(
-        'id, video_request_id, video_generation_status, video_url, video_generation_error'
-      )
+      .select('id, video_request_id, video_generation_status, video_url, video_generation_error')
       .eq('id', vibelogId)
       .single();
 
     if (fetchError || !vibelog) {
-      return NextResponse.json(
-        { success: false, error: 'Vibelog not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, error: 'Vibelog not found' }, { status: 404 });
     }
 
     // If already completed or failed, return current status
