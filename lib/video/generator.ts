@@ -15,6 +15,7 @@ if (!FAL_API_KEY) {
 /**
  * Generate video using fal.ai MiniMax Video-01
  * Uses synchronous endpoint - will wait for completion (takes ~1-2 minutes)
+ * Includes timeout protection to prevent infinite hangs
  */
 export async function generateVideo(
   request: VideoGenerationRequest
@@ -38,38 +39,54 @@ export async function generateVideo(
     // Note: MiniMax Video-01 text-to-video doesn't support image_url
     // For image-to-video, use fal-ai/minimax/video-01/image-to-video instead
 
-    // Call fal.ai synchronous endpoint (blocking until complete)
-    const response = await fetch(FAL_API_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Key ${FAL_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
+    // Add timeout protection (5 minutes max)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5 * 60 * 1000);
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('[Video Generator] fal.ai error:', errorText);
-      throw new Error(`fal.ai failed: ${response.status} ${errorText}`);
+    try {
+      // Call fal.ai synchronous endpoint (blocking until complete)
+      const response = await fetch(FAL_API_URL, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Key ${FAL_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[Video Generator] fal.ai error:', errorText);
+        throw new Error(`fal.ai failed: ${response.status} ${errorText}`);
+      }
+
+      const result = await response.json();
+
+      console.log('[Video Generator] Video generation completed:', {
+        videoUrl: result.video?.url,
+      });
+
+      if (!result.video || !result.video.url) {
+        throw new Error('fal.ai returned invalid response - no video URL');
+      }
+
+      return {
+        videoUrl: result.video.url,
+        duration: 6, // MiniMax typically generates 6-second videos
+        width: 1280,
+        height: 720,
+      };
+    } catch (fetchError: unknown) {
+      clearTimeout(timeoutId);
+
+      if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+        throw new Error('Video generation timed out after 5 minutes');
+      }
+      throw fetchError;
     }
-
-    const result = await response.json();
-
-    console.log('[Video Generator] Video generation completed:', {
-      videoUrl: result.video?.url,
-    });
-
-    if (!result.video || !result.video.url) {
-      throw new Error('fal.ai returned invalid response - no video URL');
-    }
-
-    return {
-      videoUrl: result.video.url,
-      duration: 6, // MiniMax typically generates 6-second videos
-      width: 1280,
-      height: 720,
-    };
   } catch (error) {
     console.error('[Video Generator] Error:', error);
     throw error;
@@ -80,6 +97,6 @@ export async function generateVideo(
  * Estimate video generation cost
  * fal.ai pricing for MiniMax: ~$0.05 per video
  */
-export function estimateVideoCost(durationSeconds: number): number {
+export function estimateVideoCost(_durationSeconds: number): number {
   return 0.05; // Flat rate per video for MiniMax
 }
