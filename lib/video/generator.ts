@@ -20,7 +20,7 @@ interface FalQueueSubmitResponse {
 }
 
 interface FalQueueStatusResponse {
-  status: 'IN_QUEUE' | 'IN_PROGRESS' | 'COMPLETED';
+  status: 'IN_QUEUE' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED';
   response_url?: string;
   error?: string;
 }
@@ -34,8 +34,8 @@ interface FalVideoResult {
     width: number;
     height: number;
   };
-  timings: {
-    inference: number;
+  timings?: {
+    inference?: number;
   };
 }
 
@@ -87,6 +87,8 @@ export async function generateVideoSync(
       await new Promise(resolve => setTimeout(resolve, pollInterval));
 
       const statusUrl = `${FAL_QUEUE_STATUS_BASE}/${submitResult.request_id}/status`;
+      console.log(`[Video Generator] Polling attempt ${attempt + 1}/${maxAttempts}:`, statusUrl);
+
       const statusResponse = await fetch(statusUrl, {
         method: 'GET',
         headers: {
@@ -95,15 +97,32 @@ export async function generateVideoSync(
       });
 
       if (!statusResponse.ok) {
-        console.warn('[Video Generator] Status poll failed, retrying...');
+        const errorText = await statusResponse.text();
+        console.error('[Video Generator] Status poll failed:', {
+          status: statusResponse.status,
+          statusText: statusResponse.statusText,
+          error: errorText,
+        });
         continue;
       }
 
       const statusResult = (await statusResponse.json()) as FalQueueStatusResponse;
-      console.log('[Video Generator] Status:', statusResult.status);
+      console.log('[Video Generator] Status response:', JSON.stringify(statusResult, null, 2));
+
+      // Handle failed status
+      if (statusResult.status === 'FAILED') {
+        const errorMsg = statusResult.error || 'Video generation failed without error message';
+        console.error('[Video Generator] Video generation failed:', errorMsg);
+        throw new Error(errorMsg);
+      }
 
       if (statusResult.status === 'COMPLETED' && statusResult.response_url) {
         // Fetch final result
+        console.log(
+          '[Video Generator] Video completed! Fetching result from:',
+          statusResult.response_url
+        );
+
         const resultResponse = await fetch(statusResult.response_url, {
           headers: {
             Authorization: `Key ${FAL_API_KEY}`,
@@ -111,16 +130,23 @@ export async function generateVideoSync(
         });
 
         if (!resultResponse.ok) {
+          const errorText = await resultResponse.text();
+          console.error('[Video Generator] Failed to fetch result:', {
+            status: resultResponse.status,
+            error: errorText,
+          });
           throw new Error('Failed to fetch completed video');
         }
 
         const videoResult = (await resultResponse.json()) as FalVideoResult;
+        console.log('[Video Generator] Video result:', JSON.stringify(videoResult, null, 2));
 
         if (!videoResult.video || !videoResult.video.url) {
+          console.error('[Video Generator] Invalid result structure:', videoResult);
           throw new Error('Completed result missing video URL');
         }
 
-        console.log('[Video Generator] Video generated successfully');
+        console.log('[Video Generator] Video generated successfully:', videoResult.video.url);
 
         return {
           videoUrl: videoResult.video.url,
