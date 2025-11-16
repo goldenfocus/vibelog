@@ -69,10 +69,44 @@ export async function POST(request: NextRequest) {
       .eq('id', vibelogId);
 
     // Prepare video generation request
-    const videoPrompt = prompt || vibelog.content || vibelog.teaser;
+    let videoPrompt = prompt || vibelog.content || vibelog.teaser;
     const videoImageUrl = imageUrl || vibelog.cover_image_url || undefined;
 
-    console.log('[Video API] Generating video with fal.ai...');
+    // Validate we have a prompt
+    if (!videoPrompt || videoPrompt.trim().length < 10) {
+      console.error('[Video API] No valid prompt available for video generation');
+      await supabase
+        .from('vibelogs')
+        .update({
+          video_generation_status: 'failed',
+          video_generation_error: 'No content available for video generation. Vibelog must have content or teaser.',
+        })
+        .eq('id', vibelogId);
+
+      return NextResponse.json(
+        { success: false, error: 'No content available for video generation. Vibelog must have content or teaser.' },
+        { status: 400 }
+      );
+    }
+
+    // Truncate prompt to 2000 chars (fal.ai limit)
+    // Prefer teaser if available and content is too long
+    if (videoPrompt.length > 2000) {
+      console.log('[Video API] Prompt too long, trying teaser...');
+      if (vibelog.teaser && vibelog.teaser.length <= 2000) {
+        videoPrompt = vibelog.teaser;
+        console.log('[Video API] Using teaser instead of content');
+      } else {
+        // Truncate to 2000 chars with ellipsis
+        videoPrompt = videoPrompt.substring(0, 1997) + '...';
+        console.log('[Video API] Truncated prompt to 2000 chars');
+      }
+    }
+
+    console.log('[Video API] Generating video with fal.ai...', {
+      promptLength: videoPrompt.length,
+      hasImage: !!videoImageUrl,
+    });
 
     // Generate video with fal.ai
     const videoResult = await generateVideo({
