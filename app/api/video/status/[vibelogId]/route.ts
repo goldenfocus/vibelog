@@ -71,7 +71,7 @@ export async function GET(
     ) {
       const requestedAt = new Date(vibelog.video_requested_at).getTime();
       const elapsedMs = Date.now() - requestedAt;
-      const timeoutMs = 15 * 60 * 1000; // 15 minutes
+      const timeoutMs = 5 * 60 * 1000; // 5 minutes timeout to avoid long spins
       if (elapsedMs > timeoutMs) {
         await supabase
           .from('vibelogs')
