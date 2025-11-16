@@ -56,6 +56,7 @@ export default function VibelogDetailPage() {
   const [vibelog, setVibelog] = useState<Vibelog | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [likeCount, setLikeCount] = useState(0);
 
   useEffect(() => {
     async function fetchVibelog() {
@@ -76,6 +77,7 @@ export default function VibelogDetailPage() {
 
         const data = await response.json();
         setVibelog(data.vibelog);
+        setLikeCount(data.vibelog.like_count || 0);
       } catch (err) {
         console.error('Error fetching vibelog:', err);
         setError('Failed to load vibelog');
@@ -204,7 +206,7 @@ export default function VibelogDetailPage() {
                 <span>·</span>
                 <div className="flex items-center gap-1">
                   <Heart className="h-4 w-4" />
-                  <span>{vibelog.like_count}</span>
+                  <span>{likeCount}</span>
                 </div>
               </div>
             </div>
@@ -255,7 +257,8 @@ export default function VibelogDetailPage() {
               createdAt={vibelog.created_at}
               audioUrl={vibelog.audio_url || undefined}
               teaserOnly={!user}
-              likeCount={vibelog.like_count}
+              likeCount={likeCount}
+              onLikeCountChange={setLikeCount}
               onShare={async () => {
                 const url = `${window.location.origin}/vibelogs/${vibelog.id}`;
                 if (navigator.share) {
