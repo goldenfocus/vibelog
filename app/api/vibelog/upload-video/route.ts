@@ -138,11 +138,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify vibelog ownership
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
-
     const { data: vibelog, error: fetchError } = await supabase
       .from('vibelogs')
       .select('id, user_id, title')
