@@ -90,10 +90,12 @@ export async function generateVideoSync(
       console.log(`[Video Generator] Polling attempt ${attempt + 1}/${maxAttempts}:`, statusUrl);
 
       const statusResponse = await fetch(statusUrl, {
-        method: 'GET',
+        method: 'POST',
         headers: {
           Authorization: `Key ${FAL_API_KEY}`,
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({}),
       });
 
       if (!statusResponse.ok) {
