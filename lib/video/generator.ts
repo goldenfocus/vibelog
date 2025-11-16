@@ -96,7 +96,10 @@ export async function checkVideoGenerationStatus(
   try {
     console.log('[Video Generator] Checking status for request:', requestId);
 
-    const statusUrl = `${FAL_QUEUE_STATUS_BASE}/${requestId}/status`;
+    // NOTE: fal.ai returns a status_url on submit. The documented pattern is
+    // GET /requests/{id} (no /status suffix). The previous code used
+    // /requests/{id}/status which returns 405. Use the base path so polling works.
+    const statusUrl = `${FAL_QUEUE_STATUS_BASE}/${requestId}`;
     const response = await fetch(statusUrl, {
       method: 'GET',
       headers: {
