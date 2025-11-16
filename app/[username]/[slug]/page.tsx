@@ -192,6 +192,8 @@ async function getVibelog(username: string, slug: string) {
       teaser,
       audio_url,
       cover_image_url,
+      video_url,
+      video_generation_status,
       created_at,
       published_at,
       view_count,
