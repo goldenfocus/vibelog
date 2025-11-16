@@ -3,6 +3,8 @@
 import { MessageSquare } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import { useAuth } from '@/components/providers/AuthProvider';
+
 import CommentInput from './CommentInput';
 import CommentsList from './CommentsList';
 
@@ -14,10 +16,12 @@ interface CommentAuthor {
 
 interface Comment {
   id: string;
+  user_id: string;
   content: string | null;
   audio_url: string | null;
   voice_id: string | null;
   created_at: string;
+  updated_at?: string;
   author: CommentAuthor;
 }
 
@@ -26,9 +30,37 @@ interface CommentsProps {
 }
 
 export default function Comments({ vibelogId }: CommentsProps) {
+  const { user } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [userIsAdmin, setUserIsAdmin] = useState(false);
+
+  // Check if current user is admin
+  useEffect(() => {
+    async function checkAdmin() {
+      if (!user) {
+        setUserIsAdmin(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/admin/check`, {
+          credentials: 'include',
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setUserIsAdmin(data.isAdmin === true);
+        }
+      } catch (err) {
+        console.error('Error checking admin status:', err);
+        setUserIsAdmin(false);
+      }
+    }
+
+    checkAdmin();
+  }, [user]);
 
   const fetchComments = async () => {
     try {
@@ -83,7 +115,12 @@ export default function Comments({ vibelogId }: CommentsProps) {
       <CommentInput vibelogId={vibelogId} onCommentAdded={handleCommentAdded} />
 
       {/* Comments List */}
-      <CommentsList comments={comments} isLoading={isLoading} />
+      <CommentsList
+        comments={comments}
+        isLoading={isLoading}
+        onRefresh={fetchComments}
+        userIsAdmin={userIsAdmin}
+      />
     </div>
   );
 }
