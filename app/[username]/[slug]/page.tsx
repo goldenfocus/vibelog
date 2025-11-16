@@ -141,13 +141,12 @@ async function getVibelog(username: string, slug: string) {
       username: 'anonymous',
       display_name: 'Anonymous',
       avatar_url: null,
-      voice_clone_id: null,
     };
 
     if (data.user_id) {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('username, display_name, avatar_url, voice_clone_id')
+        .select('username, display_name, avatar_url')
         .eq('id', data.user_id)
         .single();
 
@@ -156,7 +155,6 @@ async function getVibelog(username: string, slug: string) {
           username: profile.username,
           display_name: profile.display_name,
           avatar_url: profile.avatar_url,
-          voice_clone_id: profile.voice_clone_id,
         };
       }
     }
@@ -170,7 +168,7 @@ async function getVibelog(username: string, slug: string) {
   // First get the user's ID from their username
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('id, username, display_name, avatar_url, voice_clone_id')
+    .select('id, username, display_name, avatar_url')
     .eq('username', normalizedUsername)
     .single();
 
@@ -225,7 +223,6 @@ async function getVibelog(username: string, slug: string) {
       username: profile.username,
       display_name: profile.display_name,
       avatar_url: profile.avatar_url,
-      voice_clone_id: profile.voice_clone_id,
     },
   };
 }
