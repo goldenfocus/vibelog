@@ -99,52 +99,11 @@ export default function VibelogActions({
   const isOwnVibelog = user?.id && authorId && user.id === authorId;
 
   // Sync like count and liked state when props change (e.g., when parent re-fetches data)
+  // Parent components already fetch like data via /api/get-vibelogs, so no need to fetch here
   useEffect(() => {
     setLikeCount(initialLikeCount);
     setIsLiked(initialIsLiked);
   }, [initialLikeCount, initialIsLiked, vibelogId]);
-
-  // Fetch current like status and count from API in a single coordinated request
-  useEffect(() => {
-    if (vibelogId) {
-      let mounted = true;
-
-      // Single API call that returns both isLiked and like_count
-      fetch(`/api/like-vibelog/${vibelogId}`, { method: 'GET' })
-        .then(res => {
-          if (!mounted) {
-            return null;
-          }
-          if (res.ok) {
-            return res.json();
-          }
-          return null;
-        })
-        .then(data => {
-          if (!mounted || !data) {
-            return;
-          }
-
-          // Update both state values atomically from single response
-          if (data.isLiked !== undefined) {
-            setIsLiked(data.isLiked);
-          }
-          if (data.like_count !== undefined) {
-            setLikeCount(data.like_count);
-          }
-        })
-        .catch(err => {
-          // Silent fail - use prop values as fallback
-          if (process.env.NODE_ENV !== 'production') {
-            console.warn('Failed to fetch like status:', err);
-          }
-        });
-
-      return () => {
-        mounted = false;
-      };
-    }
-  }, [vibelogId, user?.id]);
 
   // Close menu when clicking outside
   useEffect(() => {
