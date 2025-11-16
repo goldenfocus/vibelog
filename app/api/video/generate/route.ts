@@ -117,29 +117,42 @@ export async function POST(request: NextRequest) {
         height: videoResult.height,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[Video API] Error:', error);
 
-    // Update status to failed if we have vibelogId
+    // CRITICAL: Always update status to failed if we have vibelogId
+    // This prevents the status from being stuck in 'generating'
     if (vibelogId) {
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!
-      );
+      try {
+        const supabase = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!
+        );
 
-      await supabase
-        .from('vibelogs')
-        .update({
-          video_generation_status: 'failed',
-          video_generation_error: error.message || 'Unknown error',
-        })
-        .eq('id', vibelogId);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        const { error: failedUpdateError } = await supabase
+          .from('vibelogs')
+          .update({
+            video_generation_status: 'failed',
+            video_generation_error: errorMessage,
+          })
+          .eq('id', vibelogId);
+
+        if (failedUpdateError) {
+          console.error('[Video API] CRITICAL: Failed to update status to failed:', failedUpdateError);
+        } else {
+          console.log('[Video API] Status updated to failed for vibelog:', vibelogId);
+        }
+      } catch (updateError) {
+        console.error('[Video API] CRITICAL: Exception while updating status to failed:', updateError);
+      }
     }
 
+    const errorMessage = error instanceof Error ? error.message : 'Failed to generate video';
     return NextResponse.json(
       {
         success: false,
-        error: error.message || 'Failed to generate video',
+        error: errorMessage,
       },
       { status: 500 }
     );
