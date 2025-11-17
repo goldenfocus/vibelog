@@ -5,11 +5,10 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
-import { useAuth } from '@/components/providers/AuthProvider';
 import VibelogActions from '@/components/VibelogActions';
 import VibelogContentRenderer from '@/components/VibelogContentRenderer';
 import VibelogEditModalFull from '@/components/VibelogEditModalFull';
-import { VideoPlayer, VideoGenerator } from '@/components/video';
+import { VideoPlayer } from '@/components/video';
 import { useAutoPlayVibelogAudio } from '@/hooks/useAutoPlayVibelogAudio';
 import type { ExportFormat } from '@/lib/export';
 
@@ -38,9 +37,8 @@ interface PublicVibelogContentProps {
 
 export default function PublicVibelogContent({ vibelog }: PublicVibelogContentProps) {
   const router = useRouter();
-  const { user } = useAuth();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [videoUrl, setVideoUrl] = useState<string | null>(vibelog.video_url || null);
+  const videoUrl = vibelog.video_url || null;
   const [likeCount, setLikeCount] = useState(vibelog.like_count || 0);
 
   // Initialize with a placeholder URL to prevent hydration mismatch
@@ -152,21 +150,6 @@ export default function PublicVibelogContent({ vibelog }: PublicVibelogContentPr
           <VideoPlayer videoUrl={videoUrl} />
         </div>
       )}
-
-      {/* Video Generator - Only show if user is the author, no video exists, and not generating */}
-      {user?.id === vibelog.user_id &&
-        !videoUrl &&
-        vibelog.video_generation_status !== 'generating' &&
-        vibelog.video_generation_status !== 'completed' && (
-          <div className="mb-8">
-            <VideoGenerator
-              vibelogId={vibelog.id}
-              onVideoGenerated={url => {
-                setVideoUrl(url);
-              }}
-            />
-          </div>
-        )}
 
       {/* Metadata header - synced with VibelogActions */}
       <div className="mb-6 flex items-center gap-4 text-sm text-muted-foreground">
