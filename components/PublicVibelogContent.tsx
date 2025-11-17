@@ -23,7 +23,6 @@ interface PublicVibelogContentProps {
     public_slug: string;
     audio_url?: string | null;
     video_url?: string | null;
-    video_generation_status?: 'pending' | 'generating' | 'completed' | 'failed' | null;
     created_at?: string;
     read_time?: number;
     like_count?: number;
