@@ -9,6 +9,7 @@
 import { Camera, Sparkles, Upload, Crown } from 'lucide-react';
 import React, { useState } from 'react';
 
+import { useAuth } from '@/components/providers/AuthProvider';
 import { useProfile } from '@/hooks/useProfile';
 
 import { VideoCaptureZone } from './VideoCaptureZone';
@@ -27,7 +28,8 @@ export function VideoManager({
   showAllOptions = true,
 }: VideoManagerProps) {
   const [mode, setMode] = useState<'capture' | 'upload' | 'generate'>('capture'); // Default to capture
-  const { profile } = useProfile();
+  const { user } = useAuth();
+  const { profile } = useProfile(user?.id);
 
   const isPremium = profile?.subscription_tier === 'premium' || profile?.is_premium || false;
 
