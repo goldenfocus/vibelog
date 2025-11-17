@@ -73,39 +73,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
-    // PREMIUM GATE: Only premium users can upload videos
-    // Free users must use camera capture instead
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
-
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('subscription_tier, is_premium')
-      .eq('id', user.id)
-      .single();
-
-    if (profileError || !profile) {
-      console.error('🎬 [VIDEO-UPLOAD] Failed to fetch user profile:', profileError);
-      return NextResponse.json({ error: 'Failed to verify account status' }, { status: 500 });
-    }
-
-    const isPremium = profile.subscription_tier === 'premium' || profile.is_premium || false;
-
-    if (!isPremium) {
-      console.log('🎬 [VIDEO-UPLOAD] Upload rejected - user is not premium:', user.id);
-      return NextResponse.json(
-        {
-          error: 'Upload requires premium',
-          details:
-            'Free users can record videos using the camera. Upgrade to premium to upload pre-edited videos!',
-          upgrade: true,
-        },
-        { status: 403 }
-      );
-    }
-
     console.log('🎬 [VIDEO-UPLOAD] Uploading video:', {
       fileName: videoFile.name,
       fileSize: videoFile.size,
@@ -113,6 +80,11 @@ export async function POST(request: NextRequest) {
       vibelogId,
       userId: user.id,
     });
+
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
 
     // Validate file size
     if (videoFile.size > MAX_VIDEO_SIZE) {

@@ -4,4 +4,5 @@
  */
 
 export { VideoPlayer } from './VideoPlayer';
-export { VideoGenerator } from './VideoGenerator';
+export { VideoCaptureZone } from './VideoCaptureZone';
+export { VideoUploadZone } from './VideoUploadZone';

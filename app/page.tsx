@@ -1,13 +1,15 @@
 'use client';
 
-import { MessageCircle, Bot, Share2 } from 'lucide-react';
+import { MessageCircle, Bot, Share2, FileText, Mic, Video } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useState, useEffect, Suspense } from 'react';
 
+import { TextCreator } from '@/components/creation/TextCreator';
 import HomeCommunityShowcase from '@/components/home/HomeCommunityShowcase';
 import MicRecorder from '@/components/MicRecorder';
 import Navigation from '@/components/Navigation';
 import { useI18n } from '@/components/providers/I18nProvider';
+import { VideoCaptureZone } from '@/components/video/VideoCaptureZone';
 
 function RemixHandler({ onRemixContent }: { onRemixContent: (content: string | null) => void }) {
   const searchParams = useSearchParams();
@@ -26,6 +28,7 @@ function RemixHandler({ onRemixContent }: { onRemixContent: (content: string | n
 export default function Home() {
   const { t, isLoading } = useI18n();
   const [remixContent, setRemixContent] = useState<string | null>(null);
+  const [creationMode, setCreationMode] = useState<'text' | 'audio' | 'video'>('audio');
 
   if (isLoading) {
     return (
@@ -66,9 +69,102 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Main Mic Interface */}
+          {/* 3-Icon Mode Selector */}
+          <div className="mb-8 flex justify-center gap-6">
+            <button
+              onClick={() => setCreationMode('text')}
+              className={`group flex h-24 w-24 flex-col items-center justify-center gap-2 rounded-2xl border-2 transition-all sm:h-32 sm:w-32 ${
+                creationMode === 'text'
+                  ? 'border-purple-600 bg-purple-50 shadow-lg dark:border-purple-400 dark:bg-purple-900/20'
+                  : 'border-border/30 bg-card/50 hover:border-border hover:bg-card/80'
+              }`}
+              aria-label="Create with text"
+            >
+              <FileText
+                className={`h-10 w-10 sm:h-12 sm:w-12 ${
+                  creationMode === 'text'
+                    ? 'text-purple-600 dark:text-purple-400'
+                    : 'text-muted-foreground group-hover:text-foreground'
+                }`}
+                strokeWidth={1.5}
+              />
+              <span
+                className={`text-sm font-medium sm:text-base ${
+                  creationMode === 'text'
+                    ? 'text-purple-900 dark:text-purple-100'
+                    : 'text-muted-foreground group-hover:text-foreground'
+                }`}
+              >
+                Text
+              </span>
+            </button>
+
+            <button
+              onClick={() => setCreationMode('audio')}
+              className={`group flex h-24 w-24 flex-col items-center justify-center gap-2 rounded-2xl border-2 transition-all sm:h-32 sm:w-32 ${
+                creationMode === 'audio'
+                  ? 'border-purple-600 bg-purple-50 shadow-lg dark:border-purple-400 dark:bg-purple-900/20'
+                  : 'border-border/30 bg-card/50 hover:border-border hover:bg-card/80'
+              }`}
+              aria-label="Create with audio"
+            >
+              <Mic
+                className={`h-10 w-10 sm:h-12 sm:w-12 ${
+                  creationMode === 'audio'
+                    ? 'text-purple-600 dark:text-purple-400'
+                    : 'text-muted-foreground group-hover:text-foreground'
+                }`}
+                strokeWidth={1.5}
+              />
+              <span
+                className={`text-sm font-medium sm:text-base ${
+                  creationMode === 'audio'
+                    ? 'text-purple-900 dark:text-purple-100'
+                    : 'text-muted-foreground group-hover:text-foreground'
+                }`}
+              >
+                Audio
+              </span>
+            </button>
+
+            <button
+              onClick={() => setCreationMode('video')}
+              className={`group flex h-24 w-24 flex-col items-center justify-center gap-2 rounded-2xl border-2 transition-all sm:h-32 sm:w-32 ${
+                creationMode === 'video'
+                  ? 'border-purple-600 bg-purple-50 shadow-lg dark:border-purple-400 dark:bg-purple-900/20'
+                  : 'border-border/30 bg-card/50 hover:border-border hover:bg-card/80'
+              }`}
+              aria-label="Create with video"
+            >
+              <Video
+                className={`h-10 w-10 sm:h-12 sm:w-12 ${
+                  creationMode === 'video'
+                    ? 'text-purple-600 dark:text-purple-400'
+                    : 'text-muted-foreground group-hover:text-foreground'
+                }`}
+                strokeWidth={1.5}
+              />
+              <span
+                className={`text-sm font-medium sm:text-base ${
+                  creationMode === 'video'
+                    ? 'text-purple-900 dark:text-purple-100'
+                    : 'text-muted-foreground group-hover:text-foreground'
+                }`}
+              >
+                Video
+              </span>
+            </button>
+          </div>
+
+          {/* Creation Interface - Conditional Rendering */}
           <div className="mb-20 flex justify-center">
-            <MicRecorder remixContent={remixContent} />
+            {creationMode === 'text' && <TextCreator remixContent={remixContent} />}
+            {creationMode === 'audio' && <MicRecorder remixContent={remixContent} />}
+            {creationMode === 'video' && (
+              <div className="w-full max-w-2xl">
+                <VideoCaptureZone vibelogId="temp" isPremium={false} />
+              </div>
+            )}
           </div>
 
           {/* Features Preview */}
