@@ -57,16 +57,16 @@ export interface Vibelog {
   cover_image_url: string | null;
   audio_url?: string | null; // Original audio recording
 
-  // Video (user-uploaded or AI-generated)
+  // Video (camera captured, user uploaded, or AI-generated)
   video_url?: string | null;
   video_duration?: number | null; // Duration in seconds
   video_width?: number | null; // Width in pixels
   video_height?: number | null; // Height in pixels
-  video_source?: 'uploaded' | 'generated' | null; // Source of video
-  video_uploaded_at?: string | null; // When user uploaded (null for AI)
+  video_source?: 'captured' | 'uploaded' | 'generated' | null; // Source: camera/upload/AI
+  video_uploaded_at?: string | null; // When user uploaded (null for captured/AI)
   video_generation_status?: 'pending' | 'generating' | 'completed' | 'failed' | null;
   video_generation_error?: string | null;
-  video_generated_at?: string | null; // When AI generated (null for uploaded)
+  video_generated_at?: string | null; // When AI generated (null for captured/uploaded)
 
   // Timestamps
   created_at: string;

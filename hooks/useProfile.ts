@@ -10,6 +10,8 @@ type Profile = {
   avatar_url?: string;
   bio?: string;
   header_image?: string;
+  subscription_tier?: string;
+  is_premium?: boolean;
   [key: string]: unknown;
 } | null;
 
@@ -38,7 +40,7 @@ export function useProfile(userId: string | null | undefined) {
       const { data, error: fetchError } = await supabase
         .from('profiles')
         .select(
-          'id, username, display_name, avatar_url, bio, header_image, default_writing_tone, keep_filler_words, is_public, total_vibelogs, total_views, created_at, updated_at'
+          'id, username, display_name, avatar_url, bio, header_image, default_writing_tone, keep_filler_words, is_public, total_vibelogs, total_views, subscription_tier, is_premium, created_at, updated_at'
         )
         .eq('id', userId)
         .single();
