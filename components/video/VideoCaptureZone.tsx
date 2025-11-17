@@ -24,6 +24,8 @@ export function VideoCaptureZone({
   maxDurationSeconds = DEFAULT_MAX_DURATION,
   isPremium = false,
 }: VideoCaptureZoneProps) {
+  console.log('[VideoCaptureZone] Component rendering with vibelogId:', vibelogId);
+
   const [status, setStatus] = useState<
     'idle' | 'requesting' | 'ready' | 'recording' | 'uploading' | 'success' | 'error'
   >('idle');
@@ -39,12 +41,23 @@ export function VideoCaptureZone({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const hasRequestedCamera = useRef(false);
+  const streamTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Request camera permission and start preview
   const startCameraPreview = async () => {
+    // Prevent multiple simultaneous requests
+    if (hasRequestedCamera.current) {
+      console.log('[VideoCaptureZone] Camera already requested, skipping');
+      return;
+    }
+
     try {
+      hasRequestedCamera.current = true;
       setStatus('requesting');
       setError(null);
+
+      console.log('[VideoCaptureZone] Requesting camera with facingMode:', facingMode);
 
       const constraints = {
         video: {
@@ -56,31 +69,102 @@ export function VideoCaptureZone({
       };
 
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      console.log('[VideoCaptureZone] Camera stream obtained:', {
+        videoTracks: stream.getVideoTracks().length,
+        audioTracks: stream.getAudioTracks().length,
+        active: stream.active,
+      });
+
       mediaStreamRef.current = stream;
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        console.log('[VideoCaptureZone] Stream assigned to video element');
+
+        // Wait for video to load metadata
+        await new Promise<void>((resolve, reject) => {
+          if (!videoRef.current) {
+            reject(new Error('Video element not found'));
+            return;
+          }
+
+          const video = videoRef.current;
+          const timeout = setTimeout(() => {
+            reject(new Error('Video stream timeout'));
+          }, 10000); // 10 second timeout
+
+          video.onloadedmetadata = () => {
+            clearTimeout(timeout);
+            console.log('[VideoCaptureZone] Video metadata loaded:', {
+              width: video.videoWidth,
+              height: video.videoHeight,
+              duration: video.duration,
+            });
+            resolve();
+          };
+
+          video.onerror = () => {
+            clearTimeout(timeout);
+            reject(new Error('Video element error'));
+          };
+        });
       }
 
       setStatus('ready');
+      console.log('[VideoCaptureZone] Camera preview ready');
     } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to access camera. Please check permissions.';
-      console.error('[VideoCaptureZone] Camera permission error:', errorMessage, err);
-      setError(errorMessage);
+      hasRequestedCamera.current = false; // Allow retry
+      let errorMessage = 'Failed to access camera';
+      let errorDetails = '';
+
+      if (err instanceof Error) {
+        errorMessage = err.message;
+
+        // Provide helpful error messages
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+          errorDetails =
+            'Camera permission denied. Please allow camera access in your browser settings.';
+        } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+          errorDetails = 'No camera found. Please connect a camera and try again.';
+        } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+          errorDetails = 'Camera is already in use by another application.';
+        } else if (err.name === 'OverconstrainedError') {
+          errorDetails = 'Camera does not support the requested resolution.';
+        } else if (err.name === 'SecurityError') {
+          errorDetails = 'Camera access blocked by security settings.';
+        } else {
+          errorDetails = errorMessage;
+        }
+      }
+
+      console.error('[VideoCaptureZone] Camera error:', {
+        name: err instanceof Error ? err.name : 'Unknown',
+        message: errorMessage,
+        error: err,
+      });
+
+      setError(errorDetails || errorMessage);
       setStatus('error');
     }
   };
 
   // Stop camera preview and release resources
   const stopCameraPreview = () => {
+    console.log('[VideoCaptureZone] Stopping camera preview');
+
     if (mediaStreamRef.current) {
-      mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      mediaStreamRef.current.getTracks().forEach(track => {
+        console.log('[VideoCaptureZone] Stopping track:', track.kind, track.label);
+        track.stop();
+      });
       mediaStreamRef.current = null;
     }
+
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
+
+    hasRequestedCamera.current = false; // Allow re-requesting
   };
 
   // Start recording
@@ -243,20 +327,56 @@ export function VideoCaptureZone({
     // Will auto-restart with new facing mode
   };
 
-  // Auto-start camera preview when component mounts
+  // Auto-start camera preview when component mounts or facingMode changes
+  // Initialize camera on mount
   useEffect(() => {
-    if (status === 'idle' && !videoBlob) {
-      startCameraPreview();
-    }
+    console.log('[VideoCaptureZone] useEffect (mount) running');
+    let mounted = true;
+
+    const initCamera = async () => {
+      console.log('[VideoCaptureZone] initCamera called with:', {
+        status,
+        videoBlob: videoBlob ? 'exists' : 'null',
+        mounted,
+      });
+
+      if (status === 'idle' && !videoBlob && mounted) {
+        console.log('[VideoCaptureZone] Conditions met, calling startCameraPreview');
+        await startCameraPreview();
+      } else {
+        console.log('[VideoCaptureZone] Conditions NOT met:', {
+          statusIsIdle: status === 'idle',
+          noVideoBlob: !videoBlob,
+          mounted,
+        });
+      }
+    };
+
+    initCamera();
 
     return () => {
+      console.log('[VideoCaptureZone] useEffect cleanup');
+      mounted = false;
       stopCameraPreview();
       if (recordingTimerRef.current) {
         clearInterval(recordingTimerRef.current);
       }
+      if (streamTimeoutRef.current) {
+        clearTimeout(streamTimeoutRef.current);
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, videoBlob, facingMode]);
+  }, []); // Run only on mount
+
+  // Handle facing mode changes
+  useEffect(() => {
+    if (mediaStreamRef.current) {
+      console.log('[VideoCaptureZone] Facing mode changed, restarting camera');
+      stopCameraPreview();
+      startCameraPreview();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [facingMode]);
 
   // Format time as MM:SS
   const formatTime = (seconds: number): string => {
