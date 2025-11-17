@@ -24,6 +24,8 @@ export function VideoCaptureZone({
   maxDurationSeconds = DEFAULT_MAX_DURATION,
   isPremium = false,
 }: VideoCaptureZoneProps) {
+  console.log('[VideoCaptureZone] Component rendering with vibelogId:', vibelogId);
+
   const [status, setStatus] = useState<
     'idle' | 'requesting' | 'ready' | 'recording' | 'uploading' | 'success' | 'error'
   >('idle');
@@ -326,18 +328,34 @@ export function VideoCaptureZone({
   };
 
   // Auto-start camera preview when component mounts or facingMode changes
+  // Initialize camera on mount
   useEffect(() => {
+    console.log('[VideoCaptureZone] useEffect (mount) running');
     let mounted = true;
 
     const initCamera = async () => {
+      console.log('[VideoCaptureZone] initCamera called with:', {
+        status,
+        videoBlob: videoBlob ? 'exists' : 'null',
+        mounted,
+      });
+
       if (status === 'idle' && !videoBlob && mounted) {
+        console.log('[VideoCaptureZone] Conditions met, calling startCameraPreview');
         await startCameraPreview();
+      } else {
+        console.log('[VideoCaptureZone] Conditions NOT met:', {
+          statusIsIdle: status === 'idle',
+          noVideoBlob: !videoBlob,
+          mounted,
+        });
       }
     };
 
     initCamera();
 
     return () => {
+      console.log('[VideoCaptureZone] useEffect cleanup');
       mounted = false;
       stopCameraPreview();
       if (recordingTimerRef.current) {
@@ -348,7 +366,17 @@ export function VideoCaptureZone({
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [facingMode]); // Only re-run when facingMode changes
+  }, []); // Run only on mount
+
+  // Handle facing mode changes
+  useEffect(() => {
+    if (mediaStreamRef.current) {
+      console.log('[VideoCaptureZone] Facing mode changed, restarting camera');
+      stopCameraPreview();
+      startCameraPreview();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [facingMode]);
 
   // Format time as MM:SS
   const formatTime = (seconds: number): string => {
