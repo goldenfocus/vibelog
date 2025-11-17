@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 import { useAuth } from '@/components/providers/AuthProvider';
 import { VideoCaptureZone } from '@/components/video/VideoCaptureZone';
@@ -17,14 +17,22 @@ export function VideoCreator({ remixContent }: VideoCreatorProps) {
   const { saveVibelog, isSaving } = useBulletproofSave();
   const [vibelogId, setVibelogId] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
+  const hasInitialized = useRef(false);
 
   // Create a placeholder vibelog on mount so we have a vibelogId for video upload
   useEffect(() => {
+    // Prevent multiple initializations
+    if (hasInitialized.current || vibelogId) {
+      return;
+    }
+
     const initializeVibelog = async () => {
       if (!user) {
         setIsInitializing(false);
         return;
       }
+
+      hasInitialized.current = true;
 
       try {
         // Create placeholder vibelog
@@ -37,13 +45,15 @@ export function VideoCreator({ remixContent }: VideoCreatorProps) {
         }
       } catch (error) {
         console.error('Failed to initialize vibelog:', error);
+        hasInitialized.current = false; // Allow retry on error
       } finally {
         setIsInitializing(false);
       }
     };
 
     initializeVibelog();
-  }, [user, remixContent, saveVibelog]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, remixContent]); // Removed saveVibelog from dependencies
 
   const handleVideoCaptured = async (_videoUrl: string) => {
     if (!vibelogId) {
