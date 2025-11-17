@@ -25,8 +25,7 @@ interface Vibelog {
   content: string;
   cover_image_url: string | null;
   audio_url?: string | null; // Original audio recording
-  video_url?: string | null; // AI-generated video
-  video_generation_status?: 'pending' | 'generating' | 'completed' | 'failed' | null;
+  video_url?: string | null; // User-captured or uploaded video
   created_at: string;
   published_at: string;
   view_count: number;

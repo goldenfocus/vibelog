@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 
 import { useAuth } from '@/components/providers/AuthProvider';
 import { VideoCaptureZone } from '@/components/video/VideoCaptureZone';
-import { useSaveVibelog } from '@/hooks/useSaveVibelog';
+import { useBulletproofSave } from '@/hooks/useBulletproofSave';
 
 interface VideoCreatorProps {
   remixContent?: string | null;
@@ -14,7 +14,7 @@ interface VideoCreatorProps {
 export function VideoCreator({ remixContent }: VideoCreatorProps) {
   const router = useRouter();
   const { user } = useAuth();
-  const { saveVibelog, isSaving } = useSaveVibelog();
+  const { saveVibelog, isSaving } = useBulletproofSave();
   const [vibelogId, setVibelogId] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
 
@@ -30,11 +30,10 @@ export function VideoCreator({ remixContent }: VideoCreatorProps) {
         // Create placeholder vibelog
         const result = await saveVibelog({
           content: remixContent || 'Video vibelog (recording...)',
-          is_published: false, // Draft until video is uploaded
         });
 
-        if (result.success && result.data?.id) {
-          setVibelogId(result.data.id);
+        if (result.success && result.vibelogId) {
+          setVibelogId(result.vibelogId);
         }
       } catch (error) {
         console.error('Failed to initialize vibelog:', error);

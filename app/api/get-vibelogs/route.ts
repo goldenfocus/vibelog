@@ -26,7 +26,6 @@ export async function GET(request: NextRequest) {
         cover_image_url,
         audio_url,
         video_url,
-        video_generation_status,
         created_at,
         published_at,
         view_count,
