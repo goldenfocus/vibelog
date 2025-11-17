@@ -81,7 +81,7 @@ export function VideoCaptureZone({
         videoRef.current.srcObject = stream;
         console.log('[VideoCaptureZone] Stream assigned to video element');
 
-        // Wait for video to load metadata
+        // Wait for video to load metadata and play
         await new Promise<void>((resolve, reject) => {
           if (!videoRef.current) {
             reject(new Error('Video element not found'));
@@ -93,13 +93,22 @@ export function VideoCaptureZone({
             reject(new Error('Video stream timeout'));
           }, 10000); // 10 second timeout
 
-          video.onloadedmetadata = () => {
+          video.onloadedmetadata = async () => {
             clearTimeout(timeout);
             console.log('[VideoCaptureZone] Video metadata loaded:', {
               width: video.videoWidth,
               height: video.videoHeight,
               duration: video.duration,
             });
+
+            // Explicitly play the video
+            try {
+              await video.play();
+              console.log('[VideoCaptureZone] Video playback started');
+            } catch (playError) {
+              console.error('[VideoCaptureZone] Failed to start video playback:', playError);
+            }
+
             resolve();
           };
 
