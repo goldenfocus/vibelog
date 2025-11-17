@@ -5,11 +5,11 @@ import { useSearchParams } from 'next/navigation';
 import { useState, useEffect, Suspense } from 'react';
 
 import { TextCreator } from '@/components/creation/TextCreator';
+import { VideoCreator } from '@/components/creation/VideoCreator';
 import HomeCommunityShowcase from '@/components/home/HomeCommunityShowcase';
 import MicRecorder from '@/components/MicRecorder';
 import Navigation from '@/components/Navigation';
 import { useI18n } from '@/components/providers/I18nProvider';
-import { VideoCaptureZone } from '@/components/video/VideoCaptureZone';
 
 function RemixHandler({ onRemixContent }: { onRemixContent: (content: string | null) => void }) {
   const searchParams = useSearchParams();
@@ -160,11 +160,7 @@ export default function Home() {
           <div className="mb-20 flex justify-center">
             {creationMode === 'text' && <TextCreator remixContent={remixContent} />}
             {creationMode === 'audio' && <MicRecorder remixContent={remixContent} />}
-            {creationMode === 'video' && (
-              <div className="w-full max-w-2xl">
-                <VideoCaptureZone vibelogId="temp" isPremium={false} />
-              </div>
-            )}
+            {creationMode === 'video' && <VideoCreator remixContent={remixContent} />}
           </div>
 
           {/* Features Preview */}
