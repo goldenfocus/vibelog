@@ -67,7 +67,19 @@ export default function RecentComments() {
   }
 
   if (comments.length === 0) {
-    return null;
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <MessageCircle className="h-6 w-6 text-electric" />
+          <h2 className="text-2xl font-bold text-white">Recent Vibes</h2>
+        </div>
+        <div className="rounded-lg border border-white/10 bg-white/5 p-8 text-center">
+          <MessageCircle className="mx-auto mb-4 h-12 w-12 text-gray-600" />
+          <p className="text-lg font-medium text-white">No comments yet</p>
+          <p className="text-sm text-gray-400">Be the first to share your thoughts on a vibelog!</p>
+        </div>
+      </div>
+    );
   }
 
   // Truncate text to 30-90 characters
