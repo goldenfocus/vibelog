@@ -19,6 +19,7 @@ interface Comment {
   user_id: string;
   content: string | null;
   audio_url: string | null;
+  video_url?: string | null;
   voice_id: string | null;
   created_at: string;
   updated_at?: string;

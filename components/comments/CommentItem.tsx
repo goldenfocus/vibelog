@@ -31,6 +31,7 @@ interface Comment {
   user_id: string;
   content: string | null;
   audio_url: string | null;
+  video_url?: string | null;
   voice_id: string | null;
   created_at: string;
   updated_at?: string;
@@ -381,6 +382,15 @@ export default function CommentItem({
         </div>
       ) : (
         comment.content && <div className="mb-3 text-foreground">{comment.content}</div>
+      )}
+
+      {/* Video Comment Player */}
+      {comment.video_url && (
+        <div className="mb-3 overflow-hidden rounded-lg border border-border/30 bg-black">
+          <video src={comment.video_url} controls playsInline preload="metadata" className="w-full">
+            Your browser does not support video playback.
+          </video>
+        </div>
       )}
 
       {/* Media Attachments Gallery */}

@@ -19,6 +19,8 @@ const UpdateVideoUrlSchema = z.object({
   vibelogId: z.string().uuid(),
   videoUrl: z.string().url(),
   videoSource: z.enum(['captured', 'uploaded']).optional().default('captured'),
+  captureMode: z.enum(['audio', 'camera', 'screen', 'screen-with-camera']).optional(),
+  hasCameraPip: z.boolean().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -28,7 +30,7 @@ export async function POST(request: NextRequest) {
 
     // Validate inputs
     const validated = UpdateVideoUrlSchema.parse(body);
-    const { vibelogId, videoUrl, videoSource } = validated;
+    const { vibelogId, videoUrl, videoSource, captureMode, hasCameraPip } = validated;
 
     // SECURITY: Get user from session, NEVER trust client-supplied userId
     const supabaseClient = await createServerSupabaseClient();
@@ -45,6 +47,8 @@ export async function POST(request: NextRequest) {
       videoUrl,
       userId: user.id,
       source: videoSource,
+      captureMode,
+      hasCameraPip,
     });
 
     // Verify vibelog ownership
@@ -66,14 +70,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update vibelog with video URL
+    // Build update object
+    const updateData: Record<string, unknown> = {
+      video_url: videoUrl,
+      video_source: videoSource, // 'captured' = camera recording, 'uploaded' = file upload
+      video_uploaded_at: new Date().toISOString(),
+    };
+
+    // Add screen-share specific fields if provided
+    if (captureMode) {
+      updateData.capture_mode = captureMode;
+    }
+    if (hasCameraPip !== undefined) {
+      updateData.has_camera_pip = hasCameraPip;
+    }
+
+    // Update vibelog with video URL and metadata
     const { error: updateError } = await supabaseAdmin
       .from('vibelogs')
-      .update({
-        video_url: videoUrl,
-        video_source: videoSource, // 'captured' = camera recording, 'uploaded' = file upload
-        video_uploaded_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq('id', vibelogId);
 
     if (updateError) {
