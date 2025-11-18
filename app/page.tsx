@@ -29,6 +29,7 @@ export default function Home() {
   const { t, isLoading } = useI18n();
   const [remixContent, setRemixContent] = useState<string | null>(null);
   const [creationMode, setCreationMode] = useState<'text' | 'audio' | 'video'>('audio');
+  const [refreshFeed, setRefreshFeed] = useState<(() => void) | null>(null);
 
   if (isLoading) {
     return (
@@ -131,9 +132,15 @@ export default function Home() {
 
           {/* Creation Interface - Conditional Rendering */}
           <div className="mb-20 flex justify-center">
-            {creationMode === 'text' && <TextCreator remixContent={remixContent} />}
-            {creationMode === 'audio' && <MicRecorder remixContent={remixContent} />}
-            {creationMode === 'video' && <VideoCreator remixContent={remixContent} />}
+            {creationMode === 'text' && (
+              <TextCreator remixContent={remixContent} onSaveSuccess={refreshFeed} />
+            )}
+            {creationMode === 'audio' && (
+              <MicRecorder remixContent={remixContent} onSaveSuccess={refreshFeed} />
+            )}
+            {creationMode === 'video' && (
+              <VideoCreator remixContent={remixContent} onSaveSuccess={refreshFeed} />
+            )}
           </div>
 
           {/* Features Preview */}
@@ -182,7 +189,10 @@ export default function Home() {
             </div>
           </div>
 
-          <HomeCommunityShowcase onRemix={setRemixContent} />
+          <HomeCommunityShowcase
+            onRemix={setRemixContent}
+            onRefreshRequest={setRefreshFeed}
+          />
         </div>
       </main>
     </div>

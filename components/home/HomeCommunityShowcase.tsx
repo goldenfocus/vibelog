@@ -49,9 +49,10 @@ interface HomeFeedMember {
 
 interface HomeCommunityShowcaseProps {
   onRemix?: (content: string) => void;
+  onRefreshRequest?: (refreshFn: () => void) => void; // Callback to expose refresh function to parent
 }
 
-export default function HomeCommunityShowcase(_props: HomeCommunityShowcaseProps) {
+export default function HomeCommunityShowcase({ onRefreshRequest, onRemix }: HomeCommunityShowcaseProps) {
   const [latestVibelogs, setLatestVibelogs] = useState<HomeFeedVibelog[]>([]);
   const [newMembers, setNewMembers] = useState<HomeFeedMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -83,6 +84,13 @@ export default function HomeCommunityShowcase(_props: HomeCommunityShowcaseProps
   useEffect(() => {
     loadFeed();
   }, [loadFeed]);
+
+  // Expose refresh function to parent component
+  useEffect(() => {
+    if (onRefreshRequest) {
+      onRefreshRequest(loadFeed);
+    }
+  }, [onRefreshRequest, loadFeed]);
 
   const scrollCarousel = useCallback((ref: RefObject<HTMLDivElement>, direction: 1 | -1) => {
     if (!ref.current) {

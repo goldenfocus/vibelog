@@ -8,9 +8,10 @@ import { useSaveVibelog } from '@/hooks/useSaveVibelog';
 
 interface TextCreatorProps {
   remixContent?: string | null;
+  onSaveSuccess?: (() => void) | null;
 }
 
-export function TextCreator({ remixContent }: TextCreatorProps) {
+export function TextCreator({ remixContent, onSaveSuccess }: TextCreatorProps) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState(remixContent || '');
   const { saveVibelog, isSaving } = useSaveVibelog();
@@ -30,6 +31,12 @@ export function TextCreator({ remixContent }: TextCreatorProps) {
         // Clear form on success
         setTitle('');
         setContent('');
+
+        // Trigger homepage feed refresh if callback is provided
+        if (onSaveSuccess) {
+          console.log('🔄 [TEXT-CREATOR] Triggering feed refresh');
+          onSaveSuccess();
+        }
 
         // Show success message
         const vibelogUrl = result.publicUrl || `/vibelogs/${result.vibelogId}`;

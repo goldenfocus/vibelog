@@ -20,9 +20,10 @@ import VibelogEditModal from '@/components/VibelogEditModal';
 
 interface MicRecorderProps {
   remixContent?: string | null;
+  onSaveSuccess?: (() => void) | null;
 }
 
-export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
+export default function MicRecorder({ remixContent, onSaveSuccess }: MicRecorderProps = {}) {
   const { t } = useI18n();
   const {
     recordingState,
@@ -63,7 +64,7 @@ export default function MicRecorder({ remixContent }: MicRecorderProps = {}) {
     processVibelogGeneration,
     processCoverImage,
     completeProcessing,
-  } = useMicStateMachine({ remixContent });
+  } = useMicStateMachine({ remixContent, onSaveSuccess });
 
   // State to track whether user wants to see full content
   const [showingFullContent, setShowingFullContent] = useState(false);
