@@ -2,6 +2,7 @@
 
 import { Loader2, Save } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 import { useSaveVibelog } from '@/hooks/useSaveVibelog';
 
@@ -29,9 +30,22 @@ export function TextCreator({ remixContent }: TextCreatorProps) {
         // Clear form on success
         setTitle('');
         setContent('');
+
+        // Show success message
+        const vibelogUrl = result.publicUrl || `/vibelogs/${result.vibelogId}`;
+        toast.success('Vibelog published! Redirecting...', {
+          description: 'You can regenerate with different tones on the next page',
+          duration: 2000,
+        });
+
+        // Redirect to the vibelog page after a brief delay
+        setTimeout(() => {
+          window.location.href = vibelogUrl;
+        }, 1500);
       }
     } catch (error) {
       console.error('Failed to save vibelog:', error);
+      toast.error('Failed to save vibelog. Please try again.');
     }
   };
 
