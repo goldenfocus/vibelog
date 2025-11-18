@@ -261,8 +261,16 @@ export function ScreenCaptureZone({
         const canvas = compositor.getCanvas();
         const ctx = previewCanvasRef.current.getContext('2d');
         const renderPreview = () => {
-          if (!ctx || !previewCanvasRef.current) {return;}
-          ctx.drawImage(canvas, 0, 0, previewCanvasRef.current.width, previewCanvasRef.current.height);
+          if (!ctx || !previewCanvasRef.current) {
+            return;
+          }
+          ctx.drawImage(
+            canvas,
+            0,
+            0,
+            previewCanvasRef.current.width,
+            previewCanvasRef.current.height
+          );
           if (status === 'recording') {
             requestAnimationFrame(renderPreview);
           }
@@ -391,7 +399,9 @@ export function ScreenCaptureZone({
 
   // Upload video to server
   const handleUpload = async () => {
-    if (!videoBlob) {return;}
+    if (!videoBlob) {
+      return;
+    }
 
     try {
       setStatus('uploading');
@@ -443,15 +453,15 @@ export function ScreenCaptureZone({
     <div className="w-full space-y-4">
       {/* Preview Canvas (shown during recording) */}
       {status === 'recording' && (
-        <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
+        <div className="relative aspect-video overflow-hidden rounded-lg bg-black">
           <canvas
             ref={previewCanvasRef}
             width={1920}
             height={1080}
-            className="w-full h-full object-contain"
+            className="h-full w-full object-contain"
           />
-          <div className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 bg-red-600 text-white rounded-full text-sm font-medium">
-            <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+          <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full bg-red-600 px-3 py-1.5 text-sm font-medium text-white">
+            <div className="h-2 w-2 animate-pulse rounded-full bg-white" />
             REC {formatTime(recordingTime)}
           </div>
         </div>
@@ -459,24 +469,20 @@ export function ScreenCaptureZone({
 
       {/* Video Preview (after recording) */}
       {status === 'preview' && videoBlob && (
-        <div className="aspect-video bg-black rounded-lg overflow-hidden">
-          <video
-            src={URL.createObjectURL(videoBlob)}
-            controls
-            className="w-full h-full"
-          />
+        <div className="aspect-video overflow-hidden rounded-lg bg-black">
+          <video src={URL.createObjectURL(videoBlob)} controls className="h-full w-full" />
         </div>
       )}
 
       {/* Status Messages */}
       {status === 'idle' && (
-        <div className="text-center py-12 space-y-4">
-          <Monitor className="w-16 h-16 mx-auto text-gray-400" />
+        <div className="space-y-4 py-12 text-center">
+          <Monitor className="mx-auto h-16 w-16 text-gray-400" />
           <div>
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
               Screen Share Recording
             </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
               Record your screen with optional camera overlay
             </p>
           </div>
@@ -484,8 +490,8 @@ export function ScreenCaptureZone({
       )}
 
       {status === 'requesting-screen' && (
-        <div className="text-center py-12">
-          <RefreshCw className="w-12 h-12 mx-auto text-blue-500 animate-spin" />
+        <div className="py-12 text-center">
+          <RefreshCw className="mx-auto h-12 w-12 animate-spin text-blue-500" />
           <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
             Requesting screen access...
           </p>
@@ -493,13 +499,11 @@ export function ScreenCaptureZone({
       )}
 
       {status === 'screen-ready' && (
-        <div className="text-center py-8 space-y-4">
-          <CheckCircle className="w-12 h-12 mx-auto text-green-500" />
+        <div className="space-y-4 py-8 text-center">
+          <CheckCircle className="mx-auto h-12 w-12 text-green-500" />
           <div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-              Screen Ready
-            </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Screen Ready</h3>
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
               {enableCameraPip
                 ? 'Add camera overlay or start recording'
                 : 'Ready to start recording'}
@@ -509,8 +513,8 @@ export function ScreenCaptureZone({
       )}
 
       {status === 'uploading' && (
-        <div className="text-center py-12">
-          <RefreshCw className="w-12 h-12 mx-auto text-blue-500 animate-spin" />
+        <div className="py-12 text-center">
+          <RefreshCw className="mx-auto h-12 w-12 animate-spin text-blue-500" />
           <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
             Uploading video... {uploadProgressState?.percentage}%
           </p>
@@ -518,8 +522,8 @@ export function ScreenCaptureZone({
       )}
 
       {status === 'success' && (
-        <div className="text-center py-12">
-          <CheckCircle className="w-12 h-12 mx-auto text-green-500" />
+        <div className="py-12 text-center">
+          <CheckCircle className="mx-auto h-12 w-12 text-green-500" />
           <p className="mt-4 text-sm text-green-600 dark:text-green-400">
             Screen recording uploaded successfully!
           </p>
@@ -527,9 +531,9 @@ export function ScreenCaptureZone({
       )}
 
       {status === 'error' && error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20">
           <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+            <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-600 dark:text-red-400" />
             <div className="flex-1">
               <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
             </div>
@@ -542,9 +546,9 @@ export function ScreenCaptureZone({
         {status === 'idle' && (
           <button
             onClick={startScreenShare}
-            className="flex-1 min-w-[200px] flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+            className="flex min-w-[200px] flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 font-medium text-white transition-colors hover:bg-blue-700"
           >
-            <Monitor className="w-5 h-5" />
+            <Monitor className="h-5 w-5" />
             Share Screen
           </button>
         )}
@@ -552,9 +556,9 @@ export function ScreenCaptureZone({
         {status === 'screen-ready' && enableCameraPip && !hasCameraPip && (
           <button
             onClick={addCameraPip}
-            className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg text-sm font-medium transition-colors"
+            className="flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800"
           >
-            <Camera className="w-4 h-4" />
+            <Camera className="h-4 w-4" />
             Add Camera
           </button>
         )}
@@ -563,16 +567,16 @@ export function ScreenCaptureZone({
           <>
             <button
               onClick={removeCameraPip}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg text-sm font-medium transition-colors"
+              className="flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800"
             >
-              <CameraOff className="w-4 h-4" />
+              <CameraOff className="h-4 w-4" />
               Remove Camera
             </button>
 
             <select
               value={pipPosition}
               onChange={e => setPipPosition(e.target.value as PipPosition)}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 rounded-lg text-sm font-medium"
+              className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium dark:border-gray-600 dark:bg-gray-800"
             >
               <option value="bottom-right">Camera: Bottom Right</option>
               <option value="bottom-left">Camera: Bottom Left</option>
@@ -585,9 +589,9 @@ export function ScreenCaptureZone({
         {(status === 'screen-ready' || status === 'ready') && (
           <button
             onClick={startRecording}
-            className="flex-1 min-w-[200px] flex items-center justify-center gap-2 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
+            className="flex min-w-[200px] flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-3 font-medium text-white transition-colors hover:bg-red-700"
           >
-            <Video className="w-5 h-5" />
+            <Video className="h-5 w-5" />
             Start Recording
           </button>
         )}
@@ -595,9 +599,9 @@ export function ScreenCaptureZone({
         {status === 'recording' && (
           <button
             onClick={stopRecording}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-900 hover:bg-black text-white rounded-lg font-medium transition-colors"
+            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-gray-900 px-4 py-3 font-medium text-white transition-colors hover:bg-black"
           >
-            <StopCircle className="w-5 h-5" />
+            <StopCircle className="h-5 w-5" />
             Stop Recording
           </button>
         )}
@@ -606,17 +610,17 @@ export function ScreenCaptureZone({
           <>
             <button
               onClick={handleRetake}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg text-sm font-medium transition-colors"
+              className="flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800"
             >
-              <X className="w-4 h-4" />
+              <X className="h-4 w-4" />
               Retake
             </button>
 
             <button
               onClick={handleUpload}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
+              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-3 font-medium text-white transition-colors hover:bg-green-700"
             >
-              <Check className="w-5 h-5" />
+              <Check className="h-5 w-5" />
               Use This Recording
             </button>
           </>
@@ -625,7 +629,7 @@ export function ScreenCaptureZone({
 
       {/* Duration Warning (Free Tier) */}
       {!isPremium && status === 'recording' && recordingTime >= maxDurationSeconds - 10 && (
-        <p className="text-xs text-orange-600 dark:text-orange-400 text-center">
+        <p className="text-center text-xs text-orange-600 dark:text-orange-400">
           {maxDurationSeconds - recordingTime} seconds remaining (free tier limit)
         </p>
       )}

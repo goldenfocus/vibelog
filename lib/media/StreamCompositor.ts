@@ -35,11 +35,7 @@ export interface CompositorOptions {
   enablePipBorder?: boolean; // Show border around PiP, default true
 }
 
-export type PipPosition =
-  | 'bottom-right'
-  | 'bottom-left'
-  | 'top-right'
-  | 'top-left';
+export type PipPosition = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
 
 export interface CompositorResult {
   stream: MediaStream;
@@ -91,7 +87,7 @@ export class StreamCompositor {
 
     const ctx = this.canvas.getContext('2d', {
       alpha: false, // No transparency needed, improves performance
-      desynchronized: true // Better performance for animations
+      desynchronized: true, // Better performance for animations
     });
 
     if (!ctx) {
@@ -114,7 +110,7 @@ export class StreamCompositor {
       fps: this.fps,
       hasCamera: !!this.cameraVideo,
       pipPosition: this.pipPosition,
-      pipSize: `${Math.round(this.pipSize * 100)}%`
+      pipSize: `${Math.round(this.pipSize * 100)}%`,
     });
   }
 
@@ -140,7 +136,9 @@ export class StreamCompositor {
    * Calculate PiP dimensions and position based on configuration
    */
   private calculatePipDimensions(): void {
-    if (!this.cameraVideo) return;
+    if (!this.cameraVideo) {
+      return;
+    }
 
     // Calculate PiP width (percentage of canvas width)
     this.pipWidth = Math.round(this.width * this.pipSize);
@@ -171,7 +169,7 @@ export class StreamCompositor {
     console.log('[StreamCompositor] PiP calculated:', {
       position: this.pipPosition,
       dimensions: `${this.pipWidth}x${this.pipHeight}`,
-      coordinates: `(${this.pipX}, ${this.pipY})`
+      coordinates: `(${this.pipX}, ${this.pipY})`,
     });
   }
 
@@ -201,19 +199,18 @@ export class StreamCompositor {
    * Render a single frame (called by requestAnimationFrame)
    */
   private renderFrame = (): void => {
-    if (!this.isRunning) return;
+    if (!this.isRunning) {
+      return;
+    }
 
     // Clear canvas
     this.ctx.fillStyle = '#000000';
     this.ctx.fillRect(0, 0, this.width, this.height);
 
     // Draw screen video (full canvas)
-    if (this.screenVideo.readyState >= 2) { // HAVE_CURRENT_DATA
-      this.ctx.drawImage(
-        this.screenVideo,
-        0, 0,
-        this.width, this.height
-      );
+    if (this.screenVideo.readyState >= 2) {
+      // HAVE_CURRENT_DATA
+      this.ctx.drawImage(this.screenVideo, 0, 0, this.width, this.height);
     }
 
     // Draw camera PiP overlay (if enabled)
@@ -229,29 +226,19 @@ export class StreamCompositor {
    * Draw camera picture-in-picture with rounded corners and border
    */
   private drawPip(): void {
-    if (!this.cameraVideo) return;
+    if (!this.cameraVideo) {
+      return;
+    }
 
     this.ctx.save();
 
     // Create rounded rectangle path for clipping
     this.ctx.beginPath();
-    this.roundRect(
-      this.pipX,
-      this.pipY,
-      this.pipWidth,
-      this.pipHeight,
-      this.pipBorderRadius
-    );
+    this.roundRect(this.pipX, this.pipY, this.pipWidth, this.pipHeight, this.pipBorderRadius);
     this.ctx.clip();
 
     // Draw camera video inside rounded rectangle
-    this.ctx.drawImage(
-      this.cameraVideo,
-      this.pipX,
-      this.pipY,
-      this.pipWidth,
-      this.pipHeight
-    );
+    this.ctx.drawImage(this.cameraVideo, this.pipX, this.pipY, this.pipWidth, this.pipHeight);
 
     this.ctx.restore();
 
@@ -260,13 +247,7 @@ export class StreamCompositor {
       this.ctx.strokeStyle = '#ffffff';
       this.ctx.lineWidth = 3;
       this.ctx.beginPath();
-      this.roundRect(
-        this.pipX,
-        this.pipY,
-        this.pipWidth,
-        this.pipHeight,
-        this.pipBorderRadius
-      );
+      this.roundRect(this.pipX, this.pipY, this.pipWidth, this.pipHeight, this.pipBorderRadius);
       this.ctx.stroke();
     }
   }
@@ -275,13 +256,7 @@ export class StreamCompositor {
    * Helper to draw rounded rectangle
    * (Canvas 2D doesn't have native roundRect in all browsers)
    */
-  private roundRect(
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-    radius: number
-  ): void {
+  private roundRect(x: number, y: number, width: number, height: number, radius: number): void {
     this.ctx.moveTo(x + radius, y);
     this.ctx.lineTo(x + width - radius, y);
     this.ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
@@ -360,17 +335,15 @@ export class StreamCompositor {
  *   pipPosition: 'bottom-right'
  * });
  */
-export function createCompositeStream(
-  options: CompositorOptions
-): CompositorResult {
+export function createCompositeStream(options: CompositorOptions): CompositorResult {
   const compositor = new StreamCompositor(options);
   const stream = compositor.start();
 
   return {
     stream,
     canvas: compositor.getCanvas(),
-    updatePipPosition: (pos) => compositor.updatePipPosition(pos),
-    updatePipSize: (size) => compositor.updatePipSize(size),
-    stop: () => compositor.stop()
+    updatePipPosition: pos => compositor.updatePipPosition(pos),
+    updatePipSize: size => compositor.updatePipSize(size),
+    stop: () => compositor.stop(),
   };
 }
