@@ -222,7 +222,10 @@ export default function HomeCommunityShowcase(_props: HomeCommunityShowcaseProps
                     {/* Video Player or Cover Image */}
                     {vibelog.video_url ? (
                       <div className="relative w-full overflow-hidden">
-                        <VideoPlayer videoUrl={vibelog.video_url} />
+                        <VideoPlayer
+                          videoUrl={vibelog.video_url}
+                          poster={vibelog.cover_image_url || undefined}
+                        />
                         {/* Video indicator badge */}
                         <div className="absolute right-3 top-3 z-10 flex items-center gap-1.5 rounded-full bg-black/70 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm">
                           <Video className="h-3.5 w-3.5" />

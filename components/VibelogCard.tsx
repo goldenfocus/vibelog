@@ -188,7 +188,7 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
       {/* Video (if available) */}
       {videoUrl && (
         <div className="mb-4">
-          <VideoPlayer videoUrl={videoUrl} />
+          <VideoPlayer videoUrl={videoUrl} poster={vibelog.cover_image_url || undefined} />
         </div>
       )}
 

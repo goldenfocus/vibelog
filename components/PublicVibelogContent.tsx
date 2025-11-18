@@ -147,7 +147,7 @@ export default function PublicVibelogContent({ vibelog }: PublicVibelogContentPr
       {/* Video Player */}
       {videoUrl && (
         <div className="mb-8">
-          <VideoPlayer videoUrl={videoUrl} />
+          <VideoPlayer videoUrl={videoUrl} poster={vibelog.cover_image_url || undefined} />
         </div>
       )}
 
