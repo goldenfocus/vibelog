@@ -33,7 +33,8 @@ export async function POST(request: NextRequest) {
 
     // Parse multipart form data
     const formData = await request.formData();
-    const file = formData.get('audio') as File;
+    // Accept files from multiple field names (audio, image, video)
+    const file = (formData.get('audio') || formData.get('image') || formData.get('video')) as File;
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
@@ -54,12 +55,19 @@ export async function POST(request: NextRequest) {
     // Normalize file type
     const normalizedFileType = file.type.split(';')[0].trim();
 
-    // Validate file type
+    // Validate file type (audio, images, and videos)
     const allowedTypes = [
       ...config.files.audio.allowedTypes,
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/gif',
+      'image/webp',
       'video/webm',
       'video/mp4',
       'video/quicktime',
+      'video/mpeg',
+      'video/x-msvideo',
     ].map(type => type.split(';')[0].trim());
 
     if (!allowedTypes.includes(normalizedFileType)) {

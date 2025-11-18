@@ -1,9 +1,11 @@
 'use client';
 
-import { Image, Video, X, Upload, Loader2 } from 'lucide-react';
+import { Image, Video, X, Upload, Loader2, Sparkles } from 'lucide-react';
 import { useState, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
 
+import { IMAGE_FILTERS, type ImageFilter } from '@/lib/image-filters';
+import { cn } from '@/lib/utils';
 import type { MediaAttachment } from '@/types/comments';
 
 interface MediaAttachmentZoneProps {
@@ -23,6 +25,8 @@ export default function MediaAttachmentZone({
 }: MediaAttachmentZoneProps) {
   const [uploading, setUploading] = useState<string[]>([]);
   const [dragActive, setDragActive] = useState(false);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [selectedFilter, setSelectedFilter] = useState<ImageFilter>(IMAGE_FILTERS[0]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const uploadFile = useCallback(
@@ -130,6 +134,31 @@ export default function MediaAttachmentZone({
   const removeAttachment = (index: number) => {
     onChange(attachments.filter((_, i) => i !== index));
     toast.success('Attachment removed');
+    if (editingIndex === index) {
+      setEditingIndex(null);
+    }
+  };
+
+  const applyFilter = (index: number, filter: ImageFilter) => {
+    const updated = [...attachments];
+    // Store filter CSS on the attachment for client-side preview
+    updated[index] = {
+      ...updated[index],
+      filter: filter.cssFilter,
+    };
+    onChange(updated);
+    setSelectedFilter(filter);
+    toast.success(`Filter "${filter.name}" applied!`);
+  };
+
+  const toggleEdit = (index: number) => {
+    if (editingIndex === index) {
+      setEditingIndex(null);
+    } else {
+      setEditingIndex(index);
+      // Reset to current filter or Original
+      setSelectedFilter(IMAGE_FILTERS[0]);
+    }
   };
 
   const handleDrag = (e: React.DragEvent) => {
@@ -204,42 +233,97 @@ export default function MediaAttachmentZone({
 
       {/* Attachment Previews */}
       {attachments.length > 0 && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {attachments.map((attachment, index) => (
-            <div key={index} className="group relative aspect-square overflow-hidden rounded-lg">
-              {attachment.type === 'image' ? (
-                <img
-                  src={attachment.url}
-                  alt={`Attachment ${index + 1}`}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center bg-muted">
-                  <Video className="h-8 w-8 text-muted-foreground" />
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {attachments.map((attachment, index) => (
+              <div key={index} className="space-y-2">
+                <div className="group relative aspect-square overflow-hidden rounded-lg">
+                  {attachment.type === 'image' ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={attachment.url}
+                      alt={`Attachment ${index + 1}`}
+                      className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                      style={{ filter: (attachment as any).filter || 'none' }}
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-muted">
+                      <Video className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                  )}
+
+                  {/* Overlay with action buttons */}
+                  <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
+                    {attachment.type === 'image' && (
+                      <button
+                        onClick={() => toggleEdit(index)}
+                        className="rounded-full bg-electric p-2 text-white transition-transform hover:scale-110"
+                        aria-label="Edit filters"
+                        title="Apply filters"
+                      >
+                        <Sparkles className="h-4 w-4" />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => removeAttachment(index)}
+                      className="rounded-full bg-red-500 p-2 text-white transition-transform hover:scale-110"
+                      aria-label="Remove attachment"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  {/* Type badge */}
+                  <div className="absolute left-2 top-2 rounded-full bg-black/70 px-2 py-1">
+                    {attachment.type === 'image' ? (
+                      <Image className="h-3 w-3 text-white" />
+                    ) : (
+                      <Video className="h-3 w-3 text-white" />
+                    )}
+                  </div>
                 </div>
-              )}
 
-              {/* Overlay with delete button */}
-              <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
-                <button
-                  onClick={() => removeAttachment(index)}
-                  className="rounded-full bg-red-500 p-2 text-white transition-transform hover:scale-110"
-                  aria-label="Remove attachment"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-
-              {/* Type badge */}
-              <div className="absolute left-2 top-2 rounded-full bg-black/70 px-2 py-1">
-                {attachment.type === 'image' ? (
-                  <Image className="h-3 w-3 text-white" />
-                ) : (
-                  <Video className="h-3 w-3 text-white" />
+                {/* Filter Selector (appears below image when editing) */}
+                {attachment.type === 'image' && editingIndex === index && (
+                  <div className="space-y-2 rounded-lg border border-electric/30 bg-card/50 p-3 animate-in fade-in slide-in-from-top-2">
+                    <div className="flex items-center gap-2 text-xs font-medium text-electric">
+                      <Sparkles className="h-3 w-3" />
+                      <span>Choose a filter</span>
+                    </div>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {IMAGE_FILTERS.map(filter => (
+                        <button
+                          key={filter.id}
+                          onClick={() => applyFilter(index, filter)}
+                          className={cn(
+                            'group/filter relative overflow-hidden rounded border transition-all',
+                            selectedFilter.id === filter.id
+                              ? 'border-electric shadow-sm shadow-electric/20'
+                              : 'border-border/30 hover:border-electric/50'
+                          )}
+                        >
+                          <div className="relative h-12 w-full">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={attachment.url}
+                              alt={filter.name}
+                              className="h-full w-full object-cover"
+                              style={{ filter: filter.cssFilter }}
+                            />
+                            <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/60 to-transparent p-1 opacity-0 transition-opacity group-hover/filter:opacity-100">
+                              <span className="text-[9px] font-medium text-white">
+                                {filter.name}
+                              </span>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 
