@@ -9,6 +9,8 @@
 import { Video, Camera, StopCircle, RotateCcw, Check, AlertCircle } from 'lucide-react';
 import React, { useState, useRef, useEffect } from 'react';
 
+import { useVideoUpload } from '@/hooks/useVideoUpload';
+
 interface VideoCaptureZoneProps {
   vibelogId: string;
   onVideoCaptured?: (videoUrl: string) => void;
@@ -26,14 +28,15 @@ export function VideoCaptureZone({
 }: VideoCaptureZoneProps) {
   console.log('[VideoCaptureZone] Component rendering with vibelogId:', vibelogId);
 
+  // Use video upload hook
+  const { uploadVideo, uploadProgress: uploadProgressState } = useVideoUpload();
+
   const [status, setStatus] = useState<
     'idle' | 'requesting' | 'ready' | 'recording' | 'uploading' | 'success' | 'error'
   >('idle');
   const [error, setError] = useState<string | null>(null);
   const [recordingTime, setRecordingTime] = useState(0);
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
-  const [videoPreview, setVideoPreview] = useState<string | null>(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user'); // front or back camera
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -204,16 +207,16 @@ export function VideoCaptureZone({
         }
       };
 
-      mediaRecorder.onstop = () => {
+      mediaRecorder.onstop = async () => {
         const blob = new Blob(chunksRef.current, { type: mimeType });
         setVideoBlob(blob);
 
-        // Create preview URL
-        const previewUrl = URL.createObjectURL(blob);
-        setVideoPreview(previewUrl);
-
         // Stop camera preview
         stopCameraPreview();
+
+        // AUTO-UPLOAD: Start upload immediately after recording stops
+        console.log('📹 [AUTO-UPLOAD] Starting automatic upload after recording...');
+        await autoUploadVideo(blob);
       };
 
       mediaRecorder.start();
@@ -257,69 +260,36 @@ export function VideoCaptureZone({
     setStatus('idle');
   };
 
-  // Upload recorded video
-  const handleUpload = async () => {
-    if (!videoBlob) {
+  // Auto-upload video after recording stops (follows mic recorder pattern)
+  const autoUploadVideo = async (blob: Blob) => {
+    if (!blob) {
+      console.error('❌ [AUTO-UPLOAD] No video blob available');
       return;
     }
 
     try {
       setStatus('uploading');
-      setUploadProgress(0);
       setError(null);
 
-      console.log('[VideoCaptureZone] Uploading captured video:', {
-        blobSize: videoBlob.size,
+      console.log('📹 [AUTO-UPLOAD] Uploading video...', {
+        blobSize: blob.size,
         vibelogId,
       });
 
-      // Create FormData
-      const formData = new FormData();
-      formData.append('video', videoBlob, 'captured-video.webm');
-      formData.append('vibelogId', vibelogId);
+      // Upload using the hook
+      const result = await uploadVideo(blob, vibelogId);
 
-      // Upload with progress tracking
-      const xhr = new XMLHttpRequest();
+      console.log('✅ [AUTO-UPLOAD] Upload successful:', result.url);
 
-      xhr.upload.addEventListener('progress', e => {
-        if (e.lengthComputable) {
-          const progress = Math.round((e.loaded / e.total) * 100);
-          setUploadProgress(progress);
-        }
-      });
-
-      await new Promise<void>((resolve, reject) => {
-        xhr.addEventListener('load', () => {
-          if (xhr.status === 200) {
-            resolve();
-          } else {
-            reject(new Error(`Upload failed with status ${xhr.status}`));
-          }
-        });
-
-        xhr.addEventListener('error', () => {
-          reject(new Error('Network error during upload'));
-        });
-
-        xhr.open('POST', '/api/vibelog/upload-video');
-        xhr.send(formData);
-      });
-
-      const responseData = JSON.parse(xhr.responseText);
-
-      if (!responseData.success) {
-        throw new Error(responseData.details || responseData.error || 'Upload failed');
+      // Notify parent component
+      if (onVideoCaptured) {
+        onVideoCaptured(result.url);
       }
-
-      console.log('[VideoCaptureZone] Upload successful:', responseData.url);
 
       setStatus('success');
-      if (onVideoCaptured) {
-        onVideoCaptured(responseData.url);
-      }
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to upload video';
-      console.error('[VideoCaptureZone] Upload error:', errorMessage, err);
+      console.error('❌ [AUTO-UPLOAD] Upload error:', errorMessage, err);
       setError(errorMessage);
       setStatus('error');
     }
@@ -328,10 +298,8 @@ export function VideoCaptureZone({
   // Reset to start over
   const handleReset = () => {
     setVideoBlob(null);
-    setVideoPreview(null);
     setRecordingTime(0);
     setError(null);
-    setUploadProgress(0);
     setStatus('idle');
     stopCameraPreview();
   };
@@ -378,8 +346,10 @@ export function VideoCaptureZone({
       if (recordingTimerRef.current) {
         clearInterval(recordingTimerRef.current);
       }
-      if (streamTimeoutRef.current) {
-        clearTimeout(streamTimeoutRef.current);
+      // Capture ref value for cleanup
+      const streamTimeout = streamTimeoutRef.current;
+      if (streamTimeout) {
+        clearTimeout(streamTimeout);
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -427,20 +397,27 @@ export function VideoCaptureZone({
 
   // Uploading state
   if (status === 'uploading') {
+    const uploadPercentage = uploadProgressState?.percentage || 0;
+
     return (
       <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
         <div className="flex items-center gap-3">
-          <Video className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+          <Video className="h-5 w-5 animate-pulse text-blue-600 dark:text-blue-400" />
           <div className="flex-1">
             <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-              Uploading video... {uploadProgress}%
+              Uploading video... {uploadPercentage}%
             </p>
             <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-blue-200 dark:bg-blue-800">
               <div
                 className="h-full bg-blue-600 transition-all dark:bg-blue-400"
-                style={{ width: `${uploadProgress}%` }}
+                style={{ width: `${uploadPercentage}%` }}
               />
             </div>
+            {videoBlob && (
+              <p className="mt-1 text-xs text-blue-700 dark:text-blue-300">
+                {(videoBlob.size / (1024 * 1024)).toFixed(1)} MB • {formatTime(recordingTime)}
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -468,42 +445,8 @@ export function VideoCaptureZone({
     );
   }
 
-  // Video preview (after recording, before upload)
-  if (videoBlob && videoPreview) {
-    return (
-      <div className="space-y-3 rounded-lg border border-border/50 bg-card p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium">Recording complete</p>
-            <p className="text-xs text-muted-foreground">Duration: {formatTime(recordingTime)}</p>
-          </div>
-          <button
-            onClick={handleReset}
-            className="rounded p-1 hover:bg-muted"
-            aria-label="Re-record"
-          >
-            <RotateCcw className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Video preview */}
-        <video
-          src={videoPreview}
-          controls
-          className="w-full rounded-lg bg-black"
-          style={{ maxHeight: '400px' }}
-        />
-
-        {/* Upload button */}
-        <button
-          onClick={handleUpload}
-          className="w-full rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 px-4 py-2 text-sm font-medium text-white shadow-md transition-all hover:from-purple-700 hover:to-pink-700 hover:shadow-lg"
-        >
-          Upload Video
-        </button>
-      </div>
-    );
-  }
+  // Video preview (REMOVED: Auto-upload happens immediately after recording)
+  // The uploading state will show progress, then transition to success
 
   // Recording state
   if (status === 'recording') {
