@@ -20,6 +20,7 @@ export const runtime = 'nodejs';
 // Validation schema
 const UploadVideoSchema = z.object({
   vibelogId: z.string().uuid(),
+  source: z.enum(['captured', 'uploaded']).optional().default('uploaded'),
 });
 
 // Video validation constants
@@ -54,14 +55,19 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const videoFile = formData.get('video') as File;
     const vibelogIdParam = formData.get('vibelogId') as string;
+    const sourceParam = formData.get('source') as string | null;
 
     // Validate inputs
     if (!videoFile) {
       return NextResponse.json({ error: 'No video file provided' }, { status: 400 });
     }
 
-    const validated = UploadVideoSchema.parse({ vibelogId: vibelogIdParam });
+    const validated = UploadVideoSchema.parse({
+      vibelogId: vibelogIdParam,
+      source: sourceParam || 'uploaded',
+    });
     vibelogId = validated.vibelogId;
+    const videoSource = validated.source;
 
     // SECURITY: Get user from session, NEVER trust client-supplied userId
     const supabaseClient = await createServerSupabaseClient();
@@ -79,6 +85,7 @@ export async function POST(request: NextRequest) {
       fileType: videoFile.type,
       vibelogId,
       userId: user.id,
+      source: videoSource,
     });
 
     const supabase = createClient(
@@ -159,9 +166,8 @@ export async function POST(request: NextRequest) {
       .from('vibelogs')
       .update({
         video_url: url,
-        video_source: 'uploaded',
+        video_source: videoSource, // 'captured' = camera recording, 'uploaded' = file upload
         video_uploaded_at: new Date().toISOString(),
-        video_generation_status: 'completed', // Mark as complete (user-uploaded)
       })
       .eq('id', vibelogId);
 
@@ -190,24 +196,10 @@ export async function POST(request: NextRequest) {
   } catch (error: unknown) {
     console.error('❌ [VIDEO-UPLOAD] Upload failed:', error);
 
-    // If we have vibelogId, mark video upload as failed
+    // Note: We don't update the database on error since video_url will remain NULL
+    // The absence of video_url indicates no video has been uploaded
     if (vibelogId) {
-      try {
-        const supabase = createClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.SUPABASE_SERVICE_ROLE_KEY!
-        );
-
-        await supabase
-          .from('vibelogs')
-          .update({
-            video_generation_status: 'failed',
-            video_generation_error: error instanceof Error ? error.message : 'Video upload failed',
-          })
-          .eq('id', vibelogId);
-      } catch (updateError) {
-        console.error('❌ [VIDEO-UPLOAD] Failed to update error status:', updateError);
-      }
+      console.error('❌ [VIDEO-UPLOAD] Upload failed for vibelog:', vibelogId);
     }
 
     const errorMessage = error instanceof Error ? error.message : 'Failed to upload video';

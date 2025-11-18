@@ -32,10 +32,15 @@ export function useVideoUpload() {
    * Upload video to Supabase Storage via API
    * @param videoBlob - The recorded video blob
    * @param vibelogId - The vibelog ID to associate with
+   * @param source - Video source: 'captured' (camera) or 'uploaded' (file)
    * @returns Promise with video URL and metadata
    */
   const uploadVideo = useCallback(
-    async (videoBlob: Blob, vibelogId: string): Promise<VideoUploadResult> => {
+    async (
+      videoBlob: Blob,
+      vibelogId: string,
+      source: 'captured' | 'uploaded' = 'captured'
+    ): Promise<VideoUploadResult> => {
       try {
         setIsUploading(true);
         setError(null);
@@ -51,6 +56,7 @@ export function useVideoUpload() {
         const formData = new FormData();
         formData.append('video', videoBlob, 'captured-video.webm');
         formData.append('vibelogId', vibelogId);
+        formData.append('source', source); // Pass video source to API
 
         // Upload with progress tracking using XMLHttpRequest
         const result = await new Promise<VideoUploadResult>((resolve, reject) => {
