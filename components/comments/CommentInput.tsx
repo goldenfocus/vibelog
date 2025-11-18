@@ -36,6 +36,7 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
   const [recordingTime, setRecordingTime] = useState(0);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
+  const [videoBlobUrl, setVideoBlobUrl] = useState<string | null>(null);
   const [isRecordingVideo, setIsRecordingVideo] = useState(false);
   const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
   const [levels, setLevels] = useState<number[]>(Array.from({ length: 15 }, () => 0.1));
@@ -51,6 +52,22 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
   const recordingTimerRef = useRef<number | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+
+  // Create and cleanup blob URL for video preview
+  useEffect(() => {
+    if (videoBlob) {
+      const url = URL.createObjectURL(videoBlob);
+      setVideoBlobUrl(url);
+      console.log('Created blob URL for video preview:', url);
+
+      return () => {
+        URL.revokeObjectURL(url);
+        console.log('Revoked blob URL:', url);
+      };
+    } else {
+      setVideoBlobUrl(null);
+    }
+  }, [videoBlob]);
 
   const transcribeAudio = useCallback(async (blob: Blob) => {
     try {
@@ -208,6 +225,7 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
 
       mediaRecorder.onstop = () => {
         const blob = new Blob(chunks, { type: 'video/webm' });
+        console.log('Video blob created:', blob.size, 'bytes, type:', blob.type);
         setVideoBlob(blob);
         setIsRecordingVideo(false);
 
@@ -223,9 +241,17 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
       setIsRecordingVideo(true);
       setRecordingTime(0);
 
-      // Start timer
+      // Start timer with 60-second limit
       recordingTimerRef.current = window.setInterval(() => {
-        setRecordingTime(prev => prev + 1);
+        setRecordingTime(prev => {
+          const newTime = prev + 1;
+          // Auto-stop at 60 seconds
+          if (newTime >= 60) {
+            stopVideoRecording();
+            toast.info('Maximum recording time reached (60 seconds)');
+          }
+          return newTime;
+        });
       }, 1000);
     } catch (error) {
       console.error('Error starting video recording:', error);
@@ -430,6 +456,11 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
         onCommentAdded();
       } else if (inputMode === 'video' && videoBlob) {
         // Submit video comment - upload directly to Supabase Storage, then create comment
+        console.log('Starting video upload process...', {
+          blobSize: videoBlob.size,
+          blobType: videoBlob.type,
+        });
+
         const supabase = createClient();
 
         // Get current user
@@ -441,13 +472,17 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
           throw new Error('You must be logged in to post video comments');
         }
 
+        console.log('User authenticated:', currentUser.id);
+
         // Generate storage path
         const timestamp = Date.now();
         const randomHash = Math.random().toString(36).substring(2, 10);
         const path = `users/${currentUser.id}/comments/video/${vibelogId}/${timestamp}-${randomHash}.webm`;
 
+        console.log('Uploading to path:', path);
+
         // Upload directly to Supabase Storage
-        const { error: uploadError } = await supabase.storage
+        const { data: uploadData, error: uploadError } = await supabase.storage
           .from('vibelogs')
           .upload(path, videoBlob, {
             contentType: 'video/webm',
@@ -456,11 +491,15 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
 
         if (uploadError) {
           console.error('Video upload error:', uploadError);
-          throw new Error('Failed to upload video');
+          throw new Error(`Failed to upload video: ${uploadError.message}`);
         }
+
+        console.log('Upload successful:', uploadData);
 
         // Generate public URL
         const videoUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/vibelogs/${path}`;
+
+        console.log('Generated video URL:', videoUrl);
 
         // Create comment with video URL
         const commentResponse = await fetch('/api/comments', {
@@ -476,8 +515,11 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
 
         if (!commentResponse.ok) {
           const error = await commentResponse.json();
+          console.error('Comment creation error:', error);
           throw new Error(error.error || 'Failed to submit comment');
         }
+
+        console.log('Video comment created successfully');
 
         toast.success('Your video vibe is live! 🎥✨');
         resetVideoRecording();
@@ -789,11 +831,6 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
               playsInline
               className="h-full w-full object-cover"
             />
-            {!isRecordingVideo && !videoBlob && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                <p className="text-sm text-white">Camera preview will appear here</p>
-              </div>
-            )}
             {isRecordingVideo && (
               <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full bg-red-500 px-3 py-1">
                 <div className="h-2 w-2 animate-pulse rounded-full bg-white" />
@@ -801,6 +838,18 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
                   {Math.floor(recordingTime / 60)}:
                   {(recordingTime % 60).toString().padStart(2, '0')}
                 </span>
+              </div>
+            )}
+            {videoBlobUrl && !isRecordingVideo && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black">
+                <video
+                  key={videoBlobUrl}
+                  src={videoBlobUrl}
+                  controls
+                  playsInline
+                  autoPlay
+                  className="h-full w-full object-cover"
+                />
               </div>
             )}
           </div>
