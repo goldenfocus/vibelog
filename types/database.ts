@@ -56,6 +56,7 @@ export interface Vibelog {
   // Media
   cover_image_url: string | null;
   audio_url?: string | null; // Original audio recording
+  ai_audio_url?: string | null; // AI-generated narration audio
 
   // Video (camera captured or user uploaded)
   video_url?: string | null;

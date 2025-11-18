@@ -359,7 +359,12 @@ export function VideoCaptureZone({
         vibelogId,
       });
 
-      const result = await uploadVideo(videoBlob, vibelogId);
+      const result = await uploadVideo({
+        videoBlob,
+        vibelogId,
+        source: 'captured',
+        captureMode: 'camera',
+      });
 
       console.log('✅ [UPLOAD] Upload successful:', result.url);
 

@@ -36,17 +36,21 @@ export function useVideoUpload() {
   /**
    * Upload video directly to Supabase Storage, then update database
    * This bypasses Vercel's 4.5MB body size limit for Hobby plan
-   * @param videoBlob - The recorded video blob
-   * @param vibelogId - The vibelog ID to associate with
-   * @param source - Video source: 'captured' (camera) or 'uploaded' (file)
+   * @param options - Upload options
+   * @param options.videoBlob - The recorded video blob
+   * @param options.vibelogId - The vibelog ID to associate with
+   * @param options.source - Video source: 'captured' (camera) or 'uploaded' (file)
+   * @param options.captureMode - Capture mode: 'audio' | 'camera' | 'screen' | 'screen-with-camera'
    * @returns Promise with video URL and metadata
    */
   const uploadVideo = useCallback(
-    async (
-      videoBlob: Blob,
-      vibelogId: string,
-      source: 'captured' | 'uploaded' = 'captured'
-    ): Promise<VideoUploadResult> => {
+    async (options: {
+      videoBlob: Blob;
+      vibelogId: string;
+      source?: 'captured' | 'uploaded';
+      captureMode?: 'audio' | 'camera' | 'screen' | 'screen-with-camera';
+    }): Promise<VideoUploadResult> => {
+      const { videoBlob, vibelogId, source = 'captured', captureMode = 'camera' } = options;
       try {
         setIsUploading(true);
         setError(null);
@@ -112,6 +116,8 @@ export function useVideoUpload() {
             vibelogId,
             videoUrl: url,
             videoSource: source,
+            captureMode,
+            hasCameraPip: captureMode === 'screen-with-camera',
           }),
         });
 

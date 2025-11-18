@@ -52,7 +52,7 @@ interface HomeCommunityShowcaseProps {
   onRefreshRequest?: (refreshFn: () => void) => void; // Callback to expose refresh function to parent
 }
 
-export default function HomeCommunityShowcase({ onRefreshRequest, onRemix }: HomeCommunityShowcaseProps) {
+export default function HomeCommunityShowcase({ onRefreshRequest, onRemix: _onRemix }: HomeCommunityShowcaseProps) {
   const [latestVibelogs, setLatestVibelogs] = useState<HomeFeedVibelog[]>([]);
   const [newMembers, setNewMembers] = useState<HomeFeedMember[]>([]);
   const [loading, setLoading] = useState(true);
