@@ -1,15 +1,12 @@
 'use client';
 
 import { Bell } from 'lucide-react';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import { createClient } from '@/lib/supabase';
 
-interface NotificationBellProps {
-  onClick: () => void;
-}
-
-export default function NotificationBell({ onClick }: NotificationBellProps) {
+export default function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0);
   const supabase = createClient();
 
@@ -84,9 +81,9 @@ export default function NotificationBell({ onClick }: NotificationBellProps) {
   }, [supabase]);
 
   return (
-    <button
-      onClick={onClick}
-      className="relative rounded-full p-2 transition-all hover:scale-105 hover:bg-electric/10 active:scale-95"
+    <Link
+      href="/notifications"
+      className="relative block rounded-full p-2 transition-all hover:scale-105 hover:bg-electric/10 active:scale-95"
       aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
     >
       <Bell
@@ -99,6 +96,6 @@ export default function NotificationBell({ onClick }: NotificationBellProps) {
           {unreadCount > 9 ? '9+' : unreadCount}
         </span>
       )}
-    </button>
+    </Link>
   );
 }
