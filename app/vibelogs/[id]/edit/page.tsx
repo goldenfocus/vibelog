@@ -13,6 +13,7 @@ interface Vibelog {
   title: string;
   content: string;
   teaser?: string;
+  slug: string;
   cover_image_url?: string;
   cover_image_alt?: string;
 }
@@ -62,6 +63,7 @@ export default function VibelogEditPage() {
           title: vibelogData.title,
           content: vibelogData.content,
           teaser: vibelogData.teaser,
+          slug: vibelogData.slug,
           cover_image_url: vibelogData.cover_image_url,
           cover_image_alt: vibelogData.title,
         });
