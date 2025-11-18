@@ -3,6 +3,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
+import Comments from '@/components/comments/Comments';
 import Navigation from '@/components/Navigation';
 import PublicVibelogContent from '@/components/PublicVibelogContent';
 import VibelogEditButton from '@/components/VibelogEditButton';
@@ -432,6 +433,11 @@ export default async function VibelogPage({ params }: PageProps) {
               </span>
             </div>
           </Link>
+        </div>
+
+        {/* Comments Section */}
+        <div className="mt-8">
+          <Comments vibelogId={vibelog.id} />
         </div>
       </main>
 

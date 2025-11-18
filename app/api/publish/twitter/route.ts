@@ -42,13 +42,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Vibelog not found' }, { status: 404 });
     }
 
-    // Verify ownership
-    if (vibelog.user_id !== user.id) {
-      return NextResponse.json(
-        { error: 'Forbidden: You do not own this vibelog' },
-        { status: 403 }
-      );
-    }
+    // NOTE: No ownership check - anyone can share any public vibelog on X!
 
     // Determine tweet content
     const profile = vibelog.profiles;
