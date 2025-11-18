@@ -4,13 +4,14 @@ import { MessageSquare, Mic, Send, Edit3, X, Sparkles } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 
+import MediaAttachmentZone from '@/components/comments/MediaAttachmentZone';
 import { AudioEngine } from '@/components/mic/AudioEngine';
 import Controls from '@/components/mic/Controls';
 import Waveform from '@/components/mic/Waveform';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useToneSettings } from '@/hooks/useToneSettings';
-
-import type { WritingTone } from '@/types/settings';
+import type { WritingTone } from '@/hooks/useToneSettings';
+import type { MediaAttachment } from '@/types/comments';
 
 type RecordingState =
   | 'idle'
@@ -40,6 +41,7 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [customInstructions, setCustomInstructions] = useState('');
   const [showCustomInstructions, setShowCustomInstructions] = useState(false);
+  const [attachments, setAttachments] = useState<MediaAttachment[]>([]);
 
   const audioEngineRef = useRef<AudioEngine | null>(null);
   const recordingTimerRef = useRef<number | null>(null);
@@ -192,6 +194,7 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
     setOriginalTranscript('');
     setCustomInstructions('');
     setShowCustomInstructions(false);
+    setAttachments([]);
     setLevels(Array.from({ length: 15 }, () => 0.1));
   };
 
@@ -229,6 +232,7 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
           body: JSON.stringify({
             vibelogId,
             content: textContent.trim(),
+            attachments: attachments.length > 0 ? attachments : undefined,
           }),
         });
 
@@ -239,6 +243,7 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
 
         toast.success('Your vibe comment is live! 🔥');
         setTextContent('');
+        setAttachments([]);
         onCommentAdded();
       } else {
         // Submit voice comment - first upload audio, then create comment with transcript
@@ -274,6 +279,7 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
             vibelogId,
             audioUrl,
             content: transcript.trim() || undefined, // Include edited transcript if available
+            attachments: attachments.length > 0 ? attachments : undefined,
           }),
         });
 
@@ -358,6 +364,10 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
             className="w-full resize-none rounded-lg border border-border/30 bg-background px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-electric focus:outline-none"
             rows={3}
           />
+
+          {/* Media Attachments */}
+          <MediaAttachmentZone attachments={attachments} onChange={setAttachments} />
+
           <div className="flex justify-end">
             <button
               onClick={handleSubmit}
@@ -501,6 +511,9 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
                 className="w-full resize-none rounded-lg border border-border/30 bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-electric focus:outline-none"
                 rows={4}
               />
+
+              {/* Media Attachments */}
+              <MediaAttachmentZone attachments={attachments} onChange={setAttachments} />
 
               {/* Actions */}
               <div className="flex items-center justify-between gap-3 pt-2">

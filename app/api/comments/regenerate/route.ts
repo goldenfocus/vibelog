@@ -2,9 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { z } from 'zod';
 
+import type { WritingTone } from '@/hooks/useToneSettings';
 import { createServerSupabaseClient } from '@/lib/supabase';
-
-import type { WritingTone } from '@/types/settings';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,

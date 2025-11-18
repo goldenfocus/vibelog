@@ -283,7 +283,7 @@ BEGIN
 
   SELECT username, display_name, avatar_url
   INTO commenter_username, commenter_display_name, commenter_avatar
-  FROM profiles WHERE user_id = NEW.user_id;
+  FROM profiles WHERE id = NEW.user_id;
 
   INSERT INTO notifications (
     user_id, type, priority,
@@ -331,7 +331,7 @@ BEGIN
 
   SELECT username, display_name, avatar_url
   INTO replier_username, replier_display_name, replier_avatar
-  FROM profiles WHERE user_id = NEW.user_id;
+  FROM profiles WHERE id = NEW.user_id;
 
   INSERT INTO notifications (
     user_id, type, priority,
