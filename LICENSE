@@ -1,0 +1,137 @@
+Business Source License 1.1
+License Date: 2025-12-25
+Licensor: VibeLog Inc.
+
+Your use of this software is governed by the terms below.
+
+-------------------------------------------------------------------------------
+1. DEFINITIONS
+-------------------------------------------------------------------------------
+
+"Licensed Work" means the source code, design, UI components, and documentation
+included in this repository.
+
+"Licensor" means VibeLog Inc. and its founder.
+
+"Usage" means running, modifying, or contributing to the Licensed Work.
+
+"Competitive Service" means any product or service that replicates, imitates,
+replaces, substitutes, or competes with any part of VibeLog.io including but
+not limited to: social networks, microblogging platforms, journaling platforms,
+audio journaling, AI-enhanced content platforms, emotional conversation threads,
+voice-first social media, or anything serving similar functional purpose.
+
+"Brand Marks" include the names "VibeLog", "Vibe", "VibeAI", "Mini-Vibelog",
+"Vibe Thread", "VibeRank", associated logos, icons, images, colors, or any
+confusingly similar variants.
+
+-------------------------------------------------------------------------------
+2. LICENSE GRANT (LIMITED)
+-------------------------------------------------------------------------------
+
+You may use, view, study, modify, and contribute to the Licensed Work **only**
+for non-commercial, personal, educational, research, or contribution purposes.
+
+Commercial use **is not permitted** under this license unless you obtain
+explicit written permission from the Licensor.
+
+-------------------------------------------------------------------------------
+3. ATTRIBUTION REQUIREMENT
+-------------------------------------------------------------------------------
+
+All public deployments, forks, demos, or visible interfaces MUST:
+
+- Display "Powered by VibeLog.io" in the footer, unaltered.
+- Include a clickable link to https://vibelog.io
+- Retain all copyright notices.
+
+This attribution may NOT be removed, hidden, minimized, or altered.
+
+-------------------------------------------------------------------------------
+4. COMPETITION RESTRICTION (CRITICAL)
+-------------------------------------------------------------------------------
+
+You MAY NOT:
+
+- Host the Licensed Work as a public-facing platform.
+- Offer it as a cloud service or SaaS.
+- Build a competing or similar platform.
+- Create a social network or journaling/voice/AI platform derived from it.
+- Modify it for the purpose of running a competitive product.
+- Sell, rent, lease, redistribute, or license the software commercially.
+- Create a derivative that competes directly or indirectly with VibeLog.io.
+
+If you operate or intend to operate any Competitive Service, your license to
+the Licensed Work is automatically revoked.
+
+-------------------------------------------------------------------------------
+5. BRAND & TRADEMARK RESTRICTIONS
+-------------------------------------------------------------------------------
+
+You MAY NOT use:
+
+- "VibeLog"
+- "Vibe"
+- "VibeAI"
+- "Mini-Vibelog"
+- "Vibe Thread"
+- "VibeRank"
+- Any similar or confusingly similar name
+- Logos, branding, design elements, UI identity, fonts, or icons
+
+These remain exclusive trademarks of VibeLog Inc.
+
+All rights reserved.
+
+-------------------------------------------------------------------------------
+6. NO REMOVAL OF MAGIC COMPONENTS
+-------------------------------------------------------------------------------
+
+You MAY NOT attempt to:
+
+- Reverse-engineer or replicate the VibeLog AI pipelines,
+- Mimic internal prompts, enhancement flows, or MD instruction files,
+- Reproduce backend systems, moderation AI, or enhancement logic,
+- Build lookalike AI agents using this codebase.
+
+All AI logic, pipelines, prompts, and backend logic remain proprietary.
+
+-------------------------------------------------------------------------------
+7. NON-PRODUCTION CLAUSE
+-------------------------------------------------------------------------------
+
+You MAY NOT deploy the Licensed Work to production, staging, public URLs,
+or user-facing services **without written approval** from the Licensor.
+
+Local development only is permitted.
+
+-------------------------------------------------------------------------------
+8. LIMITATION OF LIABILITY
+-------------------------------------------------------------------------------
+
+The Licensed Work is provided "as is" without warranties. Licensor is not
+responsible for damages, losses, or consequences arising from your use.
+
+-------------------------------------------------------------------------------
+9. CHANGE DATE
+-------------------------------------------------------------------------------
+
+This license automatically converts to the Mozilla Public License 2.0 (MPL 2.0)
+four (4) years after the License Date ("Change Date"), unless the Licensor
+chooses to extend or modify the date.
+
+This ensures transparency and long-term openness without compromising the
+commercial and community integrity of VibeLog.
+
+-------------------------------------------------------------------------------
+10. ACCEPTANCE
+-------------------------------------------------------------------------------
+
+By using, cloning, forking, contributing, or modifying this repository, you
+agree to ALL terms above.
+
+If you do not agree, delete all copies of the Licensed Work immediately.
+
+-------------------------------------------------------------------------------
+END OF TERMS
+-------------------------------------------------------------------------------
