@@ -37,10 +37,14 @@ export default function NotificationCenter({ isOpen, onClose }: NotificationCent
       }
 
       const data = await response.json();
-      setNotifications(data.notifications);
-      setUnreadCount(data.unreadCount);
+      console.log('📬 Notifications API response:', data);
+      console.log('📨 Notifications array:', data.notifications);
+      console.log('🔢 Unread count:', data.unreadCount);
+      console.log('🔍 Current filter:', filter);
+      setNotifications(data.notifications || []);
+      setUnreadCount(data.unreadCount || 0);
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      console.error('❌ Error fetching notifications:', error);
       // Silently handle error - no need to show failure toast for empty state
     } finally {
       setLoading(false);
