@@ -10,7 +10,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { AccountSheet } from '@/components/AccountSheet';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import NotificationBell from '@/components/notifications/NotificationBell';
-import NotificationCenter from '@/components/notifications/NotificationCenter';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useI18n } from '@/components/providers/I18nProvider';
 import { Button } from '@/components/ui/button';
@@ -24,7 +23,6 @@ export default function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false); // Desktop menu
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false); // Mobile hamburger menu
   const [isMobileUserOpen, setIsMobileUserOpen] = useState(false); // Mobile user menu
-  const [isNotificationCenterOpen, setIsNotificationCenterOpen] = useState(false);
   const [avatarError, setAvatarError] = useState(false);
   const [profile, setProfile] = useState<{
     display_name: string;
@@ -273,7 +271,7 @@ export default function Navigation() {
                     </button>
 
                     {/* Notification Bell (Desktop and Mobile) */}
-                    <NotificationBell onClick={() => setIsNotificationCenterOpen(true)} />
+                    <NotificationBell />
 
                     {/* Mobile: User avatar button */}
                     <button
@@ -339,14 +337,6 @@ export default function Navigation() {
           avatarUrl={avatarUrl}
           renderAvatarContent={renderAvatarContent}
           getAvatarContainerStyle={getAvatarContainerStyle}
-        />
-      )}
-
-      {/* Notification Center */}
-      {mounted && user && (
-        <NotificationCenter
-          isOpen={isNotificationCenterOpen}
-          onClose={() => setIsNotificationCenterOpen(false)}
         />
       )}
     </nav>
