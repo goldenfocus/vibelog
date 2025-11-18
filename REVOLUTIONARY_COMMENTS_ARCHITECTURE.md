@@ -779,4 +779,25 @@ A commenting system that doesn't just collect feedback—it **creates value, dri
 
 **Next Step**: Start with Phase 1 (fix visibility) → Phase 2 (core enhancement) → iterate based on user feedback.
 
+---
+
+## 📋 MIGRATION INSTRUCTIONS FOR YANG
+
+Hey Yang! 👋
+
+To unlock this revolutionary comment system, please run the migration:
+
+**File**: `supabase/migrations/20251118073934_enhanced_comments_video_and_tiers.sql`
+
+**What it adds**:
+
+- Video support for comments 🎥
+- 3-tier system (Simple → Mini-Vibelog → Promoted) 🎯
+- Reactions table (like, love, mind_blown, laughing, fire) 🔥
+- Conversation threads with AI summaries 🧵
+- SEO slugs for mini-vibelogs 🌐
+- Engagement metrics + performance indexes ⚡
+
+**Bonus**: Why did the comment system break up with the database? Too many foreign key commitments! 😄
+
 Let's build the future of conversational content. 🚀
