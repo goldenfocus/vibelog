@@ -607,9 +607,7 @@ export default function VibelogActions({
               ) : (
                 <Twitter className={iconClass} />
               )}
-              <span className={labelClass}>
-                {isGeneratingShareUrl ? 'Loading...' : 'Share on X'}
-              </span>
+              {!isCompact && <span className={labelClass}>X</span>}
             </button>
 
             {/* Generic Share Button */}
