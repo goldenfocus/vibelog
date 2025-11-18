@@ -29,6 +29,7 @@ export interface MediaAttachment {
   width: number | null;
   height: number | null;
   alt_text?: string; // For accessibility and SEO
+  filter?: string; // CSS filter string for image styling
 }
 
 export interface Comment {
