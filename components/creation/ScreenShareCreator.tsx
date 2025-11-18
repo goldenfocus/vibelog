@@ -125,9 +125,10 @@ export function ScreenShareCreator({ remixContent, onSaveSuccess }: ScreenShareC
 
       <div className="rounded-2xl border border-border/50 bg-card/80 p-6 backdrop-blur-sm sm:p-8">
         <div className="mb-6 text-center">
-          <h2 className="mb-2 text-2xl font-bold">Screen Share Recording</h2>
+          <h2 className="mb-2 text-2xl font-bold">Ready to Capture Some Magic? ✨</h2>
           <p className="text-sm text-muted-foreground">
-            Record your screen with optional camera overlay - perfect for tutorials and demos
+            Record your screen (+ your beautiful face if you want!) — perfect for tutorials, demos,
+            product tours, and showing off your genius 🚀
           </p>
         </div>
 

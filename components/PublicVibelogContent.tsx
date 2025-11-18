@@ -1,16 +1,14 @@
 'use client';
 
-import { Clock, Heart, Share2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import React from 'react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
-import { AudioTabs } from '@/components/audio/AudioTabs';
+import { ContentTabs } from '@/components/content/ContentTabs';
 import VibelogActions from '@/components/VibelogActions';
 import VibelogContentRenderer from '@/components/VibelogContentRenderer';
 import VibelogEditModalFull from '@/components/VibelogEditModalFull';
-import { VideoPlayer } from '@/components/video';
-import { useAutoPlayVibelogAudio } from '@/hooks/useAutoPlayVibelogAudio';
 import type { ExportFormat } from '@/lib/export';
 
 interface PublicVibelogContentProps {
@@ -41,7 +39,6 @@ export default function PublicVibelogContent({ vibelog }: PublicVibelogContentPr
   const router = useRouter();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const videoUrl = vibelog.video_url || null;
-  const [likeCount, setLikeCount] = useState(vibelog.like_count || 0);
 
   // Initialize with a placeholder URL to prevent hydration mismatch
   // Will be updated in useEffect with actual window.location.origin
@@ -130,14 +127,6 @@ export default function PublicVibelogContent({ vibelog }: PublicVibelogContentPr
     // Export handled by ExportButton component
   };
 
-  useAutoPlayVibelogAudio({
-    vibelogId: vibelog.id,
-    audioUrl: vibelog.audio_url,
-    title: vibelog.title,
-    author: vibelog.author?.display_name,
-    enabled: !!vibelog.audio_url,
-  });
-
   // Remove duplicate title from content if it starts with the same title
   const contentWithoutDuplicateTitle = vibelog.content.replace(
     new RegExp(`^#\\s+${vibelog.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\n`, 'i'),
@@ -146,45 +135,19 @@ export default function PublicVibelogContent({ vibelog }: PublicVibelogContentPr
 
   return (
     <div>
-      {/* Video Player */}
-      {videoUrl && (
-        <div className="mb-8">
-          <VideoPlayer videoUrl={videoUrl} poster={vibelog.cover_image_url || undefined} />
-        </div>
-      )}
-
-      {/* Audio Tabs - Original vs AI Narration */}
-      <AudioTabs
+      {/* Content Tabs - Vibelog vs Original */}
+      <ContentTabs
         vibelogId={vibelog.id}
+        title={vibelog.title}
+        content={contentWithoutDuplicateTitle}
         originalAudioUrl={vibelog.audio_url}
         aiAudioUrl={vibelog.ai_audio_url}
-        title={vibelog.title}
+        videoUrl={videoUrl}
         author={vibelog.author?.display_name}
         className="mb-8"
-      />
-
-      {/* Metadata header - synced with VibelogActions */}
-      <div className="mb-6 flex items-center gap-4 text-sm text-muted-foreground">
-        {vibelog.read_time && (
-          <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            <span>{vibelog.read_time} min read</span>
-          </div>
-        )}
-        <div className="flex items-center gap-2">
-          <Heart className="h-4 w-4" />
-          <span>{likeCount}</span>
-        </div>
-        {vibelog.share_count !== undefined && (
-          <div className="flex items-center gap-2">
-            <Share2 className="h-4 w-4" />
-            <span>{vibelog.share_count}</span>
-          </div>
-        )}
-      </div>
-
-      {/* Content with beautiful formatting */}
-      <VibelogContentRenderer content={contentWithoutDuplicateTitle} showCTA={false} />
+      >
+        <VibelogContentRenderer content={contentWithoutDuplicateTitle} showCTA={false} />
+      </ContentTabs>
 
       {/* Action Buttons */}
       <div className="mt-12 border-t border-border/40 pt-8">
