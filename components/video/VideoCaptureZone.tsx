@@ -6,7 +6,7 @@
  * Pattern: Follows MicRecorder/AudioEngine structure for video
  */
 
-import { Video, Camera, StopCircle, RotateCcw, Check, AlertCircle } from 'lucide-react';
+import { Video, Camera, StopCircle, RotateCcw, Check, AlertCircle, X } from 'lucide-react';
 import React, { useState, useRef, useEffect } from 'react';
 
 import { useVideoUpload } from '@/hooks/useVideoUpload';
@@ -294,6 +294,36 @@ export function VideoCaptureZone({
     setStatus('idle');
   };
 
+  // Cancel recording (discard video and restart camera preview)
+  const cancelRecording = () => {
+    console.log('[VideoCaptureZone] Canceling recording...');
+
+    // Stop MediaRecorder without processing the data
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      // Remove the onstop handler to prevent auto-upload
+      mediaRecorderRef.current.onstop = null;
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current = null;
+    }
+
+    // Clear timer
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+
+    // Discard chunks
+    chunksRef.current = [];
+
+    // Reset state and restart camera preview
+    setRecordingTime(0);
+    setVideoBlob(null);
+    setError(null);
+    setStatus('ready');
+
+    console.log('✅ [VideoCaptureZone] Recording canceled, camera preview restarted');
+  };
+
   // Auto-upload video after recording stops (follows mic recorder pattern)
   const autoUploadVideo = async (blob: Blob) => {
     if (!blob) {
@@ -514,14 +544,23 @@ export function VideoCaptureZone({
           </div>
         </div>
 
-        {/* Stop button */}
-        <button
-          onClick={stopRecording}
-          className="flex w-full items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-3 text-white shadow-md transition-all hover:bg-red-700 hover:shadow-lg"
-        >
-          <StopCircle className="h-5 w-5" />
-          <span className="font-medium">Stop Recording</span>
-        </button>
+        {/* Action buttons */}
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={cancelRecording}
+            className="flex items-center justify-center gap-2 rounded-lg border-2 border-gray-300 bg-white px-4 py-3 text-gray-700 shadow-sm transition-all hover:border-gray-400 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:border-gray-500 dark:hover:bg-gray-700"
+          >
+            <X className="h-5 w-5" />
+            <span className="font-medium">Cancel</span>
+          </button>
+          <button
+            onClick={stopRecording}
+            className="flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-3 text-white shadow-md transition-all hover:bg-red-700 hover:shadow-lg"
+          >
+            <StopCircle className="h-5 w-5" />
+            <span className="font-medium">Stop</span>
+          </button>
+        </div>
 
         {!isPremium && timeRemaining <= 10 && (
           <p className="text-center text-xs text-yellow-600 dark:text-yellow-400">
