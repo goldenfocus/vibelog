@@ -6,7 +6,7 @@
 
 import { useState, useCallback } from 'react';
 
-import { createBrowserSupabaseClient } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase';
 
 // Storage bucket for video uploads (hardcoded to avoid server-only import)
 const VIBELOGS_BUCKET = 'vibelogs';
@@ -59,7 +59,7 @@ export function useVideoUpload() {
         });
 
         // Get Supabase client
-        const supabase = createBrowserSupabaseClient();
+        const supabase = createClient();
 
         // Get current user
         const {
