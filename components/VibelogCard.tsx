@@ -31,6 +31,7 @@ interface Vibelog {
   view_count: number;
   like_count: number;
   share_count: number;
+  comment_count: number;
   read_time: number;
   user_id?: string; // Author's user ID for Edit/Remix logic
   author: VibelogAuthor;
@@ -259,6 +260,7 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
           teaserOnly={!isLoggedIn} // Anonymous users get teaser-only mode with 9s audio limit
           createdAt={vibelog.created_at}
           likeCount={vibelog.like_count}
+          commentCount={vibelog.comment_count}
           onEdit={handleEdit}
           onRemix={handleRemix}
           onShare={handleShare}

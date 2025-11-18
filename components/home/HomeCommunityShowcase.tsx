@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
+import RecentComments from '@/components/RecentComments';
 import { VideoPlayer } from '@/components/video';
 import { useAudioPlayerStore } from '@/state/audio-player-store';
 
@@ -437,6 +438,11 @@ export default function HomeCommunityShowcase(_props: HomeCommunityShowcaseProps
                 );
               })}
         </div>
+      </div>
+
+      {/* Recent Comments */}
+      <div className="mt-12">
+        <RecentComments />
       </div>
     </section>
   );

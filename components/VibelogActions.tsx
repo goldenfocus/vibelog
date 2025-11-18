@@ -11,6 +11,7 @@ import {
   MoreVertical,
   Trash2,
   Heart,
+  MessageCircle,
 } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
@@ -35,6 +36,7 @@ interface VibelogActionsProps {
   audioUrl?: string;
   teaserOnly?: boolean; // If true, only show play button and apply preview limiter
   likeCount?: number; // Initial like count
+  commentCount?: number; // Initial comment count
   isLiked?: boolean; // Initial liked state
   onEdit?: () => void;
   onDelete?: () => Promise<void> | void;
@@ -59,6 +61,7 @@ export default function VibelogActions({
   audioUrl,
   teaserOnly = false,
   likeCount: initialLikeCount = 0,
+  commentCount = 0,
   isLiked: initialIsLiked = false,
   onEdit,
   onDelete,
@@ -593,6 +596,26 @@ export default function VibelogActions({
                 <span className={likeLabelClass}>{isLiking ? '...' : displayLikeCount}</span>
               </button>
             </LikersPopover>
+
+            {/* Comment Count Button */}
+            <button
+              onClick={() => {
+                // Scroll to comments section on the vibelog page
+                const commentsSection = document.getElementById('comments');
+                if (commentsSection) {
+                  commentsSection.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                  // If we're on a card, navigate to the vibelog page with hash
+                  window.location.hash = 'comments';
+                }
+              }}
+              className={baseButtonClass}
+              title="View comments"
+              data-testid="comment-button"
+            >
+              <MessageCircle className={iconClass} />
+              <span className={labelClass}>{commentCount}</span>
+            </button>
 
             {/* X/Twitter Share Button */}
             <button
