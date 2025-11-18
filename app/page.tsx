@@ -137,7 +137,7 @@ export default function Home() {
                   ? 'border-blue-600 bg-blue-50 shadow-lg dark:border-blue-400 dark:bg-blue-900/20'
                   : 'border-border/30 bg-card/50 hover:border-border hover:bg-card/80'
               }`}
-              aria-label="Record screen"
+              aria-label="Record screen share"
             >
               <Monitor
                 className={`h-8 w-8 sm:h-10 sm:w-10 ${
@@ -212,10 +212,7 @@ export default function Home() {
             </div>
           </div>
 
-          <HomeCommunityShowcase
-            onRemix={setRemixContent}
-            onRefreshRequest={setRefreshFeed}
-          />
+          <HomeCommunityShowcase onRemix={setRemixContent} onRefreshRequest={setRefreshFeed} />
         </div>
       </main>
     </div>
