@@ -10,6 +10,11 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '50mb', // Increased from default 4.5MB to support video uploads
+    },
+  },
   images: {
     remotePatterns: [
       {
