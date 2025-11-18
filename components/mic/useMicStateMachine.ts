@@ -138,12 +138,13 @@ function splitTitleFromMarkdown(md: string): { title: string | null; body: strin
 
 interface UseMicStateMachineOptions {
   remixContent?: string | null;
+  onSaveSuccess?: (() => void) | null;
 }
 
 export function useMicStateMachine(
   options: UseMicStateMachineOptions = {}
 ): UseMicStateMachineReturn {
-  const { remixContent } = options;
+  const { remixContent, onSaveSuccess } = options;
   const { t } = useI18n();
   const { user } = useAuth();
   const { profile } = useProfile(user?.id);
@@ -682,6 +683,12 @@ export function useMicStateMachine(
         if (result.vibelogId) {
           setVibelogId(result.vibelogId);
           console.log('✅ [COMPLETE-PROCESSING] Stored vibelog ID:', result.vibelogId);
+        }
+
+        // Trigger homepage feed refresh if callback is provided
+        if (onSaveSuccess) {
+          console.log('🔄 [COMPLETE-PROCESSING] Triggering feed refresh');
+          onSaveSuccess();
         }
 
         if (result.warnings?.length) {

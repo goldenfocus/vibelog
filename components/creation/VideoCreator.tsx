@@ -10,9 +10,10 @@ import { useBulletproofSave } from '@/hooks/useBulletproofSave';
 
 interface VideoCreatorProps {
   remixContent?: string | null;
+  onSaveSuccess?: (() => void) | null;
 }
 
-export function VideoCreator({ remixContent }: VideoCreatorProps) {
+export function VideoCreator({ remixContent, onSaveSuccess }: VideoCreatorProps) {
   const { user } = useAuth();
   const { saveVibelog, isSaving } = useBulletproofSave();
   const [vibelogId, setVibelogId] = useState<string | null>(null);
@@ -43,6 +44,12 @@ export function VideoCreator({ remixContent }: VideoCreatorProps) {
 
         if (result.success && result.vibelogId) {
           setVibelogId(result.vibelogId);
+
+          // Trigger homepage feed refresh if callback is provided
+          if (onSaveSuccess) {
+            console.log('🔄 [VIDEO-CREATOR] Triggering feed refresh');
+            onSaveSuccess();
+          }
         }
       } catch (error) {
         console.error('Failed to initialize vibelog:', error);
