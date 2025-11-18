@@ -1,13 +1,17 @@
 'use client';
 
-import { MessageSquare, Mic, Send, Edit3, X } from 'lucide-react';
+import { MessageSquare, Mic, Send, Edit3, X, Sparkles } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 
+import MediaAttachmentZone from '@/components/comments/MediaAttachmentZone';
 import { AudioEngine } from '@/components/mic/AudioEngine';
 import Controls from '@/components/mic/Controls';
 import Waveform from '@/components/mic/Waveform';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useToneSettings } from '@/hooks/useToneSettings';
+import type { WritingTone } from '@/hooks/useToneSettings';
+import type { MediaAttachment } from '@/types/comments';
 
 type RecordingState =
   | 'idle'
@@ -24,6 +28,7 @@ interface CommentInputProps {
 
 export default function CommentInput({ vibelogId, onCommentAdded }: CommentInputProps) {
   const { user, loading: authLoading } = useAuth();
+  const { tone, setTone } = useToneSettings();
   const [inputMode, setInputMode] = useState<'text' | 'voice'>('text');
   const [textContent, setTextContent] = useState('');
   const [recordingState, setRecordingState] = useState<RecordingState>('idle');
@@ -32,6 +37,11 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
   const [levels, setLevels] = useState<number[]>(Array.from({ length: 15 }, () => 0.1));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [transcript, setTranscript] = useState('');
+  const [originalTranscript, setOriginalTranscript] = useState('');
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [customInstructions, setCustomInstructions] = useState('');
+  const [showCustomInstructions, setShowCustomInstructions] = useState(false);
+  const [attachments, setAttachments] = useState<MediaAttachment[]>([]);
 
   const audioEngineRef = useRef<AudioEngine | null>(null);
   const recordingTimerRef = useRef<number | null>(null);
@@ -61,6 +71,7 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
       }
 
       setTranscript(transcription);
+      setOriginalTranscript(transcription); // Save original for comparison
       setRecordingState('reviewing');
       toast.success('Transcription ready! Review and edit before posting.');
     } catch (error) {
@@ -138,11 +149,52 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
     }
   };
 
+  const handleRegenerateComment = async () => {
+    if (!transcript.trim()) {
+      toast.error('No transcript to enhance');
+      return;
+    }
+
+    setIsRegenerating(true);
+
+    try {
+      const response = await fetch('/api/comments/regenerate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          transcript: originalTranscript || transcript, // Use original if available
+          tone,
+          customInstructions: customInstructions.trim() || undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to enhance comment');
+      }
+
+      const { enhanced_content } = await response.json();
+      setTranscript(enhanced_content);
+      toast.success(`✨ Comment enhanced with ${tone} tone!`);
+    } catch (error) {
+      console.error('Error regenerating comment:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to enhance comment');
+    } finally {
+      setIsRegenerating(false);
+    }
+  };
+
   const resetRecording = () => {
     setRecordingState('idle');
     setRecordingTime(0);
     setAudioBlob(null);
     setTranscript('');
+    setOriginalTranscript('');
+    setCustomInstructions('');
+    setShowCustomInstructions(false);
+    setAttachments([]);
     setLevels(Array.from({ length: 15 }, () => 0.1));
   };
 
@@ -180,6 +232,7 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
           body: JSON.stringify({
             vibelogId,
             content: textContent.trim(),
+            attachments: attachments.length > 0 ? attachments : undefined,
           }),
         });
 
@@ -190,6 +243,7 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
 
         toast.success('Your vibe comment is live! 🔥');
         setTextContent('');
+        setAttachments([]);
         onCommentAdded();
       } else {
         // Submit voice comment - first upload audio, then create comment with transcript
@@ -225,6 +279,7 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
             vibelogId,
             audioUrl,
             content: transcript.trim() || undefined, // Include edited transcript if available
+            attachments: attachments.length > 0 ? attachments : undefined,
           }),
         });
 
@@ -309,6 +364,10 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
             className="w-full resize-none rounded-lg border border-border/30 bg-background px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-electric focus:outline-none"
             rows={3}
           />
+
+          {/* Media Attachments */}
+          <MediaAttachmentZone attachments={attachments} onChange={setAttachments} />
+
           <div className="flex justify-end">
             <button
               onClick={handleSubmit}
@@ -368,14 +427,83 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
             </div>
           )}
 
-          {/* Review & Edit Transcript */}
+          {/* Review & Edit Transcript with AI Enhancement */}
           {recordingState === 'reviewing' && transcript && (
             <div className="space-y-4 rounded-lg border-2 border-electric/20 bg-card/50 p-4">
-              <div className="flex items-center gap-2">
-                <Edit3 className="h-4 w-4 text-electric" />
-                <h4 className="text-sm font-semibold">Review & Edit</h4>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Edit3 className="h-4 w-4 text-electric" />
+                  <h4 className="text-sm font-semibold">Review & Edit</h4>
+                </div>
+                {originalTranscript && transcript !== originalTranscript && (
+                  <button
+                    onClick={() => setTranscript(originalTranscript)}
+                    className="text-xs text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    Restore original
+                  </button>
+                )}
               </div>
 
+              {/* Tone Selector */}
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground">Tone</label>
+                <select
+                  value={tone}
+                  onChange={e => setTone(e.target.value as WritingTone)}
+                  className="w-full rounded-lg border border-border/30 bg-background px-3 py-2 text-sm text-foreground transition-colors focus:border-electric focus:outline-none"
+                >
+                  <option value="authentic">😊 Authentic - Natural & genuine</option>
+                  <option value="professional">💼 Professional - Formal & expert</option>
+                  <option value="casual">☕ Casual - Friendly & relaxed</option>
+                  <option value="humorous">😄 Humorous - Funny & lighthearted</option>
+                  <option value="inspiring">🌟 Inspiring - Motivational</option>
+                  <option value="analytical">📊 Analytical - Data-driven</option>
+                  <option value="storytelling">📖 Storytelling - Narrative focus</option>
+                  <option value="dramatic">🎭 Dramatic - Intense & emotional</option>
+                  <option value="poetic">✨ Poetic - Literary & artistic</option>
+                </select>
+              </div>
+
+              {/* Custom Instructions (Optional) */}
+              <div className="space-y-2">
+                <button
+                  onClick={() => setShowCustomInstructions(!showCustomInstructions)}
+                  className="text-xs font-medium text-electric transition-opacity hover:opacity-80"
+                >
+                  {showCustomInstructions ? '− Hide' : '+ Add'} custom instructions
+                </button>
+                {showCustomInstructions && (
+                  <textarea
+                    value={customInstructions}
+                    onChange={e => setCustomInstructions(e.target.value)}
+                    placeholder="e.g., 'Make it more concise' or 'Add an emoji'"
+                    className="w-full resize-none rounded-lg border border-border/30 bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-electric focus:outline-none"
+                    rows={2}
+                  />
+                )}
+              </div>
+
+              {/* AI Enhance Button */}
+              <button
+                onClick={handleRegenerateComment}
+                disabled={isRegenerating}
+                className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-electric/30 bg-electric/5 px-4 py-2.5 text-sm font-semibold text-electric transition-all hover:border-electric/50 hover:bg-electric/10 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isRegenerating ? (
+                  <>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-electric/30 border-t-electric" />
+                    Enhancing...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    Enhance with AI
+                  </>
+                )}
+              </button>
+
+              {/* Transcript Editor */}
               <textarea
                 value={transcript}
                 onChange={e => setTranscript(e.target.value)}
@@ -384,6 +512,10 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
                 rows={4}
               />
 
+              {/* Media Attachments */}
+              <MediaAttachmentZone attachments={attachments} onChange={setAttachments} />
+
+              {/* Actions */}
               <div className="flex items-center justify-between gap-3 pt-2">
                 <button
                   onClick={resetRecording}

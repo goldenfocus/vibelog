@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { rateLimit } from '@/lib/rateLimit';
 import { createServerSupabaseClient } from '@/lib/supabase';
 import { createServerAdminClient } from '@/lib/supabaseAdmin';
+import type { MediaAttachment } from '@/types/comments';
 
 /**
  * POST /api/comments
@@ -51,6 +52,7 @@ export async function POST(request: NextRequest) {
       content?: string;
       audioUrl?: string;
       voiceId?: string;
+      attachments?: MediaAttachment[];
     };
 
     if (contentType.includes('application/json')) {
@@ -63,10 +65,13 @@ export async function POST(request: NextRequest) {
         content: formData.get('content') as string | undefined,
         audioUrl: formData.get('audioUrl') as string | undefined,
         voiceId: formData.get('voiceId') as string | undefined,
+        attachments: formData.get('attachments')
+          ? JSON.parse(formData.get('attachments') as string)
+          : undefined,
       };
     }
 
-    const { vibelogId, content, audioUrl, voiceId } = body;
+    const { vibelogId, content, audioUrl, voiceId, attachments } = body;
 
     if (!vibelogId) {
       return NextResponse.json({ error: 'vibelogId is required' }, { status: 400 });
@@ -110,6 +115,9 @@ export async function POST(request: NextRequest) {
         content: content || null,
         audio_url: audioUrl || null,
         voice_id: voiceId || null,
+        attachments: attachments && attachments.length > 0 ? attachments : null,
+        attachment_count: attachments ? attachments.length : 0,
+        has_rich_media: attachments && attachments.length > 0,
       })
       .select(
         `
