@@ -500,14 +500,5 @@ export interface CommentPagination {
 // EXPORT ALL TYPES
 // ============================================================================
 
-export type {
-  // Re-export for convenience
-  Comment,
-  EnhancedComment,
-  VibeAwareComment,
-  CommentWithReactions,
-  ConversationThread,
-  ThreadWithComments,
-  CommentReaction,
-  CommentAuthor,
-};
+// Note: All types are already exported via 'export interface' declarations above
+// No need for re-export type statement
