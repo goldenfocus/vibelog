@@ -118,8 +118,8 @@ export default function PublicVibelogContent({ vibelog }: PublicVibelogContentPr
   };
 
   // Callback to update like count when VibelogActions changes it
-  const handleLikeCountChange = (newCount: number) => {
-    setLikeCount(newCount);
+  const handleLikeCountChange = (_newCount: number) => {
+    // Like count updates are handled by VibelogActions component
   };
 
   const handleExport = (format: ExportFormat) => {
