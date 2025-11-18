@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
     const { data, error, count } = await query;
 
     if (error) {
-      console.error('Error fetching notifications:', error);
+      console.error('❌ Error fetching notifications:', error);
       return NextResponse.json({ error: 'Failed to fetch notifications' }, { status: 500 });
     }
 
@@ -85,6 +85,16 @@ export async function GET(request: NextRequest) {
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id)
       .eq('is_read', false);
+
+    console.log('📊 Notifications API Debug:', {
+      userId: user.id,
+      filter,
+      totalCount: count,
+      unreadCount,
+      returnedNotifications: data?.length || 0,
+      page,
+      limit,
+    });
 
     const response: NotificationsListResponse = {
       notifications: data as Notification[],
