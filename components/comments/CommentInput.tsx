@@ -1,6 +1,5 @@
 'use client';
 
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { MessageSquare, Mic, Send, Edit3, X, Sparkles, Video } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
@@ -12,6 +11,7 @@ import Waveform from '@/components/mic/Waveform';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useToneSettings } from '@/hooks/useToneSettings';
 import type { WritingTone } from '@/hooks/useToneSettings';
+import { createClient } from '@/lib/supabase';
 import type { MediaAttachment } from '@/types/comments';
 
 type RecordingState =
@@ -430,7 +430,7 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
         onCommentAdded();
       } else if (inputMode === 'video' && videoBlob) {
         // Submit video comment - upload directly to Supabase Storage, then create comment
-        const supabase = createClientComponentClient();
+        const supabase = createClient();
 
         // Get current user
         const {
