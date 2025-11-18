@@ -21,6 +21,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Fetch main branch
+        run: git fetch origin main:main
+
       - name: Check if PR already exists
         id: check-pr
         uses: actions/github-script@v7
@@ -67,8 +70,8 @@ jobs:
             PR_TITLE="feat: $TITLE_FROM_BRANCH"
           fi
 
-          # Get commit list for PR body
-          COMMIT_LIST=$(git log main..HEAD --pretty=format:'- %s (%h)')
+          # Get commit list for PR body (with fallback)
+          COMMIT_LIST=$(git log main..HEAD --pretty=format:'- %s (%h)' 2>/dev/null || git log -1 --pretty=format:'- %s (%h)')
 
           # Create PR body
           PR_BODY=$(cat <<EOF
