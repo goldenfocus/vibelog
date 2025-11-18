@@ -73,7 +73,7 @@ export default function Home() {
           <div className="mb-8 flex justify-center gap-6">
             <button
               onClick={() => setCreationMode('text')}
-              className={`group flex h-24 w-24 flex-col items-center justify-center gap-2 rounded-2xl border-2 transition-all sm:h-32 sm:w-32 ${
+              className={`group flex h-20 w-20 items-center justify-center rounded-2xl border-2 transition-all sm:h-24 sm:w-24 ${
                 creationMode === 'text'
                   ? 'border-purple-600 bg-purple-50 shadow-lg dark:border-purple-400 dark:bg-purple-900/20'
                   : 'border-border/30 bg-card/50 hover:border-border hover:bg-card/80'
@@ -88,20 +88,11 @@ export default function Home() {
                 }`}
                 strokeWidth={1.5}
               />
-              <span
-                className={`text-sm font-medium sm:text-base ${
-                  creationMode === 'text'
-                    ? 'text-purple-900 dark:text-purple-100'
-                    : 'text-muted-foreground group-hover:text-foreground'
-                }`}
-              >
-                Text
-              </span>
             </button>
 
             <button
               onClick={() => setCreationMode('audio')}
-              className={`group flex h-24 w-24 flex-col items-center justify-center gap-2 rounded-2xl border-2 transition-all sm:h-32 sm:w-32 ${
+              className={`group flex h-20 w-20 items-center justify-center rounded-2xl border-2 transition-all sm:h-24 sm:w-24 ${
                 creationMode === 'audio'
                   ? 'border-purple-600 bg-purple-50 shadow-lg dark:border-purple-400 dark:bg-purple-900/20'
                   : 'border-border/30 bg-card/50 hover:border-border hover:bg-card/80'
@@ -116,20 +107,11 @@ export default function Home() {
                 }`}
                 strokeWidth={1.5}
               />
-              <span
-                className={`text-sm font-medium sm:text-base ${
-                  creationMode === 'audio'
-                    ? 'text-purple-900 dark:text-purple-100'
-                    : 'text-muted-foreground group-hover:text-foreground'
-                }`}
-              >
-                Audio
-              </span>
             </button>
 
             <button
               onClick={() => setCreationMode('video')}
-              className={`group flex h-24 w-24 flex-col items-center justify-center gap-2 rounded-2xl border-2 transition-all sm:h-32 sm:w-32 ${
+              className={`group flex h-20 w-20 items-center justify-center rounded-2xl border-2 transition-all sm:h-24 sm:w-24 ${
                 creationMode === 'video'
                   ? 'border-purple-600 bg-purple-50 shadow-lg dark:border-purple-400 dark:bg-purple-900/20'
                   : 'border-border/30 bg-card/50 hover:border-border hover:bg-card/80'
@@ -144,15 +126,6 @@ export default function Home() {
                 }`}
                 strokeWidth={1.5}
               />
-              <span
-                className={`text-sm font-medium sm:text-base ${
-                  creationMode === 'video'
-                    ? 'text-purple-900 dark:text-purple-100'
-                    : 'text-muted-foreground group-hover:text-foreground'
-                }`}
-              >
-                Video
-              </span>
             </button>
           </div>
 
