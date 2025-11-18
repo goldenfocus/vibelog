@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
+import { VideoPlayer } from '@/components/video';
 import { useAudioPlayerStore } from '@/state/audio-player-store';
 
 interface HomeFeedVibelog {
@@ -218,32 +219,28 @@ export default function HomeCommunityShowcase(_props: HomeCommunityShowcaseProps
                     key={vibelog.id}
                     className="group relative flex w-80 flex-shrink-0 snap-start flex-col overflow-hidden rounded-3xl border border-border/40 bg-gradient-to-br from-card/90 via-card/60 to-card/30 shadow-inner shadow-black/20 transition hover:border-electric/40 hover:shadow-electric/10"
                   >
-                    {/* Cover Image/Video Thumbnail */}
-                    {(vibelog.cover_image_url || vibelog.video_url) && (
+                    {/* Video Player or Cover Image */}
+                    {vibelog.video_url ? (
+                      <div className="relative w-full overflow-hidden">
+                        <VideoPlayer videoUrl={vibelog.video_url} />
+                        {/* Video indicator badge */}
+                        <div className="absolute right-3 top-3 z-10 flex items-center gap-1.5 rounded-full bg-black/70 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm">
+                          <Video className="h-3.5 w-3.5" />
+                          Video
+                        </div>
+                      </div>
+                    ) : vibelog.cover_image_url ? (
                       <Link
                         href={vibelogUrl}
                         className="relative block aspect-video w-full overflow-hidden bg-muted"
                       >
-                        {vibelog.cover_image_url ? (
-                          <img
-                            src={vibelog.cover_image_url}
-                            alt={vibelog.title}
-                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-purple-900/20 via-electric/10 to-purple-900/20">
-                            <Video className="h-16 w-16 text-electric/40" />
-                          </div>
-                        )}
-                        {/* Video indicator badge */}
-                        {vibelog.video_url && (
-                          <div className="absolute right-3 top-3 flex items-center gap-1.5 rounded-full bg-black/70 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm">
-                            <Video className="h-3.5 w-3.5" />
-                            Video
-                          </div>
-                        )}
+                        <img
+                          src={vibelog.cover_image_url}
+                          alt={vibelog.title}
+                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
                       </Link>
-                    )}
+                    ) : null}
 
                     <div className="flex flex-1 flex-col p-6">
                       <div className="mb-4 flex items-center gap-3">
