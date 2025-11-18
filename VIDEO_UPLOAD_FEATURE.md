@@ -64,9 +64,6 @@ This mirrors our successful pivot from voice cloning → real voice recordings:
    - Added `video_uploaded_at?: string | null`
    - Updated comments to reflect both sources
 
-2. **`lib/video/storage.ts`**
-   - Updated comments to clarify it handles both AI-generated and user-uploaded videos
-
 ---
 
 ## 🗄️ Database Schema Changes
@@ -430,7 +427,6 @@ function BasicUpload({ vibelogId }: { vibelogId: string }) {
 
 ## 📚 Related Documentation
 
-- **`VIDEO_GENERATION.md`**: Original AI video generation docs (still valid for AI option)
 - **`CLAUDE.md`**: Main context file with project overview
 - **`api.md`**: API design patterns and standards
 - **`engineering.md`**: Development standards and testing requirements

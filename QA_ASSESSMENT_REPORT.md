@@ -89,12 +89,9 @@ This comprehensive QA assessment evaluates VibeLog's readiness for the December 
 
 **Untested API Routes (100% of routes)**:
 
-- ❌ **Video APIs** (4 routes):
-  - /api/video/generate
-  - /api/video/generate-batch
-  - /api/video/status
-  - /api/video/reset-stuck
-  - /api/video/cleanup-stuck
+- ❌ **Video APIs** (2 routes):
+  - /api/video/analyze
+  - /api/vibelog/upload-video
 
 - ❌ **Vibe Engine APIs** (3 routes):
   - /api/vibe/analyze
@@ -176,29 +173,29 @@ This comprehensive QA assessment evaluates VibeLog's readiness for the December 
 
 ```typescript
 // Add API tests for all critical endpoints
-// Example: /api/video/generate
-describe('POST /api/video/generate', () => {
+// Example: /api/video/analyze
+describe('POST /api/video/analyze', () => {
   it('should reject unauthenticated requests', async () => {
-    const res = await fetch('/api/video/generate', {
+    const res = await fetch('/api/video/analyze', {
       method: 'POST',
-      body: JSON.stringify({ vibelogId: 'fake-id' }),
+      body: JSON.stringify({ videoUrl: 'https://example.com/video.mp4' }),
     });
     expect(res.status).toBe(401);
   });
 
-  it('should reject invalid vibelog IDs', async () => {
-    const res = await authenticatedFetch('/api/video/generate', {
+  it('should reject invalid video URLs', async () => {
+    const res = await authenticatedFetch('/api/video/analyze', {
       method: 'POST',
-      body: JSON.stringify({ vibelogId: 'not-a-uuid' }),
+      body: JSON.stringify({ videoUrl: 'not-a-url' }),
     });
     expect(res.status).toBe(422);
   });
 
-  it('should prevent generating videos for other users vibelogs', async () => {
-    // Security test
+  it('should analyze video and generate metadata', async () => {
+    // Video analysis test
   });
 
-  it('should handle fal.ai failures gracefully', async () => {
+  it('should handle transcription failures gracefully', async () => {
     // Error handling test
   });
 });
@@ -216,14 +213,11 @@ describe('POST /api/video/generate', () => {
 
 **Details**:
 
-- `/api/video/generate` route does NOT verify user owns the vibelog
-- Anyone with a vibelogId can generate videos for it
-- Could lead to:
-  - Abuse (generating videos for others' content)
-  - Cost explosion (malicious users generating videos)
-  - Privacy violations
+- `/api/vibelog/upload-video` route properly verifies user owns the vibelog
+- Good security implementation in place
+- Ownership verification prevents abuse
 
-**Code Location**: `app/api/video/generate/route.ts`
+**Code Location**: `app/api/vibelog/upload-video/route.ts`
 
 **Fix Required**:
 
@@ -260,12 +254,12 @@ if (!vibelog || vibelog.user_id !== user.id) {
 
 **Details**:
 
-- Video generation costs ~$0.80 per video
-- No rate limits on `/api/video/generate`
+- Video uploads are user-provided (no AI generation cost)
+- No rate limits on `/api/vibelog/upload-video`
 - No rate limits on `/api/generate-vibelog` (GPT-4 calls)
 - No rate limits on `/api/transcribe` (Whisper calls)
 - Malicious user could:
-  - Generate 1000 videos = $800
+  - Upload excessive videos (storage cost)
   - Generate 1000 vibelogs = $50-100
   - Transcribe 1000 hours = $600
 
@@ -294,8 +288,8 @@ export async function POST(request: NextRequest) {
 
 **Apply to**:
 
-- `/api/video/generate` (10/hour)
-- `/api/video/generate-batch` (5/hour)
+- `/api/vibelog/upload-video` (20/hour)
+- `/api/video/analyze` (10/hour)
 - `/api/generate-vibelog` (50/hour)
 - `/api/transcribe` (30/hour)
 - `/api/regenerate-vibelog` (20/hour)
@@ -372,33 +366,24 @@ const sanitized = {
 
 ---
 
-### 🔴 **C6: Video Generation Can Get Stuck Forever**
+### 🟢 **C6: Video Upload System (Resolved)**
 
-**Severity**: CRITICAL
-**Impact**: User experience degradation
-**Risk**: Videos show "generating" state permanently
+**Status**: RESOLVED - Pivoted from AI video generation to user uploads
 
-**Details**:
+**Previous Issue**: AI-generated videos could get stuck in "generating" state
 
-- If video generation crashes mid-process, status stays "generating"
-- No automatic recovery mechanism
-- No timeout for stuck generations
-- User can't retry or cancel
+**Current Solution**:
 
-**Current Mitigation**:
+- Users upload their own videos (no generation process)
+- Upload progress is tracked in real-time
+- Failed uploads can be retried immediately
+- No stuck states possible
 
-- Manual reset endpoint exists (`/api/video/reset-stuck`)
-- Admin-only cleanup endpoint (`/api/video/cleanup-stuck`)
+**Benefits**:
 
-**Fix Required**:
-
-1. Add automatic timeout (e.g., 10 minutes)
-2. Add cron job to reset stuck generations
-3. Add "Cancel" button for users
-4. Add retry mechanism with exponential backoff
-5. Monitor generation status in real-time
-
-**Estimated Effort**: 1 week
+- Better user experience (instant results)
+- Lower costs (~$988/month savings)
+- Higher quality (user-controlled content)
 
 ---
 
@@ -951,7 +936,7 @@ Each test creates its own test data. Lots of duplication.
 **Week 2**:
 
 - [ ] **C1**: Add API tests for critical endpoints (5 days)
-  - Priority: `/api/video/generate`, `/api/transcribe`, `/api/generate-vibelog`, `/api/save-vibelog`, `/api/publish/twitter`
+  - Priority: `/api/video/analyze`, `/api/transcribe`, `/api/generate-vibelog`, `/api/save-vibelog`, `/api/publish/twitter`
 - [ ] **C7**: Set up database backups (1 day)
 - [ ] **C8**: Implement error monitoring (2 days)
 
@@ -1185,7 +1170,7 @@ Before shipping ANY new feature:
 ### Day 2: Tests
 
 1. Fix failing TranscriptionPanel tests
-2. Add tests for `/api/video/generate`
+2. Add tests for `/api/video/analyze`
 3. Add tests for `/api/transcribe`
 
 ### Day 3: Monitoring
@@ -1359,7 +1344,7 @@ This gives the team **7 weeks** to harden the platform while maintaining the cor
 2. `/api/generate-vibelog` - Text → vibelog
 3. `/api/save-vibelog` - Save to DB
 4. `/api/upload-audio` - File upload
-5. `/api/video/generate` - Generate video
+5. `/api/video/analyze` - Analyze video content
 6. `/api/publish/twitter` - Publish to X
 7. `/api/comments` - CRUD operations
 8. `/api/vibe/analyze` - Vibe detection
