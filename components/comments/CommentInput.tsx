@@ -1,6 +1,6 @@
 'use client';
 
-import { MessageSquare, Mic, Send, Edit3, X, Sparkles } from 'lucide-react';
+import { MessageSquare, Mic, Send, Edit3, X, Sparkles, Video } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 
@@ -29,11 +29,14 @@ interface CommentInputProps {
 export default function CommentInput({ vibelogId, onCommentAdded }: CommentInputProps) {
   const { user, loading: authLoading } = useAuth();
   const { tone, setTone } = useToneSettings();
-  const [inputMode, setInputMode] = useState<'text' | 'voice'>('text');
+  const [inputMode, setInputMode] = useState<'text' | 'voice' | 'video'>('text');
   const [textContent, setTextContent] = useState('');
   const [recordingState, setRecordingState] = useState<RecordingState>('idle');
   const [recordingTime, setRecordingTime] = useState(0);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
+  const [isRecordingVideo, setIsRecordingVideo] = useState(false);
+  const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
   const [levels, setLevels] = useState<number[]>(Array.from({ length: 15 }, () => 0.1));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [transcript, setTranscript] = useState('');
@@ -45,6 +48,8 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
 
   const audioEngineRef = useRef<AudioEngine | null>(null);
   const recordingTimerRef = useRef<number | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
   const transcribeAudio = useCallback(async (blob: Blob) => {
     try {
@@ -149,6 +154,77 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
     }
   };
 
+  const startVideoRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 1280, height: 720 },
+        audio: true,
+      });
+
+      setVideoStream(stream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'video/webm;codecs=vp9',
+      });
+
+      const chunks: Blob[] = [];
+      mediaRecorder.ondataavailable = e => {
+        if (e.data.size > 0) {
+          chunks.push(e.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'video/webm' });
+        setVideoBlob(blob);
+        setIsRecordingVideo(false);
+      };
+
+      mediaRecorder.start();
+      mediaRecorderRef.current = mediaRecorder;
+      setIsRecordingVideo(true);
+      setRecordingTime(0);
+
+      // Start timer
+      recordingTimerRef.current = window.setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+    } catch (error) {
+      console.error('Error starting video recording:', error);
+      toast.error('Failed to access camera. Please check permissions.');
+    }
+  };
+
+  const stopVideoRecording = () => {
+    if (mediaRecorderRef.current && isRecordingVideo) {
+      mediaRecorderRef.current.stop();
+
+      if (videoStream) {
+        videoStream.getTracks().forEach(track => track.stop());
+        setVideoStream(null);
+      }
+
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
+    }
+  };
+
+  const resetVideoRecording = () => {
+    setVideoBlob(null);
+    setIsRecordingVideo(false);
+    setRecordingTime(0);
+
+    if (videoStream) {
+      videoStream.getTracks().forEach(track => track.stop());
+      setVideoStream(null);
+    }
+  };
+
   const handleRegenerateComment = async () => {
     if (!transcript.trim()) {
       toast.error('No transcript to enhance');
@@ -190,12 +266,19 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
     setRecordingState('idle');
     setRecordingTime(0);
     setAudioBlob(null);
+    setVideoBlob(null);
+    setIsRecordingVideo(false);
     setTranscript('');
     setOriginalTranscript('');
     setCustomInstructions('');
     setShowCustomInstructions(false);
     setAttachments([]);
     setLevels(Array.from({ length: 15 }, () => 0.1));
+
+    if (videoStream) {
+      videoStream.getTracks().forEach(track => track.stop());
+      setVideoStream(null);
+    }
   };
 
   const handleSubmit = async () => {
@@ -216,6 +299,11 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
 
     if (inputMode === 'voice' && recordingState === 'reviewing' && !transcript.trim()) {
       toast.error('Please enter a comment or re-record');
+      return;
+    }
+
+    if (inputMode === 'video' && !videoBlob) {
+      toast.error('Please record a video comment');
       return;
     }
 
@@ -245,7 +333,7 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
         setTextContent('');
         setAttachments([]);
         onCommentAdded();
-      } else {
+      } else if (inputMode === 'voice') {
         // Submit voice comment - first upload audio, then create comment with transcript
         // Upload audio file
         const formData = new FormData();
@@ -289,6 +377,49 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
         }
 
         toast.success('Your voice vibe is live! 🎤✨');
+        resetRecording();
+        onCommentAdded();
+      } else if (inputMode === 'video' && videoBlob) {
+        // Submit video comment - upload video file, then create comment
+        const formData = new FormData();
+        formData.append('video', videoBlob, 'comment.webm');
+        formData.append('vibelogId', vibelogId);
+
+        // Upload video to storage
+        const uploadResponse = await fetch('/api/storage/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!uploadResponse.ok) {
+          const errorData = await uploadResponse.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Failed to upload video');
+        }
+
+        const { url: videoUrl } = await uploadResponse.json();
+
+        if (!videoUrl) {
+          throw new Error('No video URL returned from upload');
+        }
+
+        // Create comment with video URL
+        const commentResponse = await fetch('/api/comments', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            vibelogId,
+            videoUrl,
+          }),
+        });
+
+        if (!commentResponse.ok) {
+          const error = await commentResponse.json();
+          throw new Error(error.error || 'Failed to submit comment');
+        }
+
+        toast.success('Your video vibe is live! 🎥✨');
         resetRecording();
         onCommentAdded();
       }
@@ -351,6 +482,21 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
         >
           <Mic className="h-4 w-4" />
           Voice
+        </button>
+        <button
+          onClick={() => {
+            setInputMode('video');
+            setTextContent('');
+            resetRecording();
+          }}
+          className={`flex items-center gap-2 rounded-lg px-4 py-2 transition-colors ${
+            inputMode === 'video'
+              ? 'bg-electric text-white'
+              : 'bg-muted text-muted-foreground hover:bg-muted/80'
+          }`}
+        >
+          <Video className="h-4 w-4" />
+          Video
         </button>
       </div>
 
@@ -568,6 +714,87 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
               </button>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Video Input */}
+      {inputMode === 'video' && (
+        <div className="space-y-4">
+          {/* Video Preview / Recording */}
+          <div className="relative aspect-video w-full overflow-hidden rounded-lg border border-border/30 bg-black">
+            <video
+              ref={videoRef}
+              autoPlay
+              muted
+              playsInline
+              className="h-full w-full object-cover"
+            />
+            {!isRecordingVideo && !videoBlob && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                <p className="text-sm text-white">Camera preview will appear here</p>
+              </div>
+            )}
+            {isRecordingVideo && (
+              <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full bg-red-500 px-3 py-1">
+                <div className="h-2 w-2 animate-pulse rounded-full bg-white" />
+                <span className="text-sm font-medium text-white">
+                  {Math.floor(recordingTime / 60)}:
+                  {(recordingTime % 60).toString().padStart(2, '0')}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Recording Controls */}
+          <div className="flex items-center justify-center gap-3">
+            {!isRecordingVideo && !videoBlob && (
+              <button
+                onClick={startVideoRecording}
+                disabled={isSubmitting}
+                className="flex items-center gap-2 rounded-lg bg-electric px-6 py-3 text-white transition-all hover:bg-electric-glow disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Video className="h-5 w-5" />
+                Start Recording
+              </button>
+            )}
+            {isRecordingVideo && (
+              <button
+                onClick={stopVideoRecording}
+                className="flex items-center gap-2 rounded-lg bg-red-500 px-6 py-3 text-white transition-all hover:bg-red-600"
+              >
+                <div className="h-2 w-2 rounded-full bg-white" />
+                Stop Recording
+              </button>
+            )}
+            {videoBlob && !isRecordingVideo && (
+              <>
+                <button
+                  onClick={resetVideoRecording}
+                  className="flex items-center gap-2 rounded-lg border border-border/50 bg-background px-4 py-2 text-foreground transition-colors hover:bg-muted"
+                >
+                  <X className="h-4 w-4" />
+                  Re-record
+                </button>
+                <button
+                  onClick={handleSubmit}
+                  disabled={isSubmitting}
+                  className="flex items-center gap-2 rounded-lg bg-electric px-6 py-3 text-white transition-all hover:bg-electric-glow disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                      Posting...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4" />
+                      Post Video
+                    </>
+                  )}
+                </button>
+              </>
+            )}
+          </div>
         </div>
       )}
     </div>
