@@ -195,6 +195,7 @@ export default async function PublicVibelogPage({ params }: PageProps) {
             id: vibelogWithAuthor.id,
             title: vibelogWithAuthor.title,
             content: vibelogWithAuthor.content,
+            slug: vibelogWithAuthor.slug,
             user_id: vibelogWithAuthor.user_id,
             public_slug: vibelogWithAuthor.public_slug,
             audio_url: vibelogWithAuthor.audio_url,

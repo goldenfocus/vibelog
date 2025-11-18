@@ -7,14 +7,8 @@ import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { RegeneratePanel } from '@/components/vibelog/RegeneratePanel';
 
 interface VibelogEditModalFullProps {
   isOpen: boolean;
@@ -24,6 +18,7 @@ interface VibelogEditModalFullProps {
     title: string;
     content: string;
     teaser?: string;
+    slug: string;
     cover_image_url?: string;
     cover_image_alt?: string;
   };
@@ -39,7 +34,6 @@ export default function VibelogEditModalFull({
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<EditTab>('text');
   const [isSaving, setIsSaving] = useState(false);
-  const [isRegenerating, setIsRegenerating] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isRegeneratingImage, setIsRegeneratingImage] = useState(false);
 
@@ -50,7 +44,7 @@ export default function VibelogEditModalFull({
   // If teaser equals content, treat it as if there's no teaser
   const initialTeaser = vibelog.teaser && vibelog.teaser !== vibelog.content ? vibelog.teaser : '';
   const [teaser, setTeaser] = useState(initialTeaser);
-  const [tone, setTone] = useState<string>('');
+  const [slug, setSlug] = useState(vibelog.slug);
   const [prompt, setPrompt] = useState('');
 
   // Image editing state
@@ -166,38 +160,26 @@ export default function VibelogEditModalFull({
     }
   };
 
-  const handleRegenerateText = async () => {
-    setIsRegenerating(true);
-    try {
-      const response = await fetch('/api/regenerate-vibelog-text', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          vibelogId: vibelog.id,
-          currentContent: content,
-          tone,
-          prompt,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to regenerate text');
-      }
-
-      const data = await response.json();
-      setContent(data.vibelogContent);
-      if (data.vibelogTeaser) {
-        setTeaser(data.vibelogTeaser);
-      }
-      setTone('');
-      setPrompt('');
-      toast.success('Text regenerated successfully!');
-    } catch (error) {
-      console.error('Text regeneration error:', error);
-      toast.error('Failed to regenerate text');
-    } finally {
-      setIsRegenerating(false);
+  const handleRegenerationApply = async (updates: {
+    title?: string;
+    content?: string;
+    teaser?: string;
+    slug?: string;
+  }) => {
+    // Apply AI-generated suggestions to local state
+    if (updates.title) {
+      setTitle(updates.title);
     }
+    if (updates.content) {
+      setContent(updates.content);
+    }
+    if (updates.teaser) {
+      setTeaser(updates.teaser);
+    }
+    if (updates.slug) {
+      setSlug(updates.slug);
+    }
+    toast.success('AI suggestions applied! Click "Save Changes" to persist.');
   };
 
   const handleSave = async () => {
@@ -208,6 +190,7 @@ export default function VibelogEditModalFull({
         title?: string;
         content: string;
         teaser?: string;
+        slug?: string;
         coverImage?: {
           url: string;
           alt: string;
@@ -225,6 +208,10 @@ export default function VibelogEditModalFull({
 
       if (teaser) {
         payload.teaser = teaser;
+      }
+
+      if (slug !== vibelog.slug) {
+        payload.slug = slug;
       }
 
       if (coverImage && coverImage !== vibelog.cover_image_url) {
@@ -352,62 +339,15 @@ export default function VibelogEditModalFull({
                 />
               </div>
 
-              {/* AI Regeneration */}
-              <div className="rounded-xl border border-border/50 bg-background/50 p-4">
-                <h3 className="mb-4 flex items-center gap-2 font-semibold">
-                  <Sparkles className="h-4 w-4 text-electric" />
-                  Regenerate with AI
-                </h3>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="tone" className="mb-2 block">
-                      Tone
-                    </Label>
-                    <Select value={tone} onValueChange={setTone}>
-                      <SelectTrigger id="tone">
-                        <SelectValue placeholder="Select tone (optional)" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="professional">Professional</SelectItem>
-                        <SelectItem value="casual">Casual</SelectItem>
-                        <SelectItem value="humorous">Humorous</SelectItem>
-                        <SelectItem value="inspiring">Inspiring</SelectItem>
-                        <SelectItem value="analytical">Analytical</SelectItem>
-                        <SelectItem value="storytelling">Storytelling</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="prompt" className="mb-2 block">
-                      Additional Instructions (Optional)
-                    </Label>
-                    <Textarea
-                      id="prompt"
-                      value={prompt}
-                      onChange={e => setPrompt(e.target.value)}
-                      placeholder="e.g., make this hilarious but don't talk about my mom"
-                      className="min-h-[80px]"
-                    />
-                  </div>
-                  <Button
-                    onClick={handleRegenerateText}
-                    disabled={isRegenerating}
-                    className="w-full"
-                  >
-                    {isRegenerating ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Regenerating...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="mr-2 h-4 w-4" />
-                        Regenerate Text
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
+              {/* AI Regeneration - Universal Panel */}
+              <RegeneratePanel
+                vibelogId={vibelog.id}
+                currentTitle={title}
+                currentDescription={content}
+                currentTeaser={teaser}
+                currentSlug={slug}
+                onApply={handleRegenerationApply}
+              />
             </div>
           ) : (
             <div className="space-y-6">

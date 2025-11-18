@@ -279,6 +279,7 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
             title: vibelog.title,
             content: vibelog.content,
             teaser: vibelog.teaser,
+            slug: vibelog.slug,
             cover_image_url: vibelog.cover_image_url,
             cover_image_alt: vibelog.title,
           }}

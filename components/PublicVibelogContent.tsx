@@ -18,6 +18,7 @@ interface PublicVibelogContentProps {
     title: string;
     content: string;
     teaser?: string;
+    slug: string;
     cover_image_url?: string | null;
     user_id: string | null;
     public_slug: string;
@@ -209,6 +210,7 @@ export default function PublicVibelogContent({ vibelog }: PublicVibelogContentPr
             title: vibelog.title,
             content: vibelog.content,
             teaser: vibelog.teaser,
+            slug: vibelog.slug,
             cover_image_url: vibelog.cover_image_url,
             cover_image_alt: vibelog.title,
           }}
