@@ -6,8 +6,10 @@
 
 import { useState, useCallback } from 'react';
 
-import { VIBELOGS_BUCKET } from '@/lib/storage';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
+
+// Storage bucket for video uploads (hardcoded to avoid server-only import)
+const VIBELOGS_BUCKET = 'vibelogs';
 
 interface VideoUploadResult {
   url: string;
