@@ -86,12 +86,16 @@ export default function NotificationBell({ onClick }: NotificationBellProps) {
   return (
     <button
       onClick={onClick}
-      className="relative rounded-full p-2 transition-colors hover:bg-electric/10"
+      className="relative rounded-full p-2 transition-all hover:scale-105 hover:bg-electric/10 active:scale-95"
       aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
     >
-      <Bell className="h-6 w-6 text-foreground" />
+      <Bell
+        className="h-6 w-6 text-foreground transition-colors hover:text-electric"
+        fill={unreadCount > 0 ? 'currentColor' : 'none'}
+        fillOpacity={unreadCount > 0 ? '0.2' : '0'}
+      />
       {unreadCount > 0 && (
-        <span className="absolute right-0 top-0 flex h-5 w-5 items-center justify-center rounded-full bg-electric text-xs font-bold text-white">
+        <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-electric text-xs font-bold text-white shadow-lg duration-200 animate-in zoom-in-50">
           {unreadCount > 9 ? '9+' : unreadCount}
         </span>
       )}
