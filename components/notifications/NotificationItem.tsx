@@ -66,7 +66,7 @@ export default function NotificationItem({
 
   const content = (
     <div
-      className={`flex min-h-[100px] gap-3 rounded-lg border p-3 transition-all hover:border-electric/50 hover:bg-white/5 ${
+      className={`flex min-h-[160px] gap-3 rounded-lg border p-4 transition-all hover:border-electric/50 hover:bg-white/5 ${
         notification.is_read ? 'border-white/10 bg-white/5' : 'border-electric/30 bg-electric/10'
       }`}
     >
