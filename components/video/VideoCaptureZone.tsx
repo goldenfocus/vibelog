@@ -6,7 +6,17 @@
  * Pattern: Follows MicRecorder/AudioEngine structure for video
  */
 
-import { Video, Camera, StopCircle, RotateCcw, Check, AlertCircle, X } from 'lucide-react';
+import {
+  Video,
+  Camera,
+  StopCircle,
+  RotateCcw,
+  Check,
+  AlertCircle,
+  X,
+  RefreshCw,
+  CheckCircle,
+} from 'lucide-react';
 import React, { useState, useRef, useEffect } from 'react';
 
 import { useVideoUpload } from '@/hooks/useVideoUpload';
@@ -32,7 +42,7 @@ export function VideoCaptureZone({
   const { uploadVideo, uploadProgress: uploadProgressState } = useVideoUpload();
 
   const [status, setStatus] = useState<
-    'idle' | 'requesting' | 'ready' | 'recording' | 'uploading' | 'success' | 'error'
+    'idle' | 'requesting' | 'ready' | 'recording' | 'preview' | 'uploading' | 'success' | 'error'
   >('idle');
   const [error, setError] = useState<string | null>(null);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -241,16 +251,16 @@ export function VideoCaptureZone({
         }
       };
 
-      mediaRecorder.onstop = async () => {
+      mediaRecorder.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: mimeType });
         setVideoBlob(blob);
 
         // Stop camera preview
         stopCameraPreview();
 
-        // AUTO-UPLOAD: Start upload immediately after recording stops
-        console.log('📹 [AUTO-UPLOAD] Starting automatic upload after recording...');
-        await autoUploadVideo(blob);
+        // Show preview instead of auto-uploading
+        console.log('📹 [PREVIEW] Showing video preview for user confirmation...');
+        setStatus('preview');
       };
 
       mediaRecorder.start();
@@ -324,10 +334,10 @@ export function VideoCaptureZone({
     console.log('✅ [VideoCaptureZone] Recording canceled, camera preview restarted');
   };
 
-  // Auto-upload video after recording stops (follows mic recorder pattern)
-  const autoUploadVideo = async (blob: Blob) => {
-    if (!blob) {
-      console.error('❌ [AUTO-UPLOAD] No video blob available');
+  // Upload video (triggered by user confirmation after preview)
+  const confirmAndUploadVideo = async () => {
+    if (!videoBlob) {
+      console.error('❌ [UPLOAD] No video blob available');
       return;
     }
 
@@ -335,15 +345,15 @@ export function VideoCaptureZone({
       setStatus('uploading');
       setError(null);
 
-      console.log('📹 [AUTO-UPLOAD] Uploading video...', {
-        blobSize: blob.size,
+      console.log('📹 [UPLOAD] Uploading video...', {
+        blobSize: videoBlob.size,
         vibelogId,
       });
 
       // Upload using the hook
-      const result = await uploadVideo(blob, vibelogId);
+      const result = await uploadVideo(videoBlob, vibelogId);
 
-      console.log('✅ [AUTO-UPLOAD] Upload successful:', result.url);
+      console.log('✅ [UPLOAD] Upload successful:', result.url);
 
       // Notify parent component
       if (onVideoCaptured) {
@@ -353,10 +363,24 @@ export function VideoCaptureZone({
       setStatus('success');
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to upload video';
-      console.error('❌ [AUTO-UPLOAD] Upload error:', errorMessage, err);
+      console.error('❌ [UPLOAD] Upload error:', errorMessage, err);
       setError(errorMessage);
       setStatus('error');
     }
+  };
+
+  // Re-record: discard current video and start camera preview again
+  const handleRerecord = () => {
+    console.log('[VideoCaptureZone] User requested re-record');
+
+    // Discard current video
+    setVideoBlob(null);
+    setRecordingTime(0);
+    chunksRef.current = [];
+    setError(null);
+
+    // Restart camera preview
+    setStatus('idle');
   };
 
   // Reset to start over
@@ -509,8 +533,47 @@ export function VideoCaptureZone({
     );
   }
 
-  // Video preview (REMOVED: Auto-upload happens immediately after recording)
-  // The uploading state will show progress, then transition to success
+  // Video preview state - show video with confirmation buttons
+  if (status === 'preview' && videoBlob) {
+    const videoUrl = URL.createObjectURL(videoBlob);
+
+    return (
+      <div className="space-y-3 rounded-lg border-2 border-electric/30 bg-card p-4">
+        {/* Video preview */}
+        <video
+          src={videoUrl}
+          controls
+          playsInline
+          className="w-full rounded-lg bg-black"
+          style={{ maxHeight: '400px' }}
+        />
+
+        {/* Video info */}
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
+          <span>{(videoBlob.size / (1024 * 1024)).toFixed(1)} MB</span>
+          <span>{formatTime(recordingTime)}</span>
+        </div>
+
+        {/* Action buttons */}
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={handleRerecord}
+            className="flex items-center justify-center gap-2 rounded-lg border border-border bg-background px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
+          >
+            <RefreshCw className="h-4 w-4" />
+            <span>Re-record</span>
+          </button>
+          <button
+            onClick={confirmAndUploadVideo}
+            className="flex items-center justify-center gap-2 rounded-lg bg-electric px-4 py-2.5 text-sm font-medium text-white hover:bg-electric/90"
+          >
+            <CheckCircle className="h-4 w-4" />
+            <span>Use This Video</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // Recording state
   if (status === 'recording') {
