@@ -66,23 +66,33 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Missing storagePath in request body' }, { status: 400 });
       }
 
-      console.log('📥 Downloading audio from storage:', storagePath);
+      console.log('📥 Downloading media from storage:', storagePath);
 
       try {
         // Download file from Supabase Storage
         const blob = await downloadFromStorage(storagePath);
 
+        // Detect if it's video or audio from blob type
+        const isVideo = blob.type?.startsWith('video/');
+        const fileExt = isVideo
+          ? blob.type.includes('mp4')
+            ? 'mp4'
+            : blob.type.includes('quicktime')
+              ? 'mov'
+              : 'webm'
+          : 'webm';
+
         // Convert blob to File
-        audioFile = new File([blob], 'recording.webm', {
+        audioFile = new File([blob], `recording.${fileExt}`, {
           type: blob.type || 'audio/webm',
         });
 
-        console.log('✅ Downloaded:', audioFile.size, 'bytes');
+        console.log('✅ Downloaded:', audioFile.size, 'bytes', isVideo ? '(video)' : '(audio)');
       } catch (storageError) {
         console.error('Storage download failed:', storageError);
         return NextResponse.json(
           {
-            error: 'Failed to download audio from storage',
+            error: 'Failed to download media from storage',
             message: storageError instanceof Error ? storageError.message : 'Unknown error',
           },
           { status: 500 }
@@ -91,21 +101,56 @@ export async function POST(request: NextRequest) {
     } else {
       // OLD WAY: Direct formData upload (4MB limit, kept for backwards compatibility)
       const formData = await request.formData();
-      const file = formData.get('audio') as File;
+      // Accept both 'audio' and 'video' form field names
+      const file = (formData.get('audio') || formData.get('video')) as File;
 
       if (!file) {
-        return NextResponse.json({ error: 'No audio file provided' }, { status: 400 });
+        return NextResponse.json({ error: 'No audio or video file provided' }, { status: 400 });
       }
 
       audioFile = file;
 
+      // Validate file type - support both audio and video
+      const fileType = (audioFile.type || '').split(';')[0].trim();
+      const ALLOWED_TYPES = [
+        // Audio formats
+        'audio/webm',
+        'audio/wav',
+        'audio/mpeg',
+        'audio/mp4',
+        'audio/mp3',
+        'audio/ogg',
+        // Video formats (Whisper API supports these)
+        'video/webm',
+        'video/mp4',
+        'video/quicktime', // .mov
+        'video/mpeg',
+      ];
+
+      if (!ALLOWED_TYPES.includes(fileType)) {
+        return NextResponse.json(
+          {
+            error: 'Unsupported media format',
+            details: `Supported formats: WebM, MP4, MOV, WAV, MP3. You uploaded: ${fileType}`,
+          },
+          { status: 415 }
+        );
+      }
+
       // Use file constraints from config (only for direct uploads)
-      const { maxSize: MAX_SIZE_BYTES, minSize: MIN_SIZE_BYTES } = config.files.audio;
+      const isVideo = fileType.startsWith('video/');
+      const { maxSize: AUDIO_MAX_SIZE, minSize: MIN_SIZE_BYTES } = config.files.audio;
+
+      // Whisper API has a 25MB limit for all files
+      const WHISPER_MAX_SIZE = 25 * 1024 * 1024; // 25MB
+      const MAX_SIZE_BYTES = isVideo
+        ? Math.min(WHISPER_MAX_SIZE, 25 * 1024 * 1024) // 25MB for video
+        : AUDIO_MAX_SIZE; // Use config limit for audio
 
       // Check for empty or too small files
       if (audioFile.size === 0) {
         return NextResponse.json(
-          { error: 'Audio file is empty. Please try recording again.' },
+          { error: `${isVideo ? 'Video' : 'Audio'} file is empty. Please try recording again.` },
           { status: 400 }
         );
       }
@@ -114,21 +159,29 @@ export async function POST(request: NextRequest) {
       if (audioFile.size < MIN_SIZE_BYTES) {
         return NextResponse.json(
           {
-            error:
-              'Audio file is too small or corrupted. Please try recording again with longer audio.',
+            error: `${isVideo ? 'Video' : 'Audio'} file is too small or corrupted. Please try recording again with longer ${isVideo ? 'video' : 'audio'}.`,
           },
           { status: 400 }
         );
       }
 
       if (audioFile.size > MAX_SIZE_BYTES) {
-        return NextResponse.json({ error: 'Audio file too large' }, { status: 413 });
+        return NextResponse.json(
+          {
+            error: `${isVideo ? 'Video' : 'Audio'} file too large`,
+            details: `Maximum size is ${MAX_SIZE_BYTES / (1024 * 1024)}MB. Your file is ${(audioFile.size / (1024 * 1024)).toFixed(1)}MB`,
+          },
+          { status: 413 }
+        );
       }
     }
 
+    // Detect if it's a video or audio file
+    const isVideo = audioFile.type?.startsWith('video/');
+
     if (isDev) {
       console.log(
-        '🎤 Transcribing audio:',
+        `${isVideo ? '🎥' : '🎤'} Transcribing ${isVideo ? 'video' : 'audio'}:`,
         audioFile.size,
         'bytes',
         audioFile.type,
@@ -159,8 +212,17 @@ export async function POST(request: NextRequest) {
     });
 
     // Convert File to format OpenAI expects
-    // Create a new File with .webm extension to help OpenAI identify the format
-    const whisperFile = new File([audioFile], 'recording.webm', {
+    // Detect proper file extension based on type
+    const fileType = audioFile.type || '';
+    const fileExt = isVideo
+      ? fileType.includes('mp4')
+        ? 'mp4'
+        : fileType.includes('quicktime')
+          ? 'mov'
+          : 'webm'
+      : 'webm';
+
+    const whisperFile = new File([audioFile], `recording.${fileExt}`, {
       type: audioFile.type || 'audio/webm',
     });
 
