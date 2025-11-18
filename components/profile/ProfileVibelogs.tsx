@@ -21,6 +21,7 @@ interface Vibelog {
   view_count: number;
   like_count: number;
   share_count: number;
+  comment_count: number;
   read_time: number;
   word_count: number;
   tags?: string[];
@@ -48,6 +49,7 @@ export function ProfileVibelogs({
     ...vibelog,
     teaser: vibelog.teaser || vibelog.content,
     cover_image_url: vibelog.cover_image_url ?? null,
+    comment_count: vibelog.comment_count ?? 0,
     author: {
       username,
       display_name: displayName,

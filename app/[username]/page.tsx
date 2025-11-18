@@ -132,6 +132,7 @@ async function getVibelogs(userId: string) {
         view_count,
         like_count,
         share_count,
+        comment_count,
         read_time,
         word_count,
         tags,
@@ -171,6 +172,7 @@ async function getVibelogs(userId: string) {
       view_count,
       like_count,
       share_count,
+      comment_count,
       read_time,
       word_count,
       tags

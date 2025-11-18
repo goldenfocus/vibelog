@@ -4,8 +4,8 @@
  * Check Supabase Storage buckets
  */
 
-const { createClient } = require('@supabase/supabase-js');
-const fs = require('fs');
+import { createClient } from '@supabase/supabase-js';
+import fs from 'fs';
 
 // Read credentials from .env.local
 const envContent = fs.readFileSync('.env.local', 'utf-8');

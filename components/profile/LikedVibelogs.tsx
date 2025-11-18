@@ -17,6 +17,7 @@ interface Vibelog {
   view_count: number;
   like_count: number;
   share_count: number;
+  comment_count: number;
   read_time: number;
   user_id?: string;
   author: {
@@ -100,13 +101,10 @@ export function LikedVibelogs({ userId, isOwnProfile = false }: LikedVibelogsPro
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold">
-          Liked Vibelogs{' '}
-          <span className="text-muted-foreground">({likedVibelogs.length})</span>
+          Liked Vibelogs <span className="text-muted-foreground">({likedVibelogs.length})</span>
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          {isOwnProfile
-            ? "Vibelogs you've liked"
-            : 'Vibelogs liked by this user'}
+          {isOwnProfile ? "Vibelogs you've liked" : 'Vibelogs liked by this user'}
         </p>
       </div>
 
@@ -122,6 +120,7 @@ export function LikedVibelogs({ userId, isOwnProfile = false }: LikedVibelogsPro
                 ...vibelog,
                 teaser: vibelog.teaser || vibelog.content,
                 cover_image_url: vibelog.cover_image_url ?? null,
+                comment_count: vibelog.comment_count ?? 0,
               }}
             />
           </div>
@@ -130,4 +129,3 @@ export function LikedVibelogs({ userId, isOwnProfile = false }: LikedVibelogsPro
     </div>
   );
 }
-
