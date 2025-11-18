@@ -187,6 +187,27 @@ export function VideoCaptureZone({
     hasRequestedCamera.current = false; // Allow re-requesting
   };
 
+  // Get best supported MIME type for this browser
+  const getSupportedMimeType = (): string => {
+    // Priority order: MP4 for Safari, WebM for Chrome/Firefox
+    const types = [
+      'video/mp4', // Safari (iOS and desktop), universal playback
+      'video/webm;codecs=vp9,opus', // Modern Chrome/Firefox
+      'video/webm;codecs=vp8,opus', // Older Chrome/Firefox
+      'video/webm', // Fallback
+    ];
+
+    for (const type of types) {
+      if (MediaRecorder.isTypeSupported(type)) {
+        console.log('[VideoCaptureZone] Selected MIME type:', type);
+        return type;
+      }
+    }
+
+    console.warn('[VideoCaptureZone] No preferred MIME type supported, using default');
+    return 'video/webm';
+  };
+
   // Start recording
   const startRecording = () => {
     if (!mediaStreamRef.current) {
@@ -195,10 +216,23 @@ export function VideoCaptureZone({
 
     try {
       chunksRef.current = [];
-      const mimeType = MediaRecorder.isTypeSupported('video/webm') ? 'video/webm' : 'video/mp4';
+      const mimeType = getSupportedMimeType();
 
-      const mediaRecorder = new MediaRecorder(mediaStreamRef.current, {
+      // Client-side compression settings
+      // Note: iOS Safari may ignore videoBitsPerSecond, but Chrome/Firefox honor it
+      const options = {
         mimeType,
+        videoBitsPerSecond: 1_000_000, // 1 Mbps (reduces 60s video from ~40MB to ~10MB on Chrome)
+        audioBitsPerSecond: 128_000, // 128 kbps (good quality for transcription)
+      };
+
+      const mediaRecorder = new MediaRecorder(mediaStreamRef.current, options);
+
+      // Log actual bitrate used (may differ from requested)
+      console.log('[VideoCaptureZone] MediaRecorder configured:', {
+        requestedVideoBitrate: options.videoBitsPerSecond,
+        requestedAudioBitrate: options.audioBitsPerSecond,
+        mimeType: mediaRecorder.mimeType,
       });
 
       mediaRecorder.ondataavailable = event => {
