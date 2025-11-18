@@ -1,9 +1,10 @@
 'use client';
 
-import { MessageCircle, Bot, Share2, FileText, Mic, Video } from 'lucide-react';
+import { MessageCircle, Bot, Share2, FileText, Mic, Video, Monitor } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useState, useEffect, Suspense } from 'react';
 
+import { ScreenShareCreator } from '@/components/creation/ScreenShareCreator';
 import { TextCreator } from '@/components/creation/TextCreator';
 import { VideoCreator } from '@/components/creation/VideoCreator';
 import HomeCommunityShowcase from '@/components/home/HomeCommunityShowcase';
@@ -28,7 +29,7 @@ function RemixHandler({ onRemixContent }: { onRemixContent: (content: string | n
 export default function Home() {
   const { t, isLoading } = useI18n();
   const [remixContent, setRemixContent] = useState<string | null>(null);
-  const [creationMode, setCreationMode] = useState<'text' | 'audio' | 'video'>('audio');
+  const [creationMode, setCreationMode] = useState<'text' | 'audio' | 'video' | 'screen'>('audio');
   const [refreshFeed, setRefreshFeed] = useState<(() => void) | null>(null);
 
   if (isLoading) {
@@ -70,11 +71,11 @@ export default function Home() {
             </p>
           </div>
 
-          {/* 3-Icon Mode Selector */}
-          <div className="mb-8 flex justify-center gap-6">
+          {/* 4-Icon Mode Selector */}
+          <div className="mb-8 flex justify-center gap-4 sm:gap-6">
             <button
               onClick={() => setCreationMode('text')}
-              className={`group flex h-20 w-20 items-center justify-center rounded-2xl border-2 transition-all sm:h-24 sm:w-24 ${
+              className={`group flex h-16 w-16 items-center justify-center rounded-2xl border-2 transition-all sm:h-20 sm:w-20 ${
                 creationMode === 'text'
                   ? 'border-purple-600 bg-purple-50 shadow-lg dark:border-purple-400 dark:bg-purple-900/20'
                   : 'border-border/30 bg-card/50 hover:border-border hover:bg-card/80'
@@ -82,7 +83,7 @@ export default function Home() {
               aria-label="Create with text"
             >
               <FileText
-                className={`h-10 w-10 sm:h-12 sm:w-12 ${
+                className={`h-8 w-8 sm:h-10 sm:w-10 ${
                   creationMode === 'text'
                     ? 'text-purple-600 dark:text-purple-400'
                     : 'text-muted-foreground group-hover:text-foreground'
@@ -93,7 +94,7 @@ export default function Home() {
 
             <button
               onClick={() => setCreationMode('audio')}
-              className={`group flex h-20 w-20 items-center justify-center rounded-2xl border-2 transition-all sm:h-24 sm:w-24 ${
+              className={`group flex h-16 w-16 items-center justify-center rounded-2xl border-2 transition-all sm:h-20 sm:w-20 ${
                 creationMode === 'audio'
                   ? 'border-purple-600 bg-purple-50 shadow-lg dark:border-purple-400 dark:bg-purple-900/20'
                   : 'border-border/30 bg-card/50 hover:border-border hover:bg-card/80'
@@ -101,7 +102,7 @@ export default function Home() {
               aria-label="Create with audio"
             >
               <Mic
-                className={`h-10 w-10 sm:h-12 sm:w-12 ${
+                className={`h-8 w-8 sm:h-10 sm:w-10 ${
                   creationMode === 'audio'
                     ? 'text-purple-600 dark:text-purple-400'
                     : 'text-muted-foreground group-hover:text-foreground'
@@ -112,7 +113,7 @@ export default function Home() {
 
             <button
               onClick={() => setCreationMode('video')}
-              className={`group flex h-20 w-20 items-center justify-center rounded-2xl border-2 transition-all sm:h-24 sm:w-24 ${
+              className={`group flex h-16 w-16 items-center justify-center rounded-2xl border-2 transition-all sm:h-20 sm:w-20 ${
                 creationMode === 'video'
                   ? 'border-purple-600 bg-purple-50 shadow-lg dark:border-purple-400 dark:bg-purple-900/20'
                   : 'border-border/30 bg-card/50 hover:border-border hover:bg-card/80'
@@ -120,9 +121,28 @@ export default function Home() {
               aria-label="Create with video"
             >
               <Video
-                className={`h-10 w-10 sm:h-12 sm:w-12 ${
+                className={`h-8 w-8 sm:h-10 sm:w-10 ${
                   creationMode === 'video'
                     ? 'text-purple-600 dark:text-purple-400'
+                    : 'text-muted-foreground group-hover:text-foreground'
+                }`}
+                strokeWidth={1.5}
+              />
+            </button>
+
+            <button
+              onClick={() => setCreationMode('screen')}
+              className={`group flex h-16 w-16 items-center justify-center rounded-2xl border-2 transition-all sm:h-20 sm:w-20 ${
+                creationMode === 'screen'
+                  ? 'border-blue-600 bg-blue-50 shadow-lg dark:border-blue-400 dark:bg-blue-900/20'
+                  : 'border-border/30 bg-card/50 hover:border-border hover:bg-card/80'
+              }`}
+              aria-label="Record screen"
+            >
+              <Monitor
+                className={`h-8 w-8 sm:h-10 sm:w-10 ${
+                  creationMode === 'screen'
+                    ? 'text-blue-600 dark:text-blue-400'
                     : 'text-muted-foreground group-hover:text-foreground'
                 }`}
                 strokeWidth={1.5}
@@ -140,6 +160,9 @@ export default function Home() {
             )}
             {creationMode === 'video' && (
               <VideoCreator remixContent={remixContent} onSaveSuccess={refreshFeed} />
+            )}
+            {creationMode === 'screen' && (
+              <ScreenShareCreator remixContent={remixContent} onSaveSuccess={refreshFeed} />
             )}
           </div>
 
