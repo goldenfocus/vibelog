@@ -11,6 +11,7 @@ import {
   MoreVertical,
   Trash2,
   Heart,
+  Twitter,
 } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
@@ -76,6 +77,7 @@ export default function VibelogActions({
   const [isLiked, setIsLiked] = useState(initialIsLiked);
   const [likeCount, setLikeCount] = useState(initialLikeCount);
   const [isLiking, setIsLiking] = useState(false);
+  const [isGeneratingShareUrl, setIsGeneratingShareUrl] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const lastLikeRequestRef = useRef<Promise<void> | null>(null);
   const previewLimiterRef = useRef<AudioPreviewLimiter | null>(null);
@@ -233,6 +235,38 @@ export default function VibelogActions({
   const handleShareClick = async () => {
     if (onShare) {
       await onShare();
+    }
+  };
+
+  const handleTwitterShareClick = async () => {
+    try {
+      setIsGeneratingShareUrl(true);
+
+      // Generate Twitter share URL from API
+      const response = await fetch('/api/publish/twitter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          vibelogId,
+          format: 'teaser', // Use teaser format by default
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        toast.error(error.error || 'Failed to generate share link');
+        return;
+      }
+
+      const { shareUrl } = await response.json();
+
+      // Open Twitter Web Intent in new tab
+      window.open(shareUrl, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      console.error('Twitter share error:', error);
+      toast.error('Failed to share on X');
+    } finally {
+      setIsGeneratingShareUrl(false);
     }
   };
 
@@ -560,7 +594,25 @@ export default function VibelogActions({
               </button>
             </LikersPopover>
 
-            {/* Share Button */}
+            {/* X/Twitter Share Button */}
+            <button
+              onClick={handleTwitterShareClick}
+              disabled={isGeneratingShareUrl}
+              className={baseButtonClass}
+              title="Share on X"
+              data-testid="twitter-share-button"
+            >
+              {isGeneratingShareUrl ? (
+                <Loader2 className={`${iconClass} animate-spin`} />
+              ) : (
+                <Twitter className={iconClass} />
+              )}
+              <span className={labelClass}>
+                {isGeneratingShareUrl ? 'Loading...' : 'Share on X'}
+              </span>
+            </button>
+
+            {/* Generic Share Button */}
             {onShare && (
               <button
                 onClick={handleShareClick}
