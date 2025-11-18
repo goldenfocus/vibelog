@@ -42,7 +42,15 @@ export function VideoCaptureZone({
   const { uploadVideo, uploadProgress: uploadProgressState } = useVideoUpload();
 
   const [status, setStatus] = useState<
-    'idle' | 'requesting' | 'ready' | 'recording' | 'preview' | 'uploading' | 'success' | 'error'
+    | 'idle'
+    | 'requesting'
+    | 'ready'
+    | 'recording'
+    | 'preview'
+    | 'uploading'
+    | 'analyzing'
+    | 'success'
+    | 'error'
   >('idle');
   const [error, setError] = useState<string | null>(null);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -342,6 +350,7 @@ export function VideoCaptureZone({
     }
 
     try {
+      // Step 1: Upload video
       setStatus('uploading');
       setError(null);
 
@@ -350,10 +359,51 @@ export function VideoCaptureZone({
         vibelogId,
       });
 
-      // Upload using the hook
       const result = await uploadVideo(videoBlob, vibelogId);
 
       console.log('✅ [UPLOAD] Upload successful:', result.url);
+
+      // Step 2: Analyze video to generate title & description
+      setStatus('analyzing');
+      console.log('🔍 [ANALYZE] Analyzing video content...');
+
+      const analyzeResponse = await fetch('/api/video/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vibelogId }),
+      });
+
+      if (!analyzeResponse.ok) {
+        // Analysis failed, but video is uploaded - still show success
+        console.error('❌ [ANALYZE] Analysis failed, but video was uploaded successfully');
+        setStatus('success');
+        if (onVideoCaptured) {
+          onVideoCaptured(result.url);
+        }
+        return;
+      }
+
+      const analysisResult = await analyzeResponse.json();
+      console.log('✅ [ANALYZE] Analysis complete:', {
+        title: analysisResult.title,
+        descriptionLength: analysisResult.description?.length,
+      });
+
+      // Step 3: Update vibelog with generated content
+      const updateResponse = await fetch('/api/save-vibelog', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          vibelogId,
+          title: analysisResult.title,
+          content: `# ${analysisResult.title}\n\n${analysisResult.description}`,
+          teaser: analysisResult.teaser,
+        }),
+      });
+
+      if (!updateResponse.ok) {
+        console.error('❌ [UPDATE] Failed to update vibelog with analysis');
+      }
 
       // Notify parent component
       if (onVideoCaptured) {
@@ -507,6 +557,40 @@ export function VideoCaptureZone({
               </p>
             )}
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Analyzing state - show video preview with overlay
+  if (status === 'analyzing' && videoBlob) {
+    const videoUrl = URL.createObjectURL(videoBlob);
+
+    return (
+      <div className="space-y-3 rounded-lg border-2 border-purple-500/30 bg-card p-4">
+        {/* Video preview with overlay */}
+        <div className="relative">
+          <video
+            src={videoUrl}
+            controls
+            playsInline
+            className="w-full rounded-lg bg-black"
+            style={{ maxHeight: '400px' }}
+          />
+          {/* Analysis overlay */}
+          <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/40 backdrop-blur-sm">
+            <div className="text-center">
+              <div className="mx-auto mb-3 h-12 w-12 animate-spin rounded-full border-4 border-purple-600 border-t-transparent"></div>
+              <p className="text-lg font-semibold text-white">Analyzing video...</p>
+              <p className="mt-1 text-sm text-white/80">You can replay while we work</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Video info */}
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
+          <span>{(videoBlob.size / (1024 * 1024)).toFixed(1)} MB</span>
+          <span>{formatTime(recordingTime)}</span>
         </div>
       </div>
     );
