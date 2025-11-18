@@ -2,6 +2,10 @@
   "functions": {
     "app/api/video/generate/route.ts": {
       "maxDuration": 300
+    },
+    "app/api/vibelog/upload-video/route.ts": {
+      "maxDuration": 60,
+      "memory": 1024
     }
   }
 }

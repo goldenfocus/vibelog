@@ -17,6 +17,11 @@ import { createServerAdminClient } from '@/lib/supabaseAdmin';
 
 export const runtime = 'nodejs';
 
+// Configure route to accept large request bodies (up to 50MB)
+export const maxDuration = 60; // 60 seconds for upload
+// Note: Body size limits are controlled by Vercel plan (100MB for Pro, 4.5MB for Hobby)
+// For larger files, we'll need to upgrade to Pro or use alternative upload methods
+
 // Validation schema
 const UploadVideoSchema = z.object({
   vibelogId: z.string().uuid(),
