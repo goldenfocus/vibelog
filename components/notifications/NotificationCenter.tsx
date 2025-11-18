@@ -119,29 +119,42 @@ export default function NotificationCenter({ isOpen, onClose }: NotificationCent
 
       {/* Panel - Mobile optimized with smooth slide-in animation */}
       <div className="fixed right-0 top-0 z-50 flex h-full w-full flex-col border-l border-white/10 bg-black shadow-2xl duration-300 animate-in slide-in-from-right sm:max-w-md">
-        {/* Header */}
-        <div className="flex-shrink-0 border-b border-white/10 bg-black p-4">
-          <div className="flex items-center justify-between">
+        {/* Compact Header - Less space, more content */}
+        <div className="flex-shrink-0 border-b border-white/10 bg-black px-4 py-3">
+          {/* Title Row */}
+          <div className="mb-3 flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-white">Notifications</h2>
-              {unreadCount > 0 && <p className="text-sm text-gray-400">{unreadCount} unread</p>}
+              <h2 className="text-base font-semibold text-white">Notifications</h2>
+              {unreadCount > 0 && <p className="text-xs text-gray-400">{unreadCount} unread</p>}
             </div>
-            <button
-              onClick={onClose}
-              className="rounded-full p-2 transition-colors hover:bg-white/10"
-              aria-label="Close notifications"
-            >
-              <X className="h-5 w-5 text-white" />
-            </button>
+            <div className="flex items-center gap-2">
+              {/* Mark all as read - inline with close */}
+              {unreadCount > 0 && (
+                <button
+                  onClick={handleMarkAllRead}
+                  className="rounded-full p-1.5 text-xs text-electric transition-colors hover:bg-white/10"
+                  title="Mark all as read"
+                >
+                  <Check className="h-4 w-4" />
+                </button>
+              )}
+              <button
+                onClick={onClose}
+                className="rounded-full p-1.5 transition-colors hover:bg-white/10"
+                aria-label="Close notifications"
+              >
+                <X className="h-4 w-4 text-white" />
+              </button>
+            </div>
           </div>
 
-          {/* Filters */}
-          <div className="mt-4 flex gap-2 overflow-x-auto pb-2">
+          {/* Compact Filters */}
+          <div className="scrollbar-hide flex gap-1.5 overflow-x-auto">
             {(['all', 'unread', 'comment', 'reply', 'reaction'] as FilterType[]).map(f => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                className={`whitespace-nowrap rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                   filter === f
                     ? 'bg-electric text-white'
                     : 'bg-white/10 text-white hover:bg-white/20'
@@ -151,21 +164,10 @@ export default function NotificationCenter({ isOpen, onClose }: NotificationCent
               </button>
             ))}
           </div>
-
-          {/* Actions */}
-          {unreadCount > 0 && (
-            <button
-              onClick={handleMarkAllRead}
-              className="mt-3 flex items-center gap-2 text-sm font-medium text-electric transition-opacity hover:opacity-80"
-            >
-              <Check className="h-4 w-4" />
-              Mark all as read
-            </button>
-          )}
         </div>
 
-        {/* Notification list */}
-        <div className="flex-1 overflow-y-auto bg-black p-4">
+        {/* Notification list - More space for content */}
+        <div className="flex-1 overflow-y-auto bg-black px-4 py-3">
           {loading ? (
             <div className="flex h-full items-center justify-center">
               <Loader2 className="h-8 w-8 animate-spin text-electric" />
