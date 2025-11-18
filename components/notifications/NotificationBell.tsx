@@ -3,7 +3,7 @@
 import { Bell } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-import { createBrowserSupabaseClient } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase';
 
 interface NotificationBellProps {
   onClick: () => void;
@@ -11,7 +11,7 @@ interface NotificationBellProps {
 
 export default function NotificationBell({ onClick }: NotificationBellProps) {
   const [unreadCount, setUnreadCount] = useState(0);
-  const supabase = createBrowserSupabaseClient();
+  const supabase = createClient();
 
   useEffect(() => {
     // Fetch initial unread count
