@@ -48,66 +48,50 @@ jobs:
       - name: Create Pull Request
         if: steps.check-pr.outputs.pr_exists == 'false'
         id: create-pr
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const branch = context.ref.replace('refs/heads/', '');
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BRANCH="${GITHUB_REF#refs/heads/}"
 
-            // Get commit messages for PR body
-            const commits = await github.rest.repos.compareCommits({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              base: 'main',
-              head: branch
-            });
+          # Get latest commit message
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          COMMIT_TITLE=$(echo "$COMMIT_MSG" | head -1)
 
-            // Generate PR title from branch name
-            const titleFromBranch = branch
-              .replace(/^(feature|feat|fix|claude)\//, '')
-              .split('-')
-              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-              .join(' ');
+          # Generate title from branch name
+          TITLE_FROM_BRANCH=$(echo "$BRANCH" | sed 's/^feature\|feat\|fix\|claude\///' | sed 's/-/ /g' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) tolower(substr($i,2))}1')
 
-            // Get the latest commit message for title
-            const latestCommit = commits.data.commits[commits.data.commits.length - 1];
-            const commitTitle = latestCommit.commit.message.split('\n')[0];
+          # Use commit title if it's conventional, otherwise use branch name
+          if echo "$COMMIT_TITLE" | grep -qE '^(feat|fix|refactor|chore|docs|style|test|perf):'; then
+            PR_TITLE="$COMMIT_TITLE"
+          else
+            PR_TITLE="feat: $TITLE_FROM_BRANCH"
+          fi
 
-            // Use commit title if it starts with conventional commit, otherwise use branch-based title
-            const prTitle = commitTitle.match(/^(feat|fix|refactor|chore|docs|style|test|perf):/)
-              ? commitTitle
-              : `feat: ${titleFromBranch}`;
+          # Get commit list for PR body
+          COMMIT_LIST=$(git log main..HEAD --pretty=format:'- %s (%h)')
 
-            // Build PR body from commits
-            const commitList = commits.data.commits
-              .map(c => `- ${c.commit.message.split('\n')[0]} (${c.sha.substring(0, 7)})`)
-              .join('\n');
+          # Create PR body
+          PR_BODY=$(cat <<EOF
+          ## Auto-generated PR from $BRANCH
 
-            const prBodyParts = [
-              '## Auto-generated PR from ' + branch,
-              '',
-              '### Changes',
-              '',
-              commitList,
-              '',
-              '---',
-              '',
-              '🤖 This PR was automatically created and will auto-merge after successful Vercel deployment.',
-              '',
-              'Generated with [Claude Code](https://claude.com/claude-code)'
-            ];
-            const prBody = prBodyParts.join('\n');
+          ### Changes
 
-            const pr = await github.rest.pulls.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: prTitle,
-              body: prBody,
-              head: branch,
-              base: 'main'
-            });
+          $COMMIT_LIST
 
-            console.log(`Created PR #${pr.data.number}: ${prTitle}`);
-            core.setOutput('pr_number', pr.data.number);
+          ---
+
+          🤖 This PR was automatically created and will auto-merge after successful Vercel deployment.
+
+          Generated with [Claude Code](https://claude.com/claude-code)
+          EOF
+          )
+
+          # Create PR using gh CLI
+          PR_URL=$(gh pr create --title "$PR_TITLE" --body "$PR_BODY" --base main --head "$BRANCH")
+          PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
+
+          echo "Created PR #$PR_NUMBER: $PR_TITLE"
+          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
 
       - name: Wait for Vercel deployment
         run: |
