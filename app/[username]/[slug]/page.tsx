@@ -178,9 +178,11 @@ async function getVibelog(username: string, slug: string) {
     return null;
   }
 
-  // Query vibelog by user_id + public_slug (URL uses public_slug, not slug)
-  console.log('🔎 Querying vibelog:', { public_slug: slug, userId: profile.id });
-  const { data, error } = await supabase
+  // Query vibelog by user_id + slug (try both slug and public_slug for compatibility)
+  console.log('🔎 Querying vibelog:', { slug, userId: profile.id });
+
+  // First try by slug (most common, human-readable URLs like /-vibelog-title-abc123)
+  let { data, error } = await supabase
     .from('vibelogs')
     .select(
       `
@@ -204,11 +206,48 @@ async function getVibelog(username: string, slug: string) {
       public_slug
     `
     )
-    .eq('public_slug', slug)
+    .eq('slug', slug)
     .eq('user_id', profile.id)
     .eq('is_published', true)
     .eq('is_public', true)
     .single();
+
+  // If not found by slug, try by public_slug (notification URLs use UUID format)
+  if (error || !data) {
+    console.log('🔄 Not found by slug, trying public_slug...');
+    const publicSlugResult = await supabase
+      .from('vibelogs')
+      .select(
+        `
+        id,
+        title,
+        slug,
+        content,
+        teaser,
+        audio_url,
+        cover_image_url,
+        video_url,
+        created_at,
+        published_at,
+        view_count,
+        like_count,
+        share_count,
+        read_time,
+        word_count,
+        tags,
+        user_id,
+        public_slug
+      `
+      )
+      .eq('public_slug', slug)
+      .eq('user_id', profile.id)
+      .eq('is_published', true)
+      .eq('is_public', true)
+      .single();
+
+    data = publicSlugResult.data;
+    error = publicSlugResult.error;
+  }
 
   console.log('📄 Vibelog query result:', { data: data?.title, error });
 
