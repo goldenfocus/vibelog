@@ -218,36 +218,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       // NO TTS GENERATION - Use only creator's original audio
       // Vibelogs without audio_url will simply not have audio playback
 
-      // Enqueue video generation (async, no cron needed)
-      try {
-        await supabase
-          .from('vibelogs')
-          .update({ video_generation_status: 'queued' })
-          .eq('id', vibelogId);
-
-        // Use audio duration as a hint; cap to 90s for now
-        const targetDurationSeconds = vibelogData.audio_duration
-          ? Math.min(vibelogData.audio_duration, 90)
-          : 90;
-
-        await supabase
-          .from('video_queue')
-          .insert({
-            vibelog_id: vibelogId,
-            status: 'pending',
-            target_duration_seconds: targetDurationSeconds,
-          });
-
-        // Fire-and-forget nudge to process the queue
-        fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/video/process-next`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-        }).catch(err => {
-          console.warn('🎬 [VIDEO] Background processor nudge failed (non-critical):', err.message);
-        });
-      } catch (queueError) {
-        console.warn('🎬 [VIDEO] Queue enqueue failed (non-critical):', queueError);
-      }
+      // NOTE: Video generation via AI has been removed (migration 028)
+      // Users can now upload videos directly or capture via camera
+      // No automatic video generation queue
 
       return NextResponse.json({
         success: true,
