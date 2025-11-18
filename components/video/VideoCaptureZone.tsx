@@ -389,7 +389,7 @@ export function VideoCaptureZone({
         descriptionLength: analysisResult.description?.length,
       });
 
-      // Step 3: Update vibelog with generated content
+      // Step 3: Update vibelog with generated content AND auto-publish
       const updateResponse = await fetch('/api/save-vibelog', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -398,11 +398,15 @@ export function VideoCaptureZone({
           title: analysisResult.title,
           content: `# ${analysisResult.title}\n\n${analysisResult.description}`,
           teaser: analysisResult.teaser,
+          isPublished: true, // Auto-publish video vibelogs
+          isPublic: true,
         }),
       });
 
       if (!updateResponse.ok) {
         console.error('❌ [UPDATE] Failed to update vibelog with analysis');
+      } else {
+        console.log('✅ [PUBLISH] Video vibelog auto-published to community');
       }
 
       // Notify parent component

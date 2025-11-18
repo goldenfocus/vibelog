@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
+import Comments from '@/components/comments/Comments';
 import Navigation from '@/components/Navigation';
 import PublicVibelogContent from '@/components/PublicVibelogContent';
 import { formatFullDate } from '@/lib/date-utils';
@@ -215,6 +216,11 @@ export default async function PublicVibelogPage({ params }: PageProps) {
             </audio>
           </div>
         )}
+
+        {/* Comments Section */}
+        <div className="mt-12">
+          <Comments vibelogId={vibelogWithAuthor.id} />
+        </div>
 
         {/* Footer CTA */}
         <div className="mt-16 border-t border-border/40 pt-8 text-center">
