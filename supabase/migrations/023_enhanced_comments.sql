@@ -53,14 +53,17 @@ DO $$ BEGIN
 END $$;
 
 -- Create view for enhanced comments with mini vibelog data
-CREATE OR REPLACE VIEW public.enhanced_comments AS
-SELECT 
+-- Drop existing view first to avoid column conflicts
+DROP VIEW IF EXISTS public.enhanced_comments CASCADE;
+
+CREATE VIEW public.enhanced_comments AS
+SELECT
   c.*,
   p.username,
   p.display_name,
   p.avatar_url,
-  CASE 
-    WHEN c.is_mini_vibelog = true THEN 
+  CASE
+    WHEN c.is_mini_vibelog = true THEN
       jsonb_build_object(
         'title', c.enhanced_title,
         'content', c.enhanced_content,

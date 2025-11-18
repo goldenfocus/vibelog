@@ -41,7 +41,7 @@ export default function NotificationCenter({ isOpen, onClose }: NotificationCent
       setUnreadCount(data.unreadCount);
     } catch (error) {
       console.error('Error fetching notifications:', error);
-      toast.error('Failed to load notifications');
+      // Silently handle error - no need to show failure toast for empty state
     } finally {
       setLoading(false);
     }
