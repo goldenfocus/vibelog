@@ -42,7 +42,7 @@ export async function GET(
       );
     }
 
-    // Fetch comments with author profiles
+    // Fetch comments with author profiles (only top-level comments, not replies)
     const { data: comments, error: commentsError } = await adminSupabase
       .from('comments')
       .select(
@@ -54,10 +54,12 @@ export async function GET(
         audio_url,
         voice_id,
         created_at,
-        updated_at
+        updated_at,
+        parent_comment_id
       `
       )
       .eq('vibelog_id', vibelogId)
+      .is('parent_comment_id', null) // Only fetch top-level comments, not replies
       .order('created_at', { ascending: true });
 
     if (commentsError) {
