@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
+import { AudioTabs } from '@/components/audio/AudioTabs';
 import VibelogActions from '@/components/VibelogActions';
 import VibelogContentRenderer from '@/components/VibelogContentRenderer';
 import VibelogEditModalFull from '@/components/VibelogEditModalFull';
@@ -23,6 +24,7 @@ interface PublicVibelogContentProps {
     user_id: string | null;
     public_slug: string;
     audio_url?: string | null;
+    ai_audio_url?: string | null;
     video_url?: string | null;
     created_at?: string;
     read_time?: number;
@@ -150,6 +152,16 @@ export default function PublicVibelogContent({ vibelog }: PublicVibelogContentPr
           <VideoPlayer videoUrl={videoUrl} poster={vibelog.cover_image_url || undefined} />
         </div>
       )}
+
+      {/* Audio Tabs - Original vs AI Narration */}
+      <AudioTabs
+        vibelogId={vibelog.id}
+        originalAudioUrl={vibelog.audio_url}
+        aiAudioUrl={vibelog.ai_audio_url}
+        title={vibelog.title}
+        author={vibelog.author?.display_name}
+        className="mb-8"
+      />
 
       {/* Metadata header - synced with VibelogActions */}
       <div className="mb-6 flex items-center gap-4 text-sm text-muted-foreground">
