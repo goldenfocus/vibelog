@@ -47,7 +47,28 @@ export async function POST(request: NextRequest) {
     // Determine tweet content
     const profile = vibelog.profiles;
     const postFormat = format || profile?.twitter_post_format || 'teaser';
-    const vibelogUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://vibelog.app'}/${vibelog.slug}`;
+
+    // Generate correct vibelog URL based on whether it's anonymous or user-owned
+    let vibelogUrl: string;
+    if (!vibelog.user_id) {
+      // Anonymous vibelog - use public_slug
+      vibelogUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://vibelog.app'}/@anonymous/${vibelog.public_slug}`;
+    } else if (profile?.username) {
+      // User-owned vibelog - use username and public_slug (or slug as fallback)
+      const slug = vibelog.public_slug || vibelog.slug;
+      vibelogUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://vibelog.app'}/@${profile.username}/${slug}`;
+    } else {
+      // Fallback - shouldn't happen but handle gracefully
+      vibelogUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://vibelog.app'}/v/${vibelog.public_slug || vibelog.slug}`;
+    }
+
+    // Defensive check: ensure URL is valid
+    if (!vibelogUrl || vibelogUrl.includes('/null') || vibelogUrl.includes('/undefined')) {
+      return NextResponse.json(
+        { error: 'Cannot generate share URL - vibelog slug missing' },
+        { status: 400 }
+      );
+    }
 
     let tweetContent: string;
 

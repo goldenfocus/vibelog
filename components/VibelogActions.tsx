@@ -11,12 +11,12 @@ import {
   MoreVertical,
   Trash2,
   Heart,
-  Twitter,
 } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 
 import ExportButton from '@/components/ExportButton';
+import { XIcon } from '@/components/icons/XIcon';
 import LikersPopover from '@/components/LikersPopover';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { AudioPreviewLimiter } from '@/lib/audioLimiter';
@@ -605,7 +605,7 @@ export default function VibelogActions({
               {isGeneratingShareUrl ? (
                 <Loader2 className={`${iconClass} animate-spin`} />
               ) : (
-                <Twitter className={iconClass} />
+                <XIcon className={iconClass} />
               )}
               {!isCompact && <span className={labelClass}>X</span>}
             </button>
