@@ -19,6 +19,18 @@ export interface CommentAuthor {
  * Base Comment Interface
  * Represents a simple comment (Tier 1)
  */
+/**
+ * Media attachment for comments
+ */
+export interface MediaAttachment {
+  type: 'image' | 'video';
+  url: string;
+  thumbnail_url: string | null;
+  width: number | null;
+  height: number | null;
+  alt_text?: string; // For accessibility and SEO
+}
+
 export interface Comment {
   id: string;
   vibelog_id: string;
@@ -28,6 +40,13 @@ export interface Comment {
   content: string | null; // Text comment
   audio_url: string | null; // Voice comment URL
   voice_id: string | null; // TTS voice clone ID
+
+  // Rich media attachments (photos, videos)
+  attachments: MediaAttachment[];
+  attachment_count: number;
+  has_rich_media: boolean;
+  media_description: string | null; // AI-generated description
+  media_alt_texts: Record<string, string> | null; // Alt texts by attachment index
 
   // Threading
   parent_comment_id: string | null;
@@ -195,6 +214,7 @@ export interface CreateCommentRequest {
   videoUrl?: string; // Video comment
   parentCommentId?: string; // For threading
   voiceId?: string; // TTS voice clone
+  attachments?: MediaAttachment[]; // Rich media attachments (photos, videos)
 }
 
 /**
