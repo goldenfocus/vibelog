@@ -105,6 +105,14 @@ export function VideoCaptureZone({
             try {
               await video.play();
               console.log('[VideoCaptureZone] Video playback started');
+              console.log('[VideoCaptureZone] Video element dimensions:', {
+                clientWidth: video.clientWidth,
+                clientHeight: video.clientHeight,
+                offsetWidth: video.offsetWidth,
+                offsetHeight: video.offsetHeight,
+                videoWidth: video.videoWidth,
+                videoHeight: video.videoHeight,
+              });
             } catch (playError) {
               console.error('[VideoCaptureZone] Failed to start video playback:', playError);
             }
@@ -549,6 +557,7 @@ export function VideoCaptureZone({
 
   // Camera preview (ready to record)
   if (status === 'ready') {
+    console.log('[VideoCaptureZone] Rendering ready state with video element');
     return (
       <div className="space-y-3 rounded-lg border border-border/50 bg-card p-4">
         {/* Live camera preview */}
@@ -558,7 +567,12 @@ export function VideoCaptureZone({
           muted
           playsInline
           className="w-full rounded-lg bg-black"
-          style={{ maxHeight: '400px', transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
+          style={{
+            maxHeight: '400px',
+            minHeight: '300px',
+            width: '100%',
+            transform: facingMode === 'user' ? 'scaleX(-1)' : 'none',
+          }}
         />
 
         {/* Camera toggle */}
