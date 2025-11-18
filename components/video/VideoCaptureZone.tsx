@@ -558,6 +558,15 @@ export function VideoCaptureZone({
   // Camera preview (ready to record)
   if (status === 'ready') {
     console.log('[VideoCaptureZone] Rendering ready state with video element');
+    console.log('[VideoCaptureZone] mediaStreamRef.current:', mediaStreamRef.current);
+
+    // Re-attach stream if video element lost it during re-render
+    if (videoRef.current && mediaStreamRef.current && !videoRef.current.srcObject) {
+      console.log('[VideoCaptureZone] Re-attaching stream to video element');
+      videoRef.current.srcObject = mediaStreamRef.current;
+      videoRef.current.play().catch(err => console.error('[VideoCaptureZone] Play error:', err));
+    }
+
     return (
       <div className="space-y-3 rounded-lg border border-border/50 bg-card p-4">
         {/* Live camera preview */}
