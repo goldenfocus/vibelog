@@ -1,11 +1,12 @@
 'use client';
 
-import { MessageCircle, Bot, Share2, FileText, Mic, Video } from 'lucide-react';
+import { MessageCircle, Bot, Share2, FileText, Mic, Video, Monitor } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useState, useEffect, Suspense } from 'react';
 
 import { TextCreator } from '@/components/creation/TextCreator';
 import { VideoCreator } from '@/components/creation/VideoCreator';
+import { ScreenShareCreator } from '@/components/creation/ScreenShareCreator';
 import HomeCommunityShowcase from '@/components/home/HomeCommunityShowcase';
 import MicRecorder from '@/components/MicRecorder';
 import Navigation from '@/components/Navigation';
@@ -28,7 +29,7 @@ function RemixHandler({ onRemixContent }: { onRemixContent: (content: string | n
 export default function Home() {
   const { t, isLoading } = useI18n();
   const [remixContent, setRemixContent] = useState<string | null>(null);
-  const [creationMode, setCreationMode] = useState<'text' | 'audio' | 'video'>('audio');
+  const [creationMode, setCreationMode] = useState<'text' | 'audio' | 'video' | 'screen'>('audio');
   const [refreshFeed, setRefreshFeed] = useState<(() => void) | null>(null);
 
   if (isLoading) {
@@ -70,8 +71,8 @@ export default function Home() {
             </p>
           </div>
 
-          {/* 3-Icon Mode Selector */}
-          <div className="mb-8 flex justify-center gap-6">
+          {/* 4-Icon Mode Selector */}
+          <div className="mb-8 flex justify-center gap-4 sm:gap-6">
             <button
               onClick={() => setCreationMode('text')}
               className={`group flex h-20 w-20 items-center justify-center rounded-2xl border-2 transition-all sm:h-24 sm:w-24 ${
@@ -128,6 +129,25 @@ export default function Home() {
                 strokeWidth={1.5}
               />
             </button>
+
+            <button
+              onClick={() => setCreationMode('screen')}
+              className={`group flex h-20 w-20 items-center justify-center rounded-2xl border-2 transition-all sm:h-24 sm:w-24 ${
+                creationMode === 'screen'
+                  ? 'border-blue-600 bg-blue-50 shadow-lg dark:border-blue-400 dark:bg-blue-900/20'
+                  : 'border-border/30 bg-card/50 hover:border-border hover:bg-card/80'
+              }`}
+              aria-label="Create with screen share"
+            >
+              <Monitor
+                className={`h-10 w-10 sm:h-12 sm:w-12 ${
+                  creationMode === 'screen'
+                    ? 'text-blue-600 dark:text-blue-400'
+                    : 'text-muted-foreground group-hover:text-foreground'
+                }`}
+                strokeWidth={1.5}
+              />
+            </button>
           </div>
 
           {/* Creation Interface - Conditional Rendering */}
@@ -140,6 +160,9 @@ export default function Home() {
             )}
             {creationMode === 'video' && (
               <VideoCreator remixContent={remixContent} onSaveSuccess={refreshFeed} />
+            )}
+            {creationMode === 'screen' && (
+              <ScreenShareCreator remixContent={remixContent} onSaveSuccess={refreshFeed} />
             )}
           </div>
 

@@ -39,9 +39,14 @@ export default function RecentComments() {
         if (response.ok) {
           const data = await response.json();
           setComments(data.comments || []);
+        } else {
+          // API error (likely table doesn't exist yet) - show "coming soon"
+          console.log('Comments API not ready yet (expected during migration)');
+          setComments([]); // Will show "coming soon" message
         }
       } catch (error) {
         console.error('Error fetching recent comments:', error);
+        setComments([]); // Will show "coming soon" message
       } finally {
         setLoading(false);
       }
@@ -75,8 +80,10 @@ export default function RecentComments() {
         </div>
         <div className="rounded-lg border border-white/10 bg-white/5 p-8 text-center">
           <MessageCircle className="mx-auto mb-4 h-12 w-12 text-gray-600" />
-          <p className="text-lg font-medium text-white">No comments yet</p>
-          <p className="text-sm text-gray-400">Be the first to share your thoughts on a vibelog!</p>
+          <p className="text-lg font-medium text-white">Comments will be available soon!</p>
+          <p className="text-sm text-gray-400">
+            We're setting up the comment system. Check back shortly!
+          </p>
         </div>
       </div>
     );

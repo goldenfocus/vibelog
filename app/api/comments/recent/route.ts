@@ -47,6 +47,13 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('Error fetching recent comments:', error);
+
+      // If table doesn't exist yet (relation "comments" does not exist), return empty array
+      if (error.message?.includes('relation') || error.code === '42P01') {
+        console.log('Comments table not found - likely migration not applied yet');
+        return NextResponse.json({ comments: [] });
+      }
+
       return NextResponse.json({ error: 'Failed to fetch recent comments' }, { status: 500 });
     }
 
