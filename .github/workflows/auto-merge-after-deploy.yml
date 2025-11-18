@@ -44,12 +44,15 @@ jobs:
               
               // Find PR where head SHA matches the check run SHA
               const matchingPR = prs.data.find(p => p.head.sha === checkSha);
-              
+
               if (matchingPR) {
                 const hasAutoMergeLabel = matchingPR.labels.some(l => l.name === 'auto-merge');
-                const isFixOrFeatBranch = matchingPR.head.ref.startsWith('fix/') || matchingPR.head.ref.startsWith('feat/');
-                
-                if (hasAutoMergeLabel || isFixOrFeatBranch) {
+                const isAutoMergeBranch = matchingPR.head.ref.startsWith('fix/') ||
+                                         matchingPR.head.ref.startsWith('feat/') ||
+                                         matchingPR.head.ref.startsWith('feature/') ||
+                                         matchingPR.head.ref.startsWith('claude/');
+
+                if (hasAutoMergeLabel || isAutoMergeBranch) {
                   prNumber = matchingPR.number.toString();
                   branch = matchingPR.head.ref;
                   sha = matchingPR.head.sha;
@@ -72,9 +75,12 @@ jobs:
               
               if (matchingPR) {
                 const hasAutoMergeLabel = matchingPR.labels.some(l => l.name === 'auto-merge');
-                const isFixOrFeatBranch = matchingPR.head.ref.startsWith('fix/') || matchingPR.head.ref.startsWith('feat/');
-                
-                if (hasAutoMergeLabel || isFixOrFeatBranch) {
+                const isAutoMergeBranch = matchingPR.head.ref.startsWith('fix/') ||
+                                         matchingPR.head.ref.startsWith('feat/') ||
+                                         matchingPR.head.ref.startsWith('feature/') ||
+                                         matchingPR.head.ref.startsWith('claude/');
+
+                if (hasAutoMergeLabel || isAutoMergeBranch) {
                   prNumber = matchingPR.number.toString();
                   branch = matchingPR.head.ref;
                   sha = matchingPR.head.sha;
@@ -95,8 +101,8 @@ jobs:
       - name: Wait for deployment
         if: steps.find-pr.outputs.pr_number != ''
         run: |
-          echo "Waiting 2 minutes for Vercel deployment to complete..."
-          sleep 120
+          echo "Waiting 3 minutes for Vercel deployment to complete..."
+          sleep 180
 
       - name: Check Vercel deployment status
         id: check-deploy
