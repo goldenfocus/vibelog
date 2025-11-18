@@ -41,9 +41,7 @@ async function checkBuckets() {
   if (!buckets.find(b => b.name === 'vibelog-assets')) {
     console.log('\n⚠️  WARNING: "vibelog-assets" bucket not found!');
     console.log('   Available buckets:', buckets.map(b => b.name).join(', '));
-    console.log('\n📝 Options:');
-    console.log('   1. Create "vibelog-assets" bucket in Supabase dashboard');
-    console.log('   2. Or update lib/video/storage.ts to use an existing bucket');
+    console.log('\n📝 Create "vibelog-assets" bucket in Supabase dashboard');
   }
 }
 

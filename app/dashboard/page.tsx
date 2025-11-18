@@ -1,9 +1,8 @@
 'use client';
 
-import { Mic, Video } from 'lucide-react';
+import { Mic } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
 
 import MicRecorder from '@/components/MicRecorder';
 import Navigation from '@/components/Navigation';
@@ -21,7 +20,6 @@ export default function DashboardPage() {
   const [vibelogs, setVibelogs] = useState<Array<any>>([]);
   const [loadingVibelogs, setLoadingVibelogs] = useState(true);
   const [profile, setProfile] = useState<any>(null);
-  const [generatingVideos, setGeneratingVideos] = useState(false);
 
   // Fetch user's profile
   useEffect(() => {
@@ -128,80 +126,6 @@ export default function DashboardPage() {
     }
   }, [loading, user, isSigningOut, router]);
 
-  // Batch generate videos for last 5 vibelogs
-  const handleBatchGenerateVideos = async () => {
-    if (!user?.id) {
-      return;
-    }
-
-    setGeneratingVideos(true);
-    toast.info('Generating videos for your last 5 vibelogs...', {
-      description: 'This may take several minutes',
-    });
-
-    try {
-      const response = await fetch(`/api/video/generate-batch?userId=${user.id}&limit=5`, {
-        method: 'POST',
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        const { successCount, failCount, total } = data;
-
-        if (successCount > 0) {
-          toast.success(`Generated ${successCount} video${successCount !== 1 ? 's' : ''}!`, {
-            description:
-              failCount > 0 ? `${failCount} failed` : 'All videos generated successfully',
-          });
-
-          // Refresh vibelogs to show new videos
-          const supabase = createClient();
-          const { data: vibelogsData } = await supabase
-            .from('vibelogs')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false })
-            .limit(10);
-
-          if (vibelogsData) {
-            const { data: profileData } = await supabase
-              .from('profiles')
-              .select('username, display_name, avatar_url')
-              .eq('id', user.id)
-              .single();
-
-            const transformedData = vibelogsData.map(v => ({
-              ...v,
-              author: {
-                username: profileData?.username || 'user',
-                display_name: profileData?.display_name || 'User',
-                avatar_url: profileData?.avatar_url || null,
-              },
-            }));
-
-            setVibelogs(transformedData);
-          }
-        } else if (total === 0) {
-          toast.info('All vibelogs already have videos!');
-        } else {
-          toast.error('Video generation failed', {
-            description: `${failCount} videos failed to generate`,
-          });
-        }
-      } else {
-        throw new Error(data.error || 'Failed to generate videos');
-      }
-    } catch (error: any) {
-      console.error('Batch video generation error:', error);
-      toast.error('Failed to generate videos', {
-        description: error.message,
-      });
-    } finally {
-      setGeneratingVideos(false);
-    }
-  };
-
   // Show loading state only if still loading and no cached user
   if (loading || i18nLoading) {
     return (
@@ -248,25 +172,6 @@ export default function DashboardPage() {
             >
               <Mic className="h-4 w-4" />
               {t('dashboard.newVibelog')}
-            </Button>
-
-            <Button
-              onClick={handleBatchGenerateVideos}
-              disabled={generatingVideos}
-              variant="outline"
-              className="flex items-center gap-2 border-purple-500/30 bg-gradient-to-r from-purple-600/10 to-pink-600/10 hover:from-purple-600/20 hover:to-pink-600/20"
-            >
-              {generatingVideos ? (
-                <>
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-purple-600 border-t-transparent" />
-                  Generating Videos...
-                </>
-              ) : (
-                <>
-                  <Video className="h-4 w-4" />
-                  Generate Videos for Last 5
-                </>
-              )}
             </Button>
           </div>
 
