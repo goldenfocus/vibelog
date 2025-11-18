@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
       vibelogId: string;
       content?: string;
       audioUrl?: string;
+      videoUrl?: string;
       voiceId?: string;
       attachments?: MediaAttachment[];
     };
@@ -64,6 +65,7 @@ export async function POST(request: NextRequest) {
         vibelogId: formData.get('vibelogId') as string,
         content: formData.get('content') as string | undefined,
         audioUrl: formData.get('audioUrl') as string | undefined,
+        videoUrl: formData.get('videoUrl') as string | undefined,
         voiceId: formData.get('voiceId') as string | undefined,
         attachments: formData.get('attachments')
           ? JSON.parse(formData.get('attachments') as string)
@@ -71,16 +73,16 @@ export async function POST(request: NextRequest) {
       };
     }
 
-    const { vibelogId, content, audioUrl, voiceId, attachments } = body;
+    const { vibelogId, content, audioUrl, videoUrl, voiceId, attachments } = body;
 
     if (!vibelogId) {
       return NextResponse.json({ error: 'vibelogId is required' }, { status: 400 });
     }
 
-    // At least one of content or audioUrl must be provided
-    if (!content && !audioUrl) {
+    // At least one of content, audioUrl, or videoUrl must be provided
+    if (!content && !audioUrl && !videoUrl) {
       return NextResponse.json(
-        { error: 'Either content or audioUrl must be provided' },
+        { error: 'Either content, audioUrl, or videoUrl must be provided' },
         { status: 400 }
       );
     }
@@ -114,6 +116,7 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         content: content || null,
         audio_url: audioUrl || null,
+        video_url: videoUrl || null,
         voice_id: voiceId || null,
         attachments: attachments && attachments.length > 0 ? attachments : null,
         attachment_count: attachments ? attachments.length : 0,
