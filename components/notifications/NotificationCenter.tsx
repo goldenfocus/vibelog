@@ -117,8 +117,8 @@ export default function NotificationCenter({ isOpen, onClose }: NotificationCent
       {/* Backdrop */}
       <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" onClick={onClose}></div>
 
-      {/* Panel */}
-      <div className="fixed right-0 top-0 z-50 h-full w-full max-w-md border-l border-border bg-background shadow-2xl">
+      {/* Panel - Mobile optimized with smooth slide-in animation */}
+      <div className="fixed right-0 top-0 z-50 h-full w-full border-l border-border bg-background shadow-2xl duration-300 animate-in slide-in-from-right sm:max-w-md">
         {/* Header */}
         <div className="border-b border-border p-4">
           <div className="flex items-center justify-between">

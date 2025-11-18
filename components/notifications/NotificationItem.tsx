@@ -41,8 +41,16 @@ export default function NotificationItem({
   onClick,
   onMarkRead,
 }: NotificationItemProps) {
+  console.log('🔔 Rendering notification:', notification);
+
   const Icon = typeIcons[notification.type];
   const colorClass = typeColors[notification.type];
+
+  // Safety check
+  if (!Icon) {
+    console.error('❌ Unknown notification type:', notification.type);
+    return null;
+  }
 
   const handleClick = () => {
     // Mark as read when clicked
