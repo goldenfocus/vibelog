@@ -1,5 +1,6 @@
 'use client';
 
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { MessageSquare, Mic, Send, Edit3, X, Sparkles, Video } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
@@ -154,19 +155,47 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
     }
   };
 
-  const startVideoRecording = async () => {
+  // Auto-start camera preview when entering video mode
+  useEffect(() => {
+    if (inputMode === 'video' && !videoStream && !videoBlob) {
+      startCameraPreview();
+    }
+
+    return () => {
+      // Cleanup camera when leaving video mode
+      if (inputMode !== 'video' && videoStream) {
+        videoStream.getTracks().forEach(track => track.stop());
+        setVideoStream(null);
+      }
+    };
+  }, [inputMode]);
+
+  const startCameraPreview = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 1280, height: 720 },
+        video: { width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: true,
       });
 
       setVideoStream(stream);
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        await videoRef.current.play();
       }
+    } catch (error) {
+      console.error('Error starting camera preview:', error);
+      toast.error('Failed to access camera. Please check permissions.');
+    }
+  };
 
-      const mediaRecorder = new MediaRecorder(stream, {
+  const startVideoRecording = () => {
+    if (!videoStream) {
+      toast.error('Camera not ready');
+      return;
+    }
+
+    try {
+      const mediaRecorder = new MediaRecorder(videoStream, {
         mimeType: 'video/webm;codecs=vp9',
       });
 
@@ -181,6 +210,12 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
         const blob = new Blob(chunks, { type: 'video/webm' });
         setVideoBlob(blob);
         setIsRecordingVideo(false);
+
+        // Stop camera after recording
+        if (videoStream) {
+          videoStream.getTracks().forEach(track => track.stop());
+          setVideoStream(null);
+        }
       };
 
       mediaRecorder.start();
@@ -194,18 +229,13 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
       }, 1000);
     } catch (error) {
       console.error('Error starting video recording:', error);
-      toast.error('Failed to access camera. Please check permissions.');
+      toast.error('Failed to start recording.');
     }
   };
 
   const stopVideoRecording = () => {
     if (mediaRecorderRef.current && isRecordingVideo) {
       mediaRecorderRef.current.stop();
-
-      if (videoStream) {
-        videoStream.getTracks().forEach(track => track.stop());
-        setVideoStream(null);
-      }
 
       if (recordingTimerRef.current) {
         clearInterval(recordingTimerRef.current);
@@ -214,15 +244,34 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
     }
   };
 
+  const cancelVideoRecording = () => {
+    // Cancel recording without saving
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.onstop = null; // Prevent blob creation
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current = null;
+    }
+
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+
+    setIsRecordingVideo(false);
+    setRecordingTime(0);
+
+    // Restart camera preview
+    startCameraPreview();
+  };
+
   const resetVideoRecording = () => {
+    // Discard recorded video and restart camera
     setVideoBlob(null);
     setIsRecordingVideo(false);
     setRecordingTime(0);
 
-    if (videoStream) {
-      videoStream.getTracks().forEach(track => track.stop());
-      setVideoStream(null);
-    }
+    // Restart camera preview
+    startCameraPreview();
   };
 
   const handleRegenerateComment = async () => {
@@ -380,27 +429,38 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
         resetRecording();
         onCommentAdded();
       } else if (inputMode === 'video' && videoBlob) {
-        // Submit video comment - upload video file, then create comment
-        const formData = new FormData();
-        formData.append('video', videoBlob, 'comment.webm');
-        formData.append('vibelogId', vibelogId);
+        // Submit video comment - upload directly to Supabase Storage, then create comment
+        const supabase = createClientComponentClient();
 
-        // Upload video to storage
-        const uploadResponse = await fetch('/api/storage/upload', {
-          method: 'POST',
-          body: formData,
-        });
+        // Get current user
+        const {
+          data: { user: currentUser },
+        } = await supabase.auth.getUser();
 
-        if (!uploadResponse.ok) {
-          const errorData = await uploadResponse.json().catch(() => ({}));
-          throw new Error(errorData.error || 'Failed to upload video');
+        if (!currentUser) {
+          throw new Error('You must be logged in to post video comments');
         }
 
-        const { url: videoUrl } = await uploadResponse.json();
+        // Generate storage path
+        const timestamp = Date.now();
+        const randomHash = Math.random().toString(36).substring(2, 10);
+        const path = `users/${currentUser.id}/comments/video/${vibelogId}/${timestamp}-${randomHash}.webm`;
 
-        if (!videoUrl) {
-          throw new Error('No video URL returned from upload');
+        // Upload directly to Supabase Storage
+        const { error: uploadError } = await supabase.storage
+          .from('vibelogs')
+          .upload(path, videoBlob, {
+            contentType: 'video/webm',
+            upsert: true,
+          });
+
+        if (uploadError) {
+          console.error('Video upload error:', uploadError);
+          throw new Error('Failed to upload video');
         }
+
+        // Generate public URL
+        const videoUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/vibelogs/${path}`;
 
         // Create comment with video URL
         const commentResponse = await fetch('/api/comments', {
@@ -420,7 +480,7 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
         }
 
         toast.success('Your video vibe is live! 🎥✨');
-        resetRecording();
+        resetVideoRecording();
         onCommentAdded();
       }
     } catch (error) {
@@ -758,13 +818,22 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
               </button>
             )}
             {isRecordingVideo && (
-              <button
-                onClick={stopVideoRecording}
-                className="flex items-center gap-2 rounded-lg bg-red-500 px-6 py-3 text-white transition-all hover:bg-red-600"
-              >
-                <div className="h-2 w-2 rounded-full bg-white" />
-                Stop Recording
-              </button>
+              <>
+                <button
+                  onClick={cancelVideoRecording}
+                  className="flex items-center gap-2 rounded-lg border border-border/50 bg-background px-4 py-2 text-foreground transition-colors hover:bg-muted"
+                >
+                  <X className="h-4 w-4" />
+                  Cancel
+                </button>
+                <button
+                  onClick={stopVideoRecording}
+                  className="flex items-center gap-2 rounded-lg bg-red-500 px-6 py-3 text-white transition-all hover:bg-red-600"
+                >
+                  <div className="h-2 w-2 rounded-full bg-white" />
+                  Stop Recording
+                </button>
+              </>
             )}
             {videoBlob && !isRecordingVideo && (
               <>
