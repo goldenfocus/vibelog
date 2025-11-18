@@ -1,11 +1,24 @@
 'use client';
 
-import { Edit2, Mic, MoreVertical, Pause, Play, Save, Trash2, User, X } from 'lucide-react';
+import {
+  Edit2,
+  Image as ImageIcon,
+  Mic,
+  MoreVertical,
+  Pause,
+  Play,
+  Save,
+  Trash2,
+  User,
+  Video,
+  X,
+} from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useAudioPlayerStore } from '@/state/audio-player-store';
+import type { MediaAttachment } from '@/types/comments';
 
 interface CommentAuthor {
   username: string;
@@ -22,6 +35,7 @@ interface Comment {
   created_at: string;
   updated_at?: string;
   author: CommentAuthor;
+  attachments?: MediaAttachment[] | null;
 }
 
 interface CommentItemProps {
@@ -202,7 +216,8 @@ export default function CommentItem({
   };
 
   const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this comment?')) {
+    // eslint-disable-next-line no-alert
+    if (!window.confirm('Are you sure you want to delete this comment?')) {
       return;
     }
 
@@ -268,6 +283,7 @@ export default function CommentItem({
       <div className="mb-3 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           {comment.author.avatar_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={comment.author.avatar_url}
               alt={comment.author.display_name}
@@ -365,6 +381,53 @@ export default function CommentItem({
         </div>
       ) : (
         comment.content && <div className="mb-3 text-foreground">{comment.content}</div>
+      )}
+
+      {/* Media Attachments Gallery */}
+      {comment.attachments && comment.attachments.length > 0 && (
+        <div
+          className={`grid gap-3 ${comment.attachments.length === 1 ? 'grid-cols-1' : 'grid-cols-2 sm:grid-cols-3'}`}
+        >
+          {comment.attachments.map(attachment => (
+            <div
+              key={attachment.url}
+              className="group relative aspect-square overflow-hidden rounded-lg bg-muted"
+            >
+              {attachment.type === 'image' ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={attachment.url}
+                  alt="Comment attachment"
+                  className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                />
+              ) : (
+                <div className="relative h-full w-full">
+                  <video
+                    src={attachment.url}
+                    controls
+                    className="h-full w-full object-cover"
+                    preload="metadata"
+                  >
+                    Your browser does not support video playback.
+                  </video>
+                  {/* Video icon overlay */}
+                  <div className="pointer-events-none absolute left-2 top-2 rounded-full bg-black/70 p-2">
+                    <Video className="h-4 w-4 text-white" />
+                  </div>
+                </div>
+              )}
+
+              {/* Type badge */}
+              <div className="absolute bottom-2 right-2 rounded-full bg-black/70 px-2 py-1">
+                {attachment.type === 'image' ? (
+                  <ImageIcon className="h-3 w-3 text-white" />
+                ) : (
+                  <Video className="h-3 w-3 text-white" />
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
       )}
 
       {/* Audio Player */}
