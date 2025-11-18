@@ -52,6 +52,7 @@ export async function GET(
         user_id,
         content,
         audio_url,
+        video_url,
         voice_id,
         created_at,
         updated_at,

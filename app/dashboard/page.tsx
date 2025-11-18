@@ -1,6 +1,6 @@
 'use client';
 
-import { Mic } from 'lucide-react';
+import { Mic, Monitor, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -11,6 +11,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { useI18n } from '@/components/providers/I18nProvider';
 import { Button } from '@/components/ui/button';
 import VibelogCard from '@/components/VibelogCard';
+import { ScreenCaptureZone } from '@/components/video/ScreenCaptureZone';
 import { createClient } from '@/lib/supabase';
 
 export default function DashboardPage() {
@@ -20,6 +21,9 @@ export default function DashboardPage() {
   const [vibelogs, setVibelogs] = useState<Array<any>>([]);
   const [loadingVibelogs, setLoadingVibelogs] = useState(true);
   const [profile, setProfile] = useState<any>(null);
+  const [showScreenShare, setShowScreenShare] = useState(false);
+  const [tempVibelogId, setTempVibelogId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch user's profile
   useEffect(() => {
@@ -143,6 +147,42 @@ export default function DashboardPage() {
     return null;
   }
 
+  // Handle screen share button click
+  const handleScreenShare = async () => {
+    // Create a temporary vibelog to associate the screen recording
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('vibelogs')
+      .insert({
+        user_id: user.id,
+        title: 'Screen Recording',
+        content: 'Processing...',
+        teaser: 'Processing...',
+        is_public: false, // Not public until processed
+        capture_mode: 'screen',
+      })
+      .select('id')
+      .single();
+
+    if (error || !data) {
+      console.error('Failed to create temporary vibelog:', error);
+      setError('Failed to start screen recording. Please try again.');
+      return;
+    }
+
+    setTempVibelogId(data.id);
+    setShowScreenShare(true);
+  };
+
+  // Handle screen recording complete
+  const handleScreenRecordingComplete = (videoUrl: string) => {
+    console.log('Screen recording complete:', videoUrl);
+    setShowScreenShare(false);
+    setTempVibelogId(null);
+    // Refresh vibelogs
+    window.location.reload();
+  };
+
   // Render dashboard immediately for authenticated users
   const displayName =
     profile?.display_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
@@ -172,6 +212,15 @@ export default function DashboardPage() {
             >
               <Mic className="h-4 w-4" />
               {t('dashboard.newVibelog')}
+            </Button>
+
+            <Button
+              onClick={handleScreenShare}
+              variant="outline"
+              className="flex items-center gap-2 bg-gradient-to-r from-blue-500/10 to-purple-500/10 hover:from-blue-500/20 hover:to-purple-500/20 border-blue-500/30"
+            >
+              <Monitor className="h-4 w-4" />
+              Screen Share
             </Button>
           </div>
 
@@ -228,6 +277,38 @@ export default function DashboardPage() {
 
       {/* Onboarding Modal */}
       {user && <OnboardingModal user={user} onComplete={() => {}} />}
+
+      {/* Screen Share Modal */}
+      {showScreenShare && tempVibelogId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="relative w-full max-w-5xl mx-4 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => {
+                setShowScreenShare(false);
+                setTempVibelogId(null);
+              }}
+              className="absolute top-4 right-4 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold mb-2">Screen Share Recording</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Record your screen with optional camera overlay - perfect for tutorials and demos!
+              </p>
+            </div>
+
+            <ScreenCaptureZone
+              vibelogId={tempVibelogId}
+              onVideoCaptured={handleScreenRecordingComplete}
+              maxDurationSeconds={60}
+              isPremium={false}
+              enableCameraPip={true}
+            />
+          </div>
+        </div>
+      )}
 
       <style jsx>{`
         @keyframes toastSlideUp {
