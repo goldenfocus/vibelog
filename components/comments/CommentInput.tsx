@@ -24,10 +24,17 @@ type RecordingState =
 
 interface CommentInputProps {
   vibelogId: string;
+  parentCommentId?: string; // For threaded replies
   onCommentAdded: () => void;
+  onCancel?: () => void; // Optional cancel callback for replies
 }
 
-export default function CommentInput({ vibelogId, onCommentAdded }: CommentInputProps) {
+export default function CommentInput({
+  vibelogId,
+  parentCommentId,
+  onCommentAdded,
+  onCancel: _onCancel, // Reserved for future use
+}: CommentInputProps) {
   const { user, loading: authLoading } = useAuth();
   const { tone, setTone } = useToneSettings();
   const [inputMode, setInputMode] = useState<'text' | 'voice' | 'video'>('text');
@@ -185,6 +192,7 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
         setVideoStream(null);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inputMode]);
 
   const startCameraPreview = async () => {
@@ -395,6 +403,7 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
           body: JSON.stringify({
             vibelogId,
             content: textContent.trim(),
+            parentCommentId,
             attachments: attachments.length > 0 ? attachments : undefined,
           }),
         });
@@ -441,6 +450,7 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
           body: JSON.stringify({
             vibelogId,
             audioUrl,
+            parentCommentId,
             content: transcript.trim() || undefined, // Include edited transcript if available
             attachments: attachments.length > 0 ? attachments : undefined,
           }),
@@ -510,6 +520,7 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
           body: JSON.stringify({
             vibelogId,
             videoUrl,
+            parentCommentId,
           }),
         });
 
@@ -822,37 +833,38 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
       {/* Video Input */}
       {inputMode === 'video' && (
         <div className="space-y-4">
-          {/* Video Preview / Recording */}
-          <div className="relative aspect-video w-full overflow-hidden rounded-lg border border-border/30 bg-black">
-            <video
-              ref={videoRef}
-              autoPlay
-              muted
-              playsInline
-              className="h-full w-full object-cover"
-            />
-            {isRecordingVideo && (
-              <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full bg-red-500 px-3 py-1">
-                <div className="h-2 w-2 animate-pulse rounded-full bg-white" />
-                <span className="text-sm font-medium text-white">
-                  {Math.floor(recordingTime / 60)}:
-                  {(recordingTime % 60).toString().padStart(2, '0')}
-                </span>
-              </div>
-            )}
-            {videoBlobUrl && !isRecordingVideo && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black">
-                <video
-                  key={videoBlobUrl}
-                  src={videoBlobUrl}
-                  controls
-                  playsInline
-                  autoPlay
-                  className="h-full w-full object-cover"
-                />
-              </div>
-            )}
-          </div>
+          {/* Camera Preview (only show when not recorded) */}
+          {!videoBlob && (
+            <div className="relative aspect-video w-full overflow-hidden rounded-lg border border-border/30 bg-black">
+              <video
+                ref={videoRef}
+                autoPlay
+                muted
+                playsInline
+                className="h-full w-full object-cover"
+              />
+              {isRecordingVideo && (
+                <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full bg-red-500 px-3 py-1">
+                  <div className="h-2 w-2 animate-pulse rounded-full bg-white" />
+                  <span className="text-sm font-medium text-white">{recordingTime}/60</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Recorded Video Preview (only show when recorded) */}
+          {videoBlobUrl && videoBlob && (
+            <div className="overflow-hidden rounded-lg border border-border/30 bg-black">
+              <video
+                key={videoBlobUrl}
+                src={videoBlobUrl}
+                controls
+                playsInline
+                autoPlay
+                className="w-full"
+              />
+            </div>
+          )}
 
           {/* Recording Controls */}
           <div className="flex items-center justify-center gap-3">

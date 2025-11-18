@@ -53,6 +53,7 @@ export async function POST(request: NextRequest) {
       audioUrl?: string;
       videoUrl?: string;
       voiceId?: string;
+      parentCommentId?: string;
       attachments?: MediaAttachment[];
     };
 
@@ -67,13 +68,14 @@ export async function POST(request: NextRequest) {
         audioUrl: formData.get('audioUrl') as string | undefined,
         videoUrl: formData.get('videoUrl') as string | undefined,
         voiceId: formData.get('voiceId') as string | undefined,
+        parentCommentId: formData.get('parentCommentId') as string | undefined,
         attachments: formData.get('attachments')
           ? JSON.parse(formData.get('attachments') as string)
           : undefined,
       };
     }
 
-    const { vibelogId, content, audioUrl, videoUrl, voiceId, attachments } = body;
+    const { vibelogId, content, audioUrl, videoUrl, voiceId, parentCommentId, attachments } = body;
 
     if (!vibelogId) {
       return NextResponse.json({ error: 'vibelogId is required' }, { status: 400 });
@@ -118,6 +120,7 @@ export async function POST(request: NextRequest) {
         audio_url: audioUrl || null,
         video_url: videoUrl || null,
         voice_id: voiceId || null,
+        parent_comment_id: parentCommentId || null,
         attachments: attachments && attachments.length > 0 ? attachments : null,
         attachment_count: attachments ? attachments.length : 0,
         has_rich_media: attachments && attachments.length > 0,
