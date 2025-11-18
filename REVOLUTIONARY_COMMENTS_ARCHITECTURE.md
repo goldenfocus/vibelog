@@ -48,7 +48,7 @@ TIER 2: MINI-VIBELOG (AI-Enhanced)
 TIER 3: FULL VIBELOG (Promoted Comment)
 ├── User chooses to "Promote to Vibelog"
 ├── Becomes standalone vibelog on their profile
-├── Full AI video generation
+├── Can add video manually (user-uploaded or user-recorded)
 ├── Cross-platform publishing capability
 └── Use case: Epic responses that deserve full spotlight
 ```
@@ -281,21 +281,23 @@ USER POSTS VOICE/VIDEO COMMENT
    - Fallback to default TTS voice
    - Save enhanced_audio_url
   ↓
-5. BACKGROUND JOB: Video Generation (optional)
-   - If user enabled auto-video
-   - Google Veo 3.1 via fal.ai
-   - Save video_url + thumbnail
-  ↓
-6. UPDATE DATABASE
+5. UPDATE DATABASE
    - Set processing_status = 'completed'
    - Update all enhanced_* fields
    - Generate slug for SEO page
    - Trigger notification to comment author
   ↓
+6. AUTO-PUBLISH CHECK (if enabled)
+   - Check user's auto_post_platforms setting
+   - If platforms enabled → Auto-post to X, TikTok, YouTube, etc.
+   - If require_approval_before_social → Send approval notification
+   - Note: Video auto-share only works for vibelogs with user-uploaded/recorded videos
+  ↓
 7. REAL-TIME UPDATE
    - WebSocket/SSE to client
    - UI refreshes to show enhanced comment
    - "Your comment is now a mini-vibelog!"
+   - If auto-posted: "Now live on X, TikTok, YouTube! 🚀"
 ```
 
 ### API Endpoints (New)
@@ -343,7 +345,166 @@ Body: { reactionType: 'like' | 'love' | 'mind_blown' | 'laughing' | 'fire' }
 // Flag comment for moderation
 POST /api/comments/[id]/flag
 Body: { reason: string }
+
+// Auto-publish settings
+GET /api/users/auto-publish-settings
+Response: {
+  autoCreateMinivibelogs: boolean,
+  autoPlatforms: string[], // ['twitter', 'tiktok', 'youtube']
+  requireApproval: boolean
+}
+
+POST /api/users/auto-publish-settings
+Body: {
+  autoCreateMinivibelogs: boolean,
+  autoPlatforms: string[],
+  requireApproval: boolean
+}
 ```
+
+---
+
+## 🤖 AUTO-DETECTION & AUTO-PUBLISH SYSTEM
+
+### Revolutionary Feature: Automatic Mini-Vibelog Creation
+
+**The Vision**: AI automatically detects high-quality comments and converts them into mini-vibelogs WITHOUT manual user intervention. Users just leave thoughtful comments—AI handles the rest.
+
+### How Auto-Detection Works
+
+```typescript
+interface CommentQualityAnalysis {
+  qualityScore: number; // 0-1
+  shouldAutoCreate: boolean; // true if score > 0.7
+  detectedSignals: string[]; // ["engaging_story", "high_empathy", "unique_insight"]
+  suggestedTitle: string;
+  suggestedPlatforms: string[]; // Recommended platforms based on content type
+}
+
+// AI analyzes every comment for:
+// 1. Length: >30s audio, >100 words text, >1min video
+// 2. Vibe scores: High empathy (>0.7), insight (>0.6), humor (>0.5)
+// 3. Engagement potential: Asks questions, tells stories, shares experiences
+// 4. Novelty: Not just "great post!" or generic reactions
+// 5. Context relevance: Adds value to parent vibelog
+
+// If qualityScore > 0.7 → Trigger auto-mini-vibelog creation
+```
+
+### User Settings (Database Schema)
+
+```sql
+-- Add to profiles table
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS auto_create_minivibelogs boolean DEFAULT false;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS auto_post_platforms jsonb DEFAULT '[]';
+-- Example: ["twitter", "tiktok", "youtube", "instagram", "linkedin"]
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS require_approval_before_social boolean DEFAULT true;
+```
+
+### Auto-Publish Settings UI
+
+```
+🎯 Auto-Publish Settings
+
+[ ] Auto-create mini-vibelogs from my comments
+    ↳ AI will automatically turn high-quality comments into mini-vibelogs
+
+📤 Auto-Post Mini-Vibelogs To:
+[ ] X/Twitter
+[ ] TikTok (video vibelogs only)
+[ ] YouTube Shorts (video vibelogs only)
+[ ] Instagram (video vibelogs only)
+[ ] LinkedIn
+
+⚙️ Publishing Mode:
+( ) Fully Automatic - Post immediately without asking
+(•) Approval Required - I'll review before posting (recommended)
+
+ℹ️ Note: Video auto-share only works for vibelogs with user-uploaded
+   or user-recorded videos. AI video generation is not automatic.
+```
+
+### Auto-Publish Flow
+
+```
+USER LEAVES COMMENT
+  ↓
+AI ANALYZES QUALITY
+  ↓
+IF qualityScore > 0.7:
+  ↓
+  AUTO-CREATE MINI-VIBELOG
+    - Generate title, content, cover image
+    - Create SEO page at /c/[slug]
+    - Set is_mini_vibelog = true
+  ↓
+  CHECK USER SETTINGS
+    ↓
+    IF auto_create_minivibelogs = true:
+      ↓
+      SEND NOTIFICATION
+        "Your comment became a mini-vibelog! 🎉"
+        Link: /c/[slug]
+      ↓
+      CHECK auto_post_platforms
+        ↓
+        IF platforms.length > 0:
+          ↓
+          IF require_approval_before_social = true:
+            → SEND APPROVAL REQUEST
+              "Ready to share on X, TikTok? Review & approve"
+              [Approve] [Edit] [Skip]
+          ↓
+          ELSE (fully automatic):
+            → AUTO-POST TO ALL ENABLED PLATFORMS
+              - X/Twitter (always works)
+              - TikTok (if video exists)
+              - YouTube Shorts (if video exists)
+              - Instagram (if video exists)
+              - LinkedIn (text + link)
+          ↓
+          SEND SUCCESS NOTIFICATION
+            "Your mini-vibelog is now live on 4 platforms! 🚀"
+            - X: [tweet URL]
+            - TikTok: [video URL]
+            - YouTube: [short URL]
+            - Instagram: [reel URL]
+```
+
+### Platform-Specific Auto-Share Logic
+
+**X/Twitter** (Always Available):
+
+- Use teaser + link format
+- Works for all mini-vibelogs (text, audio, video)
+- Uses existing Twitter Web Intent API
+
+**TikTok** (Video Only):
+
+- Requires user-uploaded or user-recorded video
+- Max 3min duration
+- Auto-generates caption from mini-vibelog content
+- NOT available for audio-only or text-only mini-vibelogs
+
+**YouTube Shorts** (Video Only):
+
+- Requires user-uploaded or user-recorded video
+- Max 60s duration
+- Uses mini-vibelog title as video title
+- Description includes mini-vibelog URL
+
+**Instagram** (Video Only):
+
+- Requires user-uploaded or user-recorded video
+- Square or vertical format
+- Reuses TikTok video
+- Caption from mini-vibelog teaser
+
+**LinkedIn**:
+
+- Works for all mini-vibelogs
+- Text post with link to /c/[slug]
+- Professional tone detected via vibe analysis
 
 ---
 
@@ -435,7 +596,7 @@ System generates:
 ### 2. **AI Content Generation**
 
 - **Facebook**: User types, that's it
-- **VibeLog**: User speaks → AI generates polished content + cover + video
+- **VibeLog**: User speaks → AI generates polished content + cover image
 
 ### 3. **Comment Promotion**
 
@@ -497,13 +658,13 @@ System generates:
 🔨 Thread depth limiting (max 5 levels)
 🔨 Conversation thread aggregation
 
-### PHASE 4: VIDEO COMMENTS (3-4 days)
+### PHASE 4: VIDEO COMMENTS (2-3 days)
 
 🔨 Video recording in browser
 🔨 Video upload to Supabase Storage
 🔨 Video player component integration
 🔨 Video thumbnail generation
-🔨 AI video generation for mini-vibelogs
+🔨 Video validation (user-uploaded or user-recorded only)
 
 ### PHASE 5: MINI-VIBELOG PAGES (2-3 days)
 
@@ -641,18 +802,32 @@ System generates:
 8. Cover image + vibe analysis added
 9. User gets notification: "Your comment is now discoverable at /c/your-amazing-story"
 
-### Flow 3: Promote Epic Reply
+### Flow 3: Auto-Publish to Multiple Platforms (Fully Automatic)
+
+1. User has auto-publish enabled for X, TikTok, YouTube
+2. User posts thoughtful 2min video comment
+3. AI detects quality score = 0.85 (high)
+4. System auto-creates mini-vibelog
+5. Checks settings → fully automatic mode
+6. AUTO-POSTS to all platforms:
+   - X: "Check out my response about AI ethics [link]"
+   - TikTok: Uploads video with caption
+   - YouTube Shorts: Uploads video with title
+7. User gets notification: "Your comment is now live on 3 platforms! 🚀"
+8. All from ONE 2min voice comment → zero additional effort
+
+### Flow 4: Promote Epic Reply
 
 1. User posts thoughtful 3min audio response
 2. Gets enhanced as mini-vibelog
 3. Receives 50+ likes and 20 replies
 4. User clicks "Promote to Vibelog"
 5. System creates full vibelog on user's profile
-6. Generates AI video
+6. User can add video manually if desired
 7. Original comment now links to promoted vibelog
 8. User can publish to X/Twitter from their profile
 
-### Flow 4: Conversation Thread Discovery
+### Flow 5: Conversation Thread Discovery
 
 1. Epic debate unfolds in comments (30+ replies)
 2. AI auto-generates thread summary
@@ -688,10 +863,10 @@ System generates:
 Comments aren't static—they evolve:
 
 - Start as quick text
-- Expand to audio
-- Enhance to mini-vibelog
+- Expand to audio or video (user-recorded)
+- Enhance to mini-vibelog (AI-generated content)
 - Promote to full vibelog
-- Generate video
+- Auto-publish to multiple platforms
 - Become conversation thread page
 
 ### 2. **Conversation as Currency**
@@ -765,15 +940,19 @@ This commenting system isn't just an add-on—it's **a content generation engine
 
 1. ✅ Multi-format (text/audio/video) in ONE system
 2. ✅ AI enhancement pipeline (voice → polished content)
-3. ✅ Comment promotion (reply → vibelog)
-4. ✅ SEO pages for comments (discoverability)
-5. ✅ Vibe-aware intelligence (emotional context)
-6. ✅ Voice clone integration (authentic responses)
-7. ✅ Conversation threading (AI-summarized)
-8. ✅ Real-time enhancement (live processing status)
+3. ✅ **AUTO-DETECTION & AUTO-PUBLISH** (comment → mini-vibelog → X/TikTok/YouTube)
+4. ✅ Comment promotion (reply → vibelog)
+5. ✅ SEO pages for comments (discoverability)
+6. ✅ Vibe-aware intelligence (emotional context)
+7. ✅ Voice clone integration (authentic responses)
+8. ✅ Conversation threading (AI-summarized)
+9. ✅ Real-time enhancement (live processing status)
 
 **The Result:**
 A commenting system that doesn't just collect feedback—it **creates value, drives traffic, and builds community** in ways no other platform can match.
+
+**The Magic:**
+Leave ONE thoughtful voice comment → AI auto-creates mini-vibelog → Auto-publishes to X, TikTok, YouTube → You wake up to engagement across 5 platforms. **All from a 2-minute comment.**
 
 ---
 

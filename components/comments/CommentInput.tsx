@@ -1,7 +1,7 @@
 'use client';
 
-import { MessageSquare, Mic, Send } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
+import { MessageSquare, Mic, Send, Edit3, X } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 
 import { AudioEngine } from '@/components/mic/AudioEngine';
@@ -9,7 +9,13 @@ import Controls from '@/components/mic/Controls';
 import Waveform from '@/components/mic/Waveform';
 import { useAuth } from '@/components/providers/AuthProvider';
 
-type RecordingState = 'idle' | 'recording' | 'processing' | 'complete';
+type RecordingState =
+  | 'idle'
+  | 'recording'
+  | 'processing'
+  | 'complete'
+  | 'transcribing'
+  | 'reviewing';
 
 interface CommentInputProps {
   vibelogId: string;
@@ -25,18 +31,61 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [levels, setLevels] = useState<number[]>(Array.from({ length: 15 }, () => 0.1));
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [transcript, setTranscript] = useState('');
 
   const audioEngineRef = useRef<AudioEngine | null>(null);
   const recordingTimerRef = useRef<number | null>(null);
+
+  const transcribeAudio = useCallback(async (blob: Blob) => {
+    try {
+      setRecordingState('transcribing');
+
+      const formData = new FormData();
+      formData.append('audio', blob, 'comment.webm');
+
+      const response = await fetch('/api/transcribe', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to transcribe audio');
+      }
+
+      const { transcription } = await response.json();
+      console.log('✅ Transcription received:', transcription);
+
+      if (!transcription || transcription.trim() === '') {
+        throw new Error('Transcription is empty. Please try recording again with clearer audio.');
+      }
+
+      setTranscript(transcription);
+      setRecordingState('reviewing');
+      toast.success('Transcription ready! Review and edit before posting.');
+    } catch (error) {
+      console.error('❌ Transcription error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to transcribe audio';
+      toast.error(`${errorMessage}. You can still post the audio without a transcript.`);
+
+      // Fall back to allowing direct posting without transcript
+      // Set an empty transcript but stay in processing state so they can post audio
+      setTranscript('');
+      setRecordingState('processing');
+    }
+  }, []);
 
   // Initialize audio engine
   useEffect(() => {
     audioEngineRef.current = new AudioEngine({
       onLevelsUpdate: setLevels,
-      onDataAvailable: (blob, duration) => {
+      onDataAvailable: async (blob, duration) => {
         setAudioBlob(blob);
-        setRecordingState('complete');
+        setRecordingState('transcribing');
         console.log('Recording complete:', blob.size, 'bytes,', duration, 'seconds');
+
+        // Transcribe the audio
+        await transcribeAudio(blob);
       },
       onError: error => {
         toast.error(error);
@@ -52,7 +101,7 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
         clearInterval(recordingTimerRef.current);
       }
     };
-  }, []);
+  }, [transcribeAudio]);
 
   const startRecording = async () => {
     if (!audioEngineRef.current) {
@@ -93,6 +142,7 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
     setRecordingState('idle');
     setRecordingTime(0);
     setAudioBlob(null);
+    setTranscript('');
     setLevels(Array.from({ length: 15 }, () => 0.1));
   };
 
@@ -109,6 +159,11 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
 
     if (inputMode === 'voice' && !audioBlob) {
       toast.error('Please record a voice comment');
+      return;
+    }
+
+    if (inputMode === 'voice' && recordingState === 'reviewing' && !transcript.trim()) {
+      toast.error('Please enter a comment or re-record');
       return;
     }
 
@@ -133,11 +188,11 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
           throw new Error(error.error || 'Failed to submit comment');
         }
 
-        toast.success('Comment posted!');
+        toast.success('Your vibe comment is live! 🔥');
         setTextContent('');
         onCommentAdded();
       } else {
-        // Submit voice comment - first upload audio, then create comment
+        // Submit voice comment - first upload audio, then create comment with transcript
         // Upload audio file
         const formData = new FormData();
         formData.append('audio', audioBlob, 'comment.webm');
@@ -160,7 +215,7 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
           throw new Error('No audio URL returned from upload');
         }
 
-        // Create comment with audio URL
+        // Create comment with audio URL and transcript (if available)
         const commentResponse = await fetch('/api/comments', {
           method: 'POST',
           headers: {
@@ -169,6 +224,7 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
           body: JSON.stringify({
             vibelogId,
             audioUrl,
+            content: transcript.trim() || undefined, // Include edited transcript if available
           }),
         });
 
@@ -177,7 +233,7 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
           throw new Error(error.error || 'Failed to submit comment');
         }
 
-        toast.success('Voice comment posted!');
+        toast.success('Your voice vibe is live! 🎤✨');
         resetRecording();
         onCommentAdded();
       }
@@ -278,22 +334,88 @@ export default function CommentInput({ vibelogId, onCommentAdded }: CommentInput
       {/* Voice Input */}
       {inputMode === 'voice' && (
         <div className="space-y-4">
-          <Controls
-            recordingState={recordingState}
-            recordingTime={recordingTime}
-            onStartRecording={startRecording}
-            onStopRecording={stopRecording}
-            onReset={resetRecording}
-            disabled={isSubmitting}
-          />
+          {/* Recording Controls - Show during idle, recording, processing */}
+          {(recordingState === 'idle' ||
+            recordingState === 'recording' ||
+            recordingState === 'processing') && (
+            <Controls
+              recordingState={
+                recordingState === 'idle' ||
+                recordingState === 'recording' ||
+                recordingState === 'processing'
+                  ? recordingState
+                  : 'idle'
+              }
+              recordingTime={recordingTime}
+              onStartRecording={startRecording}
+              onStopRecording={stopRecording}
+              onReset={resetRecording}
+              disabled={isSubmitting}
+            />
+          )}
 
           {/* Waveform */}
           {recordingState === 'recording' && (
             <Waveform levels={levels} isActive={true} variant="recording" />
           )}
 
-          {/* Submit Button */}
-          {recordingState === 'complete' && audioBlob && (
+          {/* Transcribing State */}
+          {recordingState === 'transcribing' && (
+            <div className="rounded-lg border border-border/30 bg-muted/30 p-8 text-center">
+              <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-electric/30 border-t-electric" />
+              <p className="text-sm font-medium text-foreground">Transcribing your voice...</p>
+              <p className="mt-1 text-xs text-muted-foreground">This will just take a moment</p>
+            </div>
+          )}
+
+          {/* Review & Edit Transcript */}
+          {recordingState === 'reviewing' && transcript && (
+            <div className="space-y-4 rounded-lg border-2 border-electric/20 bg-card/50 p-4">
+              <div className="flex items-center gap-2">
+                <Edit3 className="h-4 w-4 text-electric" />
+                <h4 className="text-sm font-semibold">Review & Edit</h4>
+              </div>
+
+              <textarea
+                value={transcript}
+                onChange={e => setTranscript(e.target.value)}
+                placeholder="Edit your transcription..."
+                className="w-full resize-none rounded-lg border border-border/30 bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-electric focus:outline-none"
+                rows={4}
+              />
+
+              <div className="flex items-center justify-between gap-3 pt-2">
+                <button
+                  onClick={resetRecording}
+                  className="flex items-center gap-2 rounded-lg border border-border/50 bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                >
+                  <X className="h-4 w-4" />
+                  Re-record
+                </button>
+
+                <button
+                  onClick={handleSubmit}
+                  disabled={isSubmitting || !transcript.trim()}
+                  className="flex items-center gap-2 rounded-lg bg-electric px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-electric-glow disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                      Posting...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4" />
+                      Post Comment
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Legacy: Direct Submit Button for fallback */}
+          {recordingState === 'complete' && audioBlob && !transcript && (
             <div className="flex justify-end">
               <button
                 onClick={handleSubmit}
