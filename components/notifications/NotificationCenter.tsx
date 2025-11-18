@@ -118,35 +118,33 @@ export default function NotificationCenter({ isOpen, onClose }: NotificationCent
       <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" onClick={onClose}></div>
 
       {/* Panel - Mobile optimized with smooth slide-in animation */}
-      <div className="fixed right-0 top-0 z-50 h-full w-full border-l border-border bg-background shadow-2xl duration-300 animate-in slide-in-from-right sm:max-w-md">
+      <div className="fixed right-0 top-0 z-50 flex h-full w-full flex-col border-l border-white/10 bg-black shadow-2xl duration-300 animate-in slide-in-from-right sm:max-w-md">
         {/* Header */}
-        <div className="border-b border-border p-4">
+        <div className="flex-shrink-0 border-b border-white/10 bg-black p-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-foreground">Notifications</h2>
-              {unreadCount > 0 && (
-                <p className="text-sm text-muted-foreground">{unreadCount} unread</p>
-              )}
+              <h2 className="text-lg font-semibold text-white">Notifications</h2>
+              {unreadCount > 0 && <p className="text-sm text-gray-400">{unreadCount} unread</p>}
             </div>
             <button
               onClick={onClose}
-              className="rounded-full p-2 transition-colors hover:bg-electric/10"
+              className="rounded-full p-2 transition-colors hover:bg-white/10"
               aria-label="Close notifications"
             >
-              <X className="h-5 w-5 text-foreground" />
+              <X className="h-5 w-5 text-white" />
             </button>
           </div>
 
           {/* Filters */}
-          <div className="mt-4 flex gap-2 overflow-x-auto">
+          <div className="mt-4 flex gap-2 overflow-x-auto pb-2">
             {(['all', 'unread', 'comment', 'reply', 'reaction'] as FilterType[]).map(f => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium transition-colors ${
+                className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
                   filter === f
                     ? 'bg-electric text-white'
-                    : 'bg-electric/10 text-foreground hover:bg-electric/20'
+                    : 'bg-white/10 text-white hover:bg-white/20'
                 }`}
               >
                 {f.charAt(0).toUpperCase() + f.slice(1)}
@@ -167,16 +165,16 @@ export default function NotificationCenter({ isOpen, onClose }: NotificationCent
         </div>
 
         {/* Notification list */}
-        <div className="h-[calc(100%-12rem)] overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto bg-black p-4">
           {loading ? (
             <div className="flex h-full items-center justify-center">
               <Loader2 className="h-8 w-8 animate-spin text-electric" />
             </div>
           ) : notifications.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center text-center">
-              <Filter className="mb-4 h-12 w-12 text-muted-foreground" />
-              <p className="text-lg font-medium text-foreground">No notifications</p>
-              <p className="text-sm text-muted-foreground">
+              <Filter className="mb-4 h-12 w-12 text-gray-600" />
+              <p className="text-lg font-medium text-white">No notifications</p>
+              <p className="text-sm text-gray-400">
                 {filter === 'all' ? "You're all caught up!" : `No ${filter} notifications`}
               </p>
             </div>
