@@ -40,6 +40,7 @@ export class AudioMixer {
   private destination: MediaStreamAudioDestinationNode | null = null;
   private sources: MediaStreamAudioSourceNode[] = [];
   private gainNodes: GainNode[] = [];
+  private _duckingInterval?: NodeJS.Timeout;
 
   constructor(private options: AudioMixerOptions = {}) {
     // Set defaults
@@ -61,20 +62,12 @@ export class AudioMixer {
 
     // Connect screen audio if available
     if (streams.screen && this.hasAudioTrack(streams.screen)) {
-      await this.connectStream(
-        streams.screen,
-        this.options.screenVolume!,
-        'screen'
-      );
+      await this.connectStream(streams.screen, this.options.screenVolume!, 'screen');
     }
 
     // Connect microphone audio if available
     if (streams.microphone && this.hasAudioTrack(streams.microphone)) {
-      await this.connectStream(
-        streams.microphone,
-        this.options.microphoneVolume!,
-        'microphone'
-      );
+      await this.connectStream(streams.microphone, this.options.microphoneVolume!, 'microphone');
     }
 
     // Setup auto-ducking if enabled
@@ -84,7 +77,7 @@ export class AudioMixer {
 
     return {
       stream: this.destination.stream,
-      cleanup: () => this.cleanup()
+      cleanup: () => this.cleanup(),
     };
   }
 
@@ -98,11 +91,7 @@ export class AudioMixer {
   /**
    * Connect a single audio stream to the mixer
    */
-  private async connectStream(
-    stream: MediaStream,
-    volume: number,
-    label: string
-  ): Promise<void> {
+  private async connectStream(stream: MediaStream, volume: number, label: string): Promise<void> {
     if (!this.audioContext || !this.destination) {
       throw new Error('AudioContext not initialized');
     }
@@ -130,7 +119,9 @@ export class AudioMixer {
    * Uses Web Audio API's dynamics compression
    */
   private setupAutoDucking(): void {
-    if (!this.audioContext || this.gainNodes.length < 2) {return;}
+    if (!this.audioContext || this.gainNodes.length < 2) {
+      return;
+    }
 
     // Get screen gain node (first)
     const screenGain = this.gainNodes[0];
@@ -157,10 +148,7 @@ export class AudioMixer {
 
       // Smooth transition (avoid clicks)
       if (Math.abs(currentVolume - targetVolume) > 0.05) {
-        screenGain.gain.linearRampToValueAtTime(
-          targetVolume,
-          this.audioContext!.currentTime + 0.1
-        );
+        screenGain.gain.linearRampToValueAtTime(targetVolume, this.audioContext!.currentTime + 0.1);
       }
     };
 
@@ -168,7 +156,7 @@ export class AudioMixer {
     const interval = setInterval(checkMicLevel, 100);
 
     // Store interval for cleanup
-    (this as Record<string, NodeJS.Timeout>)._duckingInterval = interval;
+    this._duckingInterval = interval;
 
     console.log('[AudioMixer] Auto-ducking enabled');
   }
@@ -177,7 +165,9 @@ export class AudioMixer {
    * Update volume for a specific source
    */
   setVolume(source: 'screen' | 'microphone', volume: number): void {
-    if (!this.gainNodes.length) {return;}
+    if (!this.gainNodes.length) {
+      return;
+    }
 
     const index = source === 'screen' ? 0 : 1;
     if (this.gainNodes[index]) {
@@ -192,7 +182,7 @@ export class AudioMixer {
   getVolumes(): { screen: number; microphone: number } {
     return {
       screen: this.gainNodes[0]?.gain.value ?? 0,
-      microphone: this.gainNodes[1]?.gain.value ?? 0
+      microphone: this.gainNodes[1]?.gain.value ?? 0,
     };
   }
 
@@ -203,9 +193,9 @@ export class AudioMixer {
     console.log('[AudioMixer] Cleaning up audio mixer...');
 
     // Stop ducking interval
-    if ((this as Record<string, NodeJS.Timeout>)._duckingInterval) {
-      clearInterval((this as Record<string, NodeJS.Timeout>)._duckingInterval);
-      (this as Record<string, NodeJS.Timeout | null>)._duckingInterval = null;
+    if (this._duckingInterval) {
+      clearInterval(this._duckingInterval);
+      this._duckingInterval = undefined;
     }
 
     // Disconnect all sources and gain nodes
