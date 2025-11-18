@@ -178,8 +178,8 @@ async function getVibelog(username: string, slug: string) {
     return null;
   }
 
-  // Query vibelog by user_id + slug
-  console.log('🔎 Querying vibelog:', { slug, userId: profile.id });
+  // Query vibelog by user_id + public_slug (URL uses public_slug, not slug)
+  console.log('🔎 Querying vibelog:', { public_slug: slug, userId: profile.id });
   const { data, error } = await supabase
     .from('vibelogs')
     .select(
@@ -204,7 +204,7 @@ async function getVibelog(username: string, slug: string) {
       public_slug
     `
     )
-    .eq('slug', slug)
+    .eq('public_slug', slug)
     .eq('user_id', profile.id)
     .eq('is_published', true)
     .eq('is_public', true)
