@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import OpenAI from 'openai';
 
 import { createServerSupabaseClient } from '@/lib/supabase';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const FAL_API_KEY = process.env.FAL_API_KEY;
 
 export async function POST(request: NextRequest) {
   try {
@@ -44,21 +41,51 @@ export async function POST(request: NextRequest) {
     // Prepare the text content for TTS
     const textContent = `${vibelog.title}. ${vibelog.content}`;
 
-    // Truncate if too long (OpenAI TTS has a 4096 character limit)
+    // Truncate if too long (most TTS models have limits around 4000-5000 chars)
     const truncatedContent = textContent.slice(0, 4000);
 
-    // Generate speech using OpenAI TTS
-    console.log('🎙️ Generating AI narration for vibelog:', vibelog.id);
+    // Generate speech using fal.ai MetaVoice TTS
+    console.log('🎙️ Generating AI narration with fal.ai for vibelog:', vibelog.id);
 
-    const mp3Response = await openai.audio.speech.create({
-      model: 'tts-1-hd', // High-quality model
-      voice: 'nova', // Natural, warm voice
-      input: truncatedContent,
-      speed: 1.0,
+    if (!FAL_API_KEY) {
+      throw new Error('FAL_API_KEY is not configured');
+    }
+
+    // Call fal.ai API for text-to-speech
+    const falResponse = await fetch('https://fal.run/fal-ai/metavoice-v1', {
+      method: 'POST',
+      headers: {
+        Authorization: `Key ${FAL_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        text: truncatedContent,
+        speaker_url: 'https://cdn.themetavoice.xyz/speakers/bria.mp3', // Professional, clear voice
+      }),
     });
 
-    // Convert response to buffer
-    const arrayBuffer = await mp3Response.arrayBuffer();
+    if (!falResponse.ok) {
+      const errorText = await falResponse.text();
+      console.error('❌ fal.ai API error:', errorText);
+      throw new Error(`fal.ai API error: ${falResponse.status} ${errorText}`);
+    }
+
+    const falData = await falResponse.json();
+    const audioUrl = falData.audio_url?.url;
+
+    if (!audioUrl) {
+      throw new Error('No audio URL returned from fal.ai');
+    }
+
+    console.log('✅ fal.ai audio generated:', audioUrl);
+
+    // Download the audio from fal.ai
+    const audioResponse = await fetch(audioUrl);
+    if (!audioResponse.ok) {
+      throw new Error('Failed to download audio from fal.ai');
+    }
+
+    const arrayBuffer = await audioResponse.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
     // Upload to Supabase Storage
