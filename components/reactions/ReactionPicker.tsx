@@ -15,6 +15,132 @@ import { cn } from '@/lib/utils';
 import type { ReactionPickerProps } from '@/types/reactions';
 import { REACTION_PRESETS } from '@/types/reactions';
 
+// Emoji keyword search map (emoji -> searchable keywords)
+const EMOJI_KEYWORDS: Record<string, string[]> = {
+  // Smileys & People
+  '😀': ['grinning', 'smile', 'happy'],
+  '😃': ['smiley', 'smile', 'happy'],
+  '😄': ['smile', 'happy', 'joy'],
+  '😁': ['grin', 'smile', 'happy'],
+  '😆': ['laughing', 'satisfied', 'happy'],
+  '😅': ['sweat', 'smile', 'relief'],
+  '🤣': ['rofl', 'laughing', 'lol', 'rolling'],
+  '😂': ['joy', 'tears', 'laugh', 'lol', 'crying'],
+  '🙂': ['smile', 'happy'],
+  '😉': ['wink', 'flirt'],
+  '😊': ['blush', 'smile', 'happy'],
+  '😇': ['angel', 'halo', 'innocent'],
+  '🥰': ['love', 'hearts', 'adore'],
+  '😍': ['heart', 'eyes', 'love'],
+  '🤩': ['star', 'struck', 'wow', 'amazing'],
+  '😘': ['kiss', 'blow', 'love'],
+  '😋': ['yum', 'delicious', 'savoring', 'tasty'],
+  '😛': ['tongue', 'out', 'playful'],
+  '🤔': ['thinking', 'hmm', 'wonder'],
+  '😐': ['neutral', 'meh'],
+  '😏': ['smirk', 'smug'],
+  '😢': ['cry', 'tear', 'sad'],
+  '😭': ['sob', 'cry', 'bawling', 'sad'],
+  '😱': ['scream', 'shocked'],
+  '😡': ['angry', 'mad', 'rage'],
+  '😠': ['angry', 'mad'],
+  '🤬': ['cursing', 'swearing', 'mad'],
+  '🥳': ['party', 'celebrate', 'birthday'],
+  '😎': ['cool', 'sunglasses'],
+  '🤓': ['nerd', 'geek', 'glasses'],
+  '🥺': ['pleading', 'puppy', 'eyes'],
+  '👍': ['thumbs', 'up', 'yes', 'good', 'ok', 'agree', 'like', 'approve'],
+  '👎': ['thumbs', 'down', 'no', 'bad', 'dislike', 'disapprove'],
+  '👏': ['clap', 'applause', 'congrats', 'bravo', 'well', 'done'],
+  '🙌': ['raise', 'hands', 'celebrate', 'hooray', 'yay', 'praise'],
+  '👋': ['wave', 'hi', 'hello', 'bye', 'goodbye'],
+  '🤝': ['handshake', 'deal', 'agreement'],
+  '🙏': ['pray', 'thanks', 'please', 'namaste', 'thank', 'you'],
+  '💪': ['muscle', 'strong', 'flex', 'bicep', 'strength'],
+  '✌️': ['peace', 'victory', 'two'],
+  '🤞': ['fingers', 'crossed', 'luck', 'hope'],
+  '👌': ['ok', 'perfect', 'good'],
+  // Hearts & Emotions
+  '❤️': ['heart', 'love', 'red'],
+  '🧡': ['orange', 'heart', 'love'],
+  '💛': ['yellow', 'heart', 'love'],
+  '💚': ['green', 'heart', 'love'],
+  '💙': ['blue', 'heart', 'love'],
+  '💜': ['purple', 'heart', 'love'],
+  '🖤': ['black', 'heart', 'love'],
+  '🤍': ['white', 'heart', 'love'],
+  '💔': ['broken', 'heart', 'sad', 'breakup'],
+  '💕': ['two', 'hearts', 'love'],
+  '💖': ['sparkling', 'heart', 'love'],
+  '💯': ['100', 'hundred', 'perfect', 'score', 'full'],
+  '💥': ['boom', 'collision', 'explode', 'bang'],
+  '💫': ['dizzy', 'star'],
+  '💬': ['speech', 'bubble', 'comment', 'chat', 'talk'],
+  '💭': ['thought', 'bubble', 'thinking'],
+  // Activities & Sports
+  '⚽': ['soccer', 'ball', 'football', 'sport'],
+  '🏀': ['basketball', 'ball', 'sport'],
+  '🏈': ['football', 'american', 'sport'],
+  '⚾': ['baseball', 'ball', 'sport'],
+  '🎾': ['tennis', 'ball', 'sport'],
+  '🏆': ['trophy', 'award', 'win', 'winner', 'champion'],
+  '🥇': ['gold', 'medal', 'first', 'winner'],
+  '🥈': ['silver', 'medal', 'second'],
+  '🥉': ['bronze', 'medal', 'third'],
+  '🏅': ['medal', 'award'],
+  '🎯': ['target', 'bullseye', 'dart', 'goal'],
+  '🎮': ['game', 'controller', 'gaming', 'video', 'games'],
+  '🎨': ['art', 'palette', 'paint', 'artist', 'creative'],
+  '🎭': ['theater', 'drama', 'masks', 'performing'],
+  '🎬': ['movie', 'film', 'clapper', 'cinema'],
+  '🎤': ['microphone', 'sing', 'karaoke', 'music'],
+  '🎧': ['headphones', 'music', 'audio'],
+  '🎸': ['guitar', 'music', 'rock'],
+  '🎹': ['piano', 'keyboard', 'music'],
+  '🎲': ['dice', 'game', 'random'],
+  // Food & Drink
+  '🍎': ['apple', 'fruit', 'red'],
+  '🍕': ['pizza', 'food', 'slice'],
+  '🍔': ['burger', 'hamburger', 'food'],
+  '🍟': ['fries', 'french', 'potato', 'food'],
+  '🍿': ['popcorn', 'snack', 'movie'],
+  '🍩': ['donut', 'doughnut', 'sweet'],
+  '🍪': ['cookie', 'sweet', 'snack'],
+  '🍰': ['cake', 'dessert', 'sweet'],
+  '🎂': ['birthday', 'cake', 'celebration'],
+  '🍫': ['chocolate', 'sweet'],
+  '🍦': ['ice', 'cream', 'dessert'],
+  '☕': ['coffee', 'drink', 'hot', 'cafe'],
+  '🍵': ['tea', 'drink', 'hot'],
+  '🍺': ['beer', 'drink', 'alcohol'],
+  '🍷': ['wine', 'drink', 'alcohol', 'glass'],
+  '🥂': ['cheers', 'toast', 'celebrate', 'glasses'],
+  '🍾': ['champagne', 'celebrate', 'bottle'],
+  // Symbols & Objects
+  '🔥': ['fire', 'flame', 'hot', 'lit', 'burn'],
+  '✨': ['sparkles', 'shine', 'stars', 'magic'],
+  '⭐': ['star', 'favorite'],
+  '🌟': ['star', 'glowing', 'shine'],
+  '✅': ['check', 'yes', 'done', 'correct', 'approve'],
+  '❌': ['x', 'no', 'wrong', 'cancel', 'error'],
+  '⚡': ['lightning', 'bolt', 'fast', 'energy', 'power'],
+  '🎉': ['party', 'celebrate', 'confetti', 'celebration'],
+  '🎊': ['confetti', 'party', 'celebrate'],
+  '🎈': ['balloon', 'party', 'celebrate'],
+  '🎁': ['gift', 'present', 'box', 'birthday'],
+  '🔔': ['bell', 'notification', 'alert', 'ring'],
+  '💰': ['money', 'bag', 'cash', 'rich'],
+  '💸': ['money', 'flying', 'spend', 'cash'],
+  '💳': ['credit', 'card', 'payment', 'pay'],
+  '🔨': ['hammer', 'tool', 'build'],
+  '🔧': ['wrench', 'tool', 'fix', 'repair'],
+  '⚙️': ['gear', 'settings', 'config'],
+  '🚀': ['rocket', 'launch', 'space', 'fast'],
+  '💻': ['laptop', 'computer', 'code', 'work'],
+  '📱': ['phone', 'mobile', 'iphone'],
+  '💡': ['bulb', 'idea', 'light', 'think'],
+};
+
 // Comprehensive emoji list organized by categories
 const ALL_EMOJIS = {
   smileys: {
@@ -512,9 +638,13 @@ export function ReactionPicker({
   // Get all emojis from all categories for search
   const allEmojisFlat = Object.values(ALL_EMOJIS).flatMap(cat => cat.emojis);
 
-  // Filter emojis based on search
+  // Filter emojis based on keyword search
   const displayedEmojis = searchQuery
-    ? allEmojisFlat.filter(emoji => emoji.includes(searchQuery))
+    ? allEmojisFlat.filter(emoji => {
+        const keywords = EMOJI_KEYWORDS[emoji] || [];
+        const query = searchQuery.toLowerCase();
+        return keywords.some(keyword => keyword.includes(query));
+      })
     : ALL_EMOJIS[activeCategory].emojis;
 
   const displayedRecents = recentEmojis.slice(0, maxRecents);
