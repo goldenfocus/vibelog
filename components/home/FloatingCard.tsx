@@ -11,7 +11,7 @@ import { MediaBackground } from './MediaBackground';
 import { GlassTextContainer } from './GlassTextContainer';
 import { InteractionLayer } from './InteractionLayer';
 import { useAudioPlayerStore } from '@/state/audio-player-store';
-import type { HomeFeedVibelog } from '@/types/database';
+import type { HomeFeedVibelog } from './HomeCommunityShowcase';
 
 interface FloatingCardProps {
   vibelog: HomeFeedVibelog;
@@ -117,9 +117,8 @@ export function FloatingCard({
         id: vibelog.id,
         title: vibelog.title,
         url: vibelog.audio_url,
-        coverImage: vibelog.cover_image_url || undefined,
         author: vibelog.author.display_name,
-        authorUsername: vibelog.author.username,
+        type: 'url' as const,
       });
       play();
     }
