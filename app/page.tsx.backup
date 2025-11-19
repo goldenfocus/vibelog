@@ -62,8 +62,10 @@ export default function Home() {
         <div className="mx-auto max-w-6xl">
           <div
             ref={heroReveal.ref as any}
-            className={`mb-16 text-center transition-all duration-1000 sm:mb-24 ${
-              heroReveal.isVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
+            className={`mb-16 text-center sm:mb-24 transition-all duration-1000 ${
+              heroReveal.isVisible
+                ? 'opacity-100 translate-y-0'
+                : 'opacity-0 translate-y-8'
             }`}
           >
             <h1
@@ -87,21 +89,18 @@ export default function Home() {
           <div className="mb-8 flex justify-center gap-4 sm:gap-6">
             <button
               onClick={() => setCreationMode('text')}
-              className={`group relative flex h-16 w-16 items-center justify-center rounded-2xl border-2 transition-all duration-300 sm:h-20 sm:w-20 ${
+              className={`group flex h-16 w-16 items-center justify-center rounded-2xl border-2 transition-all sm:h-20 sm:w-20 ${
                 creationMode === 'text'
-                  ? 'scale-110 border-purple-600 bg-purple-50 shadow-lg shadow-purple-500/20 dark:border-purple-400 dark:bg-purple-900/20'
-                  : 'border-border/30 bg-card/50 hover:scale-105 hover:border-electric/40 hover:bg-card/80 hover:shadow-md hover:shadow-electric/10'
+                  ? 'border-purple-600 bg-purple-50 shadow-lg dark:border-purple-400 dark:bg-purple-900/20'
+                  : 'border-border/30 bg-card/50 hover:border-border hover:bg-card/80'
               }`}
               aria-label="Create with text"
             >
-              {creationMode === 'text' && (
-                <div className="absolute inset-0 animate-pulse rounded-2xl bg-purple-500/20 blur-xl" />
-              )}
               <FileText
-                className={`relative h-8 w-8 transition-all duration-300 sm:h-10 sm:w-10 ${
+                className={`h-8 w-8 sm:h-10 sm:w-10 ${
                   creationMode === 'text'
                     ? 'text-purple-600 dark:text-purple-400'
-                    : 'text-muted-foreground group-hover:scale-110 group-hover:text-electric'
+                    : 'text-muted-foreground group-hover:text-foreground'
                 }`}
                 strokeWidth={1.5}
               />
@@ -109,21 +108,18 @@ export default function Home() {
 
             <button
               onClick={() => setCreationMode('audio')}
-              className={`group relative flex h-16 w-16 items-center justify-center rounded-2xl border-2 transition-all duration-300 sm:h-20 sm:w-20 ${
+              className={`group flex h-16 w-16 items-center justify-center rounded-2xl border-2 transition-all sm:h-20 sm:w-20 ${
                 creationMode === 'audio'
-                  ? 'scale-110 border-purple-600 bg-purple-50 shadow-lg shadow-purple-500/20 dark:border-purple-400 dark:bg-purple-900/20'
-                  : 'border-border/30 bg-card/50 hover:scale-105 hover:border-electric/40 hover:bg-card/80 hover:shadow-md hover:shadow-electric/10'
+                  ? 'border-purple-600 bg-purple-50 shadow-lg dark:border-purple-400 dark:bg-purple-900/20'
+                  : 'border-border/30 bg-card/50 hover:border-border hover:bg-card/80'
               }`}
               aria-label="Create with audio"
             >
-              {creationMode === 'audio' && (
-                <div className="absolute inset-0 animate-pulse rounded-2xl bg-purple-500/20 blur-xl" />
-              )}
               <Mic
-                className={`relative h-8 w-8 transition-all duration-300 sm:h-10 sm:w-10 ${
+                className={`h-8 w-8 sm:h-10 sm:w-10 ${
                   creationMode === 'audio'
                     ? 'text-purple-600 dark:text-purple-400'
-                    : 'text-muted-foreground group-hover:scale-110 group-hover:text-electric'
+                    : 'text-muted-foreground group-hover:text-foreground'
                 }`}
                 strokeWidth={1.5}
               />
@@ -131,21 +127,18 @@ export default function Home() {
 
             <button
               onClick={() => setCreationMode('video')}
-              className={`group relative flex h-16 w-16 items-center justify-center rounded-2xl border-2 transition-all duration-300 sm:h-20 sm:w-20 ${
+              className={`group flex h-16 w-16 items-center justify-center rounded-2xl border-2 transition-all sm:h-20 sm:w-20 ${
                 creationMode === 'video'
-                  ? 'scale-110 border-purple-600 bg-purple-50 shadow-lg shadow-purple-500/20 dark:border-purple-400 dark:bg-purple-900/20'
-                  : 'border-border/30 bg-card/50 hover:scale-105 hover:border-electric/40 hover:bg-card/80 hover:shadow-md hover:shadow-electric/10'
+                  ? 'border-purple-600 bg-purple-50 shadow-lg dark:border-purple-400 dark:bg-purple-900/20'
+                  : 'border-border/30 bg-card/50 hover:border-border hover:bg-card/80'
               }`}
               aria-label="Create with video"
             >
-              {creationMode === 'video' && (
-                <div className="absolute inset-0 animate-pulse rounded-2xl bg-purple-500/20 blur-xl" />
-              )}
               <Video
-                className={`relative h-8 w-8 transition-all duration-300 sm:h-10 sm:w-10 ${
+                className={`h-8 w-8 sm:h-10 sm:w-10 ${
                   creationMode === 'video'
                     ? 'text-purple-600 dark:text-purple-400'
-                    : 'text-muted-foreground group-hover:scale-110 group-hover:text-electric'
+                    : 'text-muted-foreground group-hover:text-foreground'
                 }`}
                 strokeWidth={1.5}
               />
@@ -153,21 +146,18 @@ export default function Home() {
 
             <button
               onClick={() => setCreationMode('screen')}
-              className={`group relative flex h-16 w-16 items-center justify-center rounded-2xl border-2 transition-all duration-300 sm:h-20 sm:w-20 ${
+              className={`group flex h-16 w-16 items-center justify-center rounded-2xl border-2 transition-all sm:h-20 sm:w-20 ${
                 creationMode === 'screen'
-                  ? 'scale-110 border-blue-600 bg-blue-50 shadow-lg shadow-blue-500/20 dark:border-blue-400 dark:bg-blue-900/20'
-                  : 'border-border/30 bg-card/50 hover:scale-105 hover:border-electric/40 hover:bg-card/80 hover:shadow-md hover:shadow-electric/10'
+                  ? 'border-blue-600 bg-blue-50 shadow-lg dark:border-blue-400 dark:bg-blue-900/20'
+                  : 'border-border/30 bg-card/50 hover:border-border hover:bg-card/80'
               }`}
               aria-label="Record screen share"
             >
-              {creationMode === 'screen' && (
-                <div className="absolute inset-0 animate-pulse rounded-2xl bg-blue-500/20 blur-xl" />
-              )}
               <Monitor
-                className={`relative h-8 w-8 transition-all duration-300 sm:h-10 sm:w-10 ${
+                className={`h-8 w-8 sm:h-10 sm:w-10 ${
                   creationMode === 'screen'
                     ? 'text-blue-600 dark:text-blue-400'
-                    : 'text-muted-foreground group-hover:scale-110 group-hover:text-electric'
+                    : 'text-muted-foreground group-hover:text-foreground'
                 }`}
                 strokeWidth={1.5}
               />
@@ -190,34 +180,16 @@ export default function Home() {
             )}
           </div>
 
-          {/* Floating Mini Cards */}
-          <div
-            ref={floatingReveal.ref as any}
-            className={`transition-all delay-200 duration-1000 ${
-              floatingReveal.isVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
-            }`}
-          >
-            <FloatingMiniCardsRow />
-          </div>
-
           {/* Features Preview */}
           <h2 className="sr-only">Features</h2>
-          <div
-            ref={featuresReveal.ref as any}
-            className={`mx-auto mb-20 grid max-w-4xl grid-cols-3 gap-3 transition-all delay-300 duration-1000 sm:gap-6 md:gap-8 ${
-              featuresReveal.isVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
-            }`}
-          >
-            <div className="group rounded-xl border border-border/50 bg-card/80 p-3 text-center backdrop-blur-sm transition-all duration-500 hover:scale-105 hover:border-electric/30 hover:bg-card/90 hover:shadow-lg hover:shadow-electric/10 sm:rounded-2xl sm:p-6 md:p-8">
+          <div className="mx-auto mb-20 grid max-w-4xl grid-cols-3 gap-3 sm:gap-6 md:gap-8">
+            <div className="rounded-xl border border-border/50 bg-card/80 p-3 text-center backdrop-blur-sm transition-all duration-300 hover:bg-card/90 sm:rounded-2xl sm:p-6 md:p-8">
               <div className="mb-3 flex items-center justify-center sm:mb-6">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 transition-all duration-500 group-hover:scale-110 group-hover:bg-electric/20 sm:h-16 sm:w-16 sm:rounded-2xl">
-                  <MessageCircle
-                    className="h-6 w-6 text-primary transition-colors duration-500 group-hover:text-electric sm:h-8 sm:w-8"
-                    strokeWidth={1.5}
-                  />
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 sm:h-16 sm:w-16 sm:rounded-2xl">
+                  <MessageCircle className="h-6 w-6 text-primary sm:h-8 sm:w-8" strokeWidth={1.5} />
                 </div>
               </div>
-              <h3 className="mb-2 text-base font-semibold text-foreground transition-colors duration-500 group-hover:text-electric sm:mb-3 sm:text-lg">
+              <h3 className="mb-2 text-base font-semibold text-foreground sm:mb-3 sm:text-lg">
                 {t('features.input.title')}
               </h3>
               <p className="text-xs leading-relaxed text-muted-foreground sm:text-sm">
@@ -225,16 +197,13 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="group rounded-xl border border-border/50 bg-card/80 p-3 text-center backdrop-blur-sm transition-all duration-500 hover:scale-105 hover:border-electric/30 hover:bg-card/90 hover:shadow-lg hover:shadow-electric/10 sm:rounded-2xl sm:p-6 md:p-8">
+            <div className="rounded-xl border border-border/50 bg-card/80 p-3 text-center backdrop-blur-sm transition-all duration-300 hover:bg-card/90 sm:rounded-2xl sm:p-6 md:p-8">
               <div className="mb-3 flex items-center justify-center sm:mb-6">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 transition-all duration-500 group-hover:scale-110 group-hover:bg-electric/20 sm:h-16 sm:w-16 sm:rounded-2xl">
-                  <Bot
-                    className="h-6 w-6 text-primary transition-colors duration-500 group-hover:text-electric sm:h-8 sm:w-8"
-                    strokeWidth={1.5}
-                  />
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 sm:h-16 sm:w-16 sm:rounded-2xl">
+                  <Bot className="h-6 w-6 text-primary sm:h-8 sm:w-8" strokeWidth={1.5} />
                 </div>
               </div>
-              <h3 className="mb-2 text-base font-semibold text-foreground transition-colors duration-500 group-hover:text-electric sm:mb-3 sm:text-lg">
+              <h3 className="mb-2 text-base font-semibold text-foreground sm:mb-3 sm:text-lg">
                 {t('features.aiMagic.title')}
               </h3>
               <p className="text-xs leading-relaxed text-muted-foreground sm:text-sm">
@@ -242,16 +211,13 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="group rounded-xl border border-border/50 bg-card/80 p-3 text-center backdrop-blur-sm transition-all duration-500 hover:scale-105 hover:border-electric/30 hover:bg-card/90 hover:shadow-lg hover:shadow-electric/10 sm:rounded-2xl sm:p-6 md:p-8">
+            <div className="rounded-xl border border-border/50 bg-card/80 p-3 text-center backdrop-blur-sm transition-all duration-300 hover:bg-card/90 sm:rounded-2xl sm:p-6 md:p-8">
               <div className="mb-3 flex items-center justify-center sm:mb-6">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 transition-all duration-500 group-hover:scale-110 group-hover:bg-electric/20 sm:h-16 sm:w-16 sm:rounded-2xl">
-                  <Share2
-                    className="h-6 w-6 text-primary transition-colors duration-500 group-hover:text-electric sm:h-8 sm:w-8"
-                    strokeWidth={1.5}
-                  />
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 sm:h-16 sm:w-16 sm:rounded-2xl">
+                  <Share2 className="h-6 w-6 text-primary sm:h-8 sm:w-8" strokeWidth={1.5} />
                 </div>
               </div>
-              <h3 className="mb-2 text-base font-semibold text-foreground transition-colors duration-500 group-hover:text-electric sm:mb-3 sm:text-lg">
+              <h3 className="mb-2 text-base font-semibold text-foreground sm:mb-3 sm:text-lg">
                 {t('features.share.title')}
               </h3>
               <p className="text-xs leading-relaxed text-muted-foreground sm:text-sm">
