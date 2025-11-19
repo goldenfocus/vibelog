@@ -69,7 +69,7 @@ export class StreamCompositor {
   private pipX = 0;
   private pipY = 0;
 
-  constructor(private options: CompositorOptions) {
+  private constructor(options: CompositorOptions) {
     // Set defaults
     this.width = options.width ?? 1920;
     this.height = options.height ?? 1080;
@@ -95,39 +95,56 @@ export class StreamCompositor {
     }
     this.ctx = ctx;
 
-    // Create video elements
-    this.screenVideo = this.createVideoElement(options.screenStream);
+    // Placeholder video elements (will be initialized in init())
+    this.screenVideo = document.createElement('video');
+  }
+
+  /**
+   * Initialize video elements asynchronously
+   * Must be called before start()
+   */
+  static async create(options: CompositorOptions): Promise<StreamCompositor> {
+    const compositor = new StreamCompositor(options);
+
+    // Create and wait for video elements to be ready
+    compositor.screenVideo = await compositor.createVideoElement(options.screenStream);
 
     if (options.cameraStream) {
-      this.cameraVideo = this.createVideoElement(options.cameraStream);
+      compositor.cameraVideo = await compositor.createVideoElement(options.cameraStream);
     }
 
     // Calculate PiP dimensions
-    this.calculatePipDimensions();
+    compositor.calculatePipDimensions();
 
     console.log('[StreamCompositor] Initialized with:', {
-      resolution: `${this.width}x${this.height}`,
-      fps: this.fps,
-      hasCamera: !!this.cameraVideo,
-      pipPosition: this.pipPosition,
-      pipSize: `${Math.round(this.pipSize * 100)}%`,
+      resolution: `${compositor.width}x${compositor.height}`,
+      fps: compositor.fps,
+      hasCamera: !!compositor.cameraVideo,
+      pipPosition: compositor.pipPosition,
+      pipSize: `${Math.round(compositor.pipSize * 100)}%`,
     });
+
+    return compositor;
   }
 
   /**
    * Create video element from MediaStream
    */
-  private createVideoElement(stream: MediaStream): HTMLVideoElement {
+  private async createVideoElement(stream: MediaStream): Promise<HTMLVideoElement> {
     const video = document.createElement('video');
     video.srcObject = stream;
     video.autoplay = true;
     video.playsInline = true;
     video.muted = true; // Mute to avoid echo (audio handled separately)
 
-    // Wait for video to be ready
-    video.play().catch(err => {
+    // Wait for video to be ready and playing
+    try {
+      await video.play();
+      console.log('[StreamCompositor] Video element ready and playing');
+    } catch (err) {
       console.error('[StreamCompositor] Failed to play video:', err);
-    });
+      throw err;
+    }
 
     return video;
   }
@@ -335,8 +352,8 @@ export class StreamCompositor {
  *   pipPosition: 'bottom-right'
  * });
  */
-export function createCompositeStream(options: CompositorOptions): CompositorResult {
-  const compositor = new StreamCompositor(options);
+export async function createCompositeStream(options: CompositorOptions): Promise<CompositorResult> {
+  const compositor = await StreamCompositor.create(options);
   const stream = compositor.start();
 
   return {
