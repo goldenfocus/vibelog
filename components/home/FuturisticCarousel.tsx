@@ -5,7 +5,7 @@ import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useScrollPhysics } from '@/hooks/useScrollPhysics';
 import { FloatingCard } from './FloatingCard';
-import type { HomeFeedVibelog } from '@/types/database';
+import type { HomeFeedVibelog } from './HomeCommunityShowcase';
 
 interface FuturisticCarouselProps {
   vibelogs: HomeFeedVibelog[];
