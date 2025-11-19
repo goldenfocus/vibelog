@@ -22,9 +22,10 @@ CREATE INDEX IF NOT EXISTS idx_vibelogs_transcript ON public.vibelogs(id) WHERE 
 DROP VIEW IF EXISTS public.comment_reactions_summary CASCADE;
 DROP TRIGGER IF EXISTS trigger_update_comment_reaction_count ON public.comment_reactions CASCADE;
 DROP FUNCTION IF EXISTS update_comment_reaction_count() CASCADE;
+DROP TABLE IF EXISTS public.comment_reactions CASCADE;
 
--- 3. Create or replace comment_reactions table
-CREATE TABLE IF NOT EXISTS public.comment_reactions (
+-- 3. Create comment_reactions table with emoji support
+CREATE TABLE public.comment_reactions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   comment_id UUID NOT NULL REFERENCES public.comments(id) ON DELETE CASCADE,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,

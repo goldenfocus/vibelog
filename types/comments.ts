@@ -128,6 +128,8 @@ export type ModerationStatus = 'approved' | 'pending' | 'rejected' | 'auto_appro
 
 export type CommentTier = 1 | 2 | 3;
 
+// Legacy type - kept for backwards compatibility with old migrations
+// New components should use emoji string directly
 export type ReactionType = 'like' | 'love' | 'mind_blown' | 'laughing' | 'fire';
 
 // ============================================================================
@@ -187,18 +189,27 @@ export interface ThreadWithComments extends ConversationThread {
 // REACTIONS
 // ============================================================================
 
+// Modern emoji-based reaction (matches current database schema)
 export interface CommentReaction {
   id: string;
   comment_id: string;
   user_id: string;
-  reaction_type: ReactionType;
+  emoji: string; // Any emoji character (👍, ❤️, 😂, etc.)
   created_at: string;
+}
+
+// Summary of reactions per emoji (from comment_reactions_summary view)
+export interface CommentReactionSummary {
+  comment_id: string;
+  emoji: string;
+  count: number;
+  user_ids: string[];
 }
 
 export interface CommentWithReactions extends EnhancedComment {
   reactions: CommentReaction[];
-  reactionCounts: Record<ReactionType, number>;
-  userReaction?: ReactionType; // Current user's reaction (if any)
+  reactionCounts: Record<string, number>; // emoji -> count
+  userReactions?: string[]; // Current user's emoji reactions
 }
 
 // ============================================================================
