@@ -18,8 +18,8 @@ This comprehensive enhancement transforms the vibelog viewing experience with:
 ### Features
 
 - **Auto-generate AI narration** for vibelogs without audio
-- Uses **fal.ai MetaVoice TTS** with professional voice (Bria)
-- High-quality, natural-sounding voice synthesis
+- Uses **OpenAI TTS** with Shimmer voice (warm, empathetic)
+- High-quality `tts-1-hd` model for natural-sounding speech
 - Automatic truncation for long content (4000 char limit)
 - Stores in Supabase Storage alongside original audio
 
@@ -53,17 +53,19 @@ ADD COLUMN IF NOT EXISTS ai_audio_url TEXT;
 
 1. User views a vibelog without `ai_audio_url`
 2. Component auto-calls generation API in background
-3. **fal.ai MetaVoice** generates narration from title + content
-4. Audio downloaded from fal.ai and uploaded to Supabase Storage
+3. **OpenAI TTS** generates narration from title + content using Shimmer voice
+4. Audio buffer uploaded directly to Supabase Storage
 5. `ai_audio_url` updated in database
-6. Play button appears when ready
+6. Play button appears when ready (2-3 seconds)
 
 ### Tech Stack
 
-- **Voice Generation**: fal.ai MetaVoice TTS API
-- **Speaker**: Bria (professional, clear voice)
+- **Voice Generation**: OpenAI TTS API
+- **Model**: `tts-1-hd` (high-quality)
+- **Voice**: Shimmer (warm, empathetic, perfect for storytelling)
 - **Format**: MP3 audio
-- **Cost**: ~$0.02 per 1000 characters
+- **Speed**: ~2-3 seconds for typical vibelog
+- **Cost**: $15 per 1M characters (~$0.015 per 1000 chars)
 
 ---
 

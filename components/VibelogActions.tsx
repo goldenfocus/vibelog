@@ -488,7 +488,7 @@ export default function VibelogActions({
                 </button>
 
                 {isMenuOpen && (
-                  <div className="absolute left-0 top-full z-50 mt-2 w-40 rounded-lg border border-border/50 bg-card/95 shadow-xl backdrop-blur-sm">
+                  <div className="absolute left-0 top-full z-[60] mt-2 w-40 rounded-lg border border-border/50 bg-card/95 shadow-xl backdrop-blur-sm">
                     <div className="p-1">
                       <button
                         onClick={handleEditClick}
