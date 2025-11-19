@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
 import { useAuth } from '@/components/providers/AuthProvider';
-import { createBrowserSupabaseClient } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 
 interface Reaction {
@@ -34,7 +34,7 @@ export function CommentReactions({ commentId, className }: CommentReactionsProps
   }, [commentId]);
 
   const fetchReactions = async () => {
-    const supabase = createBrowserSupabaseClient();
+    const supabase = createClient();
 
     const { data, error } = await supabase
       .from('comment_reactions_summary')
@@ -59,7 +59,7 @@ export function CommentReactions({ commentId, className }: CommentReactionsProps
     }
 
     setIsLoading(true);
-    const supabase = createBrowserSupabaseClient();
+    const supabase = createClient();
 
     // Check if user already reacted with this emoji
     const existingReaction = reactions.find(r => r.emoji === emoji && r.user_ids.includes(user.id));
