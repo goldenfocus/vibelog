@@ -46,7 +46,7 @@ export function ScreenShareCreator({ remixContent, onSaveSuccess }: ScreenShareC
           setVibelogId(result.vibelogId);
 
           // Trigger homepage feed refresh if callback is provided
-          if (onSaveSuccess) {
+          if (onSaveSuccess && typeof onSaveSuccess === 'function') {
             console.log('🔄 [SCREEN-SHARE-CREATOR] Triggering feed refresh');
             onSaveSuccess();
           }
@@ -65,8 +65,8 @@ export function ScreenShareCreator({ remixContent, onSaveSuccess }: ScreenShareC
     console.log('Screen recording complete:', videoUrl);
     setShowCompletion(true);
 
-    // Trigger feed refresh
-    if (onSaveSuccess) {
+    // Trigger feed refresh (check if callback exists and is a function)
+    if (onSaveSuccess && typeof onSaveSuccess === 'function') {
       onSaveSuccess();
     }
 

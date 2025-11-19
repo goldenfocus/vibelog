@@ -3,6 +3,7 @@
 import { Clock, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 import { useAuth } from '@/components/providers/AuthProvider';
 import VibelogActions from '@/components/VibelogActions';
@@ -151,6 +152,25 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
     }
   };
 
+  const handleDelete = async () => {
+    try {
+      const response = await fetch(`/api/delete-vibelog/${vibelog.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete vibelog');
+      }
+
+      toast.success('Vibelog deleted successfully');
+      // Refresh the page to update the list
+      router.refresh();
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast.error('Failed to delete vibelog');
+    }
+  };
+
   const handleShare = async () => {
     // Avoid window.location during SSR - build URL client-side only
     if (typeof window === 'undefined') {
@@ -262,6 +282,7 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
           likeCount={vibelog.like_count}
           commentCount={vibelog.comment_count}
           onEdit={handleEdit}
+          onDelete={handleDelete}
           onRemix={handleRemix}
           onShare={handleShare}
           variant="compact"

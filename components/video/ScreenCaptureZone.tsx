@@ -243,7 +243,7 @@ export function ScreenCaptureZone({
       chunksRef.current = [];
 
       // Create compositor (combines screen + camera if enabled)
-      const compositor = new StreamCompositor({
+      const compositor = await StreamCompositor.create({
         screenStream: screenStreamRef.current,
         cameraStream: cameraStreamRef.current || undefined,
         width: 1920,
@@ -252,6 +252,8 @@ export function ScreenCaptureZone({
         pipPosition,
         pipSize: 0.25, // 25% of screen width
       });
+
+      console.log('[ScreenCaptureZone] Compositor created and video elements ready');
 
       const compositeVideoStream = compositor.start();
       compositorRef.current = compositor;
