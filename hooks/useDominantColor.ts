@@ -18,14 +18,15 @@ export function useDominantColor(imageUrl?: string | null): string | undefined {
         const img = new Image();
         img.crossOrigin = 'Anonymous';
 
-        // Add timestamp to bypass cache issues
-        img.src = imageUrl.includes('?')
-          ? `${imageUrl}&_=${Date.now()}`
-          : `${imageUrl}?_=${Date.now()}`;
+        // Try without timestamp first for better CORS compatibility
+        img.src = imageUrl;
 
         await new Promise((resolve, reject) => {
           img.onload = resolve;
-          img.onerror = reject;
+          img.onerror = (e) => {
+            // Silently fail - don't log event object
+            reject(new Error('Image failed to load'));
+          };
         });
 
         // Create small canvas for sampling
@@ -76,8 +77,8 @@ export function useDominantColor(imageUrl?: string | null): string | undefined {
 
         setDominantColor(`rgb(${r}, ${g}, ${b})`);
       } catch (error) {
-        // Fallback to electric blue on error
-        console.warn('Failed to extract dominant color:', error);
+        // Silently fallback to electric blue on error (CORS, 404, etc.)
+        // No need to log - this is expected for some images
         setDominantColor('rgb(96, 165, 250)');
       }
     };

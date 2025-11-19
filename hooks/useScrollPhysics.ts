@@ -26,9 +26,9 @@ export function useScrollPhysics(
 
   const velocityRef = useRef(0);
   const lastScrollRef = useRef(0);
-  const rafRef = useRef<number>();
+  const rafRef = useRef<number | undefined>(undefined);
   const isScrollingRef = useRef(false);
-  const scrollTimeoutRef = useRef<NodeJS.Timeout>();
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
     if (!enabled || !containerRef.current) return;
