@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useAuth } from '@/components/providers/AuthProvider';
+import { ReactionBar } from '@/components/reactions/ReactionBar';
 import VibelogActions from '@/components/VibelogActions';
 import VibelogContentRenderer from '@/components/VibelogContentRenderer';
 import VibelogEditModalFull from '@/components/VibelogEditModalFull';
@@ -264,6 +265,19 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
           isTeaser={isTeaser}
           onReadMore={handleReadMore}
           showCTA={!isLoggedIn} // Only show CTA for anonymous users
+        />
+      </div>
+
+      {/* Reactions - Stop click propagation */}
+      <div onClick={e => e.stopPropagation()} className="mb-4">
+        <ReactionBar
+          type="vibelog"
+          id={vibelog.id}
+          variant="compact"
+          size="sm"
+          realtime
+          showCounts
+          emojiSet={['🔥', '💯', '🎯', '✨', '💜', '🚀']}
         />
       </div>
 
