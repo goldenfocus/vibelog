@@ -17,6 +17,7 @@ import { useState, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 
 import { useAuth } from '@/components/providers/AuthProvider';
+import { ReactionBar } from '@/components/reactions/ReactionBar';
 import { useAudioPlayerStore } from '@/state/audio-player-store';
 import type { MediaAttachment } from '@/types/comments';
 
@@ -474,6 +475,11 @@ export default function CommentItem({
           </div>
         </div>
       )}
+
+      {/* Reactions */}
+      <div className="mt-3 border-t border-border/20 pt-3">
+        <ReactionBar type="comment" id={comment.id} variant="compact" realtime showCounts />
+      </div>
     </div>
   );
 }
