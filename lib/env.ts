@@ -28,10 +28,6 @@ const serverEnvSchema = clientEnvSchema.extend({
   ANTHROPIC_API_KEY: z.string().optional(),
   ELEVENLABS_API_KEY: z.string().optional(),
 
-  // Modal.com (Self-hosted TTS)
-  MODAL_TTS_ENDPOINT: z.string().url().optional(),
-  MODAL_ENABLED: z.string().optional(),
-
   // External Services
   RESEND_API_KEY: z.string().optional(),
   STRIPE_SECRET_KEY: z.string().optional(),

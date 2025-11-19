@@ -35,10 +35,6 @@ export const config = {
       apiKey: (isServer ? (env as any).ELEVENLABS_API_KEY : undefined) as string | undefined,
       apiUrl: 'https://api.elevenlabs.io/v1',
     },
-    modal: {
-      endpoint: (isServer ? (env as any).MODAL_TTS_ENDPOINT : undefined) as string | undefined,
-      enabled: isServer ? (env as any).MODAL_ENABLED === 'true' : false,
-    },
   },
 
   // Rate limiting
