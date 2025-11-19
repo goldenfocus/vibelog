@@ -32,7 +32,7 @@ export function useCardGestures(
   const startPosRef = useRef({ x: 0, y: 0 });
   const startTimeRef = useRef(0);
   const lastTapRef = useRef(0);
-  const longPressTimerRef = useRef<NodeJS.Timeout>();
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
     const element = elementRef.current;

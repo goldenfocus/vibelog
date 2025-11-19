@@ -82,16 +82,12 @@ export default function HomeCommunityShowcase({ onRefreshRequest, onRemix: _onRe
     }
   }, []);
 
+  // Load feed on mount and expose refresh function to parent
   useEffect(() => {
     loadFeed();
-  }, [loadFeed]);
-
-  // Expose refresh function to parent component
-  useEffect(() => {
-    if (onRefreshRequest) {
-      onRefreshRequest(loadFeed);
-    }
-  }, [onRefreshRequest, loadFeed]);
+    onRefreshRequest?.(loadFeed);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run once on mount - loadFeed is stable (empty deps in useCallback)
 
   const scrollCarousel = useCallback((ref: RefObject<HTMLDivElement>, direction: 1 | -1) => {
     if (!ref.current) {
@@ -248,12 +244,11 @@ export default function HomeCommunityShowcase({ onRefreshRequest, onRemix: _onRe
                 const hasAudio = member.latest_vibelog?.audio_url;
 
                 return (
-                  <Link
+                  <div
                     key={member.id}
-                    href={profileUrl}
                     className="group relative flex w-80 flex-shrink-0 snap-start flex-col overflow-hidden rounded-3xl border border-border/40 bg-gradient-to-br from-card/90 via-card/60 to-card/30 p-6 shadow-inner shadow-black/20 transition hover:border-electric/40 hover:shadow-electric/10"
                   >
-                    <div className="mb-4 flex items-center gap-3">
+                    <Link href={profileUrl} className="mb-4 flex items-center gap-3">
                       {member.avatar_url ? (
                         <img
                           src={member.avatar_url}
@@ -276,7 +271,7 @@ export default function HomeCommunityShowcase({ onRefreshRequest, onRemix: _onRe
                           </p>
                         )}
                       </div>
-                    </div>
+                    </Link>
 
                     <p className="mb-4 line-clamp-3 text-sm text-muted-foreground">
                       {member.bio || 'Just joined the vibe. Say hi!'}
@@ -299,7 +294,7 @@ export default function HomeCommunityShowcase({ onRefreshRequest, onRemix: _onRe
 
                     {/* Listen button - only show if user has audio */}
                     {hasAudio && member.latest_vibelog && (
-                      <div className="relative z-10 mt-auto" onClick={e => e.preventDefault()}>
+                      <div className="relative z-10 mt-auto">
                         <Link
                           href={getVibelogHref(member.username, member.latest_vibelog)}
                           className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-border/50 bg-white/5 px-4 py-2 text-sm font-semibold text-foreground transition hover:border-electric/40 hover:text-electric focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric/60"
@@ -309,7 +304,7 @@ export default function HomeCommunityShowcase({ onRefreshRequest, onRemix: _onRe
                         </Link>
                       </div>
                     )}
-                  </Link>
+                  </div>
                 );
               })}
         </div>
