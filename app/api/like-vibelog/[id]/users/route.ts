@@ -81,11 +81,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const actualCount = likers.length;
     const vibelogCount = vibelog?.like_count || 0;
 
-    if (actualCount !== vibelogCount) {
-      console.warn('Like count mismatch detected in likers API:', {
+    // Silent sync - only log if significantly different (more than 1)
+    if (Math.abs(actualCount - vibelogCount) > 1) {
+      console.log('Like count sync in likers API:', {
         vibelogId,
         actualLikers: actualCount,
         vibelogCount,
+        diff: actualCount - vibelogCount,
       });
     }
 

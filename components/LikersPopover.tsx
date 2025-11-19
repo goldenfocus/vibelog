@@ -80,7 +80,7 @@ export default function LikersPopover({
 
           // Sync count with parent if it's different
           if (fetchedCount !== likeCount) {
-            console.warn('Like count mismatch detected:', {
+            console.log('Updating like count from likers popover:', {
               propCount: likeCount,
               actualCount: fetchedCount,
               vibelogId,

@@ -8,8 +8,9 @@ import { toast } from 'sonner';
 import RecentComments from '@/components/RecentComments';
 import { VideoPlayer } from '@/components/video';
 import { useAudioPlayerStore } from '@/state/audio-player-store';
+import { FuturisticCarousel } from './FuturisticCarousel';
 
-interface HomeFeedVibelog {
+export interface HomeFeedVibelog {
   id: string;
   title: string;
   slug?: string | null;
@@ -169,162 +170,28 @@ export default function HomeCommunityShowcase({ onRefreshRequest, onRemix: _onRe
         </div>
       )}
 
-      {/* Latest Vibelogs */}
-      <div className="mb-12">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
-          <h3 className="text-xl font-semibold text-foreground">Latest vibelogs</h3>
-          <div className="hidden gap-2 lg:flex">
-            <button
-              aria-label="Scroll latest vibelogs left"
-              className="rounded-full border border-border/40 p-3 text-foreground transition hover:border-electric/40 hover:text-electric"
-              onClick={() => scrollCarousel(latestRef, -1)}
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </button>
-            <button
-              aria-label="Scroll latest vibelogs right"
-              className="rounded-full border border-border/40 p-3 text-foreground transition hover:border-electric/40 hover:text-electric"
-              onClick={() => scrollCarousel(latestRef, 1)}
-            >
-              <ArrowRight className="h-4 w-4" />
-            </button>
+      {/* Latest Vibelogs - Futuristic Carousel */}
+      {loading ? (
+        <div className="mb-12">
+          <div className="mb-6 px-4 md:px-6">
+            <div className="h-8 w-48 animate-pulse rounded-full bg-border/70" />
+          </div>
+          <div className="flex gap-5 overflow-hidden px-4 md:px-6">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div
+                key={`latest-skeleton-${index}`}
+                className="h-[480px] w-80 flex-shrink-0 animate-pulse rounded-3xl border border-border/40 bg-card/60 backdrop-blur"
+              />
+            ))}
           </div>
         </div>
-
-        <div
-          ref={latestRef}
-          className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-6"
-          style={{ scrollBehavior: 'smooth' }}
-        >
-          {loading
-            ? Array.from({ length: 4 }).map((_, index) => (
-                <div
-                  key={`latest-skeleton-${index}`}
-                  className="h-72 w-80 flex-shrink-0 animate-pulse rounded-3xl border border-border/40 bg-card/60 p-6 backdrop-blur"
-                >
-                  <div className="mb-4 h-6 w-32 rounded-full bg-border/70" />
-                  <div className="mb-6 h-4 w-48 rounded-full bg-border/60" />
-                  <div className="space-y-3">
-                    <div className="h-3 rounded-full bg-border/50" />
-                    <div className="h-3 rounded-full bg-border/40" />
-                    <div className="h-3 w-2/3 rounded-full bg-border/30" />
-                  </div>
-                  <div className="mt-auto h-10 w-full rounded-full bg-border/40" />
-                </div>
-              ))
-            : latestVibelogs.map(vibelog => {
-                const trackId = `vibelog-${vibelog.id}`;
-                const isActive = activeTrackId === trackId;
-                const isTrackPlaying = isActive && isPlaying;
-
-                const vibelogUrl = vibelog.public_slug
-                  ? `/@anonymous/${vibelog.public_slug}`
-                  : vibelog.slug
-                    ? `/@${vibelog.author?.username}/${vibelog.slug}`
-                    : `/vibelogs/${vibelog.id}`;
-
-                return (
-                  <article
-                    key={vibelog.id}
-                    className="group relative flex w-80 flex-shrink-0 snap-start flex-col overflow-hidden rounded-3xl border border-border/40 bg-gradient-to-br from-card/90 via-card/60 to-card/30 shadow-inner shadow-black/20 transition hover:border-electric/40 hover:shadow-electric/10"
-                  >
-                    {/* Video Player or Cover Image */}
-                    {vibelog.video_url ? (
-                      <div className="relative w-full overflow-hidden">
-                        <VideoPlayer
-                          videoUrl={vibelog.video_url}
-                          poster={vibelog.cover_image_url || undefined}
-                        />
-                        {/* Video indicator badge */}
-                        <div className="absolute right-3 top-3 z-10 flex items-center gap-1.5 rounded-full bg-black/70 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm">
-                          <Video className="h-3.5 w-3.5" />
-                          Video
-                        </div>
-                      </div>
-                    ) : vibelog.cover_image_url ? (
-                      <Link
-                        href={vibelogUrl}
-                        className="relative block aspect-video w-full overflow-hidden bg-muted"
-                      >
-                        <img
-                          src={vibelog.cover_image_url}
-                          alt={vibelog.title}
-                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                        />
-                      </Link>
-                    ) : null}
-
-                    <div className="flex flex-1 flex-col p-6">
-                      <div className="mb-4 flex items-center gap-3">
-                        {vibelog.author?.avatar_url ? (
-                          <img
-                            src={vibelog.author.avatar_url}
-                            alt={vibelog.author.display_name}
-                            className="h-10 w-10 rounded-full border border-border/30 object-cover"
-                          />
-                        ) : (
-                          <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border/30 bg-primary/5 text-primary">
-                            <Music2 className="h-5 w-5" />
-                          </div>
-                        )}
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-foreground">
-                            {vibelog.author?.display_name}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            @{vibelog.author?.username} · {formatRelativeTime(vibelog.published_at)}
-                          </p>
-                        </div>
-                      </div>
-
-                      <Link href={vibelogUrl} className="mb-3 block">
-                        <h4 className="text-xl font-semibold transition-colors group-hover:text-electric">
-                          {vibelog.title}
-                        </h4>
-                      </Link>
-                      <Link href={vibelogUrl} className="mb-6 block">
-                        <p className="line-clamp-3 text-sm text-muted-foreground">
-                          {vibelog.teaser || vibelog.content}
-                        </p>
-                      </Link>
-
-                      {vibelog.audio_url && (
-                        <div className="mt-auto">
-                          <button
-                            className={`inline-flex w-full items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric/60 ${
-                              isTrackPlaying
-                                ? 'bg-electric text-white'
-                                : 'border border-border/50 bg-white/5 text-foreground hover:border-electric/40 hover:text-electric'
-                            }`}
-                            onClick={e => {
-                              e.stopPropagation();
-                              handlePreview(vibelog);
-                            }}
-                          >
-                            {isTrackPlaying ? (
-                              <>
-                                <Pause className="h-4 w-4" />
-                                Playing
-                              </>
-                            ) : (
-                              <>
-                                {isActive && isLoading ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <Play className="h-4 w-4" />
-                                )}
-                                Listen
-                              </>
-                            )}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </article>
-                );
-              })}
-        </div>
-      </div>
+      ) : (
+        <FuturisticCarousel
+          vibelogs={latestVibelogs}
+          title="Latest vibelogs"
+          subtitle="Discover the newest voices in the community"
+        />
+      )}
 
       {/* Newest members */}
       <div>

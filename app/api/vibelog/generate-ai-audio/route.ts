@@ -3,12 +3,35 @@ import OpenAI from 'openai';
 
 import { createServerSupabaseClient } from '@/lib/supabase';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Initialize OpenAI client lazily to avoid errors if API key is missing
+let openaiClient: OpenAI | null = null;
+
+function getOpenAIClient() {
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY is not configured');
+  }
+  if (!openaiClient) {
+    openaiClient = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  return openaiClient;
+}
 
 export async function POST(request: NextRequest) {
   try {
+    // Check if OpenAI API key is configured
+    if (!process.env.OPENAI_API_KEY) {
+      console.error('❌ OPENAI_API_KEY not configured - AI audio generation unavailable');
+      return NextResponse.json(
+        {
+          error: 'AI audio generation is not configured',
+          message: 'The OpenAI API key is missing. Please configure OPENAI_API_KEY environment variable.',
+        },
+        { status: 503 }
+      );
+    }
+
     const { vibelogId } = await request.json();
 
     if (!vibelogId) {
@@ -50,6 +73,7 @@ export async function POST(request: NextRequest) {
     // Generate speech using OpenAI TTS with Shimmer voice
     console.log('🎙️ Generating AI narration with OpenAI TTS for vibelog:', vibelog.id);
 
+    const openai = getOpenAIClient();
     const mp3Response = await openai.audio.speech.create({
       model: 'tts-1-hd', // High-quality model
       voice: 'shimmer', // Shimmer voice - warm, empathetic
@@ -98,12 +122,30 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('❌ Error generating AI audio:', error);
+
+    // Provide more helpful error messages
+    let errorMessage = 'Failed to generate AI audio';
+    let statusCode = 500;
+
+    if (error instanceof Error) {
+      if (error.message.includes('OPENAI_API_KEY')) {
+        errorMessage = 'AI audio generation is not configured';
+        statusCode = 503;
+      } else if (error.message.includes('rate limit')) {
+        errorMessage = 'OpenAI API rate limit exceeded';
+        statusCode = 429;
+      } else if (error.message.includes('quota')) {
+        errorMessage = 'OpenAI API quota exceeded';
+        statusCode = 429;
+      }
+    }
+
     return NextResponse.json(
       {
-        error: 'Failed to generate AI audio',
+        error: errorMessage,
         details: error instanceof Error ? error.message : 'Unknown error',
       },
-      { status: 500 }
+      { status: statusCode }
     );
   }
 }
