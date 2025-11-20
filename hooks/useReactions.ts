@@ -224,7 +224,7 @@ export function useReactions(options: UseReactionsOptions): UseReactionsReturn {
 
     channelRef.current = channel;
     setIsSubscribed(true);
-  }, [supabase, type, id, isSubscribed, fetchReactions]);
+  }, [supabase, type, id, fetchReactions]);
 
   // Unsubscribe from real-time updates
   const unsubscribe = useCallback(() => {
