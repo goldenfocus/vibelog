@@ -84,13 +84,8 @@ export function ContentTabs({
   const pathname = usePathname();
   const { currentTrack, isPlaying, play, pause } = useAudioPlayerStore();
   const [loadingTrack, setLoadingTrack] = React.useState<string | null>(null);
-  const [isGeneratingAudio, setIsGeneratingAudio] = React.useState(false);
-  const [generatedAiAudioUrl, setGeneratedAiAudioUrl] = React.useState<string | null>(
-    aiAudioUrl || null
-  );
 
   const hasOriginalMedia = !!(originalAudioUrl || videoUrl);
-  const hasAiAudio = !!(generatedAiAudioUrl || aiAudioUrl);
 
   // Determine current view from URL
   const isOriginalView = pathname?.endsWith('/original');
@@ -110,33 +105,6 @@ export function ContentTabs({
       router.push(`${basePath}/vibelogged`);
     }
   };
-
-  // Auto-generate AI audio if none exists
-  React.useEffect(() => {
-    const generateAudioIfNeeded = async () => {
-      if (!hasAiAudio && !isGeneratingAudio) {
-        setIsGeneratingAudio(true);
-        try {
-          const response = await fetch('/api/vibelog/generate-ai-audio', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ vibelogId }),
-          });
-
-          const data = await response.json();
-          if (data.success && data.audioUrl) {
-            setGeneratedAiAudioUrl(data.audioUrl);
-          }
-        } catch (error) {
-          console.error('Failed to generate AI audio:', error);
-        } finally {
-          setIsGeneratingAudio(false);
-        }
-      }
-    };
-
-    generateAudioIfNeeded();
-  }, [vibelogId, hasAiAudio, isGeneratingAudio]);
 
   const handlePlayClick = async (audioUrl: string, trackType: 'vibelog' | 'original') => {
     const trackId = `vibelog-${trackType}-${vibelogId}`;
@@ -177,8 +145,6 @@ export function ContentTabs({
   const vibelogState = getPlayButtonState('vibelog');
   const originalState = getPlayButtonState('original');
 
-  const currentAiAudioUrl = generatedAiAudioUrl || aiAudioUrl;
-
   return (
     <div className={cn('w-full', className)}>
       <Tabs value={defaultTab} onValueChange={handleTabChange} className="w-full">
@@ -196,7 +162,7 @@ export function ContentTabs({
 
         <TabsContent value="vibelog" className="space-y-6">
           {/* AI Audio Player */}
-          {currentAiAudioUrl && (
+          {aiAudioUrl && (
             <div className="flex flex-col gap-3 rounded-xl border border-border/50 bg-gradient-to-br from-background via-background to-background/50 p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
@@ -205,7 +171,7 @@ export function ContentTabs({
                 </div>
               </div>
               <button
-                onClick={() => handlePlayClick(currentAiAudioUrl, 'vibelog')}
+                onClick={() => handlePlayClick(aiAudioUrl, 'vibelog')}
                 disabled={vibelogState.isLoading}
                 className="flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 px-8 py-3 font-semibold text-white shadow-lg transition-all duration-200 hover:scale-105 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50"
                 aria-label={vibelogState.isPlaying ? 'Pause AI narration' : 'Play AI narration'}
@@ -219,14 +185,6 @@ export function ContentTabs({
                 )}
                 <span>{vibelogState.isPlaying ? 'Pause' : 'Listen to Vibelog'}</span>
               </button>
-            </div>
-          )}
-
-          {/* Loading state for audio generation */}
-          {isGeneratingAudio && !currentAiAudioUrl && (
-            <div className="flex items-center justify-center gap-2 rounded-xl border border-border/50 bg-muted/30 p-6 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Generating AI narration...</span>
             </div>
           )}
 
