@@ -82,8 +82,8 @@ export function FloatingCard({ vibelog, index, isActive = false, onCardClick }: 
     }
   };
 
-  const handlePlayClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent card click
+  const handlePlayClick = () => {
+    // No e.stopPropagation() needed - InteractionLayer handles it
 
     // If has audio, play it in the audio player
     if (vibelog.audio_url) {
