@@ -44,7 +44,10 @@ export function MediaBackground({
           loop
           muted
           playsInline
+          preload="metadata" // Load first frame on mobile
+          poster={coverImage || undefined} // Use cover image as poster
           onLoadedData={() => setIsLoaded(true)}
+          onLoadedMetadata={() => setIsLoaded(true)} // Also show on metadata load
           onError={() => setVideoError(true)}
         />
       )}

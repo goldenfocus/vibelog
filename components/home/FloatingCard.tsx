@@ -83,6 +83,9 @@ export function FloatingCard({ vibelog, index, isActive = false, onCardClick }: 
   };
 
   const handlePlayClick = () => {
+    // No e.stopPropagation() needed - InteractionLayer handles it
+
+    // If has audio, play it in the audio player
     if (vibelog.audio_url) {
       setTrack({
         id: vibelog.id,
@@ -92,6 +95,10 @@ export function FloatingCard({ vibelog, index, isActive = false, onCardClick }: 
         type: 'url' as const,
       });
       play();
+    }
+    // If has video but no audio, navigate to vibelog page
+    else if (vibelog.video_url) {
+      handleCardClick();
     }
   };
 
