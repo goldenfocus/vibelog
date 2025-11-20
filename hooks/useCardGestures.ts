@@ -36,7 +36,7 @@ export function useCardGestures(
 
   useEffect(() => {
     const element = elementRef.current;
-    if (!element) return;
+    if (!element) {return;}
 
     const handleTouchStart = (e: TouchEvent) => {
       const touch = e.touches[0];
@@ -82,14 +82,14 @@ export function useCardGestures(
           // Horizontal swipe
           const swipeGesture = deltaX > 0 ? 'swipe-right' : 'swipe-left';
           setGesture(swipeGesture);
-          if (swipeGesture === 'swipe-left') callbacks.onSwipeLeft?.();
-          else callbacks.onSwipeRight?.();
+          if (swipeGesture === 'swipe-left') {callbacks.onSwipeLeft?.();}
+          else {callbacks.onSwipeRight?.();}
         } else {
           // Vertical swipe
           const swipeGesture = deltaY > 0 ? 'swipe-down' : 'swipe-up';
           setGesture(swipeGesture);
-          if (swipeGesture === 'swipe-up') callbacks.onSwipeUp?.();
-          else callbacks.onSwipeDown?.();
+          if (swipeGesture === 'swipe-up') {callbacks.onSwipeUp?.();}
+          else {callbacks.onSwipeDown?.();}
         }
         return;
       }

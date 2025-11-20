@@ -6,6 +6,7 @@
  */
 
 import OpenAI from 'openai';
+
 import type { 
   VibeAnalysis, 
   VibeScores, 
@@ -214,11 +215,11 @@ Be playful, intuitive, and slightly unhinged in your analysis. Look for subtle e
    */
   private detectLanguage(text: string): string {
     // Basic detection - can be enhanced with proper library
-    if (/[\u4e00-\u9fff]/.test(text)) return 'zh';
-    if (/[àáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ]/.test(text)) return 'es';
-    if (/[àâäèéêëîïôùûüÿç]/.test(text)) return 'fr';
-    if (/[äöüß]/.test(text)) return 'de';
-    if (/[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/.test(text)) return 'vi';
+    if (/[\u4e00-\u9fff]/.test(text)) {return 'zh';}
+    if (/[àáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ]/.test(text)) {return 'es';}
+    if (/[àâäèéêëîïôùûüÿç]/.test(text)) {return 'fr';}
+    if (/[äöüß]/.test(text)) {return 'de';}
+    if (/[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/.test(text)) {return 'vi';}
     return 'en';
   }
 

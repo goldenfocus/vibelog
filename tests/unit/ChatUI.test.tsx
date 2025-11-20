@@ -6,7 +6,6 @@ import { describe, expect, it, vi, beforeEach, afterEach, beforeAll } from 'vite
 import ChatInterface from '@/components/conversation/ChatInterface';
 import MessageList from '@/components/conversation/MessageList';
 import VoiceInput from '@/components/conversation/VoiceInput';
-
 import type { ConversationMessage } from '@/state/conversation-state';
 
 const mocks = vi.hoisted(() => ({

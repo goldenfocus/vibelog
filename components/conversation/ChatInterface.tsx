@@ -5,12 +5,12 @@ import { FormEvent, KeyboardEvent, useCallback, useMemo, useState } from 'react'
 
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { useConversation } from '@/hooks/useConversation';
 import { cn } from '@/lib/utils';
 
 import MessageList from './MessageList';
 import VoiceInput from './VoiceInput';
 
-import { useConversation } from '@/hooks/useConversation';
 
 const STATE_LABELS = {
   generating: 'Generating',

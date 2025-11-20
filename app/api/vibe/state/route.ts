@@ -6,10 +6,12 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getVibelogOS } from '@/lib/vibe/os-layer';
-import { getVibeDetector } from '@/lib/vibe/detector';
-import type { GetVibeStateRequest, GetVibeStateResponse, UserVibeState } from '@/lib/vibe/types';
 import { z } from 'zod';
+
+import { getVibeDetector } from '@/lib/vibe/detector';
+import { getVibelogOS } from '@/lib/vibe/os-layer';
+import type { GetVibeStateRequest, GetVibeStateResponse, UserVibeState } from '@/lib/vibe/types';
+
 
 const updateStateSchema = z.object({
   userId: z.string().uuid(),

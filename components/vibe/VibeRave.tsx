@@ -7,9 +7,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { VibeScores, PrimaryVibe } from '@/lib/vibe/types';
-import { getHumorModule } from '@/lib/vibe/humor';
+
 import { cn } from '@/lib/utils';
+import { getHumorModule } from '@/lib/vibe/humor';
+import type { VibeScores, PrimaryVibe } from '@/lib/vibe/types';
 
 interface VibeRaveProps {
   scores: VibeScores;

@@ -36,7 +36,7 @@ async function cleanupVoiceCloneColumns() {
     .filter(s => s && !s.startsWith('--'));
 
   for (const statement of statements) {
-    if (!statement) continue;
+    if (!statement) {continue;}
 
     try {
       console.log(`Executing: ${statement.substring(0, 60)}...`);

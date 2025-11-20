@@ -6,13 +6,14 @@
  */
 
 import { randomUUID } from 'crypto';
+
+import { getVibeDetector } from './detector';
 import type { 
   VibePacket, 
   VibeStreamChunk, 
   VibeAnalysis,
   UserVibeState 
 } from './types';
-import { getVibeDetector } from './detector';
 
 /**
  * VTP Protocol Handler
@@ -68,7 +69,7 @@ export class VTPProtocol {
   ): AsyncGenerator<VibeStreamChunk> {
     const detector = getVibeDetector();
     let accumulatedText = '';
-    let packetId = randomUUID();
+    const packetId = randomUUID();
     
     for await (const chunk of textStream) {
       accumulatedText += chunk;

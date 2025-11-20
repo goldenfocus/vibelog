@@ -1,9 +1,10 @@
 // Quick script to check if Twitter auto-posting migration was applied
 // Run with: node check-migration.js
 
-const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
 const path = require('path');
+
+const { createClient } = require('@supabase/supabase-js');
 
 // Manually load .env.local
 const envPath = path.join(__dirname, '.env.local');

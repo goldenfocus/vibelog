@@ -1,6 +1,7 @@
 'use client';
 
 import { ReactNode } from 'react';
+
 import { cn } from '@/lib/utils';
 
 interface GlassTextContainerProps {
@@ -20,9 +21,9 @@ export function GlassTextContainer({
 }: GlassTextContainerProps) {
   // Parse RGB color and create rgba with low opacity for tint
   const parseRGBForTint = (rgb?: string) => {
-    if (!rgb) return 'rgba(255, 255, 255, 0.05)';
+    if (!rgb) {return 'rgba(255, 255, 255, 0.05)';}
     const match = rgb.match(/\d+/g);
-    if (!match || match.length < 3) return 'rgba(255, 255, 255, 0.05)';
+    if (!match || match.length < 3) {return 'rgba(255, 255, 255, 0.05)';}
     return `rgba(${match[0]}, ${match[1]}, ${match[2]}, 0.08)`;
   };
 

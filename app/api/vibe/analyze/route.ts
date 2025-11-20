@@ -5,10 +5,11 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+
 import { getVibeDetector } from '@/lib/vibe/detector';
 import { getSafetyFilter } from '@/lib/vibe/safety';
 import type { AnalyzeVibeRequest, AnalyzeVibeResponse } from '@/lib/vibe/types';
-import { z } from 'zod';
 
 const analyzeVibeSchema = z.object({
   text: z.string().min(1).max(10000),

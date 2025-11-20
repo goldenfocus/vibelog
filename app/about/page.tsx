@@ -1,8 +1,8 @@
 import { MessageCircle, Share, User } from 'lucide-react';
 import Link from 'next/link';
 
-import Navigation from '@/components/Navigation';
 import Comments from '@/components/comments/Comments';
+import Navigation from '@/components/Navigation';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
 // Force dynamic rendering
@@ -27,7 +27,7 @@ async function getAboutPageVibelog() {
   const supabase = await createServerSupabaseClient();
 
   // Try to find existing about-page vibelog
-  let { data: vibelog } = await supabase
+  const { data: vibelog } = await supabase
     .from('vibelogs')
     .select('id')
     .eq('slug', 'about-page-comments')

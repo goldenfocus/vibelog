@@ -7,8 +7,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { VibeAnalysis } from '@/lib/vibe/types';
+
 import { cn } from '@/lib/utils';
+import type { VibeAnalysis } from '@/lib/vibe/types';
+
 import { VibeIndicator } from './VibeIndicator';
 
 interface VibeMessageBubbleProps {
