@@ -24,9 +24,9 @@ CREATE INDEX IF NOT EXISTS idx_ai_usage_log_user_created
 CREATE INDEX IF NOT EXISTS idx_ai_usage_log_service_created
   ON ai_usage_log(service, created_at DESC);
 
--- Index for daily cost aggregation
+-- Index for daily cost aggregation (using created_at directly since DATE() is not immutable)
 CREATE INDEX IF NOT EXISTS idx_ai_usage_log_created_date
-  ON ai_usage_log(DATE(created_at));
+  ON ai_usage_log(created_at);
 
 -- Table 2: AI Cache (stores cached responses to avoid duplicate API calls)
 CREATE TABLE IF NOT EXISTS ai_cache (
