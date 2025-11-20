@@ -37,15 +37,24 @@ export const config = {
     },
   },
 
-  // Rate limiting
+  // Rate limiting - AGGRESSIVE COST PROTECTION
+  // Limits are per-user per-day to prevent cost spikes ($50/day circuit breaker)
   rateLimits: {
     transcription: {
-      anonymous: { limit: isDev ? 10000 : 10000, window: '24 h' },
-      authenticated: { limit: 10000, window: '15 m' },
+      anonymous: { limit: isDev ? 100 : 10, window: '24 h' }, // ~$0.06/day max (10min)
+      authenticated: { limit: isDev ? 100 : 100, window: '24 h' }, // ~$0.60/day max (100min)
     },
     generation: {
-      anonymous: { limit: isDev ? 10000 : 10000, window: '24 h' },
-      authenticated: { limit: 10000, window: '15 m' },
+      anonymous: { limit: isDev ? 50 : 5, window: '24 h' }, // ~$0.01/day max
+      authenticated: { limit: isDev ? 50 : 50, window: '24 h' }, // ~$0.05/day max
+    },
+    tts: {
+      anonymous: { limit: isDev ? 20 : 3, window: '24 h' }, // ~$0.03/day max (300 chars each)
+      authenticated: { limit: isDev ? 20 : 20, window: '24 h' }, // ~$0.20/day max (300 chars each)
+    },
+    images: {
+      anonymous: { limit: isDev ? 10 : 2, window: '24 h' }, // ~$0.08/day max
+      authenticated: { limit: isDev ? 10 : 10, window: '24 h' }, // ~$0.40/day max
     },
   },
 
