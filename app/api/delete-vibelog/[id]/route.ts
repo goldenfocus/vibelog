@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { createServerSupabaseClient } from '@/lib/supabase';
+import { createServerAdminClient } from '@/lib/supabaseAdmin';
 
 export const runtime = 'nodejs';
 
@@ -19,10 +20,10 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Verify ownership
+    // Verify ownership and get all storage URLs
     const { data: vibelog, error: fetchError } = await supabase
       .from('vibelogs')
-      .select('user_id, audio_url, cover_image_url')
+      .select('user_id, audio_url, cover_image_url, video_url, ai_audio_url')
       .eq('id', id)
       .single();
 
@@ -34,12 +35,77 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden - not your vibelog' }, { status: 403 });
     }
 
-    // TODO: Clean up storage files (audio, cover images)
-    // This would require deleting from Supabase Storage buckets
-    // For now, we'll just delete from database
-    // Storage cleanup can be handled by a scheduled job or trigger
+    // Clean up storage files before deleting database record
+    const adminClient = await createServerAdminClient();
+    const storageErrors: string[] = [];
 
-    // Delete vibelog
+    // Helper function to extract storage path from public URL
+    const extractStoragePath = (url: string | null, bucket: string): string | null => {
+      if (!url) {
+        return null;
+      }
+
+      // URL format: {supabase_url}/storage/v1/object/public/{bucket}/{path}
+      const publicPattern = `/storage/v1/object/public/${bucket}/`;
+      const pathStartIndex = url.indexOf(publicPattern);
+
+      if (pathStartIndex === -1) {
+        console.warn(`Could not extract path from URL: ${url}`);
+        return null;
+      }
+
+      return url.substring(pathStartIndex + publicPattern.length);
+    };
+
+    // Delete audio file from vibelogs bucket
+    if (vibelog.audio_url) {
+      const audioPath = extractStoragePath(vibelog.audio_url, 'vibelogs');
+      if (audioPath) {
+        const { error } = await adminClient.storage.from('vibelogs').remove([audioPath]);
+        if (error) {
+          console.error('Failed to delete audio file:', error);
+          storageErrors.push(`audio: ${error.message}`);
+        }
+      }
+    }
+
+    // Delete AI audio file from tts-audio bucket
+    if (vibelog.ai_audio_url) {
+      const aiAudioPath = extractStoragePath(vibelog.ai_audio_url, 'tts-audio');
+      if (aiAudioPath) {
+        const { error } = await adminClient.storage.from('tts-audio').remove([aiAudioPath]);
+        if (error) {
+          console.error('Failed to delete AI audio file:', error);
+          storageErrors.push(`ai_audio: ${error.message}`);
+        }
+      }
+    }
+
+    // Delete video file from vibelogs bucket
+    if (vibelog.video_url) {
+      const videoPath = extractStoragePath(vibelog.video_url, 'vibelogs');
+      if (videoPath) {
+        const { error } = await adminClient.storage.from('vibelogs').remove([videoPath]);
+        if (error) {
+          console.error('Failed to delete video file:', error);
+          storageErrors.push(`video: ${error.message}`);
+        }
+      }
+    }
+
+    // Delete cover image from vibelog-covers bucket
+    if (vibelog.cover_image_url) {
+      const coverPath = extractStoragePath(vibelog.cover_image_url, 'vibelog-covers');
+      if (coverPath) {
+        const { error } = await adminClient.storage.from('vibelog-covers').remove([coverPath]);
+        if (error) {
+          console.error('Failed to delete cover image:', error);
+          storageErrors.push(`cover: ${error.message}`);
+        }
+      }
+    }
+
+    // Delete vibelog from database
     const { error: deleteError } = await supabase.from('vibelogs').delete().eq('id', id);
 
     if (deleteError) {
@@ -47,10 +113,18 @@ export async function DELETE(
       return NextResponse.json({ error: 'Failed to delete vibelog' }, { status: 500 });
     }
 
-    return NextResponse.json({
+    // Return success with optional storage cleanup warnings
+    const response: { success: boolean; message: string; storageWarnings?: string[] } = {
       success: true,
       message: 'Vibelog deleted successfully',
-    });
+    };
+
+    if (storageErrors.length > 0) {
+      response.storageWarnings = storageErrors;
+      console.warn('Storage cleanup had errors:', storageErrors);
+    }
+
+    return NextResponse.json(response);
   } catch (error) {
     console.error('Error deleting vibelog:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

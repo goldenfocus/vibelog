@@ -4,8 +4,6 @@ import { Users, Search, Shield, ShieldOff } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
-import GodModeButton from '@/components/admin/GodModeButton';
-
 interface User {
   id: string;
   email: string;
@@ -64,29 +62,6 @@ export default function UsersPage() {
       toast.error('Failed to update user');
     } finally {
       setUpdatingUserId(null);
-    }
-  };
-
-  const handleEnterGodMode = async (targetUserId: string) => {
-    try {
-      const response = await fetch('/api/admin/god-mode', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ targetUserId }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to enter god mode');
-      }
-
-      toast.success('Entering God Mode...');
-      // Reload page to activate god mode
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 500);
-    } catch (error) {
-      console.error('Error entering god mode:', error);
-      toast.error('Failed to enter god mode');
     }
   };
 
@@ -181,11 +156,6 @@ export default function UsersPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
-                        <GodModeButton
-                          targetUserId={user.id}
-                          targetUserName={user.display_name || user.email}
-                          onEnterGodMode={handleEnterGodMode}
-                        />
                         <button
                           onClick={() => toggleAdminStatus(user.id, user.is_admin)}
                           disabled={updatingUserId === user.id}

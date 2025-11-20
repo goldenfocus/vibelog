@@ -131,13 +131,15 @@ export function FuturisticCarousel({ vibelogs, title, subtitle }: FuturisticCaro
           className={cn(
             'flex gap-5 overflow-x-auto px-4 pb-6 md:px-6',
             'snap-x snap-mandatory scroll-smooth',
-            'scrollbar-hide', // Hide scrollbar for cleaner look
+            'scrollbar-hide scroll-lock-y', // Hide scrollbar and lock vertical movement
             '-mx-4 md:-mx-6' // Negative margin to allow cards to touch edges
           )}
           onScroll={handleScroll}
           style={{
             scrollBehavior: 'smooth',
             WebkitOverflowScrolling: 'touch',
+            overscrollBehaviorX: 'contain',
+            overscrollBehaviorY: 'none',
           }}
         >
           {/* Spacing div for left padding */}

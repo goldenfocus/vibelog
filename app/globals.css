@@ -202,6 +202,12 @@ All colors MUST be HSL.
     display: none;  /* Chrome, Safari and Opera */
   }
 
+  /* Prevent vertical movement during horizontal scroll */
+  .scroll-lock-y {
+    overscroll-behavior-y: none;
+    touch-action: pan-x;
+  }
+
   .transition-electric {
     transition: var(--transition-electric);
   }

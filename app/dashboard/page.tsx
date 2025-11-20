@@ -4,13 +4,13 @@ import { Mic, Monitor, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+import { FuturisticCarousel } from '@/components/home/FuturisticCarousel';
 import MicRecorder from '@/components/MicRecorder';
 import Navigation from '@/components/Navigation';
 import { OnboardingModal } from '@/components/OnboardingModal';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useI18n } from '@/components/providers/I18nProvider';
 import { Button } from '@/components/ui/button';
-import VibelogCard from '@/components/VibelogCard';
 import { ScreenCaptureZone } from '@/components/video/ScreenCaptureZone';
 import { createClient } from '@/lib/supabase';
 
@@ -23,7 +23,7 @@ export default function DashboardPage() {
   const [profile, setProfile] = useState<any>(null);
   const [showScreenShare, setShowScreenShare] = useState(false);
   const [tempVibelogId, setTempVibelogId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [_error, setError] = useState<string | null>(null);
 
   // Fetch user's profile
   useEffect(() => {
@@ -217,7 +217,7 @@ export default function DashboardPage() {
             <Button
               onClick={handleScreenShare}
               variant="outline"
-              className="flex items-center gap-2 bg-gradient-to-r from-blue-500/10 to-purple-500/10 hover:from-blue-500/20 hover:to-purple-500/20 border-blue-500/30"
+              className="flex items-center gap-2 border-blue-500/30 bg-gradient-to-r from-blue-500/10 to-purple-500/10 hover:from-blue-500/20 hover:to-purple-500/20"
             >
               <Monitor className="h-4 w-4" />
               Screen Share
@@ -265,11 +265,7 @@ export default function DashboardPage() {
                 </p>
               </div>
             ) : (
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {vibelogs.map(vibelog => (
-                  <VibelogCard key={vibelog.id} vibelog={vibelog} />
-                ))}
-              </div>
+              <FuturisticCarousel vibelogs={vibelogs} title="" subtitle="" />
             )}
           </div>
         </div>
@@ -281,19 +277,19 @@ export default function DashboardPage() {
       {/* Screen Share Modal */}
       {showScreenShare && tempVibelogId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-          <div className="relative w-full max-w-5xl mx-4 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
+          <div className="relative mx-4 max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-900">
             <button
               onClick={() => {
                 setShowScreenShare(false);
                 setTempVibelogId(null);
               }}
-              className="absolute top-4 right-4 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+              className="absolute right-4 top-4 rounded-full p-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
             >
-              <X className="w-5 h-5" />
+              <X className="h-5 w-5" />
             </button>
 
             <div className="mb-6">
-              <h2 className="text-2xl font-bold mb-2">Screen Share Recording</h2>
+              <h2 className="mb-2 text-2xl font-bold">Screen Share Recording</h2>
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 Record your screen with optional camera overlay - perfect for tutorials and demos!
               </p>
