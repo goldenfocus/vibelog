@@ -5,13 +5,11 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import GlobalAudioPlayer from '@/components/GlobalAudioPlayer';
 import { AuthProvider } from '@/components/providers/AuthProvider';
-import { GodModeProvider } from '@/components/providers/GodModeProvider';
 import { I18nProvider } from '@/components/providers/I18nProvider';
 import { ReactQueryProvider } from '@/components/providers/ReactQueryProvider';
 import { Toaster as Sonner } from '@/components/ui/sonner';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { getGodModeSession, getGodModeTarget } from '@/lib/godMode';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -91,23 +89,6 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  // Check for God Mode session
-  const godModeSession = await getGodModeSession();
-  let godModeData = null;
-
-  if (godModeSession) {
-    const targetUser = await getGodModeTarget();
-    if (targetUser) {
-      godModeData = {
-        adminUserId: godModeSession.adminUserId,
-        targetUserId: godModeSession.targetUserId,
-        targetUserName: targetUser.username || targetUser.email || 'Unknown User',
-        startedAt: godModeSession.startedAt,
-        expiresAt: godModeSession.expiresAt,
-      };
-    }
-  }
-
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <head />
@@ -116,7 +97,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <AuthProvider>
             <TooltipProvider>
               <I18nProvider>
-                <GodModeProvider initialSession={godModeData} />
                 {children}
                 <GlobalAudioPlayer />
                 <Toaster />
