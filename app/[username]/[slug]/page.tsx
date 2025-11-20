@@ -350,8 +350,28 @@ export default async function VibelogPage({ params }: PageProps) {
       <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Vibelog article */}
         <article className="rounded-2xl border border-border/50 bg-gradient-to-br from-background via-background to-background/50 p-6 sm:p-8">
-          {/* Cover Image */}
-          {vibelog.cover_image_url && (
+          {/* Video Player (if available) - shown above cover image with autoplay */}
+          {vibelog.video_url && (
+            <div className="mb-8 overflow-hidden rounded-xl">
+              <video
+                controls
+                autoPlay
+                muted
+                loop
+                playsInline
+                className="w-full rounded-lg"
+                preload="metadata"
+                poster={vibelog.cover_image_url || undefined}
+              >
+                <source src={vibelog.video_url} type="video/webm" />
+                <source src={vibelog.video_url} type="video/mp4" />
+                Your browser does not support the video element.
+              </video>
+            </div>
+          )}
+
+          {/* Cover Image (only if no video) */}
+          {!vibelog.video_url && vibelog.cover_image_url && (
             <div className="mb-8 overflow-hidden rounded-xl">
               <img
                 src={vibelog.cover_image_url}
