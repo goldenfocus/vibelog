@@ -1,9 +1,10 @@
 'use client';
 
-import { useRef, useState, useCallback } from 'react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { useRef, useState, useCallback } from 'react';
+
 import { cn } from '@/lib/utils';
-import { useScrollPhysics } from '@/hooks/useScrollPhysics';
+
 import { FloatingCard } from './FloatingCard';
 import type { HomeFeedVibelog } from './HomeCommunityShowcase';
 
@@ -14,29 +15,47 @@ interface FuturisticCarouselProps {
 }
 
 /**
- * Futuristic carousel with physics-based scrolling and smooth animations
- * Features momentum scroll, snap-to-card, keyboard navigation, and responsive design
+ * Futuristic carousel with native CSS snap scrolling
+ * Features smooth scroll, snap-to-card, keyboard navigation, and responsive design
  */
-export function FuturisticCarousel({
-  vibelogs,
-  title,
-  subtitle,
-}: FuturisticCarouselProps) {
+export function FuturisticCarousel({ vibelogs, title, subtitle }: FuturisticCarouselProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
-  // Initialize scroll physics
-  const { scrollToCard, getActiveCardIndex } = useScrollPhysics(containerRef, {
-    cardWidth: 320,
-    gap: 20,
-    enabled: true,
-  });
+  // Calculate active card index based on scroll position
+  const getActiveCardIndex = useCallback((): number => {
+    if (!containerRef.current) {
+      return 0;
+    }
+    const cardWidth = 320;
+    const gap = 20;
+    const totalCardWidth = cardWidth + gap;
+    const currentScroll = containerRef.current.scrollLeft;
+    return Math.round(currentScroll / totalCardWidth);
+  }, []);
+
+  // Scroll to specific card
+  const scrollToCard = useCallback((index: number) => {
+    if (!containerRef.current) {
+      return;
+    }
+    const cardWidth = 320;
+    const gap = 20;
+    const totalCardWidth = cardWidth + gap;
+    const targetScroll = index * totalCardWidth;
+    containerRef.current.scrollTo({
+      left: targetScroll,
+      behavior: 'smooth',
+    });
+  }, []);
 
   // Update scroll state
   const updateScrollState = useCallback(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current) {
+      return;
+    }
 
     const { scrollLeft, scrollWidth, clientWidth } = containerRef.current;
     setCanScrollLeft(scrollLeft > 10);
@@ -99,9 +118,7 @@ export function FuturisticCarousel({
             </h2>
           )}
           {subtitle && (
-            <p className="mt-1 text-sm text-muted-foreground md:text-base">
-              {subtitle}
-            </p>
+            <p className="mt-1 text-sm text-muted-foreground md:text-base">{subtitle}</p>
           )}
         </div>
       )}
@@ -186,15 +203,13 @@ export function FuturisticCarousel({
         {/* Scroll indicator dots (mobile) */}
         {vibelogs.length > 1 && (
           <div className="mt-4 flex justify-center gap-2 md:hidden">
-            {vibelogs.map((_, index) => (
+            {vibelogs.map((vibelog, index) => (
               <button
-                key={index}
+                key={`dot-${vibelog.id}`}
                 onClick={() => scrollToCard(index)}
                 className={cn(
                   'h-1.5 rounded-full transition-all duration-300',
-                  index === activeIndex
-                    ? 'w-6 bg-electric'
-                    : 'w-1.5 bg-white/30 hover:bg-white/50'
+                  index === activeIndex ? 'w-6 bg-electric' : 'w-1.5 bg-white/30 hover:bg-white/50'
                 )}
                 aria-label={`Go to vibelog ${index + 1}`}
               />

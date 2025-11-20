@@ -1,17 +1,18 @@
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { Clock, User } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
+import { useRef, useState, useEffect } from 'react';
+
 import { useDominantColor } from '@/hooks/useDominantColor';
-import { useCardGestures } from '@/hooks/useCardGestures';
-import { CardGlowEffect } from './CardGlowEffect';
-import { MediaBackground } from './MediaBackground';
-import { GlassTextContainer } from './GlassTextContainer';
-import { InteractionLayer } from './InteractionLayer';
+import { cn } from '@/lib/utils';
 import { useAudioPlayerStore } from '@/state/audio-player-store';
+
+import { CardGlowEffect } from './CardGlowEffect';
+import { GlassTextContainer } from './GlassTextContainer';
 import type { HomeFeedVibelog } from './HomeCommunityShowcase';
+import { InteractionLayer } from './InteractionLayer';
+import { MediaBackground } from './MediaBackground';
 
 interface FloatingCardProps {
   vibelog: HomeFeedVibelog;
@@ -24,16 +25,10 @@ interface FloatingCardProps {
  * Futuristic floating card with 3D tilt, glassmorphism, and smooth animations
  * Features hover effects, gesture support, and media playback
  */
-export function FloatingCard({
-  vibelog,
-  index,
-  isActive = false,
-  onCardClick,
-}: FloatingCardProps) {
+export function FloatingCard({ vibelog, index, isActive = false, onCardClick }: FloatingCardProps) {
   const router = useRouter();
   const cardRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
-  const [tiltStyle, setTiltStyle] = useState<React.CSSProperties>({});
   const [isVisible, setIsVisible] = useState(false);
 
   // Extract dominant color from cover image
@@ -41,12 +36,6 @@ export function FloatingCard({
 
   // Audio player integration
   const { setTrack, currentTrack, play } = useAudioPlayerStore();
-
-  // Gesture detection for touch devices
-  useCardGestures(cardRef, {
-    onTap: () => handleCardClick(),
-    onSwipeUp: () => handleCardClick(),
-  });
 
   // Intersection observer for reveal animation
   useEffect(() => {
@@ -69,33 +58,15 @@ export function FloatingCard({
     return () => observer.disconnect();
   }, [index]);
 
-  // Mouse move for 3D tilt effect (desktop only)
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current || window.innerWidth < 768) return;
-
-    const rect = cardRef.current.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width;
-    const y = (e.clientY - rect.top) / rect.height;
-
-    const rotateY = (x - 0.5) * 6; // -3 to +3 degrees
-    const rotateX = (0.5 - y) * 6;
-
-    setTiltStyle({
-      transform: `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.03, 1.03, 1.03) translateZ(0)`,
-      transition: 'transform 0.1s ease-out',
-    });
-  };
-
+  // Simplified hover effect (desktop only, no 3D tilt)
   const handleMouseEnter = () => {
-    setIsHovered(true);
+    if (window.innerWidth >= 768) {
+      setIsHovered(true);
+    }
   };
 
   const handleMouseLeave = () => {
     setIsHovered(false);
-    setTiltStyle({
-      transform: 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1) translateZ(0)',
-      transition: 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-    });
   };
 
   const handleCardClick = () => {
@@ -126,15 +97,21 @@ export function FloatingCard({
 
   // Smart text truncation
   const truncateTitle = (text: string, maxLength = 48) => {
-    if (text.length <= maxLength) return text;
+    if (text.length <= maxLength) {
+      return text;
+    }
     const truncated = text.slice(0, maxLength);
     const lastSpace = truncated.lastIndexOf(' ');
     return truncated.slice(0, lastSpace > 0 ? lastSpace : maxLength) + '...';
   };
 
   const truncateTeaser = (text: string | null | undefined, maxLength = 120) => {
-    if (!text) return '';
-    if (text.length <= maxLength) return text;
+    if (!text) {
+      return '';
+    }
+    if (text.length <= maxLength) {
+      return text;
+    }
     const truncated = text.slice(0, maxLength);
     const lastSpace = truncated.lastIndexOf(' ');
     return truncated.slice(0, lastSpace > 0 ? lastSpace : maxLength) + '...';
@@ -147,13 +124,11 @@ export function FloatingCard({
       ref={cardRef}
       className={cn(
         'relative h-[480px] w-80 flex-shrink-0 snap-start',
-        'transform-gpu will-change-transform',
+        'transform-gpu',
         isVisible ? 'animate-reveal-card' : 'opacity-0'
       )}
-      style={isHovered ? tiltStyle : {}}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      onMouseMove={handleMouseMove}
     >
       {/* Glow effect layer */}
       <CardGlowEffect
@@ -168,16 +143,12 @@ export function FloatingCard({
           'group relative h-full cursor-pointer overflow-hidden',
           'rounded-3xl border',
           'shadow-2xl transition-all duration-300',
-          'transform-gpu will-change-transform',
+          'transform-gpu',
           isHovered || isActive
-            ? 'border-white/20 shadow-electric/20'
+            ? 'scale-[1.02] border-white/20 shadow-electric/20'
             : 'border-white/10 shadow-black/50'
         )}
         onClick={handleCardClick}
-        style={{
-          transformStyle: 'preserve-3d',
-          backfaceVisibility: 'hidden',
-        }}
       >
         {/* Media background with parallax */}
         <MediaBackground
