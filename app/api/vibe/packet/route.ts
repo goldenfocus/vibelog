@@ -5,10 +5,12 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getVTPProtocol } from '@/lib/vibe/vtp';
+import { z } from 'zod';
+
 import { getVibelogOS } from '@/lib/vibe/os-layer';
 import type { SendVibePacketRequest, SendVibePacketResponse } from '@/lib/vibe/types';
-import { z } from 'zod';
+import { getVTPProtocol } from '@/lib/vibe/vtp';
+
 
 const sendPacketSchema = z.object({
   packet: z.object({

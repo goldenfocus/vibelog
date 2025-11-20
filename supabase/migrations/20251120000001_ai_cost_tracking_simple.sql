@@ -30,7 +30,8 @@ CREATE TABLE IF NOT EXISTS ai_cache (
   last_accessed_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_ai_cache_key_expires ON ai_cache(cache_key, expires_at) WHERE expires_at > NOW();
+-- Removed WHERE clause with NOW() - not IMMUTABLE in PostgreSQL
+CREATE INDEX IF NOT EXISTS idx_ai_cache_key_expires ON ai_cache(cache_key, expires_at);
 CREATE INDEX IF NOT EXISTS idx_ai_cache_expires ON ai_cache(expires_at);
 
 -- Table 3: AI Daily Costs

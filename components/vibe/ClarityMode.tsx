@@ -7,10 +7,11 @@
 'use client';
 
 import { useState } from 'react';
-import type { VibeAnalysis } from '@/lib/vibe/types';
-import { getSafetyFilter } from '@/lib/vibe/safety';
-import { getHumorModule } from '@/lib/vibe/humor';
+
 import { cn } from '@/lib/utils';
+import { getHumorModule } from '@/lib/vibe/humor';
+import { getSafetyFilter } from '@/lib/vibe/safety';
+import type { VibeAnalysis } from '@/lib/vibe/types';
 
 interface ClarityModeProps {
   text: string;

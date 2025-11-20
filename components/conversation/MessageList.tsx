@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef } from 'react';
 
 import { cn } from '@/lib/utils';
-
 import type { ConversationMessage } from '@/state/conversation-state';
 
 export interface MessageListProps {

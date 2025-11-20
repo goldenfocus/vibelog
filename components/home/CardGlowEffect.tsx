@@ -18,7 +18,7 @@ export function CardGlowEffect({
   // Parse RGB color and create rgba with opacity
   const parseRGB = (rgb: string) => {
     const match = rgb.match(/\d+/g);
-    if (!match || match.length < 3) return 'rgba(96, 165, 250, 0.3)';
+    if (!match || match.length < 3) {return 'rgba(96, 165, 250, 0.3)';}
     return `rgba(${match[0]}, ${match[1]}, ${match[2]}, 0.3)`;
   };
 

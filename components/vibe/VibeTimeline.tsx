@@ -7,8 +7,9 @@
 'use client';
 
 import { useMemo } from 'react';
-import type { VibeHistoryEntry } from '@/lib/vibe/types';
+
 import { cn } from '@/lib/utils';
+import type { VibeHistoryEntry } from '@/lib/vibe/types';
 
 interface VibeTimelineProps {
   entries: VibeHistoryEntry[];
@@ -17,7 +18,7 @@ interface VibeTimelineProps {
 
 export function VibeTimeline({ entries, className }: VibeTimelineProps) {
   const chartData = useMemo(() => {
-    if (entries.length === 0) return [];
+    if (entries.length === 0) {return [];}
 
     // Group by time periods (last 7 days, hourly buckets)
     const now = new Date();

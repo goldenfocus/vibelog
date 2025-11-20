@@ -5,8 +5,9 @@
  * by checking the error message for a long prompt
  */
 
-const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
+
+const { createClient } = require('@supabase/supabase-js');
 
 // Read credentials
 const envContent = fs.readFileSync('.env.local', 'utf-8');

@@ -21,11 +21,11 @@ export class HumorModule {
     const sarcasmScore = vibe.microVibes.sarcasm || 0;
     
     let level: 'none' | 'light' | 'moderate' | 'heavy' | 'nuclear';
-    if (sarcasmScore < 20) level = 'none';
-    else if (sarcasmScore < 40) level = 'light';
-    else if (sarcasmScore < 60) level = 'moderate';
-    else if (sarcasmScore < 80) level = 'heavy';
-    else level = 'nuclear';
+    if (sarcasmScore < 20) {level = 'none';}
+    else if (sarcasmScore < 40) {level = 'light';}
+    else if (sarcasmScore < 60) {level = 'moderate';}
+    else if (sarcasmScore < 80) {level = 'heavy';}
+    else {level = 'nuclear';}
     
     return {
       level,

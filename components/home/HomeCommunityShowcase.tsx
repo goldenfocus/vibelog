@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import RecentComments from '@/components/RecentComments';
 import { VideoPlayer } from '@/components/video';
 import { useAudioPlayerStore } from '@/state/audio-player-store';
+
 import { FuturisticCarousel } from './FuturisticCarousel';
 
 export interface HomeFeedVibelog {

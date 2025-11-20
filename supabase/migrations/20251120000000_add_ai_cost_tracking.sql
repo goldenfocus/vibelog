@@ -39,9 +39,9 @@ CREATE TABLE IF NOT EXISTS ai_cache (
   last_accessed_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Index for cache lookups (most important query)
+-- Index for cache lookups (removed WHERE clause - NOW() is not IMMUTABLE)
 CREATE INDEX IF NOT EXISTS idx_ai_cache_key_expires
-  ON ai_cache(cache_key, expires_at) WHERE expires_at > NOW();
+  ON ai_cache(cache_key, expires_at);
 
 -- Index for cleanup of expired entries
 CREATE INDEX IF NOT EXISTS idx_ai_cache_expires

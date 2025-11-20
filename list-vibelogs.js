@@ -4,8 +4,9 @@
  * List vibelogs to find one to test video generation with
  */
 
-const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
+
+const { createClient } = require('@supabase/supabase-js');
 
 // Read credentials from .env.local
 const envContent = fs.readFileSync('.env.local', 'utf-8');

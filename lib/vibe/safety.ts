@@ -106,18 +106,18 @@ export class SafetyFilter {
       const hasPassiveAggressive = result.warnings.some(
         w => w.type === 'passiveAggressive' && w.severity === 'high'
       );
-      if (hasPassiveAggressive) return true;
+      if (hasPassiveAggressive) {return true;}
     }
     
     if (settings.blockHighStress) {
-      if (vibe.scores.stress > 85) return true;
+      if (vibe.scores.stress > 85) {return true;}
     }
     
     if (settings.blockEmotionalMasking) {
       const hasMasking = result.warnings.some(
         w => w.type === 'emotionalMasking' && w.severity === 'high'
       );
-      if (hasMasking) return true;
+      if (hasMasking) {return true;}
     }
     
     return false;

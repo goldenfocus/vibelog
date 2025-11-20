@@ -7,8 +7,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import type { VibeScores, PrimaryVibe } from '@/lib/vibe/types';
+
 import { cn } from '@/lib/utils';
+import type { VibeScores, PrimaryVibe } from '@/lib/vibe/types';
 
 interface VibeIndicatorProps {
   scores: VibeScores;
@@ -60,11 +61,11 @@ export function VibeIndicator({
   };
 
   useEffect(() => {
-    if (!animated || !canvasRef.current) return;
+    if (!animated || !canvasRef.current) {return;}
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {return;}
 
     const rect = canvas.getBoundingClientRect();
     canvas.width = rect.width * window.devicePixelRatio;

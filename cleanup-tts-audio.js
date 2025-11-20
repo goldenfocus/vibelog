@@ -8,9 +8,10 @@
  * Original voice recordings (containing 'voices') are preserved.
  */
 
-const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
 const path = require('path');
+
+const { createClient } = require('@supabase/supabase-js');
 
 // Load .env.local manually
 const envPath = path.join(__dirname, '.env.local');

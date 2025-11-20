@@ -31,13 +31,13 @@ export function useScrollPhysics(
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
-    if (!enabled || !containerRef.current) return;
+    if (!enabled || !containerRef.current) {return;}
 
     const container = containerRef.current;
     const totalCardWidth = cardWidth + gap;
 
     const applyMomentum = () => {
-      if (!container) return;
+      if (!container) {return;}
 
       // Apply friction to velocity
       velocityRef.current *= friction;
@@ -110,7 +110,7 @@ export function useScrollPhysics(
 
   // Utility function to scroll to specific card index
   const scrollToCard = (index: number, smooth = true) => {
-    if (!containerRef.current) return;
+    if (!containerRef.current) {return;}
 
     const totalCardWidth = cardWidth + gap;
     const targetScroll = index * totalCardWidth;
@@ -123,7 +123,7 @@ export function useScrollPhysics(
 
   // Get current active card index
   const getActiveCardIndex = (): number => {
-    if (!containerRef.current) return 0;
+    if (!containerRef.current) {return 0;}
 
     const totalCardWidth = cardWidth + gap;
     const currentScroll = containerRef.current.scrollLeft;
