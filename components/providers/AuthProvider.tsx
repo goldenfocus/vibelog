@@ -8,74 +8,6 @@ import { clearCachedSession, getCachedSession, setCachedSession } from '@/lib/au
 import { ensureProfileExists } from '@/lib/ensure-profile';
 import { createClient } from '@/lib/supabase';
 
-// God Mode: Check if we should impersonate another user
-async function getGodModeUser(actualUser: User): Promise<User | null> {
-  try {
-    // Check for god mode cookie (client-side check)
-    const cookies = document.cookie.split(';');
-    const godModeCookie = cookies.find(c => c.trim().startsWith('vibelog_god_mode='));
-
-    if (!godModeCookie) {
-      return null;
-    }
-
-    const cookieValue = godModeCookie.split('=')[1];
-    if (!cookieValue) {
-      console.warn('[God Mode] Empty cookie value');
-      return null;
-    }
-
-    let session;
-    try {
-      session = JSON.parse(decodeURIComponent(cookieValue));
-    } catch (parseError) {
-      console.error('[God Mode] Failed to parse cookie:', parseError);
-      return null;
-    }
-
-    // Check if session is expired
-    if (Date.now() > session.expiresAt) {
-      return null;
-    }
-
-    // Verify the actual user is the admin who entered god mode
-    if (actualUser.id !== session.adminUserId) {
-      return null;
-    }
-
-    // Fetch target user's auth data from Supabase
-    const supabase = createClient();
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, email, username')
-      .eq('id', session.targetUserId)
-      .single();
-
-    if (error || !data) {
-      console.error('[God Mode] Failed to fetch target user:', error);
-      return null;
-    }
-
-    // Return a fake User object that looks like the target user
-    // This makes the entire app think we're logged in as the target user
-    return {
-      ...actualUser,
-      id: data.id,
-      email: data.email || actualUser.email,
-      user_metadata: {
-        // Clear admin's OAuth avatars so Navigation uses target user's database avatar
-        avatar_url: undefined,
-        picture: undefined,
-        name: data.username,
-        full_name: data.username,
-      },
-    };
-  } catch (error) {
-    console.error('[God Mode] Error checking god mode:', error);
-    return null;
-  }
-}
-
 type AuthContextType = {
   user: User | null;
   loading: boolean;
@@ -159,13 +91,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (session?.user) {
-          // Check for God Mode - if active, use target user instead
-          const godModeUser = await getGodModeUser(session.user);
-          const effectiveUser = godModeUser || session.user;
-
           // Update cache if session is valid
-          setCachedSession(session.user); // Cache real user, not god mode user
-          setUser(effectiveUser); // But display god mode user if active
+          setCachedSession(session.user);
+          setUser(session.user);
         } else {
           // No session, clear cache
           clearCachedSession();
@@ -200,12 +128,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Update user state and cache
       if (session?.user) {
-        // Check for God Mode - if active, use target user instead
-        const godModeUser = await getGodModeUser(session.user);
-        const effectiveUser = godModeUser || session.user;
-
-        setCachedSession(session.user); // Cache real user
-        setUser(effectiveUser); // Display god mode user if active
+        setCachedSession(session.user);
+        setUser(session.user);
         setError(null);
 
         // CRITICAL: Ensure profile exists (catches users whose profiles failed to create)
@@ -386,12 +310,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (session?.user) {
-        // Check for God Mode - if active, use target user instead
-        const godModeUser = await getGodModeUser(session.user);
-        const effectiveUser = godModeUser || session.user;
-
         setCachedSession(session.user);
-        setUser(effectiveUser);
+        setUser(session.user);
         setError(null);
       } else {
         clearCachedSession();
