@@ -30,6 +30,7 @@ export function FloatingCard({ vibelog, index, isActive = false, onCardClick }: 
   const cardRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
 
   // Extract dominant color from cover image
   const dominantColor = useDominantColor(vibelog.cover_image_url);
@@ -96,9 +97,9 @@ export function FloatingCard({ vibelog, index, isActive = false, onCardClick }: 
       });
       play();
     }
-    // If has video but no audio, navigate to vibelog page
+    // If has video but no audio, play video in card
     else if (vibelog.video_url) {
-      handleCardClick();
+      setIsVideoPlaying(!isVideoPlaying);
     }
   };
 
@@ -162,6 +163,7 @@ export function FloatingCard({ vibelog, index, isActive = false, onCardClick }: 
           coverImage={vibelog.cover_image_url}
           videoUrl={vibelog.video_url}
           isActive={isActive || isHovered}
+          isPlaying={isVideoPlaying}
         />
 
         {/* Gradient overlays for readability */}
@@ -205,6 +207,7 @@ export function FloatingCard({ vibelog, index, isActive = false, onCardClick }: 
           hasAudio={!!vibelog.audio_url}
           hasVideo={!!vibelog.video_url}
           isHovered={isHovered}
+          isPlaying={isVideoPlaying || isPlaying}
           onPlayClick={handlePlayClick}
         />
 
