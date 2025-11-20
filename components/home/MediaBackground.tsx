@@ -1,13 +1,14 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface MediaBackgroundProps {
   coverImage?: string | null;
   videoUrl?: string | null;
   isActive?: boolean;
   className?: string;
+  isPlaying?: boolean;
 }
 
 /**
@@ -19,14 +20,31 @@ export function MediaBackground({
   videoUrl,
   isActive = false,
   className = '',
+  isPlaying = false,
 }: MediaBackgroundProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [videoError, setVideoError] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   // Reset video error when videoUrl changes
   useEffect(() => {
     setVideoError(false);
   }, [videoUrl]);
+
+  // Control video playback based on isPlaying prop
+  useEffect(() => {
+    if (!videoRef.current || !videoUrl || videoError) {
+      return;
+    }
+
+    if (isPlaying) {
+      videoRef.current.play().catch(err => {
+        console.error('Video play failed:', err);
+      });
+    } else {
+      videoRef.current.pause();
+    }
+  }, [isPlaying, videoUrl, videoError]);
 
   const hasVideo = videoUrl && !videoError;
   const hasImage = coverImage;
@@ -36,11 +54,12 @@ export function MediaBackground({
       {/* Video background (if available and active) */}
       {hasVideo && (
         <video
+          ref={videoRef}
           className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ${
             isLoaded ? 'opacity-100' : 'opacity-0'
           }`}
           src={videoUrl}
-          autoPlay={isActive}
+          autoPlay={isActive && !isPlaying} // Only autoplay on hover if not manually playing
           loop
           muted
           playsInline
