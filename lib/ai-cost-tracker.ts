@@ -91,7 +91,13 @@ export async function isDailyLimitExceeded(): Promise<boolean> {
     .eq('date', today)
     .maybeSingle();
 
-  return data?.disabled_at !== null || (data?.total_cost || 0) >= DAILY_COST_LIMIT;
+  // If no row exists for today, we haven't spent anything yet - allow requests
+  if (!data) {
+    return false;
+  }
+
+  // Check if circuit breaker was triggered OR if we've exceeded the limit
+  return data.disabled_at !== null || data.total_cost >= DAILY_COST_LIMIT;
 }
 
 /**
