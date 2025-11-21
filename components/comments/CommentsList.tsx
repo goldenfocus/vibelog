@@ -23,15 +23,19 @@ interface Comment {
 
 interface CommentsListProps {
   comments: Comment[];
+  vibelogId: string;
   isLoading?: boolean;
   onRefresh?: () => void;
+  onReply?: (parentCommentId: string) => void;
   userIsAdmin?: boolean;
 }
 
 export default function CommentsList({
   comments,
+  vibelogId,
   isLoading,
   onRefresh,
+  onReply,
   userIsAdmin = false,
 }: CommentsListProps) {
   // TTS disabled - comment audio playback removed
@@ -62,9 +66,11 @@ export default function CommentsList({
         <CommentItem
           key={comment.id}
           comment={comment}
+          vibelogId={vibelogId}
           onPlayAudio={handlePlayAudio}
           onUpdate={onRefresh}
           onDelete={onRefresh}
+          onReply={onReply}
           userIsAdmin={userIsAdmin}
         />
       ))}
