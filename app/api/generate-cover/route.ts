@@ -60,11 +60,13 @@ export async function POST(request: NextRequest) {
       return tooManyResponse(rl);
     }
 
-    const { title, teaser, vibelogId } = await request.json();
+    const { title, teaser, summary, vibelogId } = await request.json();
 
-    if (!title && !teaser) {
+    // Accept title, teaser, or summary - any content to describe the image
+    const contentForImage = title || teaser || summary;
+    if (!contentForImage) {
       return NextResponse.json(
-        { error: 'Title or teaser is required for cover generation' },
+        { error: 'Title, teaser, or summary is required for cover generation' },
         { status: 400 }
       );
     }
@@ -96,8 +98,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Create a prompt for DALL-E based on the vibelog content
-    const contentSummary = title || teaser || 'A vibelog post';
-    const prompt = `Create an artistic, visually striking cover image for a blog post titled "${contentSummary.substring(0, 200)}".
+    const prompt = `Create an artistic, visually striking cover image for a blog post titled "${contentForImage.substring(0, 200)}".
 Style: Modern, minimalist, abstract with subtle gradients.
 Colors: Vibrant but professional, suitable for a tech/lifestyle blog.
 No text in the image. Focus on abstract shapes, patterns, or symbolic imagery that captures the essence of the content.
@@ -186,7 +187,11 @@ The image should work well as a social media preview and blog header.`;
     return NextResponse.json({
       success: true,
       message: 'Cover image generated successfully',
-      imageUrl: storedUrl,
+      url: storedUrl, // Client expects 'url' not 'imageUrl'
+      imageUrl: storedUrl, // Keep for backwards compatibility
+      alt: `${contentForImage.substring(0, 100)} - cover image`,
+      width: 1792,
+      height: 1024,
       revisedPrompt, // DALL-E's interpretation of the prompt
     });
   } catch (error) {
