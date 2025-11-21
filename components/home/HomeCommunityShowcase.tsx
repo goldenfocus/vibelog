@@ -31,7 +31,6 @@ interface HomeFeedMember {
   username: string;
   display_name: string;
   avatar_url: string | null;
-  header_image?: string | null;
   bio?: string | null;
   total_vibelogs?: number | null;
   created_at: string;

@@ -143,7 +143,6 @@ export async function GET(request: NextRequest) {
         username,
         display_name,
         avatar_url,
-        header_image,
         bio,
         total_vibelogs,
         created_at
@@ -161,14 +160,7 @@ export async function GET(request: NextRequest) {
     const rawMembers = (members || []) as Array<
       Pick<
         Profile,
-        | 'id'
-        | 'username'
-        | 'display_name'
-        | 'avatar_url'
-        | 'header_image'
-        | 'bio'
-        | 'total_vibelogs'
-        | 'created_at'
+        'id' | 'username' | 'display_name' | 'avatar_url' | 'bio' | 'total_vibelogs' | 'created_at'
       >
     >;
     const memberIds = rawMembers.map(m => m.id);

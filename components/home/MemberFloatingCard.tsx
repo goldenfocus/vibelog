@@ -16,7 +16,6 @@ interface MemberFloatingCardProps {
     username: string;
     display_name: string;
     avatar_url: string | null;
-    header_image?: string | null;
     bio?: string | null;
     total_vibelogs?: number | null;
     latest_vibelog?: {
@@ -99,19 +98,9 @@ export function MemberFloatingCard({ member, index, isActive = false }: MemberFl
             : 'border-white/10 shadow-black/50'
         )}
       >
-        {/* Background - prefer header_image, fallback to avatar blur */}
+        {/* Background - blurred avatar or gradient */}
         <div className="absolute inset-0 overflow-hidden">
-          {member.header_image ? (
-            <>
-              <img
-                src={member.header_image}
-                alt=""
-                className="h-full w-full object-cover"
-                aria-hidden="true"
-              />
-              <div className="absolute inset-0 bg-black/50" />
-            </>
-          ) : member.avatar_url ? (
+          {member.avatar_url ? (
             <>
               <img
                 src={member.avatar_url}

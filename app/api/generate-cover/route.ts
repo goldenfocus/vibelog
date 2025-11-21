@@ -3,6 +3,7 @@ import OpenAI from 'openai';
 
 import { trackAICost, calculateImageCost, isDailyLimitExceeded } from '@/lib/ai-cost-tracker';
 import { config } from '@/lib/config';
+import { generateCoverPrompt } from '@/lib/cover-prompt-generator';
 import { isDev } from '@/lib/env';
 import { rateLimit, tooManyResponse } from '@/lib/rateLimit';
 import { createServerSupabaseClient } from '@/lib/supabase';
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
       return tooManyResponse(rl);
     }
 
-    const { title, teaser, summary, vibelogId } = await request.json();
+    const { title, teaser, summary, transcript, vibelogId, username } = await request.json();
 
     // Accept title, teaser, or summary - any content to describe the image
     const contentForImage = title || teaser || summary;
@@ -87,27 +88,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Generate intelligent prompt based on content analysis
+    const { prompt, styleName, analysis } = generateCoverPrompt({
+      title: title || contentForImage,
+      teaser: teaser || summary,
+      transcript,
+      username,
+    });
+
     console.log(
       '🎨 Generating cover image for:',
       title?.substring(0, 50) || teaser?.substring(0, 50)
     );
+    console.log(`   Style: ${styleName}`);
+    console.log(`   Detected tones: ${analysis.detectedTones.join(', ') || 'neutral'}`);
 
     const openai = new OpenAI({
       apiKey: config.ai.openai.apiKey,
       timeout: 60_000,
     });
 
-    // Create a prompt for DALL-E based on the vibelog content
-    const prompt = `Create an artistic, visually striking cover image for a blog post titled "${contentForImage.substring(0, 200)}".
-Style: Modern, minimalist, abstract with subtle gradients.
-Colors: Vibrant but professional, suitable for a tech/lifestyle blog.
-No text in the image. Focus on abstract shapes, patterns, or symbolic imagery that captures the essence of the content.
-The image should work well as a social media preview and blog header.`;
-
-    // Generate image with DALL-E 3
+    // Generate image with DALL-E 3 using intelligent prompt
     const response = await openai.images.generate({
       model: 'dall-e-3',
-      prompt: prompt,
+      prompt,
       n: 1,
       size: '1792x1024', // Wide format for blog covers
       quality: 'standard', // Use standard to save costs ($0.04 vs $0.08 for HD)
@@ -158,7 +162,7 @@ The image should work well as a social media preview and blog header.`;
       const uniqueId = vibelogId || `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       const fileName = `cover-${uniqueId}.png`;
       const { error: uploadError } = await supa.storage
-        .from('covers')
+        .from('vibelog-covers')
         .upload(fileName, Buffer.from(imageBuffer), {
           contentType: 'image/png',
           cacheControl: '31536000', // 1 year cache
@@ -171,7 +175,7 @@ The image should work well as a social media preview and blog header.`;
         // Get public URL
         const {
           data: { publicUrl },
-        } = supa.storage.from('covers').getPublicUrl(fileName);
+        } = supa.storage.from('vibelog-covers').getPublicUrl(fileName);
         storedUrl = publicUrl;
         console.log('💾 Cover saved to storage:', storedUrl);
 
@@ -194,6 +198,7 @@ The image should work well as a social media preview and blog header.`;
       width: 1792,
       height: 1024,
       revisedPrompt, // DALL-E's interpretation of the prompt
+      style: styleName, // The art style selected for this cover
     });
   } catch (error) {
     console.error('❌ Error generating cover:', error);

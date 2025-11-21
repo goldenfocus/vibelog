@@ -21,7 +21,6 @@ export interface CarouselMember {
   username: string;
   display_name: string;
   avatar_url: string | null;
-  header_image?: string | null;
   bio?: string | null;
   total_vibelogs?: number | null;
   latest_vibelog?: MemberVibelog | null;
