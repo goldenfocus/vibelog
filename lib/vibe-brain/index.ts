@@ -27,3 +27,11 @@ export {
   getConversationHistory,
   getUserConversations,
 } from './rag-engine';
+
+export {
+  getUserProfile,
+  getPlatformStats,
+  getTopCreators,
+  getTrendingVibelogs,
+  searchCreator,
+} from './platform-queries';
