@@ -99,17 +99,12 @@ export const VIBE_BRAIN_TOOLS: ChatCompletionTool[] = [
   {
     type: 'function',
     function: {
-      name: 'getTrending',
+      name: 'getLatestVibelogs',
       description:
-        'Get trending/popular vibelogs. Use when asked about trending content, popular vibes, or what to listen to.',
+        'Get the latest/newest vibelogs on the platform. ALWAYS use this when asked about trending, latest, new, recent vibes, or what to listen to. This always returns results.',
       parameters: {
         type: 'object',
         properties: {
-          timeframe: {
-            type: 'string',
-            enum: ['today', 'week', 'month', 'all'],
-            description: 'Time period for trending (default: week)',
-          },
           limit: {
             type: 'number',
             description: 'Maximum number of results (default 5, max 10)',
@@ -262,7 +257,7 @@ export type ToolResult =
   | { tool: 'getVibelog'; data: VibelogResult | null }
   | { tool: 'searchUsers'; data: UserResult[] }
   | { tool: 'getUserVibelogs'; data: VibelogResult[] }
-  | { tool: 'getTrending'; data: VibelogResult[] }
+  | { tool: 'getLatestVibelogs'; data: VibelogResult[] }
   | { tool: 'getTopCreators'; data: UserResult[] }
   | { tool: 'getPlatformStats'; data: PlatformStatsResult }
   | { tool: 'getVibelogComments'; data: CommentResult[] }

@@ -35,8 +35,8 @@ export async function executeTool(
       return searchUsers(args.query as string, (args.limit as number) || 5);
     case 'getUserVibelogs':
       return getUserVibelogs(args.username as string, (args.limit as number) || 5);
-    case 'getTrending':
-      return getTrending((args.timeframe as string) || 'week', (args.limit as number) || 5);
+    case 'getLatestVibelogs':
+      return getLatestVibelogs((args.limit as number) || 5);
     case 'getTopCreators':
       return getTopCreators((args.limit as number) || 5);
     case 'getPlatformStats':
@@ -288,13 +288,12 @@ async function getUserVibelogs(username: string, limit: number): Promise<Vibelog
 }
 
 /**
- * Get trending/recent vibelogs - always returns content
+ * Get latest vibelogs - simple, always returns the newest content
  */
-async function getTrending(timeframe: string, limit: number): Promise<VibelogResult[]> {
+async function getLatestVibelogs(limit: number): Promise<VibelogResult[]> {
   const supabase = await createServerAdminClient();
   const safeLimit = Math.min(limit, 10);
 
-  // First, just get the most recent vibelogs (no date filter to ensure we always get results)
   const { data: vibelogs, error } = await supabase
     .from('vibelogs')
     .select(
@@ -310,10 +309,10 @@ async function getTrending(timeframe: string, limit: number): Promise<VibelogRes
     )
     .eq('is_published', true)
     .order('created_at', { ascending: false })
-    .limit(safeLimit * 2);
+    .limit(safeLimit);
 
   if (error || !vibelogs || vibelogs.length === 0) {
-    console.log('[TOOL] getTrending: No vibelogs found');
+    console.log('[TOOL] getLatestVibelogs: No vibelogs found');
     return [];
   }
 
@@ -339,57 +338,19 @@ async function getTrending(timeframe: string, limit: number): Promise<VibelogRes
     commentCountMap.set(c.vibelog_id, (commentCountMap.get(c.vibelog_id) || 0) + 1);
   }
 
-  // Map and optionally filter by timeframe
-  const now = new Date();
-  let dateFilter: Date | null = null;
-  if (timeframe === 'today') {
-    dateFilter = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  } else if (timeframe === 'week') {
-    dateFilter = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  } else if (timeframe === 'month') {
-    dateFilter = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  }
-
-  const withEngagement = vibelogs
-    .filter(v => !dateFilter || new Date(v.created_at) >= dateFilter)
-    .map(v => {
-      const profile = Array.isArray(v.profiles) ? v.profiles[0] : v.profiles;
-      return {
-        id: v.id,
-        title: v.title || 'Untitled',
-        teaser: v.teaser,
-        content: v.content?.slice(0, 300) || null,
-        username: (profile as { username: string })?.username || 'unknown',
-        createdAt: v.created_at,
-        reactionCount: reactionCountMap.get(v.id) || 0,
-        commentCount: commentCountMap.get(v.id) || 0,
-      };
-    });
-
-  // If timeframe filter removed all results, return recent ones instead
-  if (withEngagement.length === 0) {
-    console.log('[TOOL] getTrending: No vibelogs in timeframe, returning recent');
-    return vibelogs.slice(0, safeLimit).map(v => {
-      const profile = Array.isArray(v.profiles) ? v.profiles[0] : v.profiles;
-      return {
-        id: v.id,
-        title: v.title || 'Untitled',
-        teaser: v.teaser,
-        content: v.content?.slice(0, 300) || null,
-        username: (profile as { username: string })?.username || 'unknown',
-        createdAt: v.created_at,
-        reactionCount: reactionCountMap.get(v.id) || 0,
-        commentCount: commentCountMap.get(v.id) || 0,
-      };
-    });
-  }
-
-  // Sort by total engagement
-  withEngagement.sort(
-    (a, b) => b.reactionCount + b.commentCount - (a.reactionCount + a.commentCount)
-  );
-
-  return withEngagement.slice(0, safeLimit);
+  return vibelogs.map(v => {
+    const profile = Array.isArray(v.profiles) ? v.profiles[0] : v.profiles;
+    return {
+      id: v.id,
+      title: v.title || 'Untitled',
+      teaser: v.teaser,
+      content: v.content?.slice(0, 300) || null,
+      username: (profile as { username: string })?.username || 'unknown',
+      createdAt: v.created_at,
+      reactionCount: reactionCountMap.get(v.id) || 0,
+      commentCount: commentCountMap.get(v.id) || 0,
+    };
+  });
 }
 
 /**
