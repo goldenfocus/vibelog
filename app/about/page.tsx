@@ -1,9 +1,25 @@
-import { MessageCircle, Share, User } from 'lucide-react';
+import { User } from 'lucide-react';
+import { Metadata } from 'next';
 import Link from 'next/link';
 
 import Comments from '@/components/comments/Comments';
 import Navigation from '@/components/Navigation';
 import { createServerSupabaseClient } from '@/lib/supabase';
+
+export const metadata: Metadata = {
+  title: 'About VibeLog — Voice-First Content Creation',
+  description:
+    "Learn about VibeLog's mission to build a living web where creators focus on ideas, not tools. Voice-first AI publishing for the human internet.",
+  openGraph: {
+    title: 'About VibeLog — Voice-First Content Creation',
+    description:
+      "Learn about VibeLog's mission to build a living web where creators focus on ideas, not tools.",
+    url: 'https://vibelog.io/about',
+  },
+  alternates: {
+    canonical: 'https://vibelog.io/about',
+  },
+};
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -76,12 +92,12 @@ export default async function About() {
             <h2 className="mb-6 text-3xl font-bold">The Problem</h2>
             <div className="prose prose-lg max-w-none space-y-4 text-muted-foreground">
               <p>
-                Content creation is broken. We have amazing thoughts to share, but the tools make
-                it feel like work.
+                Content creation is broken. We have amazing thoughts to share, but the tools make it
+                feel like work.
               </p>
               <p>
-                You need to open an app, stare at a blank page, fight with formatting, upload
-                images manually, and then copy-paste to every platform.
+                You need to open an app, stare at a blank page, fight with formatting, upload images
+                manually, and then copy-paste to every platform.
               </p>
               <p>By the time you&apos;re done, the inspiration is gone.</p>
             </div>
@@ -91,9 +107,7 @@ export default async function About() {
           <section className="mb-16">
             <h2 className="mb-6 text-3xl font-bold">The Spark</h2>
             <div className="prose prose-lg max-w-none space-y-4 text-muted-foreground">
-              <p>
-                What if you could just... speak? No typing, no formatting, no endless clicking.
-              </p>
+              <p>What if you could just... speak? No typing, no formatting, no endless clicking.</p>
               <p>
                 Just press record, share your thoughts, and let AI turn it into beautiful content —
                 complete with images, formatting, and everything ready to publish.
@@ -106,9 +120,7 @@ export default async function About() {
           <section className="mb-16">
             <h2 className="mb-6 text-3xl font-bold">The Solution</h2>
             <div className="prose prose-lg max-w-none space-y-4 text-muted-foreground">
-              <p>
-                VibeLog is your AI publishing assistant that speaks your language — literally.
-              </p>
+              <p>VibeLog is your AI publishing assistant that speaks your language — literally.</p>
               <p>
                 Record your thoughts by voice. Our AI transforms them into polished content with
                 images, formatting, and style. Then publish everywhere with one command.

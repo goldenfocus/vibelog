@@ -215,6 +215,44 @@ export default function Home() {
           <HomeCommunityShowcase onRemix={setRemixContent} onRefreshRequest={setRefreshFeed} />
         </div>
       </main>
+
+      {/* Organization Schema for SEO */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'Organization',
+            name: 'VibeLog',
+            url: 'https://vibelog.io',
+            logo: 'https://vibelog.io/og-image.png',
+            description:
+              'Transform your voice into polished stories in seconds. Create and publish content naturally with AI-powered voice technology.',
+            sameAs: ['https://twitter.com/vibelog_io'],
+          }),
+        }}
+      />
+
+      {/* WebApplication Schema for SEO */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'WebApplication',
+            name: 'VibeLog',
+            applicationCategory: 'ContentManagementApplication',
+            operatingSystem: 'Web',
+            offers: {
+              '@type': 'Offer',
+              price: '0',
+              priceCurrency: 'USD',
+            },
+            featureList:
+              'Voice to text, AI content generation, Multi-platform publishing, Audio recording, Video creation',
+          }),
+        }}
+      />
     </div>
   );
 }
