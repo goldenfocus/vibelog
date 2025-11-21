@@ -10,40 +10,21 @@ import { cn } from '@/lib/utils';
 import { CardGlowEffect } from './CardGlowEffect';
 import { GlassTextContainer } from './GlassTextContainer';
 
-interface MemberVibelog {
-  id: string;
-  title: string;
-  teaser?: string | null;
-  slug?: string | null;
-  public_slug?: string | null;
-  audio_url?: string | null;
-}
-
 interface MemberFloatingCardProps {
   member: {
     id: string;
     username: string;
     display_name: string;
     avatar_url: string | null;
+    header_image?: string | null;
     bio?: string | null;
     total_vibelogs?: number | null;
-    latest_vibelog?: MemberVibelog | null;
+    latest_vibelog?: {
+      audio_url?: string | null;
+    } | null;
   };
   index: number;
   isActive?: boolean;
-}
-
-function getVibelogHref(username: string, vibelog: MemberVibelog) {
-  if (username === 'anonymous' && vibelog.public_slug) {
-    return `/@anonymous/${vibelog.public_slug}`;
-  }
-  if (vibelog.slug) {
-    return `/@${username}/${vibelog.slug}`;
-  }
-  if (vibelog.public_slug) {
-    return `/@${username}/${vibelog.public_slug}`;
-  }
-  return `/vibelogs/${vibelog.id}`;
 }
 
 /**
@@ -95,7 +76,7 @@ export function MemberFloatingCard({ member, index, isActive = false }: MemberFl
     <div
       ref={cardRef}
       className={cn(
-        'relative h-[380px] w-[280px] flex-shrink-0 snap-start',
+        'relative h-[200px] w-[160px] flex-shrink-0 snap-start',
         'transform-gpu',
         isVisible ? 'animate-reveal-card' : 'opacity-0'
       )}
@@ -118,14 +99,24 @@ export function MemberFloatingCard({ member, index, isActive = false }: MemberFl
             : 'border-white/10 shadow-black/50'
         )}
       >
-        {/* Avatar background with blur */}
+        {/* Background - prefer header_image, fallback to avatar blur */}
         <div className="absolute inset-0 overflow-hidden">
-          {member.avatar_url ? (
+          {member.header_image ? (
+            <>
+              <img
+                src={member.header_image}
+                alt=""
+                className="h-full w-full object-cover"
+                aria-hidden="true"
+              />
+              <div className="absolute inset-0 bg-black/50" />
+            </>
+          ) : member.avatar_url ? (
             <>
               <img
                 src={member.avatar_url}
                 alt=""
-                className="h-full w-full scale-110 object-cover blur-2xl"
+                className="h-full w-full scale-110 object-cover blur-xl"
                 aria-hidden="true"
               />
               <div className="absolute inset-0 bg-black/60" />
@@ -139,14 +130,14 @@ export function MemberFloatingCard({ member, index, isActive = false }: MemberFl
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/80" />
 
         {/* Avatar centered */}
-        <div className="relative z-10 flex flex-1 items-center justify-center pt-6">
+        <div className="relative z-10 flex flex-1 items-center justify-center pt-3">
           {member.avatar_url ? (
             <img
               src={member.avatar_url}
               alt={member.display_name}
               className={cn(
-                'h-24 w-24 rounded-full border-2 object-cover',
-                'shadow-xl transition-all duration-300',
+                'h-14 w-14 rounded-full border object-cover',
+                'shadow-lg transition-all duration-300',
                 isHovered || isActive
                   ? 'scale-110 border-electric/50 shadow-electric/30'
                   : 'border-white/20 shadow-black/50'
@@ -155,67 +146,35 @@ export function MemberFloatingCard({ member, index, isActive = false }: MemberFl
           ) : (
             <div
               className={cn(
-                'flex h-24 w-24 items-center justify-center rounded-full border-2',
+                'flex h-14 w-14 items-center justify-center rounded-full border',
                 'bg-gradient-to-br from-electric/20 to-purple-500/20',
-                'shadow-xl transition-all duration-300',
+                'shadow-lg transition-all duration-300',
                 isHovered || isActive
                   ? 'scale-110 border-electric/50 shadow-electric/30'
                   : 'border-white/20 shadow-black/50'
               )}
             >
-              <User className="h-10 w-10 text-white/70" />
+              <User className="h-6 w-6 text-white/70" />
             </div>
           )}
         </div>
 
         {/* Glassmorphic content container */}
         <GlassTextContainer dominantColor={dominantColor}>
-          {/* Name and username */}
-          <h3 className="text-center text-lg font-semibold leading-tight text-white transition-colors group-hover:text-electric-glow">
+          {/* Name */}
+          <h3 className="truncate text-center text-sm font-semibold leading-tight text-white transition-colors group-hover:text-electric-glow">
             {member.display_name}
           </h3>
-          <p className="text-center text-sm text-white/60">@{member.username}</p>
-
           {/* Vibe count */}
-          {member.total_vibelogs !== null && member.total_vibelogs !== undefined && (
-            <p className="mt-1 text-center text-xs text-white/50">
-              {member.total_vibelogs} vibe{member.total_vibelogs !== 1 ? 's' : ''}
-            </p>
-          )}
-
-          {/* Bio or latest vibelog */}
-          {member.latest_vibelog ? (
-            <div className="mt-3 rounded-xl border border-white/10 bg-white/5 p-2 backdrop-blur-sm">
-              <p className="line-clamp-1 text-xs text-white/70">
-                Latest: {member.latest_vibelog.title}
-              </p>
-            </div>
-          ) : member.bio ? (
-            <p className="mt-2 line-clamp-2 text-center text-xs text-white/60">{member.bio}</p>
-          ) : (
-            <p className="mt-2 text-center text-xs text-white/50">Just joined the vibe</p>
-          )}
+          <p className="text-center text-[10px] text-white/50">
+            {member.total_vibelogs ?? 0} vibe{member.total_vibelogs !== 1 ? 's' : ''}
+          </p>
         </GlassTextContainer>
 
-        {/* Play indicator for members with audio */}
-        {hasAudio && member.latest_vibelog && (
-          <div
-            className={cn(
-              'absolute right-3 top-3',
-              'flex items-center gap-1.5 rounded-full',
-              'border border-white/20 bg-black/50 px-2.5 py-1.5',
-              'backdrop-blur-md backdrop-saturate-150',
-              'transition-all duration-300',
-              isHovered ? 'translate-x-0 opacity-100' : 'translate-x-2 opacity-0'
-            )}
-            onClick={e => {
-              e.preventDefault();
-              e.stopPropagation();
-              window.location.href = getVibelogHref(member.username, member.latest_vibelog!);
-            }}
-          >
-            <Play className="h-3 w-3 fill-white text-white" />
-            <span className="text-xs font-medium text-white/90">Listen</span>
+        {/* Audio indicator */}
+        {hasAudio && (
+          <div className="absolute right-2 top-2 rounded-full bg-black/50 p-1 backdrop-blur-sm">
+            <Play className="h-2.5 w-2.5 fill-white text-white" />
           </div>
         )}
       </Link>
