@@ -6,6 +6,7 @@ import { notFound } from 'next/navigation';
 import Comments from '@/components/comments/Comments';
 import Navigation from '@/components/Navigation';
 import PublicVibelogContent from '@/components/PublicVibelogContent';
+import RelatedVibelogs from '@/components/RelatedVibelogs';
 import VibelogEditButton from '@/components/VibelogEditButton';
 import { formatFullDate } from '@/lib/date-utils';
 import { createServerSupabaseClient } from '@/lib/supabase';
@@ -514,6 +515,9 @@ export default async function VibelogPage({ params }: PageProps) {
             </div>
           </Link>
         </div>
+
+        {/* Related Vibelogs - semantic similarity */}
+        <RelatedVibelogs vibelogId={vibelog.id} limit={4} />
 
         {/* Comments Section */}
         <div className="mt-8">

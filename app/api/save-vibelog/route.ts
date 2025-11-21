@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { extractBasicTags, extractContentMetadata } from '@/lib/content-extraction';
 import { generatePublicSlug, generateUserSlug, generateVibelogSEO } from '@/lib/seo';
 import { createServerSupabaseClient } from '@/lib/supabase';
 import { embedVibelog } from '@/lib/vibe-brain';
@@ -164,7 +165,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       language: 'en',
       word_count: wordCount,
       read_time: readTime,
-      tags: ['auto-generated'],
+      tags: extractBasicTags(title, fullContent), // AI-extracted tags instead of hardcoded
       seo_title: seoMetadata.title,
       seo_description: seoMetadata.description,
       // ALL vibelogs are immediately public and published (TikTok/Medium style feed)
@@ -234,6 +235,30 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       }).catch(err => {
         console.error('[VIBE BRAIN] Failed to embed vibelog:', err);
       });
+
+      // Extract rich content metadata (async, non-blocking)
+      // This enriches tags, entities, and SEO keywords for better discoverability
+      extractContentMetadata(vibelogData.title, vibelogData.content, userId)
+        .then(async metadata => {
+          if (metadata && metadata.tags.length > 0) {
+            try {
+              await supabase
+                .from('vibelogs')
+                .update({
+                  tags: metadata.tags,
+                  primary_topic: metadata.primaryTopic,
+                  seo_keywords: metadata.seoKeywords,
+                })
+                .eq('id', vibelogId);
+              console.log('📊 [CONTENT-EXTRACTION] Enriched vibelog with:', metadata.tags);
+            } catch (updateErr) {
+              console.error('[CONTENT-EXTRACTION] Failed to update metadata:', updateErr);
+            }
+          }
+        })
+        .catch(err => {
+          console.error('[CONTENT-EXTRACTION] Failed to extract metadata:', err);
+        });
 
       return NextResponse.json({
         success: true,
