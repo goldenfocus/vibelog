@@ -1,6 +1,6 @@
 'use client';
 
-import { MessageCircle, Mic, User, Video, ExternalLink } from 'lucide-react';
+import { ExternalLink, MessageCircle, Mic, User, Video } from 'lucide-react';
 import Link from 'next/link';
 
 import { cn } from '@/lib/utils';
@@ -75,7 +75,6 @@ export function CommentCard({ comment, index, isActive = false }: CommentCardPro
   const hasMedia = isVoice || isVideo;
   const vibelogSlug = comment.vibelog.slug || comment.vibelog.id;
 
-  // Determine the comment type icon and color
   const TypeIcon = isVideo ? Video : isVoice ? Mic : MessageCircle;
   const typeColor = isVideo ? 'text-purple-400' : isVoice ? 'text-blue-400' : 'text-electric';
   const typeBgColor = isVideo ? 'bg-purple-500/20' : isVoice ? 'bg-blue-500/20' : 'bg-electric/20';
@@ -88,11 +87,8 @@ export function CommentCard({ comment, index, isActive = false }: CommentCardPro
         'hover:scale-[1.02] hover:border-electric/50 hover:shadow-lg hover:shadow-electric/10',
         isActive && 'border-electric/60 shadow-lg shadow-electric/20'
       )}
-      style={{
-        animationDelay: `${index * 50}ms`,
-      }}
+      style={{ animationDelay: `${index * 50}ms` }}
     >
-      {/* Media indicator badge */}
       {hasMedia && (
         <div
           className={cn(
@@ -107,9 +103,7 @@ export function CommentCard({ comment, index, isActive = false }: CommentCardPro
         </div>
       )}
 
-      {/* Content area */}
       <div className="flex flex-1 flex-col p-4">
-        {/* Comment preview */}
         <div className="mb-3 flex-1">
           <div className="mb-2 flex items-start gap-2">
             <TypeIcon className={cn('mt-0.5 h-4 w-4 flex-shrink-0', typeColor)} />
@@ -123,7 +117,6 @@ export function CommentCard({ comment, index, isActive = false }: CommentCardPro
           </div>
         </div>
 
-        {/* Commentator info */}
         <div className="mb-3 flex items-center gap-2.5">
           {comment.commentator.avatarUrl ? (
             <img
@@ -144,10 +137,8 @@ export function CommentCard({ comment, index, isActive = false }: CommentCardPro
           </div>
         </div>
 
-        {/* Divider */}
         <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent" />
 
-        {/* Original vibelog info */}
         <div className="mt-3 flex items-center gap-2">
           <ExternalLink className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />
           <div className="min-w-0 flex-1">
@@ -164,7 +155,6 @@ export function CommentCard({ comment, index, isActive = false }: CommentCardPro
         </div>
       </div>
 
-      {/* Hover glow effect */}
       <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
         <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-electric/5 to-transparent" />
       </div>

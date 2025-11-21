@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import RecentComments from '@/components/RecentComments';
-
+import type { CommentCardData } from './CommentCard';
+import { CommentCarousel } from './CommentCarousel';
 import { FuturisticCarousel } from './FuturisticCarousel';
 import { MemberCarousel } from './MemberCarousel';
 
@@ -56,6 +56,7 @@ export default function HomeCommunityShowcase({
 }: HomeCommunityShowcaseProps) {
   const [latestVibelogs, setLatestVibelogs] = useState<HomeFeedVibelog[]>([]);
   const [newMembers, setNewMembers] = useState<HomeFeedMember[]>([]);
+  const [recentComments, setRecentComments] = useState<CommentCardData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -69,6 +70,7 @@ export default function HomeCommunityShowcase({
       const data = await response.json();
       setLatestVibelogs(data.latestVibelogs || []);
       setNewMembers(data.newestMembers || []);
+      setRecentComments(data.recentComments || []);
     } catch (err) {
       console.error('[HomeCommunityShowcase] fetch error', err);
       setError('Unable to load community highlights right now. Please try again in a bit.');
@@ -138,10 +140,30 @@ export default function HomeCommunityShowcase({
         />
       )}
 
-      {/* Recent Comments */}
-      <div className="mt-12">
-        <RecentComments />
-      </div>
+      {/* Recent Comments - Carousel */}
+      {loading ? (
+        <div className="mt-8 py-6">
+          <div className="mb-4 px-4 md:px-6">
+            <div className="h-6 w-40 animate-pulse rounded-full bg-border/70" />
+          </div>
+          <div className="flex gap-4 overflow-hidden px-4 md:px-6">
+            {Array.from({ length: 5 }).map((_, index) => (
+              <div
+                key={`comment-skeleton-${index}`}
+                className="h-[280px] w-[260px] flex-shrink-0 animate-pulse rounded-2xl border border-border/40 bg-card/60 backdrop-blur"
+              />
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="mt-8">
+          <CommentCarousel
+            comments={recentComments}
+            title="Recent Vibes"
+            subtitle="Join the conversation"
+          />
+        </div>
+      )}
     </section>
   );
 }
