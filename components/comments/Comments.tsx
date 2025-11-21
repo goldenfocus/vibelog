@@ -36,6 +36,7 @@ export default function Comments({ vibelogId }: CommentsProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userIsAdmin, setUserIsAdmin] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
 
   // Check if current user is admin
   useEffect(() => {
@@ -94,6 +95,19 @@ export default function Comments({ vibelogId }: CommentsProps) {
   const handleCommentAdded = () => {
     // Refresh comments after a new comment is added
     fetchComments();
+    setReplyingTo(null); // Clear reply state after posting
+  };
+
+  const handleReply = (parentCommentId: string) => {
+    setReplyingTo(parentCommentId);
+    // Scroll to the comment input
+    document
+      .getElementById('comment-input')
+      ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  const handleCancelReply = () => {
+    setReplyingTo(null);
   };
 
   return (
@@ -113,13 +127,33 @@ export default function Comments({ vibelogId }: CommentsProps) {
       )}
 
       {/* Comment Input */}
-      <CommentInput vibelogId={vibelogId} onCommentAdded={handleCommentAdded} />
+      <div id="comment-input">
+        {replyingTo && (
+          <div className="mb-2 flex items-center gap-2 rounded-lg bg-electric/10 px-3 py-2 text-sm text-electric">
+            <span>Replying to a comment</span>
+            <button
+              onClick={handleCancelReply}
+              className="ml-auto rounded px-2 py-0.5 text-xs hover:bg-electric/20"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+        <CommentInput
+          vibelogId={vibelogId}
+          parentCommentId={replyingTo || undefined}
+          onCommentAdded={handleCommentAdded}
+          onCancel={replyingTo ? handleCancelReply : undefined}
+        />
+      </div>
 
       {/* Comments List */}
       <CommentsList
         comments={comments}
+        vibelogId={vibelogId}
         isLoading={isLoading}
         onRefresh={fetchComments}
+        onReply={handleReply}
         userIsAdmin={userIsAdmin}
       />
     </div>

@@ -624,8 +624,10 @@ export default function CommentInput({
             rows={3}
           />
 
-          {/* Media Attachments */}
-          <MediaAttachmentZone attachments={attachments} onChange={setAttachments} />
+          {/* Media Attachments - Only show when user has started typing */}
+          {textContent.trim().length > 0 && (
+            <MediaAttachmentZone attachments={attachments} onChange={setAttachments} />
+          )}
 
           <div className="flex justify-end">
             <button

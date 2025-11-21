@@ -7,6 +7,7 @@ import {
   MoreVertical,
   Pause,
   Play,
+  Reply,
   Save,
   Trash2,
   User,
@@ -42,17 +43,21 @@ interface Comment {
 
 interface CommentItemProps {
   comment: Comment;
+  vibelogId: string;
   onPlayAudio?: (audioUrl: string, voiceId: string | null) => void;
   onUpdate?: () => void;
   onDelete?: () => void;
+  onReply?: (parentCommentId: string) => void;
   userIsAdmin?: boolean;
 }
 
 export default function CommentItem({
   comment,
+  vibelogId: _vibelogId,
   onPlayAudio,
   onUpdate,
   onDelete,
+  onReply,
   userIsAdmin = false,
 }: CommentItemProps) {
   const { user } = useAuth();
@@ -476,9 +481,18 @@ export default function CommentItem({
         </div>
       )}
 
-      {/* Reactions */}
-      <div className="mt-3 border-t border-border/20 pt-3">
+      {/* Reactions and Reply */}
+      <div className="mt-3 flex items-center justify-between border-t border-border/20 pt-3">
         <ReactionBar type="comment" id={comment.id} variant="compact" realtime showCounts />
+        {user && onReply && (
+          <button
+            onClick={() => onReply(comment.id)}
+            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <Reply className="h-4 w-4" />
+            Reply
+          </button>
+        )}
       </div>
     </div>
   );

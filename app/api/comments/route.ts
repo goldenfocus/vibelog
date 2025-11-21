@@ -5,6 +5,16 @@ import { createServerSupabaseClient } from '@/lib/supabase';
 import { createServerAdminClient } from '@/lib/supabaseAdmin';
 import type { MediaAttachment } from '@/types/comments';
 
+// Generate a unique slug for comments (8 chars alphanumeric)
+function generateCommentSlug(): string {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let slug = '';
+  for (let i = 0; i < 8; i++) {
+    slug += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return slug;
+}
+
 /**
  * POST /api/comments
  *
@@ -110,6 +120,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Generate unique slug for the comment
+    const slug = generateCommentSlug();
+
+    // Determine comment type for SEO
+    const commentType = videoUrl ? 'Video' : audioUrl ? 'Voice' : 'Text';
+
     // Create comment
     const { data: comment, error: commentError } = await adminSupabase
       .from('comments')
@@ -124,10 +140,14 @@ export async function POST(request: NextRequest) {
         attachments: attachments && attachments.length > 0 ? attachments : null,
         attachment_count: attachments ? attachments.length : 0,
         has_rich_media: attachments && attachments.length > 0,
+        slug,
+        seo_title: `${commentType} Vibe`,
+        seo_description: content?.slice(0, 160) || `${commentType} comment on VibeLog`,
       })
       .select(
         `
         id,
+        slug,
         vibelog_id,
         user_id,
         content,
