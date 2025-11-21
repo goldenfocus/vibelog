@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 
 interface SaveVibelogData {
+  vibelogId?: string; // For updating existing vibelogs
   title?: string;
   content: string;
   fullContent?: string;
@@ -17,6 +18,8 @@ interface SaveVibelogData {
   };
   userId?: string;
   isTeaser?: boolean;
+  isPublished?: boolean;
+  isPublic?: boolean;
   metadata?: Record<string, any>;
 }
 
