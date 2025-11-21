@@ -2,11 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
 import { getCachedResponse, setCachedResponse } from '@/lib/ai-cache';
-import {
-  trackAICost,
-  calculateWhisperCost,
-  isDailyLimitExceeded,
-} from '@/lib/ai-cost-tracker';
+import { trackAICost, calculateWhisperCost, isDailyLimitExceeded } from '@/lib/ai-cost-tracker';
 import { config } from '@/lib/config';
 import { isDev } from '@/lib/env';
 import { rateLimit, tooManyResponse } from '@/lib/rateLimit';
@@ -230,7 +226,7 @@ export async function POST(request: NextRequest) {
       config.ai.openai.apiKey === 'your_openai_api_key_here'
     ) {
       console.warn('🧪 Using mock transcription for development/testing');
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API delay
       return NextResponse.json({
         transcription:
           "Today I want to share some thoughts about the future of voice technology and how it's changing the way we create content. Speaking is our most natural form of communication and I believe we're moving toward a world where your voice becomes your pen.",
@@ -317,18 +313,24 @@ export async function POST(request: NextRequest) {
     if (storagePath) {
       console.log('🧹 Cleaning up storage file:', storagePath);
       // Fire and forget - don't wait for deletion
-      deleteFromStorage(storagePath).catch((err) => console.warn('Failed to delete storage file:', err));
+      deleteFromStorage(storagePath).catch(err =>
+        console.warn('Failed to delete storage file:', err)
+      );
     }
 
     return NextResponse.json(result);
   } catch (error) {
+    // Always log detailed error in production for debugging
     console.error('Transcription error:', error);
 
     // Provide more detailed error information
     let errorMessage = 'Failed to transcribe audio';
     let statusCode = 500;
+    let errorDetails = '';
 
     if (error instanceof Error) {
+      errorDetails = error.message;
+
       // Handle specific OpenAI API errors
       if (error.message.includes('Unsupported file type')) {
         errorMessage = 'Audio format not supported. Please try a different recording format.';
@@ -336,20 +338,36 @@ export async function POST(request: NextRequest) {
       } else if (error.message.includes('File size too large')) {
         errorMessage = 'Audio file is too large. Please record a shorter clip.';
         statusCode = 413;
-      } else if (error.message.includes('Invalid API key')) {
-        errorMessage = 'API configuration error. Please check your OpenAI settings.';
+      } else if (
+        error.message.includes('Invalid API key') ||
+        error.message.includes('invalid_api_key')
+      ) {
+        errorMessage = 'API configuration error. OpenAI API key is invalid or missing.';
         statusCode = 401;
+      } else if (
+        error.message.includes('insufficient_quota') ||
+        error.message.includes('exceeded')
+      ) {
+        errorMessage = 'OpenAI API quota exceeded. Please check your billing settings.';
+        statusCode = 402;
       }
 
-      if (isDev) {
-        console.error('Detailed error:', {
-          message: error.message,
-          name: error.name,
-          stack: error.stack,
-        });
-      }
+      // Always log detailed error for debugging
+      console.error('[TRANSCRIPTION ERROR]', {
+        message: error.message,
+        name: error.name,
+        hasApiKey: !!config.ai.openai.apiKey,
+        apiKeyPrefix: config.ai.openai.apiKey?.substring(0, 10) + '...',
+      });
     }
 
-    return NextResponse.json({ error: errorMessage }, { status: statusCode });
+    // Include details in response for debugging (remove in production if needed)
+    return NextResponse.json(
+      {
+        error: errorMessage,
+        details: errorDetails || 'Unknown error',
+      },
+      { status: statusCode }
+    );
   }
 }
