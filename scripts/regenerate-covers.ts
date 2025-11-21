@@ -172,7 +172,22 @@ async function regenerateCovers() {
         await new Promise(resolve => setTimeout(resolve, 2000));
       }
     } catch (error) {
-      console.error(`❌ Failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      console.error(`❌ Failed: ${errorMsg}`);
+
+      // If DALL-E blocks content, use fallback OG image
+      if (errorMsg.includes('content') || errorMsg.includes('safety')) {
+        const FALLBACK_OG = 'https://www.vibelog.io/og-image.png';
+        console.log('🔄 Using fallback OG image for content-blocked vibelog...');
+        const { error: updateError } = await supabase
+          .from('vibelogs')
+          .update({ cover_image_url: FALLBACK_OG })
+          .eq('id', vibelog.id);
+
+        if (!updateError) {
+          console.log('✅ Fallback applied successfully');
+        }
+      }
       failed++;
     }
   }

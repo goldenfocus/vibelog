@@ -151,11 +151,17 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ Cover image generated successfully');
 
+    // Fallback OG image if storage fails (NEVER return temporary OpenAI URLs)
+    const FALLBACK_OG_IMAGE = 'https://www.vibelog.io/og-image.png';
+
     // ALWAYS download and save to Supabase Storage (OpenAI URLs expire in ~1 hour)
-    let storedUrl = imageUrl;
+    let storedUrl: string;
     try {
       // Download the image from OpenAI
       const imageResponse = await fetch(imageUrl);
+      if (!imageResponse.ok) {
+        throw new Error(`Failed to download image: ${imageResponse.status}`);
+      }
       const imageBuffer = await imageResponse.arrayBuffer();
 
       // Upload to Supabase Storage with unique filename
@@ -169,8 +175,10 @@ export async function POST(request: NextRequest) {
         });
 
       if (uploadError) {
-        console.warn('⚠️ Failed to save cover to storage:', uploadError.message);
-        // Continue with OpenAI URL (expires in ~1 hour)
+        console.error('❌ Failed to save cover to storage:', uploadError.message);
+        // Use fallback instead of expired OpenAI URL
+        storedUrl = FALLBACK_OG_IMAGE;
+        console.log('🔄 Using fallback OG image');
       } else {
         // Get public URL
         const {
@@ -185,8 +193,10 @@ export async function POST(request: NextRequest) {
         }
       }
     } catch (storageErr) {
-      console.warn('⚠️ Storage error:', storageErr);
-      // Continue with OpenAI URL
+      console.error('❌ Storage error:', storageErr);
+      // Use fallback instead of expired OpenAI URL
+      storedUrl = FALLBACK_OG_IMAGE;
+      console.log('🔄 Using fallback OG image');
     }
 
     return NextResponse.json({

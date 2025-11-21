@@ -3,6 +3,8 @@
 import Image from 'next/image';
 import { useState, useEffect, useRef } from 'react';
 
+import { isExpiredOpenAIUrl } from '@/lib/image-utils';
+
 interface MediaBackgroundProps {
   coverImage?: string | null;
   videoUrl?: string | null;
@@ -10,14 +12,6 @@ interface MediaBackgroundProps {
   className?: string;
   isPlaying?: boolean;
 }
-
-// OpenAI DALL-E URLs expire after ~1 hour, detect and skip them
-const isExpiredOpenAIUrl = (url: string | null | undefined): boolean => {
-  if (!url) {
-    return false;
-  }
-  return url.includes('oaidalleapiprodscus.blob.core.windows.net');
-};
 
 /**
  * Media background with parallax effect and Ken Burns animation
