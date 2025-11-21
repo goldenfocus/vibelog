@@ -26,7 +26,6 @@ interface CommentsListProps {
   vibelogId: string;
   isLoading?: boolean;
   onRefresh?: () => void;
-  onReply?: (parentCommentId: string) => void;
   userIsAdmin?: boolean;
 }
 
@@ -35,7 +34,6 @@ export default function CommentsList({
   vibelogId,
   isLoading,
   onRefresh,
-  onReply,
   userIsAdmin = false,
 }: CommentsListProps) {
   // TTS disabled - comment audio playback removed
@@ -70,7 +68,6 @@ export default function CommentsList({
           onPlayAudio={handlePlayAudio}
           onUpdate={onRefresh}
           onDelete={onRefresh}
-          onReply={onReply}
           userIsAdmin={userIsAdmin}
         />
       ))}
