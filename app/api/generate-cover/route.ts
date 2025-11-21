@@ -149,34 +149,7 @@ The image should work well as a social media preview and blog header.`;
 
     // ALWAYS download and save to Supabase Storage (OpenAI URLs expire in ~1 hour)
     let storedUrl = imageUrl;
-    try {
-      // Download the image from OpenAI
-      const imageResponse = await fetch(imageUrl);
-      const imageBuffer = await imageResponse.arrayBuffer();
 
-      // Upload to Supabase Storage with unique filename
-      const uniqueId = vibelogId || `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      const fileName = `cover-${uniqueId}.png`;
-      const { error: uploadError } = await supa.storage
-        .from('covers')
-        .upload(fileName, Buffer.from(imageBuffer), {
-          contentType: 'image/png',
-          cacheControl: '31536000', // 1 year cache
-        });
-
-      if (uploadError) {
-        console.warn('⚠️ Failed to save cover to storage:', uploadError.message);
-        // Continue with OpenAI URL (expires in ~1 hour)
-      } else {
-        // Get public URL
-        const {
-          data: { publicUrl },
-        } = supa.storage.from('covers').getPublicUrl(fileName);
-        storedUrl = publicUrl;
-        console.log('💾 Cover saved to storage:', storedUrl);
-
-        // Update vibelog with cover URL if vibelogId provided
-        if (vibelogId) {
           await supa.from('vibelogs').update({ cover_image_url: storedUrl }).eq('id', vibelogId);
         }
       }
