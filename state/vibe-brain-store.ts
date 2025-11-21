@@ -85,7 +85,7 @@ export const useVibeBrainStore = create<VibeBrainState>((set, get) => ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: content,
-          conversationId,
+          ...(conversationId && { conversationId }),
         }),
       });
 
