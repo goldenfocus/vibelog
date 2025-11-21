@@ -69,6 +69,7 @@ async function getVibelog(username: string, slug: string) {
         slug,
         content,
         teaser,
+        transcript,
         audio_url,
         ai_audio_url,
         cover_image_url,
@@ -105,7 +106,9 @@ async function getVibelog(username: string, slug: string) {
           slug,
           content,
           teaser,
+          transcript,
           audio_url,
+          ai_audio_url,
           cover_image_url,
           video_url,
           created_at,
@@ -192,7 +195,9 @@ async function getVibelog(username: string, slug: string) {
       slug,
       content,
       teaser,
+      transcript,
       audio_url,
+      ai_audio_url,
       cover_image_url,
       video_url,
       created_at,
@@ -225,6 +230,7 @@ async function getVibelog(username: string, slug: string) {
         slug,
         content,
         teaser,
+        transcript,
         audio_url,
         ai_audio_url,
         cover_image_url,
@@ -323,6 +329,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     },
     alternates: {
       canonical: `https://vibelog.io/@${normalizedUsername}/${slug}`,
+      types: {
+        'application/json': `https://vibelog.io/@${normalizedUsername}/${slug}.json`,
+      },
+    },
+    robots: {
+      index: true,
+      follow: true,
+    },
+    other: {
+      'article:published_time': vibelog.published_at,
+      'article:author': vibelog.author.display_name || normalizedUsername,
+      'article:section': 'Vibelog',
     },
   };
 }
@@ -503,6 +521,44 @@ export default async function VibelogPage({ params }: PageProps) {
         </div>
       </main>
 
+      {/* AI-readable summary for AEO (Answer Engine Optimization) */}
+      <aside
+        className="sr-only"
+        aria-label="Content summary for AI assistants"
+        data-ai-summary="true"
+      >
+        <h2>Quick Summary</h2>
+        <p>
+          &quot;{vibelog.title}&quot; is a vibelog by {vibelog.author.display_name} (@
+          {vibelog.author.username}).
+        </p>
+        {vibelog.teaser && (
+          <>
+            <h3>Summary</h3>
+            <p>{vibelog.teaser}</p>
+          </>
+        )}
+        <h3>Key Information</h3>
+        <ul>
+          <li>
+            Author: {vibelog.author.display_name} (@{vibelog.author.username})
+          </li>
+          <li>Published: {vibelog.published_at}</li>
+          <li>Reading time: {vibelog.read_time || 1} min</li>
+          <li>Word count: {vibelog.word_count || 'N/A'}</li>
+          {vibelog.audio_url && <li>Has original audio recording: Yes</li>}
+          {vibelog.ai_audio_url && <li>Has AI narration: Yes</li>}
+          {vibelog.video_url && <li>Has video: Yes</li>}
+          {vibelog.tags && vibelog.tags.length > 0 && <li>Topics: {vibelog.tags.join(', ')}</li>}
+        </ul>
+        {(vibelog.audio_url || vibelog.video_url) && (
+          <p>
+            For the original voice recording and verbatim transcript, visit: https://vibelog.io/@
+            {vibelog.author.username}/{slug}/original
+          </p>
+        )}
+      </aside>
+
       {/* Structured data for SEO (JSON-LD) */}
       <script
         type="application/ld+json"
@@ -517,7 +573,7 @@ export default async function VibelogPage({ params }: PageProps) {
             author: {
               '@type': 'Person',
               name: vibelog.author.display_name || username,
-              url: `https://vibelog.io/${username}`,
+              url: `https://vibelog.io/@${vibelog.author.username}`,
             },
             publisher: {
               '@type': 'Organization',
@@ -536,10 +592,67 @@ export default async function VibelogPage({ params }: PageProps) {
               '',
             mainEntityOfPage: {
               '@type': 'WebPage',
-              '@id': `https://vibelog.io/${username}/${slug}`,
+              '@id': `https://vibelog.io/@${vibelog.author.username}/${slug}`,
             },
             wordCount: vibelog.word_count,
             keywords: vibelog.tags?.join(', '),
+            // Audio/video metadata if available
+            ...(vibelog.audio_url && {
+              audio: {
+                '@type': 'AudioObject',
+                contentUrl: vibelog.audio_url,
+                name: `Original recording: ${vibelog.title}`,
+              },
+            }),
+            ...(vibelog.video_url && {
+              video: {
+                '@type': 'VideoObject',
+                contentUrl: vibelog.video_url,
+                name: `Video: ${vibelog.title}`,
+                thumbnailUrl: vibelog.cover_image_url,
+              },
+            }),
+            // Link to original recording page
+            ...(vibelog.audio_url || vibelog.video_url
+              ? {
+                  hasPart: {
+                    '@type': 'WebPage',
+                    name: 'Original Recording',
+                    url: `https://vibelog.io/@${vibelog.author.username}/${slug}/original`,
+                  },
+                }
+              : {}),
+          }),
+        }}
+      />
+
+      {/* BreadcrumbList for better SEO */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'BreadcrumbList',
+            itemListElement: [
+              {
+                '@type': 'ListItem',
+                position: 1,
+                name: 'Home',
+                item: 'https://vibelog.io',
+              },
+              {
+                '@type': 'ListItem',
+                position: 2,
+                name: vibelog.author.display_name,
+                item: `https://vibelog.io/@${vibelog.author.username}`,
+              },
+              {
+                '@type': 'ListItem',
+                position: 3,
+                name: vibelog.title,
+                item: `https://vibelog.io/@${vibelog.author.username}/${slug}`,
+              },
+            ],
           }),
         }}
       />
