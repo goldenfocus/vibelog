@@ -75,7 +75,7 @@ export function MemberFloatingCard({ member, index, isActive = false }: MemberFl
     <div
       ref={cardRef}
       className={cn(
-        'relative h-[200px] w-[160px] flex-shrink-0 snap-start',
+        'relative h-[140px] w-[110px] flex-shrink-0 snap-start',
         'transform-gpu',
         isVisible ? 'animate-reveal-card' : 'opacity-0'
       )}
@@ -119,13 +119,13 @@ export function MemberFloatingCard({ member, index, isActive = false }: MemberFl
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/80" />
 
         {/* Avatar centered */}
-        <div className="relative z-10 flex flex-1 items-center justify-center pt-3">
+        <div className="relative z-10 flex flex-1 items-center justify-center pt-2">
           {member.avatar_url ? (
             <img
               src={member.avatar_url}
               alt={member.display_name}
               className={cn(
-                'h-14 w-14 rounded-full border object-cover',
+                'h-10 w-10 rounded-full border object-cover',
                 'shadow-lg transition-all duration-300',
                 isHovered || isActive
                   ? 'scale-110 border-electric/50 shadow-electric/30'
@@ -135,7 +135,7 @@ export function MemberFloatingCard({ member, index, isActive = false }: MemberFl
           ) : (
             <div
               className={cn(
-                'flex h-14 w-14 items-center justify-center rounded-full border',
+                'flex h-10 w-10 items-center justify-center rounded-full border',
                 'bg-gradient-to-br from-electric/20 to-purple-500/20',
                 'shadow-lg transition-all duration-300',
                 isHovered || isActive
@@ -143,7 +143,7 @@ export function MemberFloatingCard({ member, index, isActive = false }: MemberFl
                   : 'border-white/20 shadow-black/50'
               )}
             >
-              <User className="h-6 w-6 text-white/70" />
+              <User className="h-4 w-4 text-white/70" />
             </div>
           )}
         </div>
@@ -151,11 +151,11 @@ export function MemberFloatingCard({ member, index, isActive = false }: MemberFl
         {/* Glassmorphic content container */}
         <GlassTextContainer dominantColor={dominantColor}>
           {/* Name */}
-          <h3 className="truncate text-center text-sm font-semibold leading-tight text-white transition-colors group-hover:text-electric-glow">
+          <h3 className="truncate text-center text-xs font-semibold leading-tight text-white transition-colors group-hover:text-electric-glow">
             {member.display_name}
           </h3>
           {/* Vibe count */}
-          <p className="text-center text-[10px] text-white/50">
+          <p className="text-center text-[9px] text-white/50">
             {member.total_vibelogs ?? 0} vibe{member.total_vibelogs !== 1 ? 's' : ''}
           </p>
         </GlassTextContainer>

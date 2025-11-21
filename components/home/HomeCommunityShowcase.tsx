@@ -121,11 +121,11 @@ export default function HomeCommunityShowcase({
           <div className="mb-5 px-4 md:px-6">
             <div className="h-6 w-36 animate-pulse rounded-full bg-border/70" />
           </div>
-          <div className="flex gap-3 overflow-hidden px-4 md:px-6">
-            {Array.from({ length: 8 }).map((_, index) => (
+          <div className="flex gap-2.5 overflow-hidden px-4 md:px-6">
+            {Array.from({ length: 10 }).map((_, index) => (
               <div
                 key={`member-skeleton-${index}`}
-                className="h-[200px] w-[160px] flex-shrink-0 animate-pulse rounded-2xl border border-border/40 bg-card/60 backdrop-blur"
+                className="h-[140px] w-[110px] flex-shrink-0 animate-pulse rounded-2xl border border-border/40 bg-card/60 backdrop-blur"
               />
             ))}
           </div>
