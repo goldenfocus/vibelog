@@ -94,11 +94,26 @@ export default function ImageEditTab({
         }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Failed to regenerate image');
+        // Handle rate limit errors with user-friendly message
+        if (response.status === 429) {
+          const message = data.message || 'Rate limit reached. Try again later.';
+          console.warn('Cover generation rate limited:', message);
+          toast.error(message, { duration: 5000 });
+          return;
+        }
+        // Handle service unavailable (daily limit)
+        if (response.status === 503) {
+          const message = data.message || 'AI service temporarily unavailable.';
+          console.warn('Cover generation unavailable:', message);
+          toast.error(message, { duration: 5000 });
+          return;
+        }
+        throw new Error(data.error || 'Failed to regenerate image');
       }
 
-      const data = await response.json();
       if (data.success && data.url) {
         setCoverImage(data.url);
         onImageChange(data.url);

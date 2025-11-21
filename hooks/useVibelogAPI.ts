@@ -563,10 +563,50 @@ export function useVibelogAPI(
         body: JSON.stringify(requestBody),
       });
 
+      // Handle rate limit and service unavailable with user-friendly messages
       if (!res.ok) {
-        const text = await res.text().catch(() => '');
-        console.error('Cover generation failed:', res.status, text);
-        throw new Error(`Cover generation failed: ${res.status} ${text}`);
+        const errorData = await res.json().catch(() => ({}));
+
+        if (res.status === 429) {
+          // Rate limited - log and show upgrade prompt if available
+          const message =
+            errorData.message || 'Cover generation rate limited. Using default image.';
+          console.warn('Cover generation rate limited:', message);
+          if (errorData.upgrade) {
+            onUpgradePrompt({
+              visible: true,
+              message,
+              benefits: errorData.upgrade.benefits || [],
+              resetTime: errorData.reset,
+            });
+          }
+          // Return fallback without throwing
+          return {
+            url: '/og-image.png',
+            alt: `${title} — cinematic cover image`,
+            width: 1200,
+            height: 630,
+            rateLimited: true,
+            message,
+          };
+        }
+
+        if (res.status === 503) {
+          // Service unavailable (daily limit exceeded)
+          const message = errorData.message || 'AI service temporarily unavailable.';
+          console.warn('Cover generation unavailable:', message);
+          return {
+            url: '/og-image.png',
+            alt: `${title} — cinematic cover image`,
+            width: 1200,
+            height: 630,
+            rateLimited: true,
+            message,
+          };
+        }
+
+        console.error('Cover generation failed:', res.status, errorData);
+        throw new Error(`Cover generation failed: ${res.status}`);
       }
 
       const data = await res.json();

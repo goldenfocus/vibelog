@@ -545,6 +545,16 @@ export function useMicStateMachine(
         }
 
         const image = await vibelogAPI.processCoverImage({ vibelogContent: contentToUse });
+
+        // Show toast if rate limited (image will be fallback)
+        if ('rateLimited' in image && image.rateLimited) {
+          const message =
+            'message' in image && typeof image.message === 'string'
+              ? image.message
+              : 'Cover generation limit reached. Using default image.';
+          showToast(message);
+        }
+
         setCoverImage(image);
         return image;
       } catch (error) {
@@ -554,7 +564,7 @@ export function useMicStateMachine(
         return null;
       }
     },
-    [fullVibelogContent, vibelogAPI]
+    [fullVibelogContent, showToast, vibelogAPI]
   );
 
   const completeProcessing = useCallback(async () => {
