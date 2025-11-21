@@ -97,6 +97,8 @@ export function ScreenCaptureZone({
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
   const [hasCameraPip, setHasCameraPip] = useState(false);
   const [pipPosition, setPipPosition] = useState<PipPosition>('bottom-right');
+  const [screenStreamReady, setScreenStreamReady] = useState(false);
+  const [cameraStreamReady, setCameraStreamReady] = useState(false);
 
   // Refs
   const screenPreviewRef = useRef<HTMLVideoElement>(null);
@@ -130,6 +132,37 @@ export function ScreenCaptureZone({
     }
   }, []);
 
+  // Re-attach streams when video elements are mounted (handles state transitions)
+  useEffect(() => {
+    if (
+      screenStreamRef.current &&
+      screenPreviewRef.current &&
+      !screenPreviewRef.current.srcObject
+    ) {
+      screenPreviewRef.current.srcObject = screenStreamRef.current;
+      screenPreviewRef.current.play().catch(console.error);
+    }
+  }, [status, screenStreamReady]);
+
+  useEffect(() => {
+    if (
+      cameraStreamRef.current &&
+      cameraPreviewRef.current &&
+      !cameraPreviewRef.current.srcObject
+    ) {
+      cameraPreviewRef.current.srcObject = cameraStreamRef.current;
+      cameraPreviewRef.current.play().catch(console.error);
+    }
+    if (
+      cameraStreamRef.current &&
+      cameraRecordingRef.current &&
+      !cameraRecordingRef.current.srcObject
+    ) {
+      cameraRecordingRef.current.srcObject = cameraStreamRef.current;
+      cameraRecordingRef.current.play().catch(console.error);
+    }
+  }, [status, cameraStreamReady, hasCameraPip]);
+
   // Request screen share permission
   const startScreenShare = async () => {
     if (hasRequestedScreen.current) {
@@ -156,6 +189,7 @@ export function ScreenCaptureZone({
 
       screenStreamRef.current = screenStream;
       attachScreenPreview(screenStream);
+      setScreenStreamReady(true);
 
       // Request microphone for voice-over
       const micStream = await navigator.mediaDevices.getUserMedia({
@@ -216,11 +250,13 @@ export function ScreenCaptureZone({
 
       cameraStreamRef.current = cameraStream;
       attachCameraPreview(cameraStream);
+      setCameraStreamReady(true);
       setHasCameraPip(true);
       setStatus('ready');
     } catch {
       // Non-fatal - continue without camera
       setHasCameraPip(false);
+      setCameraStreamReady(false);
       setStatus('screen-ready');
     }
   };
@@ -231,6 +267,7 @@ export function ScreenCaptureZone({
       cameraStreamRef.current.getTracks().forEach(track => track.stop());
       cameraStreamRef.current = null;
     }
+    setCameraStreamReady(false);
     if (cameraPreviewRef.current) {
       cameraPreviewRef.current.srcObject = null;
     }
@@ -427,6 +464,8 @@ export function ScreenCaptureZone({
       cameraPreviewRef.current.srcObject = null;
     }
 
+    setScreenStreamReady(false);
+    setCameraStreamReady(false);
     hasRequestedScreen.current = false;
   };
 
@@ -617,7 +656,7 @@ export function ScreenCaptureZone({
             </div>
 
             {/* Camera PiP during recording */}
-            {hasCameraPip && cameraStreamRef.current && (
+            {hasCameraPip && cameraStreamReady && (
               <motion.div
                 {...pipAnimation}
                 className={`absolute ${pipPositionStyles[pipPosition]} z-10`}
