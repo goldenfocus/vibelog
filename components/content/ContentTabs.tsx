@@ -241,23 +241,23 @@ export function ContentTabs({
             </div>
           )}
 
-          {/* Original Transcript */}
-          {transcript && (
-            <div className="space-y-3">
-              <h3 className="text-lg font-semibold text-foreground">Original Transcript</h3>
-              <div className="rounded-xl border border-border/50 bg-muted/30 p-6">
-                <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
-                  {transcript}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Raw Content */}
+          {/* Raw Content - show transcript (original unformatted text) */}
           <div className="space-y-3">
             <h3 className="text-lg font-semibold text-foreground">Raw Content</h3>
             <div className="rounded-xl border border-border/50 bg-muted/30 p-6">
-              <div className="prose prose-sm dark:prose-invert max-w-none">{children}</div>
+              {transcript ? (
+                <div className="whitespace-pre-wrap text-base leading-relaxed text-foreground/80">
+                  {transcript.split('\n\n').map((paragraph, index) => (
+                    <p key={index} className={index > 0 ? 'mt-4' : ''}>
+                      {paragraph}
+                    </p>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm italic text-muted-foreground">
+                  No original transcript available for this vibelog.
+                </p>
+              )}
             </div>
           </div>
         </TabsContent>

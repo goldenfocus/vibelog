@@ -9,7 +9,6 @@ import {
   Play,
   Reply,
   Save,
-  Send,
   Trash2,
   User,
   Video,
@@ -18,6 +17,7 @@ import {
 import { useState, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 
+import CommentInput from '@/components/comments/CommentInput';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { ReactionBar } from '@/components/reactions/ReactionBar';
 import { useAudioPlayerStore } from '@/state/audio-player-store';
@@ -26,107 +26,6 @@ import type { MediaAttachment } from '@/types/comments';
 import type { CommentWithReplies } from './CommentsList';
 
 const MAX_DEPTH = 5;
-
-// Inline reply input component
-function InlineReplyInput({
-  vibelogId,
-  parentCommentId,
-  parentAuthor,
-  onSubmit,
-  onCancel,
-}: {
-  vibelogId: string;
-  parentCommentId: string;
-  parentAuthor: string;
-  onSubmit: () => void;
-  onCancel: () => void;
-}) {
-  const [content, setContent] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
-
-  const handleSubmit = async () => {
-    if (!content.trim() || isSubmitting) {
-      return;
-    }
-    setIsSubmitting(true);
-
-    try {
-      const response = await fetch('/api/comments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          vibelogId,
-          content: content.trim(),
-          parentCommentId,
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to post reply');
-      }
-
-      toast.success('Reply posted!');
-      setContent('');
-      onSubmit();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to post reply');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-      e.preventDefault();
-      handleSubmit();
-    }
-    if (e.key === 'Escape') {
-      onCancel();
-    }
-  };
-
-  return (
-    <div className="mt-3 overflow-hidden rounded-xl border border-electric/30 bg-gradient-to-br from-electric/5 to-transparent p-3 duration-200 animate-in slide-in-from-top-2">
-      <div className="mb-2 flex items-center gap-2 text-xs text-electric">
-        <Reply className="h-3 w-3" />
-        <span>Replying to @{parentAuthor}</span>
-        <button onClick={onCancel} className="ml-auto rounded p-1 hover:bg-electric/10">
-          <X className="h-3 w-3" />
-        </button>
-      </div>
-      <textarea
-        ref={inputRef}
-        value={content}
-        onChange={e => setContent(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder="Write your reply..."
-        className="w-full resize-none rounded-lg border border-border/30 bg-background/80 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-electric focus:outline-none"
-        rows={2}
-      />
-      <div className="mt-2 flex items-center justify-between">
-        <span className="text-xs text-muted-foreground">⌘+Enter to send</span>
-        <button
-          onClick={handleSubmit}
-          disabled={isSubmitting || !content.trim()}
-          className="flex items-center gap-1.5 rounded-lg bg-electric px-3 py-1.5 text-sm font-medium text-white transition-all hover:bg-electric-glow disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {isSubmitting ? (
-            <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-          ) : (
-            <Send className="h-3.5 w-3.5" />
-          )}
-          Reply
-        </button>
-      </div>
-    </div>
-  );
-}
 
 interface CommentAuthor {
   username: string;
@@ -615,18 +514,29 @@ export default function CommentItem({
         )}
       </div>
 
-      {/* Inline Reply Input */}
+      {/* Inline Reply Input - Full CommentInput with text/audio/video/attachments */}
       {showReplyInput && (
-        <InlineReplyInput
-          vibelogId={vibelogId}
-          parentCommentId={comment.id}
-          parentAuthor={comment.author.username}
-          onSubmit={() => {
-            setShowReplyInput(false);
-            onUpdate?.();
-          }}
-          onCancel={() => setShowReplyInput(false)}
-        />
+        <div className="mt-3 duration-200 animate-in slide-in-from-top-2">
+          <div className="mb-2 flex items-center gap-2 text-xs text-electric">
+            <Reply className="h-3 w-3" />
+            <span>Replying to @{comment.author.username}</span>
+            <button
+              onClick={() => setShowReplyInput(false)}
+              className="ml-auto rounded p-1 hover:bg-electric/10"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+          <CommentInput
+            vibelogId={vibelogId}
+            parentCommentId={comment.id}
+            onCommentAdded={() => {
+              setShowReplyInput(false);
+              onUpdate?.();
+            }}
+            onCancel={() => setShowReplyInput(false)}
+          />
+        </div>
       )}
 
       {/* Nested Replies */}
