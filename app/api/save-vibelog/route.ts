@@ -227,7 +227,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           teaser: vibelogData.teaser,
           content: vibelogData.content,
           transcription: vibelogData.transcription,
-          cover_image_url: vibelogData.cover_image_url || undefined, // Don't overwrite if not provided
+          cover_image_url: vibelogData.cover_image_url || undefined,
           cover_image_alt: vibelogData.cover_image_alt || undefined,
           cover_image_width: vibelogData.cover_image_width || undefined,
           cover_image_height: vibelogData.cover_image_height || undefined,
@@ -267,15 +267,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           publicUrl = isAnonymous
             ? `/v/${finalSlug}`
             : `/@${user?.user_metadata?.username || 'user'}/${finalSlug}`;
-        }
-
-        if (!finalSlug && userId) {
-          finalSlug = generateUserSlug(title, requestBody.vibelogId);
-          await supabase
-            .from('vibelogs')
-            .update({ slug: finalSlug })
-            .eq('id', requestBody.vibelogId);
-          publicUrl = `/@${user?.user_metadata?.username || user?.email?.split('@')[0] || 'user'}/${finalSlug}`;
         }
 
         console.log('✅ [VIBELOG-SAVE] Update successful:', requestBody.vibelogId);
@@ -452,9 +443,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
               error:
                 uncaughtError instanceof Error
                   ? {
-                      message: uncaughtError.message,
-                      stack: uncaughtError.stack,
-                    }
+                    message: uncaughtError.message,
+                    stack: uncaughtError.stack,
+                  }
                   : uncaughtError,
               timestamp: new Date().toISOString(),
             },
