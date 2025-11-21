@@ -17,26 +17,36 @@ export async function getCachedResponse(
   service: string,
   input: string | Buffer
 ): Promise<any | null> {
-  if (CACHE_DURATIONS[service] === 0) {
+  try {
+    if (CACHE_DURATIONS[service] === 0) {
+      return null;
+    }
+
+    const cacheKey = generateCacheKey(service, input);
+    const supabase = await createServerAdminClient();
+
+    const { data, error } = await supabase
+      .from('ai_cache')
+      .select('response')
+      .eq('cache_key', cacheKey)
+      .gt('expires_at', new Date().toISOString())
+      .maybeSingle();
+
+    if (error) {
+      console.warn('[CACHE] Error checking cache:', error.message);
+      return null; // Fail silently - cache is optional
+    }
+
+    if (data) {
+      console.log(`[CACHE HIT] ${service} - Saved API call`);
+      return data.response;
+    }
+
     return null;
+  } catch (err) {
+    console.warn('[CACHE] Exception checking cache:', err);
+    return null; // Fail silently
   }
-
-  const cacheKey = generateCacheKey(service, input);
-  const supabase = await createServerAdminClient();
-
-  const { data } = await supabase
-    .from('ai_cache')
-    .select('response')
-    .eq('cache_key', cacheKey)
-    .gt('expires_at', new Date().toISOString())
-    .maybeSingle();
-
-  if (data) {
-    console.log(`[CACHE HIT] ${service} - Saved API call`);
-    return data.response;
-  }
-
-  return null;
 }
 
 /**
@@ -47,26 +57,36 @@ export async function setCachedResponse(
   input: string | Buffer,
   response: any
 ): Promise<void> {
-  if (CACHE_DURATIONS[service] === 0) {
-    return;
+  try {
+    if (CACHE_DURATIONS[service] === 0) {
+      return;
+    }
+
+    const cacheKey = generateCacheKey(service, input);
+    const supabase = await createServerAdminClient();
+
+    const expiresAt = new Date(Date.now() + CACHE_DURATIONS[service]);
+
+    const { error } = await supabase.from('ai_cache').upsert(
+      {
+        cache_key: cacheKey,
+        service,
+        response,
+        expires_at: expiresAt.toISOString(),
+      },
+      { onConflict: 'cache_key' }
+    );
+
+    if (error) {
+      console.warn('[CACHE] Error storing cache:', error.message);
+      return; // Fail silently
+    }
+
+    console.log(`[CACHE STORE] ${service} - Response cached until ${expiresAt.toISOString()}`);
+  } catch (err) {
+    console.warn('[CACHE] Exception storing cache:', err);
+    // Fail silently - cache is optional
   }
-
-  const cacheKey = generateCacheKey(service, input);
-  const supabase = await createServerAdminClient();
-
-  const expiresAt = new Date(Date.now() + CACHE_DURATIONS[service]);
-
-  await supabase.from('ai_cache').upsert(
-    {
-      cache_key: cacheKey,
-      service,
-      response,
-      expires_at: expiresAt.toISOString(),
-    },
-    { onConflict: 'cache_key' }
-  );
-
-  console.log(`[CACHE STORE] ${service} - Response cached until ${expiresAt.toISOString()}`);
 }
 
 /**

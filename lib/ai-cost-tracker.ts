@@ -29,75 +29,99 @@ export async function trackAICost(
     [key: string]: any;
   }
 ): Promise<{ allowed: boolean; dailyTotal: number }> {
-  const supabase = await createServerAdminClient();
+  try {
+    const supabase = await createServerAdminClient();
 
-  // Log the usage
-  await supabase.from('ai_usage_log').insert({
-    user_id: userId,
-    service,
-    endpoint: metadata?.endpoint,
-    estimated_cost: cost,
-    input_tokens: metadata?.input_tokens,
-    output_tokens: metadata?.output_tokens,
-    cache_hit: metadata?.cache_hit || false,
-    metadata,
-  });
+    // Log the usage (fire and forget - don't block on errors)
+    supabase.from('ai_usage_log').insert({
+      user_id: userId,
+      service,
+      endpoint: metadata?.endpoint,
+      estimated_cost: cost,
+      input_tokens: metadata?.input_tokens,
+      output_tokens: metadata?.output_tokens,
+      cache_hit: metadata?.cache_hit || false,
+      metadata,
+    }).then(({ error }) => {
+      if (error) console.warn('[COST TRACKER] Failed to log usage:', error.message);
+    });
 
-  // Check daily total
-  const today = new Date().toISOString().split('T')[0];
-  const { data: dailyCost } = await supabase
-    .from('ai_daily_costs')
-    .select('total_cost')
-    .eq('date', today)
-    .maybeSingle();
+    // Check daily total
+    const today = new Date().toISOString().split('T')[0];
+    const { data: dailyCost, error: fetchError } = await supabase
+      .from('ai_daily_costs')
+      .select('total_cost')
+      .eq('date', today)
+      .maybeSingle();
 
-  const currentTotal = (dailyCost?.total_cost || 0) + cost;
+    if (fetchError) {
+      console.warn('[COST TRACKER] Error fetching daily cost:', fetchError.message);
+      return { allowed: true, dailyTotal: 0 }; // Allow on error
+    }
 
-  // Update or insert daily cost
-  await supabase.from('ai_daily_costs').upsert(
-    {
-      date: today,
-      total_cost: currentTotal,
-    },
-    { onConflict: 'date' }
-  );
+    const currentTotal = (dailyCost?.total_cost || 0) + cost;
 
-  // Circuit breaker
-  if (currentTotal > DAILY_COST_LIMIT) {
-    console.error(
-      `🚨 EMERGENCY: Daily AI cost exceeded $${DAILY_COST_LIMIT}! Current: $${currentTotal.toFixed(2)}`
+    // Update or insert daily cost (fire and forget)
+    supabase.from('ai_daily_costs').upsert(
+      {
+        date: today,
+        total_cost: currentTotal,
+      },
+      { onConflict: 'date' }
+    ).then(({ error }) => {
+      if (error) console.warn('[COST TRACKER] Failed to update daily cost:', error.message);
+    });
+
+    // Circuit breaker
+    if (currentTotal > DAILY_COST_LIMIT) {
+      console.error(
+        `🚨 EMERGENCY: Daily AI cost exceeded $${DAILY_COST_LIMIT}! Current: $${currentTotal.toFixed(2)}`
+      );
+      supabase.from('ai_daily_costs').update({ disabled_at: new Date().toISOString() }).eq('date', today);
+      return { allowed: false, dailyTotal: currentTotal };
+    }
+
+    console.log(
+      `[COST] ${service} - User: ${userId || 'anonymous'} - Cost: $${cost.toFixed(4)} - Daily total: $${currentTotal.toFixed(2)}`
     );
-    await supabase.from('ai_daily_costs').update({ disabled_at: new Date().toISOString() }).eq('date', today);
-    return { allowed: false, dailyTotal: currentTotal };
+
+    return { allowed: true, dailyTotal: currentTotal };
+  } catch (err) {
+    console.warn('[COST TRACKER] Exception in trackAICost:', err);
+    return { allowed: true, dailyTotal: 0 }; // Allow on exception
   }
-
-  console.log(
-    `[COST] ${service} - User: ${userId || 'anonymous'} - Cost: $${cost.toFixed(4)} - Daily total: $${currentTotal.toFixed(2)}`
-  );
-
-  return { allowed: true, dailyTotal: currentTotal };
 }
 
 /**
  * Check if daily cost limit has been exceeded
  */
 export async function isDailyLimitExceeded(): Promise<boolean> {
-  const supabase = await createServerAdminClient();
-  const today = new Date().toISOString().split('T')[0];
+  try {
+    const supabase = await createServerAdminClient();
+    const today = new Date().toISOString().split('T')[0];
 
-  const { data } = await supabase
-    .from('ai_daily_costs')
-    .select('total_cost, disabled_at')
-    .eq('date', today)
-    .maybeSingle();
+    const { data, error } = await supabase
+      .from('ai_daily_costs')
+      .select('total_cost, disabled_at')
+      .eq('date', today)
+      .maybeSingle();
 
-  // If no row exists for today, we haven't spent anything yet - allow requests
-  if (!data) {
-    return false;
+    if (error) {
+      console.warn('[COST TRACKER] Error checking daily limit:', error.message);
+      return false; // On error, allow request to proceed
+    }
+
+    // If no row exists for today, we haven't spent anything yet - allow requests
+    if (!data) {
+      return false;
+    }
+
+    // Check if circuit breaker was triggered OR if we've exceeded the limit
+    return data.disabled_at !== null || data.total_cost >= DAILY_COST_LIMIT;
+  } catch (err) {
+    console.warn('[COST TRACKER] Exception checking daily limit:', err);
+    return false; // On exception, allow request to proceed
   }
-
-  // Check if circuit breaker was triggered OR if we've exceeded the limit
-  return data.disabled_at !== null || data.total_cost >= DAILY_COST_LIMIT;
 }
 
 /**
