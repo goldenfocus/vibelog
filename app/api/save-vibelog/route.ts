@@ -227,10 +227,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           teaser: vibelogData.teaser,
           content: vibelogData.content,
           transcription: vibelogData.transcription,
-          cover_image_url: vibelogData.cover_image_url,
-          cover_image_alt: vibelogData.cover_image_alt,
-          cover_image_width: vibelogData.cover_image_width,
-          cover_image_height: vibelogData.cover_image_height,
+          cover_image_url: vibelogData.cover_image_url || undefined, // Don't overwrite if not provided
+          cover_image_alt: vibelogData.cover_image_alt || undefined,
+          cover_image_width: vibelogData.cover_image_width || undefined,
+          cover_image_height: vibelogData.cover_image_height || undefined,
           audio_url: vibelogData.audio_url || undefined, // Don't overwrite if not provided
           audio_duration: vibelogData.audio_duration || undefined,
           word_count: vibelogData.word_count,
@@ -261,9 +261,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
         // Generate slug if not exists
         let finalSlug = existingVibelog.slug || existingVibelog.public_slug;
-        let publicUrl = finalSlug
-          ? `/@${user?.user_metadata?.username || 'user'}/${finalSlug}`
-          : null;
+        let publicUrl = null;
+
+        if (finalSlug) {
+          publicUrl = isAnonymous
+            ? `/v/${finalSlug}`
+            : `/@${user?.user_metadata?.username || 'user'}/${finalSlug}`;
+        }
 
         if (!finalSlug && userId) {
           finalSlug = generateUserSlug(title, requestBody.vibelogId);
@@ -293,7 +297,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           vibelogId: requestBody.vibelogId,
           slug: finalSlug,
           publicUrl: publicUrl,
-          isAnonymous: false,
+          isAnonymous: isAnonymous,
           message: 'Vibelog updated successfully!',
           warnings: warnings.length > 0 ? warnings : undefined,
         });

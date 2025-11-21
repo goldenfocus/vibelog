@@ -271,6 +271,9 @@ export function ScreenCaptureZone({
     if (cameraPreviewRef.current) {
       cameraPreviewRef.current.srcObject = null;
     }
+    if (cameraRecordingRef.current) {
+      cameraRecordingRef.current.srcObject = null;
+    }
     setHasCameraPip(false);
     setStatus('screen-ready');
   };
@@ -462,6 +465,9 @@ export function ScreenCaptureZone({
     }
     if (cameraPreviewRef.current) {
       cameraPreviewRef.current.srcObject = null;
+    }
+    if (cameraRecordingRef.current) {
+      cameraRecordingRef.current.srcObject = null;
     }
 
     setScreenStreamReady(false);
