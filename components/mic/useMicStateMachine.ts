@@ -504,7 +504,7 @@ export function useMicStateMachine(
 
     // OPTIMIZATION 2: Enable streaming for real-time content delivery
     const teaserResult = await vibelogAPI.processVibelogGeneration(transcriptionData, {
-      enableStreaming: true,
+      enableStreaming: false,
       tone,
       keepFillerWords,
       detectedLanguage,

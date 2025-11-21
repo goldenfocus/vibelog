@@ -21,11 +21,14 @@ export interface ConversationMessage {
  * Vibelog content being worked on
  */
 export interface VibelogContent {
+  id?: string;
   title?: string;
   content?: string;
   teaser?: string;
+  fullContent?: string;
   coverImageUrl?: string;
   audioUrl?: string;
+  publicUrl?: string | null;
 }
 
 /**

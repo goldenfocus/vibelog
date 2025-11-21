@@ -12,6 +12,9 @@ import posthog from 'posthog-js';
 import { useEffect } from 'react';
 
 import { config } from '@/lib/config';
+import { startWebVitalsCollection } from '@/lib/monitoring/webVitals';
+
+let webVitalsStarted = false;
 
 export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -54,6 +57,11 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
           maskTextSelector: '[data-mask]', // Allow explicit masking
         },
       });
+
+      if (!webVitalsStarted && config.features.monitoring) {
+        startWebVitalsCollection();
+        webVitalsStarted = true;
+      }
     }
   }, []);
 
