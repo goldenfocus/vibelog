@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { isDailyLimitExceeded } from '@/lib/ai-cost-tracker';
-import { createClient } from '@/lib/supabase';
+import { createServerSupabaseClient } from '@/lib/supabase';
 import { chat, getOrCreateConversation, getConversationHistory } from '@/lib/vibe-brain';
 
 const requestSchema = z.object({
@@ -13,13 +13,16 @@ const requestSchema = z.object({
 export async function POST(request: Request) {
   try {
     // Auth check
-    const supabase = await createClient();
+    const supabase = await createServerSupabaseClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Please sign in to chat with Vibe Brain ;)' },
+        { status: 401 }
+      );
     }
 
     // Check daily cost limit

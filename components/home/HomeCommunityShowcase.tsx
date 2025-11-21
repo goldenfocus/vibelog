@@ -31,6 +31,7 @@ interface HomeFeedMember {
   username: string;
   display_name: string;
   avatar_url: string | null;
+  header_image?: string | null;
   bio?: string | null;
   total_vibelogs?: number | null;
   created_at: string;
@@ -119,13 +120,13 @@ export default function HomeCommunityShowcase({
       {loading ? (
         <div className="py-6">
           <div className="mb-5 px-4 md:px-6">
-            <div className="h-7 w-40 animate-pulse rounded-full bg-border/70" />
+            <div className="h-6 w-36 animate-pulse rounded-full bg-border/70" />
           </div>
-          <div className="flex gap-4 overflow-hidden px-4 md:px-6">
-            {Array.from({ length: 5 }).map((_, index) => (
+          <div className="flex gap-3 overflow-hidden px-4 md:px-6">
+            {Array.from({ length: 8 }).map((_, index) => (
               <div
                 key={`member-skeleton-${index}`}
-                className="h-[380px] w-[280px] flex-shrink-0 animate-pulse rounded-3xl border border-border/40 bg-card/60 backdrop-blur"
+                className="h-[200px] w-[160px] flex-shrink-0 animate-pulse rounded-2xl border border-border/40 bg-card/60 backdrop-blur"
               />
             ))}
           </div>
