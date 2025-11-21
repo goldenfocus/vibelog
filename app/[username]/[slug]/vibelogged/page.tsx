@@ -11,5 +11,7 @@ export default async function VibeloggedPage({ params }: PageProps) {
   const { username, slug } = await params;
 
   // Redirect to the main page with the vibelog view
-  redirect(`/@${username}/${slug}#vibelog`);
+  // Note: username already includes @ prefix from the route pattern
+  const cleanUsername = username.startsWith('@') ? username : `@${username}`;
+  redirect(`/${cleanUsername}/${slug}#vibelog`);
 }
