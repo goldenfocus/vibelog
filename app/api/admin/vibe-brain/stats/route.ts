@@ -86,13 +86,13 @@ export async function GET() {
     try {
       const { data: costs } = await adminSupabase
         .from('ai_usage_log')
-        .select('cost, created_at')
+        .select('estimated_cost, created_at')
         .like('metadata->>endpoint', '%vibe-brain%');
 
       for (const cost of costs || []) {
-        totalCost += cost.cost || 0;
+        totalCost += cost.estimated_cost || 0;
         const day = new Date(cost.created_at).toISOString().split('T')[0];
-        costByDay[day] = (costByDay[day] || 0) + (cost.cost || 0);
+        costByDay[day] = (costByDay[day] || 0) + (cost.estimated_cost || 0);
       }
     } catch {
       // ai_usage_log might not exist
