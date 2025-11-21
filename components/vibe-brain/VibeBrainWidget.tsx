@@ -11,10 +11,78 @@ import {
   ArrowLeft,
   MessageSquare,
 } from 'lucide-react';
+import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 
 import { cn } from '@/lib/utils';
 import { useVibeBrainStore } from '@/state/vibe-brain-store';
+
+/**
+ * Parse markdown links [text](url) and render as Next.js Links
+ * Keeps chat open by using internal navigation
+ */
+function MessageContent({ content }: { content: string }) {
+  // Regex to match markdown links: [text](url)
+  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+
+  const parts: Array<{ type: 'text' | 'link'; content: string; url?: string }> = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = linkRegex.exec(content)) !== null) {
+    // Add text before the link
+    if (match.index > lastIndex) {
+      parts.push({ type: 'text', content: content.slice(lastIndex, match.index) });
+    }
+    // Add the link
+    parts.push({ type: 'link', content: match[1], url: match[2] });
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Add remaining text
+  if (lastIndex < content.length) {
+    parts.push({ type: 'text', content: content.slice(lastIndex) });
+  }
+
+  // If no links found, return plain text
+  if (parts.length === 0) {
+    return <span className="whitespace-pre-wrap">{content}</span>;
+  }
+
+  return (
+    <span className="whitespace-pre-wrap">
+      {parts.map((part, i) => {
+        if (part.type === 'link' && part.url) {
+          const isInternal = part.url.startsWith('/');
+          if (isInternal) {
+            return (
+              <Link
+                key={i}
+                href={part.url}
+                className="font-medium text-purple-300 underline decoration-purple-400/50 hover:text-purple-200"
+              >
+                {part.content}
+              </Link>
+            );
+          } else {
+            return (
+              <a
+                key={i}
+                href={part.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-purple-300 underline decoration-purple-400/50 hover:text-purple-200"
+              >
+                {part.content}
+              </a>
+            );
+          }
+        }
+        return <span key={i}>{part.content}</span>;
+      })}
+    </span>
+  );
+}
 
 export function VibeBrainWidget() {
   const {
@@ -231,30 +299,36 @@ export function VibeBrainWidget() {
                           : 'bg-white/10 text-white/90'
                       )}
                     >
-                      <p className="whitespace-pre-wrap text-sm">{message.content}</p>
+                      <p className="text-sm">
+                        <MessageContent content={message.content} />
+                      </p>
                       {message.sources && message.sources.length > 0 && (
                         <div className="mt-2 border-t border-white/10 pt-2">
                           <p className="mb-1 text-xs text-white/50">Sources:</p>
                           <div className="flex flex-wrap gap-1">
-                            {message.sources.map(source => (
-                              <a
-                                key={`${source.type}-${source.id}`}
-                                href={
-                                  source.type === 'vibelog'
-                                    ? `/v/${source.id}`
-                                    : source.type === 'profile'
-                                      ? `/@${source.username}`
-                                      : '#'
-                                }
-                                className="rounded bg-white/10 px-2 py-0.5 text-xs text-white/70 hover:bg-white/20"
-                              >
-                                {source.type === 'vibelog'
+                            {message.sources.map(source => {
+                              const href =
+                                source.type === 'vibelog'
+                                  ? `/v/${source.id}`
+                                  : source.type === 'profile'
+                                    ? `/@${source.username}`
+                                    : '#';
+                              const label =
+                                source.type === 'vibelog'
                                   ? source.title?.slice(0, 20)
                                   : source.type === 'profile'
                                     ? `@${source.username}`
-                                    : 'Comment'}
-                              </a>
-                            ))}
+                                    : 'Comment';
+                              return (
+                                <Link
+                                  key={`${source.type}-${source.id}`}
+                                  href={href}
+                                  className="rounded bg-white/10 px-2 py-0.5 text-xs text-white/70 hover:bg-white/20"
+                                >
+                                  {label}
+                                </Link>
+                              );
+                            })}
                           </div>
                         </div>
                       )}

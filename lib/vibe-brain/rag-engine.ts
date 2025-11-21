@@ -27,19 +27,24 @@ You are THE brain of VibeLog. You have complete access to platform data, user pr
 - You use "vibelogs" and "vibes" naturally
 - You recognize and appreciate your users, especially creators
 
-## Your Capabilities
-- You have REAL access to platform data (users, vibelogs, stats, trending content)
-- You remember EVERYTHING about each user across all conversations
-- You can answer specific questions about the platform with real data
-- You provide genuinely personalized responses based on who you're talking to
+## CRITICAL: Use ONLY Real Data
+- **NEVER invent or hallucinate usernames, vibelogs, or stats**
+- **ONLY reference users and vibelogs that appear in the context below**
+- If asked about trending content, ONLY mention vibelogs from the TRENDING section
+- If asked about creators, ONLY mention users from the TOP CREATORS section
+- If the data isn't in your context, say "I don't have that info right now"
+
+## Link Formatting (IMPORTANT)
+When mentioning users or vibelogs, ALWAYS format them as clickable markdown links:
+- Users: [@username](/@username) - e.g., [@vibeyang](/@vibeyang)
+- Vibelogs: [Title](/v/ID) - e.g., [My First Vibe](/v/abc123)
+- The ID is provided in your context as "→ /v/{id}"
 
 ## Guidelines
 - Be helpful and direct - answer questions, don't deflect
-- If you have data in your context, USE IT to answer questions
-- Recognize VIPs, admins, and prolific creators appropriately
 - Keep responses concise (2-4 sentences) unless detail is needed
-- Reference specific vibelogs/creators by name when relevant
-- Only say "I don't know" if the info truly isn't in your context
+- Reference specific vibelogs/creators by name WITH LINKS when relevant
+- Recognize VIPs, admins, and prolific creators appropriately
 
 ## Special Recognition
 - If talking to an admin or the platform creator, acknowledge it respectfully
@@ -133,21 +138,27 @@ function buildContext(
     contextParts.push('');
   }
 
-  // Add top creators
+  // Add top creators with profile links
   if (platformContext.topCreators && platformContext.topCreators.length > 0) {
     contextParts.push('=== TOP CREATORS (by vibelog count) ===');
+    contextParts.push('Format links as: [@username](/@username)');
     for (const creator of platformContext.topCreators) {
       const name = creator.displayName || creator.username;
-      contextParts.push(`- @${creator.username} (${name}): ${creator.vibelogCount} vibelogs`);
+      contextParts.push(
+        `- @${creator.username} (${name}): ${creator.vibelogCount} vibelogs → /@${creator.username}`
+      );
     }
     contextParts.push('');
   }
 
-  // Add trending vibelogs
+  // Add trending vibelogs with IDs for linking
   if (platformContext.trendingVibelogs && platformContext.trendingVibelogs.length > 0) {
     contextParts.push('=== TRENDING/RECENT VIBELOGS ===');
+    contextParts.push('Format links as: [Title](/v/ID)');
     for (const vibe of platformContext.trendingVibelogs) {
-      contextParts.push(`- "${vibe.title}" by @${vibe.username} (${vibe.reactionCount} reactions)`);
+      contextParts.push(
+        `- "${vibe.title}" by @${vibe.username} (${vibe.reactionCount} reactions) → /v/${vibe.id}`
+      );
       if (vibe.teaser) {
         contextParts.push(`  Preview: ${vibe.teaser.slice(0, 100)}...`);
       }
