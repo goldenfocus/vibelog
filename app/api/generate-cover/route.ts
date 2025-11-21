@@ -176,7 +176,7 @@ The image should work well as a social media preview and blog header.`;
           console.log('💾 Cover saved to storage:', storedUrl);
 
           // Update vibelog with cover URL if vibelogId provided
-          await supa.from('vibelogs').update({ cover_url: storedUrl }).eq('id', vibelogId);
+          await supa.from('vibelogs').update({ cover_image_url: storedUrl }).eq('id', vibelogId);
         }
       } catch (storageErr) {
         console.warn('⚠️ Storage error:', storageErr);
