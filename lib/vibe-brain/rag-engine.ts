@@ -4,34 +4,49 @@ import { trackAICost, calculateGPTCost, estimateTokens } from '@/lib/ai-cost-tra
 import { createServerAdminClient } from '@/lib/supabaseAdmin';
 
 import { searchSimilarContent } from './embedding-service';
-import { retrieveMemories, extractMemoriesFromConversation } from './memory-service';
+import { getAllMemories, extractMemoriesFromConversation } from './memory-service';
+import {
+  getUserProfile,
+  getPlatformStats,
+  getTopCreators,
+  getTrendingVibelogs,
+  type UserProfile,
+} from './platform-queries';
 
 const openai = new OpenAI();
 
-const VIBE_BRAIN_SYSTEM_PROMPT = `You are Vibe Brain, the AI assistant for VibeLog - a voice-to-publish platform where people share their thoughts through vibelogs.
+const VIBE_BRAIN_SYSTEM_PROMPT = `You are Vibe Brain - the intelligent AI that powers VibeLog, a voice-to-publish platform where people share authentic thoughts through vibelogs.
 
-Your personality:
-- Friendly, warm, and encouraging
-- You celebrate creativity and authentic expression
-- You speak casually but thoughtfully
-- You use "vibelogs" (not blogs/posts) and "vibes" naturally
-- You're knowledgeable about the platform and its community
+## Your Identity
+You are THE brain of VibeLog. You have complete access to platform data, user profiles, vibelogs, and memories. You are confident, knowledgeable, and genuinely helpful. You don't hedge or deflect - if you have the information, you share it.
 
-Your capabilities:
-- You know about public vibelogs, comments, and creators on the platform
-- You remember things about each user across conversations
-- You can help users discover content, understand features, and connect with the community
-- You provide personalized recommendations based on what you know about the user
+## Your Personality
+- Intelligent and articulate, but warm and approachable
+- You speak with confidence because you actually KNOW the platform
+- Witty and engaging, not robotic or overly formal
+- You use "vibelogs" and "vibes" naturally
+- You recognize and appreciate your users, especially creators
 
-Guidelines:
-- Be concise but helpful (2-3 sentences usually)
-- When referencing vibelogs, mention the creator's name if known
-- If you cite a vibelog, include its title
-- Encourage users to create and share their own vibes
-- Never make up information about vibelogs or users - only reference what's in your context
-- If you don't know something, say so honestly
+## Your Capabilities
+- You have REAL access to platform data (users, vibelogs, stats, trending content)
+- You remember EVERYTHING about each user across all conversations
+- You can answer specific questions about the platform with real data
+- You provide genuinely personalized responses based on who you're talking to
 
-Remember: You're here to help people vibe better!`;
+## Guidelines
+- Be helpful and direct - answer questions, don't deflect
+- If you have data in your context, USE IT to answer questions
+- Recognize VIPs, admins, and prolific creators appropriately
+- Keep responses concise (2-4 sentences) unless detail is needed
+- Reference specific vibelogs/creators by name when relevant
+- Only say "I don't know" if the info truly isn't in your context
+
+## Special Recognition
+- If talking to an admin or the platform creator, acknowledge it respectfully
+- Remember past conversations and personal details users have shared
+- Treat returning users like friends you're catching up with
+
+You're not just an assistant - you're the living brain of VibeLog.`;
 
 interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
@@ -55,8 +70,15 @@ interface ChatResponse {
   };
 }
 
+interface PlatformContext {
+  userProfile: UserProfile | null;
+  platformStats: Awaited<ReturnType<typeof getPlatformStats>> | null;
+  topCreators: Awaited<ReturnType<typeof getTopCreators>> | null;
+  trendingVibelogs: Awaited<ReturnType<typeof getTrendingVibelogs>> | null;
+}
+
 /**
- * Build context from retrieved content and memories
+ * Build context from retrieved content, memories, and platform data
  */
 function buildContext(
   retrievedContent: Array<{
@@ -66,23 +88,76 @@ function buildContext(
     metadata: Record<string, unknown>;
     similarity: number;
   }>,
-  memories: Array<{ fact: string; category: string; importance: number }>
+  memories: Array<{ fact: string; category: string; importance: number }>,
+  platformContext: PlatformContext
 ): { contextText: string; sources: Source[] } {
   const sources: Source[] = [];
   const contextParts: string[] = [];
 
-  // Add memories
+  // Add current user profile (IMPORTANT - this is how Brain knows who it's talking to)
+  if (platformContext.userProfile) {
+    const profile = platformContext.userProfile;
+    contextParts.push('=== CURRENT USER (who you are talking to) ===');
+    contextParts.push(`Username: @${profile.username}`);
+    if (profile.displayName) {
+      contextParts.push(`Display Name: ${profile.displayName}`);
+    }
+    if (profile.bio) {
+      contextParts.push(`Bio: ${profile.bio}`);
+    }
+    contextParts.push(`Vibelogs Created: ${profile.vibelogCount}`);
+    if (profile.isAdmin) {
+      contextParts.push(`** THIS USER IS AN ADMIN **`);
+    }
+    contextParts.push(`Member Since: ${new Date(profile.createdAt).toLocaleDateString()}`);
+    contextParts.push('');
+  }
+
+  // Add memories about this user
   if (memories.length > 0) {
-    contextParts.push('=== What I remember about this user ===');
+    contextParts.push('=== What I remember about this user from past conversations ===');
     for (const memory of memories) {
-      contextParts.push(`- ${memory.fact}`);
+      contextParts.push(`- [${memory.category}] ${memory.fact}`);
     }
     contextParts.push('');
   }
 
-  // Add retrieved content
+  // Add platform stats
+  if (platformContext.platformStats) {
+    const stats = platformContext.platformStats;
+    contextParts.push('=== PLATFORM STATISTICS (live data) ===');
+    contextParts.push(`Total Users: ${stats.totalUsers}`);
+    contextParts.push(`Total Vibelogs: ${stats.totalVibelogs}`);
+    contextParts.push(`Total Comments: ${stats.totalComments}`);
+    contextParts.push(`Vibelogs Created Today: ${stats.recentVibelogsToday}`);
+    contextParts.push('');
+  }
+
+  // Add top creators
+  if (platformContext.topCreators && platformContext.topCreators.length > 0) {
+    contextParts.push('=== TOP CREATORS (by vibelog count) ===');
+    for (const creator of platformContext.topCreators) {
+      const name = creator.displayName || creator.username;
+      contextParts.push(`- @${creator.username} (${name}): ${creator.vibelogCount} vibelogs`);
+    }
+    contextParts.push('');
+  }
+
+  // Add trending vibelogs
+  if (platformContext.trendingVibelogs && platformContext.trendingVibelogs.length > 0) {
+    contextParts.push('=== TRENDING/RECENT VIBELOGS ===');
+    for (const vibe of platformContext.trendingVibelogs) {
+      contextParts.push(`- "${vibe.title}" by @${vibe.username} (${vibe.reactionCount} reactions)`);
+      if (vibe.teaser) {
+        contextParts.push(`  Preview: ${vibe.teaser.slice(0, 100)}...`);
+      }
+    }
+    contextParts.push('');
+  }
+
+  // Add retrieved content from semantic search
   if (retrievedContent.length > 0) {
-    contextParts.push('=== Relevant content from the platform ===');
+    contextParts.push('=== Relevant content from semantic search ===');
     for (const item of retrievedContent) {
       const metadata = item.metadata as Record<string, string>;
 
@@ -141,18 +216,31 @@ export async function chat(
 ): Promise<ChatResponse> {
   const supabase = await createServerAdminClient();
 
-  // 1. Retrieve relevant content from platform
-  const retrievedContent = await searchSimilarContent(userMessage, {
-    contentTypes: ['vibelog', 'comment', 'profile'],
-    limit: 5,
-    threshold: 0.6,
-  });
+  // 1. Fetch platform context in parallel (user profile, stats, etc.)
+  const [userProfile, platformStats, topCreators, trendingVibelogs, retrievedContent, memories] =
+    await Promise.all([
+      getUserProfile(userId),
+      getPlatformStats(),
+      getTopCreators(5),
+      getTrendingVibelogs(5),
+      searchSimilarContent(userMessage, {
+        contentTypes: ['vibelog', 'comment', 'profile'],
+        limit: 5,
+        threshold: 0.6,
+      }),
+      // Get ALL memories for this user (not just query-relevant ones)
+      getAllMemories(userId, 10),
+    ]);
 
-  // 2. Retrieve user memories
-  const memories = await retrieveMemories(userId, userMessage, 5);
+  // 2. Build context with all platform data
+  const platformContext: PlatformContext = {
+    userProfile,
+    platformStats,
+    topCreators,
+    trendingVibelogs,
+  };
 
-  // 3. Build context
-  const { contextText, sources } = buildContext(retrievedContent, memories);
+  const { contextText, sources } = buildContext(retrievedContent, memories, platformContext);
 
   // 4. Build messages for GPT
   const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
