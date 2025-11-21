@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { generatePublicSlug, generateUserSlug, generateVibelogSEO } from '@/lib/seo';
 import { createServerSupabaseClient } from '@/lib/supabase';
+import { embedVibelog } from '@/lib/vibe-brain';
 
 export const runtime = 'nodejs';
 
@@ -221,6 +222,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       // NOTE: Video generation via AI has been removed (migration 028)
       // Users can now upload videos directly or capture via camera
       // No automatic video generation queue
+
+      // Embed vibelog for Vibe Brain (async, don't wait)
+      embedVibelog({
+        id: vibelogId,
+        user_id: userId || '',
+        title: vibelogData.title,
+        teaser: vibelogData.teaser,
+        content: vibelogData.content,
+        transcript: vibelogData.transcription,
+      }).catch(err => {
+        console.error('[VIBE BRAIN] Failed to embed vibelog:', err);
+      });
 
       return NextResponse.json({
         success: true,

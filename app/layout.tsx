@@ -10,6 +10,7 @@ import { ReactQueryProvider } from '@/components/providers/ReactQueryProvider';
 import { Toaster as Sonner } from '@/components/ui/sonner';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { VibeBrainWidget } from '@/components/vibe-brain/VibeBrainWidget';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -99,6 +100,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <I18nProvider>
                 {children}
                 <GlobalAudioPlayer />
+                <VibeBrainWidget />
                 <Toaster />
                 <Sonner />
               </I18nProvider>
