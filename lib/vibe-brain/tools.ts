@@ -169,6 +169,40 @@ export const VIBE_BRAIN_TOOLS: ChatCompletionTool[] = [
       },
     },
   },
+  {
+    type: 'function',
+    function: {
+      name: 'getRecentComments',
+      description:
+        'Get the most recent comments across all vibelogs. Use when asked about recent activity, discussions, or community engagement.',
+      parameters: {
+        type: 'object',
+        properties: {
+          limit: {
+            type: 'number',
+            description: 'Maximum number of comments (default 5, max 10)',
+          },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'getNewMembers',
+      description:
+        'Get the newest members who joined the platform. Use when asked about new users, recent signups, or community growth.',
+      parameters: {
+        type: 'object',
+        properties: {
+          limit: {
+            type: 'number',
+            description: 'Maximum number of members (default 5, max 10)',
+          },
+        },
+      },
+    },
+  },
 ];
 
 // Tool result types for type safety
@@ -206,6 +240,23 @@ export interface PlatformStatsResult {
   vibelogsToday: number;
 }
 
+export interface RecentCommentResult {
+  id: string;
+  content: string;
+  username: string;
+  vibelogId: string;
+  vibelogTitle: string;
+  createdAt: string;
+}
+
+export interface NewMemberResult {
+  id: string;
+  username: string;
+  displayName: string | null;
+  bio: string | null;
+  joinedAt: string;
+}
+
 export type ToolResult =
   | { tool: 'searchVibelogs'; data: VibelogResult[] }
   | { tool: 'getVibelog'; data: VibelogResult | null }
@@ -214,4 +265,6 @@ export type ToolResult =
   | { tool: 'getTrending'; data: VibelogResult[] }
   | { tool: 'getTopCreators'; data: UserResult[] }
   | { tool: 'getPlatformStats'; data: PlatformStatsResult }
-  | { tool: 'getVibelogComments'; data: CommentResult[] };
+  | { tool: 'getVibelogComments'; data: CommentResult[] }
+  | { tool: 'getRecentComments'; data: RecentCommentResult[] }
+  | { tool: 'getNewMembers'; data: NewMemberResult[] };
