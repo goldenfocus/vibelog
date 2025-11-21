@@ -4,8 +4,15 @@
  * Screen Capture Zone Component
  * YouTuber-style screen recording with optional camera PiP
  * Pattern: Extends VideoCaptureZone structure for screen sharing
+ *
+ * Features:
+ * - Live screen preview before recording
+ * - Camera PiP overlay with drag-to-position
+ * - Smooth framer-motion animations
+ * - Google Meet-envy worthy UI
  */
 
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Monitor,
   Video,
@@ -17,22 +24,52 @@ import {
   CheckCircle,
   Camera,
   CameraOff,
+  Sparkles,
 } from 'lucide-react';
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 
 import { useVideoUpload } from '@/hooks/useVideoUpload';
 import { AudioMixer } from '@/lib/media/AudioMixer';
 import { StreamCompositor, PipPosition } from '@/lib/media/StreamCompositor';
 
+// Animation variants
+const fadeInUp = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -10 },
+  transition: { duration: 0.4 },
+};
+
+const scaleIn = {
+  initial: { opacity: 0, scale: 0.9 },
+  animate: { opacity: 1, scale: 1 },
+  exit: { opacity: 0, scale: 0.95 },
+  transition: { duration: 0.3 },
+};
+
+const pipAnimation = {
+  initial: { opacity: 0, scale: 0.8 },
+  animate: { opacity: 1, scale: 1 },
+  exit: { opacity: 0, scale: 0.8 },
+  transition: { type: 'spring' as const, stiffness: 300, damping: 25 },
+};
+
+const pipPositionStyles: Record<PipPosition, string> = {
+  'bottom-right': 'bottom-3 right-3 sm:bottom-4 sm:right-4',
+  'bottom-left': 'bottom-3 left-3 sm:bottom-4 sm:left-4',
+  'top-right': 'top-3 right-3 sm:top-4 sm:right-4',
+  'top-left': 'top-3 left-3 sm:top-4 sm:left-4',
+};
+
 interface ScreenCaptureZoneProps {
   vibelogId: string;
   onVideoCaptured?: (videoUrl: string) => void;
-  maxDurationSeconds?: number; // Free tier limit
+  maxDurationSeconds?: number;
   isPremium?: boolean;
-  enableCameraPip?: boolean; // Allow camera overlay
+  enableCameraPip?: boolean;
 }
 
-const DEFAULT_MAX_DURATION = 60; // 60 seconds for free tier
+const DEFAULT_MAX_DURATION = 60;
 
 export function ScreenCaptureZone({
   vibelogId,
@@ -41,9 +78,6 @@ export function ScreenCaptureZone({
   isPremium = false,
   enableCameraPip = true,
 }: ScreenCaptureZoneProps) {
-  console.log('[ScreenCaptureZone] Component rendering with vibelogId:', vibelogId);
-
-  // Use video upload hook (same as VideoCaptureZone)
   const { uploadVideo, uploadProgress: uploadProgressState } = useVideoUpload();
 
   const [status, setStatus] = useState<
@@ -65,6 +99,8 @@ export function ScreenCaptureZone({
   const [pipPosition, setPipPosition] = useState<PipPosition>('bottom-right');
 
   // Refs
+  const screenPreviewRef = useRef<HTMLVideoElement>(null);
+  const cameraPreviewRef = useRef<HTMLVideoElement>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const screenStreamRef = useRef<MediaStream | null>(null);
   const cameraStreamRef = useRef<MediaStream | null>(null);
@@ -75,11 +111,27 @@ export function ScreenCaptureZone({
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const hasRequestedScreen = useRef(false);
+  const animationFrameRef = useRef<number | null>(null);
+
+  // Attach screen stream to preview video element
+  const attachScreenPreview = useCallback((stream: MediaStream) => {
+    if (screenPreviewRef.current) {
+      screenPreviewRef.current.srcObject = stream;
+      screenPreviewRef.current.play().catch(console.error);
+    }
+  }, []);
+
+  // Attach camera stream to preview video element
+  const attachCameraPreview = useCallback((stream: MediaStream) => {
+    if (cameraPreviewRef.current) {
+      cameraPreviewRef.current.srcObject = stream;
+      cameraPreviewRef.current.play().catch(console.error);
+    }
+  }, []);
 
   // Request screen share permission
   const startScreenShare = async () => {
     if (hasRequestedScreen.current) {
-      console.log('[ScreenCaptureZone] Screen already requested, skipping');
       return;
     }
 
@@ -88,12 +140,9 @@ export function ScreenCaptureZone({
       setStatus('requesting-screen');
       setError(null);
 
-      console.log('[ScreenCaptureZone] Requesting screen share...');
-
-      // Request screen share with audio
       const screenStream = await navigator.mediaDevices.getDisplayMedia({
         video: {
-          displaySurface: 'monitor', // Prefer full monitor over window/tab
+          displaySurface: 'monitor',
           width: { ideal: 1920 },
           height: { ideal: 1080 },
         },
@@ -104,16 +153,10 @@ export function ScreenCaptureZone({
         },
       });
 
-      console.log('[ScreenCaptureZone] Screen stream obtained:', {
-        videoTracks: screenStream.getVideoTracks().length,
-        audioTracks: screenStream.getAudioTracks().length,
-        active: screenStream.active,
-      });
-
       screenStreamRef.current = screenStream;
+      attachScreenPreview(screenStream);
 
       // Request microphone for voice-over
-      console.log('[ScreenCaptureZone] Requesting microphone...');
       const micStream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
@@ -121,13 +164,10 @@ export function ScreenCaptureZone({
           sampleRate: 44100,
         },
       });
-
-      console.log('[ScreenCaptureZone] Microphone stream obtained');
       micStreamRef.current = micStream;
 
-      // Listen for screen share stop (user clicked browser's stop button)
+      // Listen for screen share stop
       screenStream.getVideoTracks()[0].addEventListener('ended', () => {
-        console.log('[ScreenCaptureZone] Screen share stopped by user');
         if (status === 'recording') {
           stopRecording();
         } else {
@@ -137,15 +177,11 @@ export function ScreenCaptureZone({
       });
 
       setStatus('screen-ready');
-      console.log('[ScreenCaptureZone] Screen share ready (camera PiP optional)');
     } catch (err: unknown) {
       hasRequestedScreen.current = false;
-      let errorMessage = 'Failed to access screen';
-      let errorDetails = '';
+      let errorDetails = 'Failed to access screen';
 
       if (err instanceof Error) {
-        errorMessage = err.message;
-
         if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
           errorDetails = 'Screen share permission denied. Please allow screen access.';
         } else if (err.name === 'NotFoundError') {
@@ -155,17 +191,11 @@ export function ScreenCaptureZone({
         } else if (err.name === 'AbortError') {
           errorDetails = 'Screen share was cancelled.';
         } else {
-          errorDetails = errorMessage;
+          errorDetails = err.message;
         }
       }
 
-      console.error('[ScreenCaptureZone] Screen share error:', {
-        name: err instanceof Error ? err.name : 'Unknown',
-        message: errorMessage,
-        error: err,
-      });
-
-      setError(errorDetails || errorMessage);
+      setError(errorDetails);
       setStatus('error');
     }
   };
@@ -174,7 +204,6 @@ export function ScreenCaptureZone({
   const addCameraPip = async () => {
     try {
       setStatus('requesting-camera');
-      console.log('[ScreenCaptureZone] Requesting camera for PiP...');
 
       const cameraStream = await navigator.mediaDevices.getUserMedia({
         video: {
@@ -184,32 +213,36 @@ export function ScreenCaptureZone({
         },
       });
 
-      console.log('[ScreenCaptureZone] Camera stream obtained for PiP');
       cameraStreamRef.current = cameraStream;
+      attachCameraPreview(cameraStream);
       setHasCameraPip(true);
       setStatus('ready');
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to access camera';
-      console.error('[ScreenCaptureZone] Camera PiP error:', errorMessage);
-
-      // Non-fatal error - continue without camera
+    } catch {
+      // Non-fatal - continue without camera
       setHasCameraPip(false);
-      setStatus('ready');
-      console.warn('[ScreenCaptureZone] Camera access failed, continuing without overlay');
+      setStatus('screen-ready');
     }
   };
 
   // Remove camera PiP
   const removeCameraPip = () => {
-    console.log('[ScreenCaptureZone] Removing camera PiP');
-
     if (cameraStreamRef.current) {
       cameraStreamRef.current.getTracks().forEach(track => track.stop());
       cameraStreamRef.current = null;
     }
-
+    if (cameraPreviewRef.current) {
+      cameraPreviewRef.current.srcObject = null;
+    }
     setHasCameraPip(false);
     setStatus('screen-ready');
+  };
+
+  // Cycle through PiP positions
+  const cyclePipPosition = () => {
+    const positions: PipPosition[] = ['bottom-right', 'bottom-left', 'top-left', 'top-right'];
+    const currentIndex = positions.indexOf(pipPosition);
+    const nextIndex = (currentIndex + 1) % positions.length;
+    setPipPosition(positions[nextIndex]);
   };
 
   // Get best supported MIME type
@@ -223,7 +256,6 @@ export function ScreenCaptureZone({
 
     for (const type of types) {
       if (MediaRecorder.isTypeSupported(type)) {
-        console.log('[ScreenCaptureZone] Selected MIME type:', type);
         return type;
       }
     }
@@ -239,10 +271,9 @@ export function ScreenCaptureZone({
     }
 
     try {
-      console.log('[ScreenCaptureZone] Starting recording...');
       chunksRef.current = [];
 
-      // Create compositor (combines screen + camera if enabled)
+      // Create compositor
       const compositor = await StreamCompositor.create({
         screenStream: screenStreamRef.current,
         cameraStream: cameraStreamRef.current || undefined,
@@ -250,18 +281,17 @@ export function ScreenCaptureZone({
         height: 1080,
         fps: 30,
         pipPosition,
-        pipSize: 0.25, // 25% of screen width
+        pipSize: 0.25,
       });
-
-      console.log('[ScreenCaptureZone] Compositor created and video elements ready');
 
       const compositeVideoStream = compositor.start();
       compositorRef.current = compositor;
 
-      // Show live preview on canvas
+      // Live preview on canvas
       if (previewCanvasRef.current) {
         const canvas = compositor.getCanvas();
         const ctx = previewCanvasRef.current.getContext('2d');
+
         const renderPreview = () => {
           if (!ctx || !previewCanvasRef.current) {
             return;
@@ -273,18 +303,16 @@ export function ScreenCaptureZone({
             previewCanvasRef.current.width,
             previewCanvasRef.current.height
           );
-          if (status === 'recording') {
-            requestAnimationFrame(renderPreview);
-          }
+          animationFrameRef.current = requestAnimationFrame(renderPreview);
         };
         renderPreview();
       }
 
-      // Mix audio (screen audio + microphone)
+      // Mix audio
       const audioMixer = new AudioMixer({
         screenVolume: 0.7,
         microphoneVolume: 1.0,
-        enableAutoDucking: true, // Lower screen audio when speaking
+        enableAutoDucking: true,
       });
 
       const { stream: mixedAudioStream } = await audioMixer.mixStreams({
@@ -293,26 +321,19 @@ export function ScreenCaptureZone({
       });
       audioMixerRef.current = audioMixer;
 
-      // Combine composite video + mixed audio
+      // Combine streams
       const finalStream = new MediaStream([
         ...compositeVideoStream.getVideoTracks(),
         ...mixedAudioStream.getAudioTracks(),
       ]);
 
-      console.log('[ScreenCaptureZone] Final stream created:', {
-        videoTracks: finalStream.getVideoTracks().length,
-        audioTracks: finalStream.getAudioTracks().length,
-      });
-
       // Start MediaRecorder
       const mimeType = getSupportedMimeType();
-      const options = {
+      const mediaRecorder = new MediaRecorder(finalStream, {
         mimeType,
-        videoBitsPerSecond: 2_000_000, // 2 Mbps (higher quality for screen content)
+        videoBitsPerSecond: 2_000_000,
         audioBitsPerSecond: 128_000,
-      };
-
-      const mediaRecorder = new MediaRecorder(finalStream, options);
+      });
 
       mediaRecorder.ondataavailable = event => {
         if (event.data.size > 0) {
@@ -322,7 +343,6 @@ export function ScreenCaptureZone({
 
       mediaRecorder.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: mimeType });
-        console.log('[ScreenCaptureZone] Recording stopped, blob size:', blob.size);
         setVideoBlob(blob);
         cleanup();
         setStatus('preview');
@@ -337,21 +357,15 @@ export function ScreenCaptureZone({
       recordingTimerRef.current = setInterval(() => {
         setRecordingTime(prev => {
           const newTime = prev + 1;
-
-          // Auto-stop at max duration (if not premium)
           if (!isPremium && newTime >= maxDurationSeconds) {
             stopRecording();
             return maxDurationSeconds;
           }
-
           return newTime;
         });
       }, 1000);
-
-      console.log('[ScreenCaptureZone] Recording started');
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to start recording';
-      console.error('[ScreenCaptureZone] Recording error:', errorMessage, err);
       setError(errorMessage);
       setStatus('error');
       cleanup();
@@ -360,7 +374,10 @@ export function ScreenCaptureZone({
 
   // Stop recording
   const stopRecording = () => {
-    console.log('[ScreenCaptureZone] Stopping recording...');
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
 
     if (recordingTimerRef.current) {
       clearInterval(recordingTimerRef.current);
@@ -374,21 +391,21 @@ export function ScreenCaptureZone({
 
   // Cleanup all resources
   const cleanup = () => {
-    console.log('[ScreenCaptureZone] Cleaning up resources...');
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
 
-    // Stop compositor
     if (compositorRef.current) {
       compositorRef.current.stop();
       compositorRef.current = null;
     }
 
-    // Stop audio mixer
     if (audioMixerRef.current) {
       audioMixerRef.current.cleanup();
       audioMixerRef.current = null;
     }
 
-    // Stop all streams
     [screenStreamRef, cameraStreamRef, micStreamRef].forEach(streamRef => {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
@@ -396,10 +413,17 @@ export function ScreenCaptureZone({
       }
     });
 
+    if (screenPreviewRef.current) {
+      screenPreviewRef.current.srcObject = null;
+    }
+    if (cameraPreviewRef.current) {
+      cameraPreviewRef.current.srcObject = null;
+    }
+
     hasRequestedScreen.current = false;
   };
 
-  // Upload video to server
+  // Upload video
   const handleUpload = async () => {
     if (!videoBlob) {
       return;
@@ -407,7 +431,6 @@ export function ScreenCaptureZone({
 
     try {
       setStatus('uploading');
-      console.log('[ScreenCaptureZone] Uploading video...');
 
       const result = await uploadVideo({
         vibelogId,
@@ -416,25 +439,23 @@ export function ScreenCaptureZone({
         captureMode: hasCameraPip ? 'screen-with-camera' : 'screen',
       });
 
-      console.log('[ScreenCaptureZone] Upload successful:', result.url);
       setStatus('success');
       onVideoCaptured?.(result.url);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Upload failed';
-      console.error('[ScreenCaptureZone] Upload error:', errorMessage);
       setError(errorMessage);
       setStatus('error');
     }
   };
 
-  // Retake video
+  // Retake
   const handleRetake = () => {
     setVideoBlob(null);
     setStatus('idle');
     setHasCameraPip(false);
   };
 
-  // Format time as MM:SS
+  // Format time
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -451,190 +472,347 @@ export function ScreenCaptureZone({
     };
   }, []);
 
+  // Check if we should show live preview
+  const showLivePreview =
+    status === 'screen-ready' || status === 'ready' || status === 'requesting-camera';
+
   return (
     <div className="w-full space-y-4">
-      {/* Preview Canvas (shown during recording) */}
-      {status === 'recording' && (
-        <div className="relative aspect-video overflow-hidden rounded-lg bg-black">
-          <canvas
-            ref={previewCanvasRef}
-            width={1920}
-            height={1080}
-            className="h-full w-full object-contain"
-          />
-          <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full bg-red-600 px-3 py-1.5 text-sm font-medium text-white">
-            <div className="h-2 w-2 animate-pulse rounded-full bg-white" />
-            REC {formatTime(recordingTime)}
-          </div>
-        </div>
-      )}
+      <AnimatePresence mode="wait">
+        {/* LIVE PREVIEW - Screen Ready / Ready states */}
+        {showLivePreview && (
+          <motion.div
+            key="live-preview"
+            {...scaleIn}
+            className="relative aspect-video overflow-hidden rounded-2xl bg-gradient-to-br from-gray-900 to-gray-800 shadow-2xl ring-1 ring-white/10"
+          >
+            {/* Screen Preview */}
+            <video
+              ref={screenPreviewRef}
+              autoPlay
+              playsInline
+              muted
+              className="h-full w-full object-contain"
+            />
 
-      {/* Video Preview (after recording) */}
-      {status === 'preview' && videoBlob && (
-        <div className="aspect-video overflow-hidden rounded-lg bg-black">
-          <video src={URL.createObjectURL(videoBlob)} controls className="h-full w-full" />
-        </div>
-      )}
+            {/* Gradient overlay for better visibility */}
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
 
-      {/* Status Messages */}
-      {status === 'idle' && (
-        <div className="space-y-4 py-12 text-center">
-          <Monitor className="mx-auto h-16 w-16 text-gray-400" />
-          <div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-              Screen Share Recording
+            {/* Camera PiP Thumbnail */}
+            <AnimatePresence>
+              {hasCameraPip && (
+                <motion.div
+                  {...pipAnimation}
+                  className={`absolute ${pipPositionStyles[pipPosition]} z-10`}
+                >
+                  <div
+                    className="group relative cursor-pointer overflow-hidden rounded-xl shadow-2xl ring-2 ring-white/20 transition-all hover:ring-white/40"
+                    onClick={cyclePipPosition}
+                  >
+                    <video
+                      ref={cameraPreviewRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className="h-20 w-28 object-cover sm:h-28 sm:w-40"
+                    />
+                    {/* Hover overlay with position hint */}
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
+                      <span className="text-xs font-medium text-white">Click to move</span>
+                    </div>
+                    {/* Live indicator */}
+                    <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-green-500/90 px-2 py-0.5 text-[10px] font-bold text-white">
+                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
+                      LIVE
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Ready Badge */}
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="absolute left-4 top-4 flex items-center gap-2 rounded-full bg-green-500/90 px-3 py-1.5 text-sm font-medium text-white shadow-lg backdrop-blur-sm"
+            >
+              <CheckCircle className="h-4 w-4" />
+              <span>Screen Ready</span>
+            </motion.div>
+
+            {/* Add/Remove Camera Button (floating) */}
+            {enableCameraPip && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.2 }}
+                className="absolute bottom-4 left-4"
+              >
+                {!hasCameraPip ? (
+                  <button
+                    onClick={addCameraPip}
+                    className="flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white backdrop-blur-md transition-all hover:scale-105 hover:bg-white/20"
+                  >
+                    <Camera className="h-4 w-4" />
+                    Add Camera
+                  </button>
+                ) : (
+                  <button
+                    onClick={removeCameraPip}
+                    className="flex items-center gap-2 rounded-full bg-red-500/80 px-4 py-2 text-sm font-medium text-white backdrop-blur-md transition-all hover:scale-105 hover:bg-red-500"
+                  >
+                    <CameraOff className="h-4 w-4" />
+                    Remove
+                  </button>
+                )}
+              </motion.div>
+            )}
+          </motion.div>
+        )}
+
+        {/* RECORDING STATE */}
+        {status === 'recording' && (
+          <motion.div
+            key="recording"
+            {...scaleIn}
+            className="relative aspect-video overflow-hidden rounded-2xl bg-black shadow-2xl"
+          >
+            <canvas
+              ref={previewCanvasRef}
+              width={1920}
+              height={1080}
+              className="h-full w-full object-contain"
+            />
+
+            {/* Recording indicator with glow */}
+            <motion.div
+              animate={{
+                boxShadow: ['0 0 0 0 rgba(239, 68, 68, 0.4)', '0 0 0 8px rgba(239, 68, 68, 0)'],
+              }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+              className="absolute left-4 top-4 flex items-center gap-2 rounded-full bg-red-600 px-4 py-2 text-sm font-bold text-white shadow-lg"
+            >
+              <motion.div
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 1, repeat: Infinity }}
+                className="h-2.5 w-2.5 rounded-full bg-white"
+              />
+              <span>REC</span>
+              <span className="tabular-nums">{formatTime(recordingTime)}</span>
+            </motion.div>
+
+            {/* Duration warning */}
+            {!isPremium && recordingTime >= maxDurationSeconds - 10 && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-orange-500/90 px-4 py-2 text-sm font-medium text-white shadow-lg"
+              >
+                {maxDurationSeconds - recordingTime}s remaining
+              </motion.div>
+            )}
+          </motion.div>
+        )}
+
+        {/* PREVIEW STATE - After recording */}
+        {status === 'preview' && videoBlob && (
+          <motion.div
+            key="preview"
+            {...scaleIn}
+            className="relative aspect-video overflow-hidden rounded-2xl bg-black shadow-2xl ring-1 ring-white/10"
+          >
+            <video src={URL.createObjectURL(videoBlob)} controls className="h-full w-full" />
+            <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-sm font-medium text-white backdrop-blur-sm">
+              <Sparkles className="h-4 w-4" />
+              <span>Preview</span>
+            </div>
+          </motion.div>
+        )}
+
+        {/* IDLE STATE */}
+        {status === 'idle' && (
+          <motion.div
+            key="idle"
+            {...fadeInUp}
+            className="flex aspect-video flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 bg-gradient-to-br from-gray-50 to-gray-100 dark:border-gray-700 dark:from-gray-900 dark:to-gray-800"
+          >
+            <motion.div
+              animate={{ scale: [1, 1.05, 1] }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+              className="mb-4 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 p-4"
+            >
+              <Monitor className="h-10 w-10 text-white" />
+            </motion.div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Ready to capture magic?
             </h3>
             <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-              Record your screen with optional camera overlay
+              Share your screen to get started
             </p>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
 
-      {status === 'requesting-screen' && (
-        <div className="py-12 text-center">
-          <RefreshCw className="mx-auto h-12 w-12 animate-spin text-blue-500" />
-          <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-            Requesting screen access...
-          </p>
-        </div>
-      )}
-
-      {status === 'screen-ready' && (
-        <div className="space-y-4 py-8 text-center">
-          <CheckCircle className="mx-auto h-12 w-12 text-green-500" />
-          <div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Screen Ready</h3>
-            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-              {enableCameraPip
-                ? 'Add camera overlay or start recording'
-                : 'Ready to start recording'}
+        {/* REQUESTING SCREEN */}
+        {status === 'requesting-screen' && (
+          <motion.div
+            key="requesting-screen"
+            {...fadeInUp}
+            className="flex aspect-video flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500/10 to-purple-500/10 dark:from-blue-500/20 dark:to-purple-500/20"
+          >
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+            >
+              <RefreshCw className="h-12 w-12 text-blue-500" />
+            </motion.div>
+            <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+              Waiting for screen access...
             </p>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
 
-      {status === 'uploading' && (
-        <div className="py-12 text-center">
-          <RefreshCw className="mx-auto h-12 w-12 animate-spin text-blue-500" />
-          <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-            Uploading video... {uploadProgressState?.percentage}%
-          </p>
-        </div>
-      )}
-
-      {status === 'success' && (
-        <div className="py-12 text-center">
-          <CheckCircle className="mx-auto h-12 w-12 text-green-500" />
-          <p className="mt-4 text-sm text-green-600 dark:text-green-400">
-            Screen recording uploaded successfully!
-          </p>
-        </div>
-      )}
-
-      {status === 'error' && error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-600 dark:text-red-400" />
-            <div className="flex-1">
-              <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
+        {/* UPLOADING */}
+        {status === 'uploading' && (
+          <motion.div
+            key="uploading"
+            {...fadeInUp}
+            className="flex aspect-video flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-green-500/10 to-blue-500/10"
+          >
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+            >
+              <RefreshCw className="h-12 w-12 text-green-500" />
+            </motion.div>
+            <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+              Uploading... {uploadProgressState?.percentage || 0}%
+            </p>
+            {/* Progress bar */}
+            <div className="mt-4 h-2 w-48 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${uploadProgressState?.percentage || 0}%` }}
+                className="h-full bg-gradient-to-r from-green-500 to-blue-500"
+              />
             </div>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
 
-      {/* Action Buttons */}
-      <div className="flex flex-wrap gap-3">
+        {/* SUCCESS */}
+        {status === 'success' && (
+          <motion.div
+            key="success"
+            {...fadeInUp}
+            className="flex aspect-video flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-green-500/10 to-emerald-500/10"
+          >
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+              className="rounded-full bg-green-500 p-4"
+            >
+              <CheckCircle className="h-12 w-12 text-white" />
+            </motion.div>
+            <p className="mt-4 text-lg font-semibold text-green-600 dark:text-green-400">
+              Recording uploaded!
+            </p>
+          </motion.div>
+        )}
+
+        {/* ERROR */}
+        {status === 'error' && error && (
+          <motion.div
+            key="error"
+            {...fadeInUp}
+            className="flex aspect-video flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-red-500/10 to-orange-500/10"
+          >
+            <div className="rounded-full bg-red-500 p-4">
+              <AlertCircle className="h-12 w-12 text-white" />
+            </div>
+            <p className="mt-4 text-center text-sm text-red-600 dark:text-red-400">{error}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ACTION BUTTONS */}
+      <motion.div
+        className="flex flex-wrap gap-3"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+      >
         {status === 'idle' && (
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={startScreenShare}
-            className="flex min-w-[200px] flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 font-medium text-white transition-colors hover:bg-blue-700"
+            className="flex min-w-[200px] flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4 font-semibold text-white shadow-lg transition-shadow hover:shadow-xl"
           >
             <Monitor className="h-5 w-5" />
             Share Screen
-          </button>
-        )}
-
-        {status === 'screen-ready' && enableCameraPip && !hasCameraPip && (
-          <button
-            onClick={addCameraPip}
-            className="flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800"
-          >
-            <Camera className="h-4 w-4" />
-            Add Camera
-          </button>
-        )}
-
-        {status === 'screen-ready' && hasCameraPip && (
-          <>
-            <button
-              onClick={removeCameraPip}
-              className="flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800"
-            >
-              <CameraOff className="h-4 w-4" />
-              Remove Camera
-            </button>
-
-            <select
-              value={pipPosition}
-              onChange={e => setPipPosition(e.target.value as PipPosition)}
-              className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium dark:border-gray-600 dark:bg-gray-800"
-            >
-              <option value="bottom-right">Camera: Bottom Right</option>
-              <option value="bottom-left">Camera: Bottom Left</option>
-              <option value="top-right">Camera: Top Right</option>
-              <option value="top-left">Camera: Top Left</option>
-            </select>
-          </>
+          </motion.button>
         )}
 
         {(status === 'screen-ready' || status === 'ready') && (
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={startRecording}
-            className="flex min-w-[200px] flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-3 font-medium text-white transition-colors hover:bg-red-700"
+            className="flex min-w-[200px] flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-500 to-red-600 px-6 py-4 font-semibold text-white shadow-lg transition-shadow hover:shadow-xl"
           >
             <Video className="h-5 w-5" />
             Start Recording
-          </button>
+          </motion.button>
         )}
 
         {status === 'recording' && (
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={stopRecording}
-            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-gray-900 px-4 py-3 font-medium text-white transition-colors hover:bg-black"
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gray-900 px-6 py-4 font-semibold text-white shadow-lg transition-shadow hover:bg-black hover:shadow-xl dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100"
           >
             <StopCircle className="h-5 w-5" />
             Stop Recording
-          </button>
+          </motion.button>
         )}
 
         {status === 'preview' && (
           <>
-            <button
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={handleRetake}
-              className="flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800"
+              className="flex items-center gap-2 rounded-xl border border-gray-300 px-6 py-3 font-medium transition-colors hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800"
             >
-              <X className="h-4 w-4" />
+              <X className="h-5 w-5" />
               Retake
-            </button>
+            </motion.button>
 
-            <button
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={handleUpload}
-              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-3 font-medium text-white transition-colors hover:bg-green-700"
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 px-6 py-4 font-semibold text-white shadow-lg transition-shadow hover:shadow-xl"
             >
               <Check className="h-5 w-5" />
               Use This Recording
-            </button>
+            </motion.button>
           </>
         )}
-      </div>
 
-      {/* Duration Warning (Free Tier) */}
-      {!isPremium && status === 'recording' && recordingTime >= maxDurationSeconds - 10 && (
-        <p className="text-center text-xs text-orange-600 dark:text-orange-400">
-          {maxDurationSeconds - recordingTime} seconds remaining (free tier limit)
-        </p>
-      )}
+        {status === 'error' && (
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleRetake}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gray-100 px-6 py-4 font-semibold text-gray-900 transition-colors hover:bg-gray-200 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700"
+          >
+            <RefreshCw className="h-5 w-5" />
+            Try Again
+          </motion.button>
+        )}
+      </motion.div>
     </div>
   );
 }
