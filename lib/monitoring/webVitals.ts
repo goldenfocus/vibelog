@@ -1,11 +1,9 @@
 import posthog from 'posthog-js';
-import { getCLS, getFID, getFCP, getLCP, getTTFB, Metric } from 'web-vitals';
+import { onCLS, onFCP, onINP, onLCP, onTTFB, type Metric } from 'web-vitals';
 
 import { config } from '@/lib/config';
 
-type VitalMetric = Metric & { rating?: string };
-
-function sendMetric(metric: VitalMetric) {
+function sendMetric(metric: Metric) {
   if (!config.features.analytics || !config.features.monitoring) {
     return;
   }
@@ -14,8 +12,8 @@ function sendMetric(metric: VitalMetric) {
     name: metric.name,
     id: metric.id,
     value: metric.value,
-    rating: (metric as any).rating,
-    delta: (metric as any).delta,
+    rating: metric.rating,
+    delta: metric.delta,
   });
 }
 
@@ -24,9 +22,10 @@ export function startWebVitalsCollection() {
     return;
   }
 
-  getCLS(sendMetric);
-  getFID(sendMetric);
-  getFCP(sendMetric);
-  getLCP(sendMetric);
-  getTTFB(sendMetric);
+  // Web Vitals v5 API - INP replaced FID
+  onCLS(sendMetric);
+  onINP(sendMetric);
+  onFCP(sendMetric);
+  onLCP(sendMetric);
+  onTTFB(sendMetric);
 }

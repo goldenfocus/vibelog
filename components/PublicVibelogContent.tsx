@@ -29,6 +29,7 @@ interface PublicVibelogContentProps {
     read_time?: number;
     like_count?: number;
     share_count?: number;
+    transcript?: string | null;
     author?: {
       username: string;
       display_name: string;
@@ -145,6 +146,7 @@ export default function PublicVibelogContent({ vibelog }: PublicVibelogContentPr
         aiAudioUrl={vibelog.ai_audio_url}
         videoUrl={videoUrl}
         author={vibelog.author?.display_name}
+        transcript={vibelog.transcript}
         className="mb-8"
       >
         <VibelogContentRenderer content={contentWithoutDuplicateTitle} showCTA={false} />

@@ -464,6 +464,7 @@ export default async function VibelogPage({ params }: PageProps) {
               read_time: vibelog.read_time,
               like_count: vibelog.like_count,
               share_count: vibelog.share_count,
+              transcript: vibelog.transcript,
               author: vibelog.author,
             }}
           />
