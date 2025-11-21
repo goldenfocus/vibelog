@@ -7,6 +7,10 @@ const COST_RATES = {
     input: 0.00015, // per 1K tokens ($0.15/1M)
     output: 0.0006, // per 1K tokens ($0.60/1M)
   },
+  'gpt-4o': {
+    input: 0.0025, // per 1K tokens ($2.50/1M)
+    output: 0.01, // per 1K tokens ($10/1M)
+  },
   'tts-1-hd': 0.03, // per 1K characters
   'dall-e-3': 0.08, // per image (1792x1024 wide format)
 };
@@ -18,7 +22,7 @@ const DAILY_COST_LIMIT = 50; // $50 per day circuit breaker
  */
 export async function trackAICost(
   userId: string | null,
-  service: 'whisper' | 'gpt-4o-mini' | 'tts-1-hd' | 'dall-e-3',
+  service: 'whisper' | 'gpt-4o-mini' | 'gpt-4o' | 'tts-1-hd' | 'dall-e-3',
   cost: number,
   metadata?: {
     endpoint?: string;

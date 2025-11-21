@@ -35,3 +35,6 @@ export {
   getTrendingVibelogs,
   searchCreator,
 } from './platform-queries';
+
+export { VIBE_BRAIN_TOOLS } from './tools';
+export { executeTool } from './tool-executor';
