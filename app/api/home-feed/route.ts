@@ -7,6 +7,7 @@ export const runtime = 'nodejs';
 
 const DEFAULT_VIBELOG_LIMIT = 12;
 const DEFAULT_MEMBER_LIMIT = 12;
+const DEFAULT_COMMENT_LIMIT = 12;
 
 type RawFeedVibelog = {
   id: string;
@@ -200,7 +201,93 @@ export async function GET(request: NextRequest) {
       latest_vibelog: latestByMember.get(member.id) || null,
     }));
 
-    // 3. Quick stats for hero chips
+    // 3. Recent comments
+    const commentLimit = Math.min(
+      parseInt(searchParams.get('commentLimit') || `${DEFAULT_COMMENT_LIMIT}`, 10),
+      30
+    );
+
+    let recentComments: Array<{
+      id: string;
+      content: string | null;
+      audioUrl: string | null;
+      videoUrl: string | null;
+      slug: string | null;
+      createdAt: string;
+      commentator: {
+        id: string;
+        username: string;
+        displayName: string;
+        avatarUrl: string | null;
+      };
+      vibelog: {
+        id: string;
+        title: string;
+        slug: string | null;
+        coverImageUrl: string | null;
+        videoUrl: string | null;
+        author: { username: string; displayName: string };
+      };
+    }> = [];
+
+    try {
+      const { data: comments, error: commentsError } = await supabase
+        .from('comments')
+        .select(
+          `
+          id, content, audio_url, video_url, slug, created_at,
+          profiles!comments_user_id_fkey (id, username, full_name, avatar_url),
+          vibelogs!comments_vibelog_id_fkey (
+            id, title, public_slug, cover_image_url, video_url,
+            profiles!vibelogs_user_id_fkey (username, full_name)
+          )
+        `
+        )
+        .order('created_at', { ascending: false })
+        .limit(commentLimit);
+
+      if (!commentsError && comments) {
+        recentComments = comments.map(comment => {
+          const profile = Array.isArray(comment.profiles) ? comment.profiles[0] : comment.profiles;
+          const vibelog = Array.isArray(comment.vibelogs) ? comment.vibelogs[0] : comment.vibelogs;
+          const vibelogAuthor = vibelog?.profiles
+            ? Array.isArray(vibelog.profiles)
+              ? vibelog.profiles[0]
+              : vibelog.profiles
+            : null;
+
+          return {
+            id: comment.id,
+            content: comment.content,
+            audioUrl: comment.audio_url,
+            videoUrl: comment.video_url,
+            slug: comment.slug,
+            createdAt: comment.created_at,
+            commentator: {
+              id: profile?.id || '',
+              username: profile?.username || 'anonymous',
+              displayName: profile?.full_name || profile?.username || 'Anonymous',
+              avatarUrl: profile?.avatar_url || null,
+            },
+            vibelog: {
+              id: vibelog?.id || '',
+              title: vibelog?.title || 'Untitled',
+              slug: vibelog?.public_slug || null,
+              coverImageUrl: vibelog?.cover_image_url || null,
+              videoUrl: vibelog?.video_url || null,
+              author: {
+                username: vibelogAuthor?.username || 'anonymous',
+                displayName: vibelogAuthor?.full_name || vibelogAuthor?.username || 'Anonymous',
+              },
+            },
+          };
+        });
+      }
+    } catch {
+      // Comments table might not exist - gracefully handle
+    }
+
+    // 4. Quick stats for hero chips
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const [{ count: vibesLast24h }, { count: membersLast24h }] = await Promise.all([
       supabase
@@ -219,6 +306,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       latestVibelogs,
       newestMembers,
+      recentComments,
       stats: {
         vibesLast24h: vibesLast24h || 0,
         newMembersLast24h: membersLast24h || 0,
