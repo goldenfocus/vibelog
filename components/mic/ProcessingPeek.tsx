@@ -4,6 +4,7 @@ import { BookOpen, ImageIcon, Mic2 } from 'lucide-react';
 import Image from 'next/image';
 import { memo } from 'react';
 
+import { getSafeImageUrl } from '@/lib/image-utils';
 import type { CoverImage } from '@/types/micRecorder';
 
 type ProcessingPeekProps = {
@@ -76,10 +77,10 @@ function ProcessingPeekComponent({
         )}
       </div>
 
-      {coverImage ? (
+      {coverImage && getSafeImageUrl(coverImage.url) ? (
         <div className="mt-4 overflow-hidden rounded-2xl border border-border/20">
           <Image
-            src={coverImage.url}
+            src={getSafeImageUrl(coverImage.url)!}
             alt={coverImage.alt || 'Cover preview'}
             width={coverImage.width}
             height={coverImage.height}
