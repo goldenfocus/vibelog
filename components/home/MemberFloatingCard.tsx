@@ -4,11 +4,7 @@ import { Play, User } from 'lucide-react';
 import Link from 'next/link';
 import { useRef, useState, useEffect } from 'react';
 
-import { useDominantColor } from '@/hooks/useDominantColor';
 import { cn } from '@/lib/utils';
-
-import { CardGlowEffect } from './CardGlowEffect';
-import { GlassTextContainer } from './GlassTextContainer';
 
 interface MemberFloatingCardProps {
   member: {
@@ -27,28 +23,26 @@ interface MemberFloatingCardProps {
 }
 
 /**
- * Futuristic floating card for member profiles
- * Features glassmorphism, glow effects, and smooth animations
+ * Legendary member card - avatar-centric design
+ * The face IS the card. No borders. Pure visual impact.
  */
-export function MemberFloatingCard({ member, index, isActive = false }: MemberFloatingCardProps) {
+export function MemberFloatingCard({
+  member,
+  index,
+  isActive: _isActive = false,
+}: MemberFloatingCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
 
-  // Extract dominant color from avatar
-  const dominantColor = useDominantColor(member.avatar_url);
-
-  // Intersection observer for reveal animation
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          setTimeout(() => {
-            setIsVisible(true);
-          }, index * 80);
+          setTimeout(() => setIsVisible(true), index * 50);
         }
       },
-      { threshold: 0.1, rootMargin: '50px' }
+      { threshold: 0.1 }
     );
 
     if (cardRef.current) {
@@ -58,16 +52,6 @@ export function MemberFloatingCard({ member, index, isActive = false }: MemberFl
     return () => observer.disconnect();
   }, [index]);
 
-  const handleMouseEnter = () => {
-    if (window.innerWidth >= 768) {
-      setIsHovered(true);
-    }
-  };
-
-  const handleMouseLeave = () => {
-    setIsHovered(false);
-  };
-
   const profileUrl = `/@${member.username}`;
   const hasAudio = member.latest_vibelog?.audio_url;
 
@@ -75,97 +59,80 @@ export function MemberFloatingCard({ member, index, isActive = false }: MemberFl
     <div
       ref={cardRef}
       className={cn(
-        'relative h-[140px] w-[110px] flex-shrink-0 snap-start',
-        'transform-gpu',
-        isVisible ? 'animate-reveal-card' : 'opacity-0'
+        'relative flex-shrink-0 snap-start',
+        'transform-gpu transition-all duration-500',
+        isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
       )}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Glow effect layer */}
-      <CardGlowEffect color={dominantColor} isActive={isActive} isHovered={isHovered} />
-
-      {/* Main card container */}
-      <Link
-        href={profileUrl}
-        className={cn(
-          'group relative flex h-full cursor-pointer flex-col overflow-hidden',
-          'rounded-3xl border',
-          'shadow-2xl transition-all duration-300',
-          'transform-gpu',
-          isHovered || isActive
-            ? 'scale-[1.02] border-white/20 shadow-electric/20'
-            : 'border-white/10 shadow-black/50'
-        )}
-      >
-        {/* Background - blurred avatar or gradient */}
-        <div className="absolute inset-0 overflow-hidden">
-          {member.avatar_url ? (
-            <>
-              <img
-                src={member.avatar_url}
-                alt=""
-                className="h-full w-full scale-110 object-cover blur-xl"
-                aria-hidden="true"
-              />
-              <div className="absolute inset-0 bg-black/60" />
-            </>
-          ) : (
-            <div className="h-full w-full bg-gradient-to-br from-electric/20 via-purple-900/30 to-black" />
+      <Link href={profileUrl} className="group relative block">
+        {/* The Avatar IS the Card */}
+        <div
+          className={cn(
+            'relative overflow-hidden rounded-full',
+            'h-20 w-20 md:h-24 md:w-24',
+            'transition-all duration-500 ease-out',
+            'ring-2 ring-white/10',
+            isHovered
+              ? 'scale-110 shadow-[0_0_30px_rgba(99,144,255,0.5)] ring-electric/60'
+              : 'shadow-xl shadow-black/50'
           )}
-        </div>
-
-        {/* Gradient overlays */}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/80" />
-
-        {/* Avatar centered */}
-        <div className="relative z-10 flex flex-1 items-center justify-center pt-2">
+        >
           {member.avatar_url ? (
             <img
               src={member.avatar_url}
               alt={member.display_name}
               className={cn(
-                'h-10 w-10 rounded-full border object-cover',
-                'shadow-lg transition-all duration-300',
-                isHovered || isActive
-                  ? 'scale-110 border-electric/50 shadow-electric/30'
-                  : 'border-white/20 shadow-black/50'
+                'h-full w-full object-cover',
+                'transition-transform duration-700 ease-out',
+                isHovered ? 'scale-110' : 'scale-100'
               )}
             />
           ) : (
+            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-electric/30 via-purple-500/20 to-black">
+              <User className="h-8 w-8 text-white/60 md:h-10 md:w-10" />
+            </div>
+          )}
+
+          {/* Subtle gradient overlay on hover */}
+          <div
+            className={cn(
+              'absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent',
+              'transition-opacity duration-300',
+              isHovered ? 'opacity-100' : 'opacity-0'
+            )}
+          />
+
+          {/* Audio indicator - appears on hover */}
+          {hasAudio && (
             <div
               className={cn(
-                'flex h-10 w-10 items-center justify-center rounded-full border',
-                'bg-gradient-to-br from-electric/20 to-purple-500/20',
-                'shadow-lg transition-all duration-300',
-                isHovered || isActive
-                  ? 'scale-110 border-electric/50 shadow-electric/30'
-                  : 'border-white/20 shadow-black/50'
+                'absolute inset-0 flex items-center justify-center',
+                'transition-all duration-300',
+                isHovered ? 'opacity-100' : 'opacity-0'
               )}
             >
-              <User className="h-4 w-4 text-white/70" />
+              <div className="rounded-full bg-black/60 p-2 backdrop-blur-sm">
+                <Play className="h-4 w-4 fill-white text-white" />
+              </div>
             </div>
           )}
         </div>
 
-        {/* Glassmorphic content container */}
-        <GlassTextContainer dominantColor={dominantColor}>
-          {/* Name */}
-          <h3 className="truncate text-center text-xs font-semibold leading-tight text-white transition-colors group-hover:text-electric-glow">
+        {/* Name - appears below, minimal and clean */}
+        <div className="mt-2 text-center">
+          <p
+            className={cn(
+              'truncate text-xs font-medium transition-colors duration-300',
+              'max-w-20 md:max-w-24',
+              isHovered ? 'text-electric' : 'text-white/80'
+            )}
+          >
             {member.display_name}
-          </h3>
-          {/* Vibe count */}
-          <p className="text-center text-[9px] text-white/50">
-            {member.total_vibelogs ?? 0} vibe{member.total_vibelogs !== 1 ? 's' : ''}
           </p>
-        </GlassTextContainer>
-
-        {/* Audio indicator */}
-        {hasAudio && (
-          <div className="absolute right-2 top-2 rounded-full bg-black/50 p-1 backdrop-blur-sm">
-            <Play className="h-2.5 w-2.5 fill-white text-white" />
-          </div>
-        )}
+          <p className="text-[10px] text-white/40">{member.total_vibelogs ?? 0} vibes</p>
+        </div>
       </Link>
     </div>
   );

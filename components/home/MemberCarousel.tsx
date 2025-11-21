@@ -42,8 +42,8 @@ export function MemberCarousel({ members, title, subtitle }: MemberCarouselProps
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
-  const cardWidth = 110;
-  const gap = 10;
+  const cardWidth = 96; // Avatar size on md
+  const gap = 16;
   const totalCardWidth = cardWidth + gap;
 
   // Calculate active card index based on scroll position
@@ -144,7 +144,7 @@ export function MemberCarousel({ members, title, subtitle }: MemberCarouselProps
         <div
           ref={containerRef}
           className={cn(
-            'flex gap-2.5 overflow-x-auto overflow-y-hidden px-4 pb-4 md:px-6',
+            'flex gap-4 overflow-x-auto overflow-y-hidden px-4 pb-6 md:px-6',
             'snap-x snap-mandatory',
             'scrollbar-hide',
             '-mx-4 md:-mx-6'
