@@ -8,6 +8,7 @@ import { embedVibelog } from '@/lib/vibe-brain';
 export const runtime = 'nodejs';
 
 interface SaveVibelogRequest {
+  vibelogId?: string; // If provided, UPDATE existing vibelog instead of INSERT
   title?: string;
   content: string;
   fullContent?: string;
@@ -189,7 +190,127 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       sessionId: vibelogData.session_id,
     });
 
-    // === STEP 3: TRY DIRECT INSERT (Supabase client already initialized) ===
+    // === STEP 3: UPDATE OR INSERT ===
+    // If vibelogId is provided, UPDATE existing vibelog (preserves video_url, etc.)
+    if (requestBody.vibelogId) {
+      console.log('💾 [VIBELOG-SAVE] Updating existing vibelog:', requestBody.vibelogId);
+
+      try {
+        // Verify ownership before update
+        const { data: existingVibelog, error: fetchError } = await supabase
+          .from('vibelogs')
+          .select('id, user_id, slug, public_slug')
+          .eq('id', requestBody.vibelogId)
+          .single();
+
+        if (fetchError || !existingVibelog) {
+          console.error('❌ [VIBELOG-SAVE] Vibelog not found:', requestBody.vibelogId);
+          return NextResponse.json(
+            { success: false, message: 'Vibelog not found' },
+            { status: 404 }
+          );
+        }
+
+        // Security: Verify ownership
+        if (existingVibelog.user_id !== userId) {
+          console.error('❌ [VIBELOG-SAVE] Permission denied - user mismatch');
+          return NextResponse.json(
+            { success: false, message: 'Permission denied' },
+            { status: 403 }
+          );
+        }
+
+        // Build update data - only update fields that should change
+        // IMPORTANT: Don't overwrite video_url, video_source, etc.
+        const updateData = {
+          title: vibelogData.title,
+          teaser: vibelogData.teaser,
+          content: vibelogData.content,
+          transcription: vibelogData.transcription,
+          cover_image_url: vibelogData.cover_image_url,
+          cover_image_alt: vibelogData.cover_image_alt,
+          cover_image_width: vibelogData.cover_image_width,
+          cover_image_height: vibelogData.cover_image_height,
+          audio_url: vibelogData.audio_url || undefined, // Don't overwrite if not provided
+          audio_duration: vibelogData.audio_duration || undefined,
+          word_count: vibelogData.word_count,
+          read_time: vibelogData.read_time,
+          tags: vibelogData.tags,
+          seo_title: vibelogData.seo_title,
+          seo_description: vibelogData.seo_description,
+          is_public: vibelogData.is_public,
+          is_published: vibelogData.is_published,
+          published_at: vibelogData.published_at,
+        };
+
+        // Remove undefined values to avoid overwriting existing data
+        Object.keys(updateData).forEach(key => {
+          if (updateData[key as keyof typeof updateData] === undefined) {
+            delete updateData[key as keyof typeof updateData];
+          }
+        });
+
+        const { error: updateError } = await supabase
+          .from('vibelogs')
+          .update(updateData)
+          .eq('id', requestBody.vibelogId);
+
+        if (updateError) {
+          throw updateError;
+        }
+
+        // Generate slug if not exists
+        let finalSlug = existingVibelog.slug || existingVibelog.public_slug;
+        let publicUrl = finalSlug
+          ? `/@${user?.user_metadata?.username || 'user'}/${finalSlug}`
+          : null;
+
+        if (!finalSlug && userId) {
+          finalSlug = generateUserSlug(title, requestBody.vibelogId);
+          await supabase
+            .from('vibelogs')
+            .update({ slug: finalSlug })
+            .eq('id', requestBody.vibelogId);
+          publicUrl = `/@${user?.user_metadata?.username || user?.email?.split('@')[0] || 'user'}/${finalSlug}`;
+        }
+
+        console.log('✅ [VIBELOG-SAVE] Update successful:', requestBody.vibelogId);
+
+        // Embed for Vibe Brain (async)
+        embedVibelog({
+          id: requestBody.vibelogId,
+          user_id: userId || '',
+          title: vibelogData.title,
+          teaser: vibelogData.teaser,
+          content: vibelogData.content,
+          transcript: vibelogData.transcription,
+        }).catch(err => {
+          console.error('[VIBE BRAIN] Failed to embed vibelog:', err);
+        });
+
+        return NextResponse.json({
+          success: true,
+          vibelogId: requestBody.vibelogId,
+          slug: finalSlug,
+          publicUrl: publicUrl,
+          isAnonymous: false,
+          message: 'Vibelog updated successfully!',
+          warnings: warnings.length > 0 ? warnings : undefined,
+        });
+      } catch (updateError: unknown) {
+        console.error('❌ [VIBELOG-SAVE] Update failed:', updateError);
+        return NextResponse.json(
+          {
+            success: false,
+            message: 'Failed to update vibelog',
+            error: updateError instanceof Error ? updateError.message : 'Unknown error',
+          },
+          { status: 500 }
+        );
+      }
+    }
+
+    // === STEP 3B: TRY DIRECT INSERT (new vibelog) ===
     console.log('💾 [VIBELOG-SAVE] Attempting direct insert...');
     try {
       const { data: directResult, error: directError } = await supabase

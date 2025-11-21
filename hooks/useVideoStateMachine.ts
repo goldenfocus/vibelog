@@ -9,7 +9,6 @@
 import { useCallback, useRef, useState } from 'react';
 
 import { useAuth } from '@/components/providers/AuthProvider';
-import { useBulletproofSave } from '@/hooks/useBulletproofSave';
 import { useToneSettings } from '@/hooks/useToneSettings';
 import { useVibelogAPI } from '@/hooks/useVibelogAPI';
 import { useVideoUpload } from '@/hooks/useVideoUpload';
@@ -71,10 +70,9 @@ export function useVideoStateMachine(options: {
 }): UseVideoStateMachineReturn {
   const { vibelogId: initialVibelogId, onComplete, onSaveSuccess } = options;
 
-  const { user } = useAuth();
+  const { user: _user } = useAuth();
   const { tone, keepFillerWords } = useToneSettings();
   const { uploadVideo } = useVideoUpload();
-  const { saveVibelog } = useBulletproofSave();
 
   const [upgradePrompt, setUpgradePrompt] = useState<UpgradePromptState>({
     visible: false,
@@ -92,7 +90,7 @@ export function useVideoStateMachine(options: {
   const [detectedLanguage, setDetectedLanguage] = useState<string | undefined>();
   const [vibelogContent, setVibelogContent] = useState('');
   const [fullVibelogContent, setFullVibelogContent] = useState('');
-  const [vibelogId, setVibelogId] = useState<string | null>(initialVibelogId);
+  const [vibelogId, _setVibelogId] = useState<string | null>(initialVibelogId);
   const [coverImage, setCoverImage] = useState<CoverImage | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -241,9 +239,17 @@ export function useVideoStateMachine(options: {
     [fullVibelogContent, vibelogAPI]
   );
 
-  // Step 5: Complete processing - save everything
+  // Step 5: Complete processing - UPDATE existing vibelog (not create new)
+  // IMPORTANT: We must UPDATE the existing vibelog that already has video_url set
   const completeProcessing = useCallback(async () => {
     console.log('🎯 [VIDEO-STATE] Completing processing...');
+
+    if (!vibelogId) {
+      console.error('❌ [VIDEO-STATE] No vibelog ID available');
+      setError('No vibelog ID');
+      setRecordingState('error');
+      return;
+    }
 
     const contentToSave =
       processingDataRef.current.vibelogContent ||
@@ -270,35 +276,50 @@ export function useVideoStateMachine(options: {
         }
       }
 
-      console.log('💾 [VIDEO-STATE] Saving vibelog...', {
+      // Extract title from content (first # heading or first line)
+      const lines = contentToSave.split(/\r?\n/);
+      let title = 'Video Vibelog';
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('# ')) {
+          title = trimmed.replace(/^#\s+/, '').trim();
+          break;
+        }
+      }
+
+      console.log('💾 [VIDEO-STATE] Updating existing vibelog...', {
+        vibelogId,
+        title,
         contentLength: contentToSave.length,
         hasVideo: !!processingDataRef.current.videoUrl,
         hasCover: !!finalCoverImage,
       });
 
-      const result = await saveVibelog({
-        vibelogId: vibelogId || undefined,
-        content: contentToSave,
-        fullContent: contentToSave,
-        transcription: processingDataRef.current.transcription || transcription,
-        coverImage: finalCoverImage || undefined,
-        userId: user?.id,
-        isPublished: true, // Auto-publish video vibelogs
-        isPublic: true,
-        metadata: {
-          recordingTime,
-          processingSteps: ['upload', 'transcribe', 'generate', 'cover', 'save'],
-          clientVersion: '1.0.0',
-          source: 'video',
-        },
+      // UPDATE the existing vibelog via save-vibelog API with vibelogId
+      // This will update the record that already has video_url set
+      const response = await fetch('/api/save-vibelog', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          vibelogId, // Pass existing ID to trigger update instead of insert
+          title,
+          content: contentToSave,
+          fullContent: contentToSave,
+          transcription: processingDataRef.current.transcription || transcription,
+          coverImage: finalCoverImage || undefined,
+          isPublished: true,
+          isPublic: true,
+          metadata: {
+            recordingTime,
+            source: 'video',
+          },
+        }),
       });
 
-      if (result.success) {
-        console.log('✅ [VIDEO-STATE] Vibelog saved:', result.vibelogId);
+      const result = await response.json();
 
-        if (result.vibelogId) {
-          setVibelogId(result.vibelogId);
-        }
+      if (result.success) {
+        console.log('✅ [VIDEO-STATE] Vibelog updated:', result.vibelogId || vibelogId);
 
         if (onSaveSuccess) {
           console.log('🔄 [VIDEO-STATE] Triggering feed refresh');
@@ -309,7 +330,8 @@ export function useVideoStateMachine(options: {
           onComplete(processingDataRef.current.videoUrl);
         }
       } else {
-        console.error('❌ [VIDEO-STATE] Save failed');
+        console.error('❌ [VIDEO-STATE] Save failed:', result.message);
+        // Don't fail completely - video is already uploaded
       }
     } catch (err) {
       console.error('❌ [VIDEO-STATE] Complete processing failed:', err);
@@ -324,9 +346,7 @@ export function useVideoStateMachine(options: {
     onSaveSuccess,
     processCoverImage,
     recordingTime,
-    saveVibelog,
     transcription,
-    user?.id,
     vibelogAPI.processingData,
     vibelogContent,
     vibelogId,

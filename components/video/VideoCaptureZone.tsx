@@ -18,6 +18,7 @@ import {
   CheckCircle,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import React, { useState, useRef, useEffect } from 'react';
 
 import VideoProcessingAnimation from '@/components/video/VideoProcessingAnimation';
@@ -41,6 +42,8 @@ export function VideoCaptureZone({
   onSaveSuccess,
 }: VideoCaptureZoneProps & { onSaveSuccess?: () => void }) {
   console.log('[VideoCaptureZone] Component rendering with vibelogId:', vibelogId);
+
+  const router = useRouter();
 
   // Use video state machine for processing
   const videoStateMachine = useVideoStateMachine({
@@ -472,10 +475,11 @@ export function VideoCaptureZone({
     videoStateMachine.reset();
   };
 
-  // Handle processing completion
+  // Handle processing completion - redirect to community page
   const handleProcessingComplete = () => {
-    console.log('✅ [VideoCaptureZone] Processing complete!');
-    setStatus('complete');
+    console.log('✅ [VideoCaptureZone] Processing complete! Redirecting to community...');
+    // Redirect to community page where user can see their vibelog on top
+    router.push('/community');
   };
 
   // Toggle camera (front/back)
