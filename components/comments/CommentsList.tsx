@@ -1,6 +1,7 @@
 'use client';
 
 import { Loader2 } from 'lucide-react';
+import { useMemo } from 'react';
 
 import CommentItem from './CommentItem';
 
@@ -19,6 +20,11 @@ interface Comment {
   created_at: string;
   updated_at?: string;
   author: CommentAuthor;
+  parent_comment_id?: string | null;
+}
+
+export interface CommentWithReplies extends Comment {
+  replies: CommentWithReplies[];
 }
 
 interface CommentsListProps {
@@ -26,8 +32,36 @@ interface CommentsListProps {
   vibelogId: string;
   isLoading?: boolean;
   onRefresh?: () => void;
-  onReply?: (parentCommentId: string) => void;
   userIsAdmin?: boolean;
+}
+
+// Build a tree structure from flat comments array
+function buildCommentTree(comments: Comment[]): CommentWithReplies[] {
+  const commentMap = new Map<string, CommentWithReplies>();
+  const rootComments: CommentWithReplies[] = [];
+
+  // First pass: create all comment nodes with empty replies
+  comments.forEach(comment => {
+    commentMap.set(comment.id, { ...comment, replies: [] });
+  });
+
+  // Second pass: link replies to parents
+  comments.forEach(comment => {
+    const commentNode = commentMap.get(comment.id)!;
+    if (comment.parent_comment_id) {
+      const parent = commentMap.get(comment.parent_comment_id);
+      if (parent) {
+        parent.replies.push(commentNode);
+      } else {
+        // Parent not found (deleted?), treat as root
+        rootComments.push(commentNode);
+      }
+    } else {
+      rootComments.push(commentNode);
+    }
+  });
+
+  return rootComments;
 }
 
 export default function CommentsList({
@@ -35,9 +69,11 @@ export default function CommentsList({
   vibelogId,
   isLoading,
   onRefresh,
-  onReply,
   userIsAdmin = false,
 }: CommentsListProps) {
+  // Build comment tree from flat array
+  const commentTree = useMemo(() => buildCommentTree(comments), [comments]);
+
   // TTS disabled - comment audio playback removed
   const handlePlayAudio = async (_text: string, _voiceId: string | null) => {
     // No-op: TTS playback disabled
@@ -62,7 +98,7 @@ export default function CommentsList({
 
   return (
     <div className="space-y-4">
-      {comments.map(comment => (
+      {commentTree.map(comment => (
         <CommentItem
           key={comment.id}
           comment={comment}
@@ -70,8 +106,8 @@ export default function CommentsList({
           onPlayAudio={handlePlayAudio}
           onUpdate={onRefresh}
           onDelete={onRefresh}
-          onReply={onReply}
           userIsAdmin={userIsAdmin}
+          depth={0}
         />
       ))}
     </div>

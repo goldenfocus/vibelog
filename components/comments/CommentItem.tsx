@@ -9,6 +9,7 @@ import {
   Play,
   Reply,
   Save,
+  Send,
   Trash2,
   User,
   Video,
@@ -21,6 +22,111 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { ReactionBar } from '@/components/reactions/ReactionBar';
 import { useAudioPlayerStore } from '@/state/audio-player-store';
 import type { MediaAttachment } from '@/types/comments';
+
+import type { CommentWithReplies } from './CommentsList';
+
+const MAX_DEPTH = 5;
+
+// Inline reply input component
+function InlineReplyInput({
+  vibelogId,
+  parentCommentId,
+  parentAuthor,
+  onSubmit,
+  onCancel,
+}: {
+  vibelogId: string;
+  parentCommentId: string;
+  parentAuthor: string;
+  onSubmit: () => void;
+  onCancel: () => void;
+}) {
+  const [content, setContent] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  const handleSubmit = async () => {
+    if (!content.trim() || isSubmitting) {
+      return;
+    }
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch('/api/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          vibelogId,
+          content: content.trim(),
+          parentCommentId,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to post reply');
+      }
+
+      toast.success('Reply posted!');
+      setContent('');
+      onSubmit();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to post reply');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      handleSubmit();
+    }
+    if (e.key === 'Escape') {
+      onCancel();
+    }
+  };
+
+  return (
+    <div className="mt-3 overflow-hidden rounded-xl border border-electric/30 bg-gradient-to-br from-electric/5 to-transparent p-3 duration-200 animate-in slide-in-from-top-2">
+      <div className="mb-2 flex items-center gap-2 text-xs text-electric">
+        <Reply className="h-3 w-3" />
+        <span>Replying to @{parentAuthor}</span>
+        <button onClick={onCancel} className="ml-auto rounded p-1 hover:bg-electric/10">
+          <X className="h-3 w-3" />
+        </button>
+      </div>
+      <textarea
+        ref={inputRef}
+        value={content}
+        onChange={e => setContent(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder="Write your reply..."
+        className="w-full resize-none rounded-lg border border-border/30 bg-background/80 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-electric focus:outline-none"
+        rows={2}
+      />
+      <div className="mt-2 flex items-center justify-between">
+        <span className="text-xs text-muted-foreground">⌘+Enter to send</span>
+        <button
+          onClick={handleSubmit}
+          disabled={isSubmitting || !content.trim()}
+          className="flex items-center gap-1.5 rounded-lg bg-electric px-3 py-1.5 text-sm font-medium text-white transition-all hover:bg-electric-glow disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isSubmitting ? (
+            <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+          ) : (
+            <Send className="h-3.5 w-3.5" />
+          )}
+          Reply
+        </button>
+      </div>
+    </div>
+  );
+}
 
 interface CommentAuthor {
   username: string;
@@ -42,23 +148,23 @@ interface Comment {
 }
 
 interface CommentItemProps {
-  comment: Comment;
+  comment: Comment & { replies?: CommentWithReplies[] };
   vibelogId: string;
   onPlayAudio?: (audioUrl: string, voiceId: string | null) => void;
   onUpdate?: () => void;
   onDelete?: () => void;
-  onReply?: (parentCommentId: string) => void;
   userIsAdmin?: boolean;
+  depth?: number;
 }
 
 export default function CommentItem({
   comment,
-  vibelogId: _vibelogId,
+  vibelogId,
   onPlayAudio,
   onUpdate,
   onDelete,
-  onReply,
   userIsAdmin = false,
+  depth = 0,
 }: CommentItemProps) {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
@@ -66,8 +172,12 @@ export default function CommentItem({
   const [editedContent, setEditedContent] = useState(comment.content || '');
   const [showMenu, setShowMenu] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showReplyInput, setShowReplyInput] = useState(false);
   const audioUrlRef = useRef<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const canReply = depth < MAX_DEPTH;
+  const replies = comment.replies || [];
 
   const {
     currentTrack,
@@ -284,8 +394,14 @@ export default function CommentItem({
     return null; // Don't show deleted comments
   }
 
+  const isNested = depth > 0;
+
   return (
-    <div className="rounded-xl border border-border/30 bg-card/30 p-4">
+    <div
+      className={`rounded-xl border border-border/30 bg-card/30 p-4 ${
+        isNested ? 'ml-4 border-l-2 border-l-electric/30 sm:ml-8' : ''
+      }`}
+    >
       {/* Author Header */}
       <div className="mb-3 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -484,16 +600,52 @@ export default function CommentItem({
       {/* Reactions and Reply */}
       <div className="mt-3 flex items-center justify-between border-t border-border/20 pt-3">
         <ReactionBar type="comment" id={comment.id} variant="compact" realtime showCounts />
-        {user && onReply && (
+        {user && canReply && (
           <button
-            onClick={() => onReply(comment.id)}
-            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            onClick={() => setShowReplyInput(!showReplyInput)}
+            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm transition-colors ${
+              showReplyInput
+                ? 'bg-electric/10 text-electric'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+            }`}
           >
             <Reply className="h-4 w-4" />
             Reply
           </button>
         )}
       </div>
+
+      {/* Inline Reply Input */}
+      {showReplyInput && (
+        <InlineReplyInput
+          vibelogId={vibelogId}
+          parentCommentId={comment.id}
+          parentAuthor={comment.author.username}
+          onSubmit={() => {
+            setShowReplyInput(false);
+            onUpdate?.();
+          }}
+          onCancel={() => setShowReplyInput(false)}
+        />
+      )}
+
+      {/* Nested Replies */}
+      {replies.length > 0 && (
+        <div className="mt-4 space-y-3">
+          {replies.map(reply => (
+            <CommentItem
+              key={reply.id}
+              comment={reply}
+              vibelogId={vibelogId}
+              onPlayAudio={onPlayAudio}
+              onUpdate={onUpdate}
+              onDelete={onDelete}
+              userIsAdmin={userIsAdmin}
+              depth={depth + 1}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
