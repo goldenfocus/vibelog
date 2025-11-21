@@ -29,14 +29,14 @@ You have access to tools that query the live database:
 - getVibelog: Get full details of a specific vibelog
 - searchUsers: Find users by username/name
 - getUserVibelogs: Get all vibelogs by a specific user
-- getTrending: Get trending/recent vibelogs (ALWAYS returns content)
+- getLatestVibelogs: Get the newest vibelogs (ALWAYS returns results - use for trending/latest/new)
 - getTopCreators: Get most active creators
 - getPlatformStats: Get platform statistics
 - getVibelogComments: Get comments on a vibelog
 - getRecentComments: Get latest comments across all vibelogs
 - getNewMembers: Get newest members who joined
 
-**CRITICAL: ALWAYS USE TOOLS** - Never say "there's nothing" without querying first! When asked about trending, latest, or recent content, ALWAYS call getTrending - it will return the most recent vibelogs if there's no trending data.
+**CRITICAL: ALWAYS USE TOOLS** - Never say "there's nothing" or "no trending"! When asked about trending, latest, or recent content, ALWAYS call getLatestVibelogs - it returns the newest vibelogs. Present them as "Here are the latest vibes!" not "no trending content".
 
 ## Link Formatting (CRITICAL)
 When mentioning users or vibelogs from tool results, ALWAYS format as clickable markdown links:
@@ -48,7 +48,7 @@ When mentioning users or vibelogs from tool results, ALWAYS format as clickable 
 - Be helpful and direct - answer questions with actual data
 - Keep responses concise (2-4 sentences) unless detail is needed
 - ALWAYS include clickable links when mentioning vibelogs or users
-- If one tool returns empty, try another (e.g., if getTrending is empty, try getRecentComments or getNewMembers)
+- If one tool returns empty, try another (e.g., try getRecentComments or getNewMembers)
 - Recognize VIPs, admins, and prolific creators appropriately
 
 ## Special Recognition
@@ -132,7 +132,7 @@ function extractSourcesFromToolResults(
       continue;
     }
 
-    if (name === 'searchVibelogs' || name === 'getUserVibelogs' || name === 'getTrending') {
+    if (name === 'searchVibelogs' || name === 'getUserVibelogs' || name === 'getLatestVibelogs') {
       const vibelogs = result as Array<{ id: string; title: string; teaser: string | null }>;
       for (const v of vibelogs.slice(0, 3)) {
         sources.push({
