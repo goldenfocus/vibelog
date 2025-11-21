@@ -21,7 +21,6 @@ export interface CarouselMember {
   username: string;
   display_name: string;
   avatar_url: string | null;
-  header_image?: string | null;
   bio?: string | null;
   total_vibelogs?: number | null;
   latest_vibelog?: MemberVibelog | null;
@@ -43,8 +42,8 @@ export function MemberCarousel({ members, title, subtitle }: MemberCarouselProps
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
-  const cardWidth = 160;
-  const gap = 12;
+  const cardWidth = 110;
+  const gap = 10;
   const totalCardWidth = cardWidth + gap;
 
   // Calculate active card index based on scroll position
@@ -145,7 +144,7 @@ export function MemberCarousel({ members, title, subtitle }: MemberCarouselProps
         <div
           ref={containerRef}
           className={cn(
-            'flex gap-3 overflow-x-auto overflow-y-hidden px-4 pb-4 md:px-6',
+            'flex gap-2.5 overflow-x-auto overflow-y-hidden px-4 pb-4 md:px-6',
             'snap-x snap-mandatory',
             'scrollbar-hide',
             '-mx-4 md:-mx-6'
