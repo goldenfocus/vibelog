@@ -2,109 +2,259 @@
 
 > Voice-to-publish platform that turns spoken thoughts into beautiful posts instantly.
 
+## Prime Directives
+
+1. **Ship, don't ask** - Execute immediately. Only ask if genuinely ambiguous.
+2. **One change, one commit** - Atomic commits. PR per feature/fix.
+3. **Read before write** - Always check existing patterns before creating new code.
+4. **Test what matters** - If it can break prod, it needs a test.
+5. **Delete > Comment** - Remove dead code, don't comment it out.
+
 ## Tech Stack
 
-- **Framework**: Next.js 15 (App Router) with React 19
-- **Database**: Supabase (PostgreSQL + Auth + Storage)
-- **AI**: OpenAI (transcription, text generation, TTS)
-- **Styling**: Tailwind CSS + Radix UI primitives
-- **State**: Zustand + TanStack Query
-- **Testing**: Vitest (unit) + Playwright (e2e)
-- **Deployment**: Vercel
+| Layer     | Tech                                   |
+| --------- | -------------------------------------- |
+| Framework | Next.js 15 (App Router) + React 19     |
+| Database  | Supabase (PostgreSQL + Auth + Storage) |
+| AI        | OpenAI (Whisper, GPT-4o, TTS)          |
+| Video     | Google Veo 3.1 via fal.ai              |
+| Styling   | Tailwind CSS + Radix UI                |
+| State     | Zustand + TanStack Query               |
+| Testing   | Vitest + Playwright                    |
+| Deploy    | Vercel (5 min function timeout)        |
 
-## Project Structure
+## Project Map
 
 ```
-app/              # Next.js routes (App Router)
-  api/            # API routes (~54 endpoints)
-  [username]/     # Dynamic user profile pages
-  v/[id]/         # Public vibelog view
-  dashboard/      # User dashboard
-  settings/       # User settings
-components/       # React components
-lib/              # Utilities, services, configs
-hooks/            # Custom React hooks
-supabase/         # Database migrations
+app/
+  api/              # ~54 API routes
+  [username]/       # Public profile pages
+  v/[id]/           # Public vibelog view
+  dashboard/        # Authenticated user area
+  settings/         # User preferences
+components/         # React components (keep <300 LOC)
+lib/                # Business logic, utilities
+hooks/              # Custom React hooks
+supabase/migrations/  # Database migrations (source of truth)
 ```
 
-## Key Patterns
+## Critical Paths
+
+```
+Audio Recording → /api/transcribe → OpenAI Whisper
+                → /api/generate-vibelog → GPT-4o → polished content
+                → /api/save-vibelog → Supabase
+                → /api/generate-cover → DALL-E (optional)
+                → /api/vibelog/generate-ai-audio → TTS (optional)
+```
+
+## Code Patterns
 
 ### API Routes
 
-- All in `app/api/` using Next.js route handlers
-- Use Supabase server client from `lib/supabase.ts`
-- AI operations tracked via `lib/ai-cost-tracker.ts`
+```typescript
+// Always use this pattern
+import { createClient } from '@/lib/supabase';
+import { trackAICost } from '@/lib/ai-cost-tracker';
 
-### Authentication
+export async function POST(req: Request) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  // ... implementation
+}
+```
 
-- Supabase Auth with SSR support via `@supabase/ssr`
-- Auth helpers in `lib/auth-*.ts`
+### Validation
 
-### Data Flow
+- Use Zod for all external input
+- Validate at API boundaries, trust internal code
 
-1. User records audio via MicRecorder
-2. Audio → OpenAI Whisper transcription
-3. Transcript → AI polishing/generation
-4. Generated content → Supabase storage
-5. Optional: AI-generated cover images, TTS audio
+### Error Handling
 
-## Terminology (Brand Guidelines)
+- Return proper HTTP status codes (401, 403, 404, 500)
+- Log errors server-side, show user-friendly messages client-side
+- AI failures: graceful degradation, never crash the request
 
-- **vibelog** (lowercase): A single post/entry
-- **VibeLog** (capitalized): The platform/product name
-- **vibe**: The emotional tone/energy of content
-- Never use "blog", "post", or "entry" - always "vibelog"
+## Terminology (Strict)
 
-## Code Conventions
+| Wrong             | Right                        |
+| ----------------- | ---------------------------- |
+| blog, post, entry | vibelog                      |
+| Blog, Post        | VibeLog (platform name only) |
+| user content      | vibe                         |
+| mood, feeling     | vibe                         |
 
-- TypeScript strict mode
-- Files < 300 LOC, functions < 80 LOC
-- Use Zod for runtime validation
-- Error handling: always return proper HTTP status codes
-- Prefer existing patterns - check similar files before creating new ones
+## Modularity Rules (Critical)
+
+**Every function is an API. Build for reuse.**
+
+Before writing ANY new code:
+
+1. **Search first** - Check `lib/`, `hooks/`, `components/` for existing utilities
+2. **Extract if used twice** - If you write similar logic twice, extract to `lib/`
+3. **Single responsibility** - One function = one job = one reason to change
+4. **Compose, don't nest** - Small functions that chain > large functions with conditionals
+
+### Where Shared Code Lives
+
+| Type          | Location      | Example                            |
+| ------------- | ------------- | ---------------------------------- |
+| Data fetching | `lib/`        | `fetchVibelog()`, `fetchUser()`    |
+| Validation    | `lib/`        | `validateVibelogInput()`           |
+| Formatting    | `lib/`        | `formatDate()`, `truncateText()`   |
+| API helpers   | `lib/`        | `withAuth()`, `handleAPIError()`   |
+| React logic   | `hooks/`      | `useVibelog()`, `useAudioPlayer()` |
+| UI patterns   | `components/` | Reusable components                |
+
+### Before Creating New Code
+
+**Search by concept, not exact name.** Use multiple search strategies:
+
+```bash
+# 1. Search by domain concept (most reliable)
+grep -ri "vibelog" lib/           # Find all vibelog-related utilities
+grep -ri "audio" lib/ hooks/      # Find audio handling
+grep -ri "user" lib/              # Find user utilities
+
+# 2. Search by action verb
+grep -ri "fetch\|get" lib/        # Data fetching
+grep -ri "format\|parse" lib/     # Data transformation
+grep -ri "validate\|check" lib/   # Validation
+
+# 3. List all exports in a directory
+grep -r "export" lib/*.ts | head -50
+
+# 4. Check existing hooks
+ls hooks/
+```
+
+**Ask yourself:** "What problem am I solving?" Then search for that problem domain.
+
+| If building...  | Search for...                         |
+| --------------- | ------------------------------------- |
+| Vibelog fetch   | `grep -ri "vibelog" lib/`             |
+| Date display    | `grep -ri "date\|time\|format" lib/`  |
+| Auth check      | `grep -ri "auth\|user\|session" lib/` |
+| Form validation | `grep -ri "valid\|schema\|zod" lib/`  |
+| Error handling  | `grep -ri "error\|handle" lib/`       |
+
+If something similar exists: **use it, extend it, or refactor it**.
+If nothing exists and you need it twice: **create it in the right location**.
+
+### Function Design Principles
+
+```typescript
+// BAD: Does too much, can't reuse parts
+async function createVibelogAndNotify(data) {
+  // 50 lines of mixed concerns
+}
+
+// GOOD: Composable pieces
+async function validateVibelog(data) {
+  /* ... */
+}
+async function saveVibelog(data) {
+  /* ... */
+}
+async function notifyFollowers(vibelogId) {
+  /* ... */
+}
+
+// Compose at the call site
+const validated = validateVibelog(data);
+const vibelog = await saveVibelog(validated);
+await notifyFollowers(vibelog.id);
+```
+
+## Anti-Patterns (Never Do)
+
+- **Don't duplicate** - If code exists, use it. If similar code exists, refactor to share.
+- **Don't rebuild what exists** - Search lib/, hooks/, components/ before writing
+- Don't add "improvement" comments to code you didn't change
+- Don't create backwards-compatibility shims - just change the code
+- Don't add error handling for impossible states
+- Don't over-abstract - 3 similar lines > premature abstraction (but 4+ = extract)
+- Don't wait for confirmation - execute and report
+
+## Commands
+
+```bash
+pnpm dev           # Start dev server (localhost:3000)
+pnpm build         # Production build (catch type errors)
+pnpm test          # Unit tests
+pnpm test:e2e      # E2E tests
+pnpm lint          # ESLint
+pnpm db:migrate    # Push migrations to Supabase
+pnpm db:status     # Check migration status
+```
+
+## Deployment Flow
+
+When asked to deploy/merge to main:
+
+```bash
+git checkout -b fix/descriptive-name
+git add . && git commit -m "fix: description"
+git push -u origin fix/descriptive-name
+gh pr create --title "Fix: title" --body "## Summary\n..."
+gh pr merge --squash --auto  # Auto-merge when checks pass
+```
+
+The `--auto` flag queues merge for when checks pass. Don't wait manually.
 
 ## Database
 
-- Migrations in `supabase/migrations/`
-- Apply with: `pnpm db:migrate`
-- Check status: `pnpm db:status`
+- Migrations: `supabase/migrations/` (numbered, immutable once pushed)
+- Never edit pushed migrations - create new ones
+- Apply: `pnpm db:migrate`
+- Check: `pnpm db:status`
 
-## Common Commands
+## Key Files (Read These First)
 
-```bash
-pnpm dev          # Start dev server
-pnpm build        # Production build
-pnpm test         # Unit tests
-pnpm test:e2e     # E2E tests
-pnpm lint         # ESLint
-pnpm db:migrate   # Apply migrations
+| File                            | Purpose                                |
+| ------------------------------- | -------------------------------------- |
+| `lib/ai-cost-tracker.ts`        | AI usage tracking + circuit breaker    |
+| `lib/supabase.ts`               | Supabase client factory                |
+| `app/api/save-vibelog/route.ts` | Main save endpoint (reference pattern) |
+| `app/api/transcribe/route.ts`   | Whisper integration                    |
+| `components/MicRecorder.tsx`    | Audio capture UI                       |
+
+## Environment Variables
+
+Required in `.env.local`:
+
+```
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY
+OPENAI_API_KEY
+FAL_API_KEY  # For video generation
 ```
 
-## Workflow Preferences
+## Performance Constraints
 
-- Execute actions immediately without asking for confirmation
-- Be concise and direct
-- Focus on executing, not explaining what you'll do
-- Only ask questions if the request is genuinely unclear
-- Batch operations when possible
+- Vercel function timeout: 5 minutes max
+- OpenAI rate limits: handled by cost tracker
+- Video generation: 2-5 min depending on content length
+- Audio files: Supabase Storage (public bucket)
 
-## Important Files
+## When Stuck
 
-- `lib/ai-cost-tracker.ts` - AI usage tracking with circuit breaker
-- `lib/supabase.ts` - Supabase client setup
-- `app/api/save-vibelog/route.ts` - Main vibelog save endpoint
-- `app/api/transcribe/route.ts` - Audio transcription
-- `app/api/generate-vibelog/route.ts` - AI content generation
+1. Check similar existing code first
+2. Read the error message carefully
+3. Check Supabase logs in dashboard
+4. Check Vercel logs for deployed functions
+5. If truly blocked, ask - but propose a solution
 
-## Current State
+## Quality Bar
 
-- Production deployed on Vercel
-- Supabase for all backend services
-- AI cost tracking with caching to reduce API calls
-- Video generation feature (Google Veo 3.1 via fal.ai)
+Before marking any task complete:
 
-## Known Considerations
-
-- OpenAI API has rate limits - cost tracker handles this
-- Vercel function timeout: 5 min max for video generation
-- Audio files stored in Supabase Storage buckets
+- [ ] Types pass (`pnpm build`)
+- [ ] No console errors in browser
+- [ ] Works on mobile viewport
+- [ ] Error states handled
+- [ ] Loading states exist for async ops
