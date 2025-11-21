@@ -42,7 +42,7 @@ export async function GET(
       );
     }
 
-    // Fetch comments with author profiles (only top-level comments, not replies)
+    // Fetch ALL comments (including replies) with author profiles
     const { data: comments, error: commentsError } = await adminSupabase
       .from('comments')
       .select(
@@ -60,7 +60,6 @@ export async function GET(
       `
       )
       .eq('vibelog_id', vibelogId)
-      .is('parent_comment_id', null) // Only fetch top-level comments, not replies
       .order('created_at', { ascending: true });
 
     if (commentsError) {
