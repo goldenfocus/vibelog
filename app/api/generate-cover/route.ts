@@ -8,7 +8,7 @@ import { rateLimit, tooManyResponse } from '@/lib/rateLimit';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
 export const runtime = 'nodejs';
-export const maxDuration = 60; // DALL-E can take up to 60 seconds
+export const maxDuration = 60; // DALL-E can take up to 60 seconds (cover images)
 
 export async function POST(request: NextRequest) {
   try {
