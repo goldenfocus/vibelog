@@ -2,52 +2,55 @@
 
 import {
   Brain,
-  Settings2,
+  RefreshCw,
+  Info,
+  ChevronDown,
   MessageSquare,
   Sparkles,
-  BarChart3,
-  RefreshCw,
   Trash2,
-  ChevronDown,
-  ChevronRight,
-  TrendingUp,
-  Users,
-  DollarSign,
-  Database,
+  ExternalLink,
+  Settings,
+  Zap,
 } from 'lucide-react';
+import Link from 'next/link';
 import { useEffect, useState, useCallback } from 'react';
 
-import { MemorySettings } from '@/components/admin/vibe-brain/MemorySettings';
-import { ModelSettingsCard } from '@/components/admin/vibe-brain/ModelSettingsCard';
-import { RAGSettings } from '@/components/admin/vibe-brain/RAGSettings';
-import { SystemPromptEditor } from '@/components/admin/vibe-brain/SystemPromptEditor';
-import { ToneDesigner } from '@/components/admin/vibe-brain/ToneDesigner';
+import { Slider } from '@/components/ui/slider';
+
+// Info tooltip component with external link
+function InfoTip({ text, link }: { text: string; link?: string }) {
+  const [show, setShow] = useState(false);
+  return (
+    <span className="relative inline-block">
+      <button
+        onMouseEnter={() => setShow(true)}
+        onMouseLeave={() => setShow(false)}
+        className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-muted text-muted-foreground hover:bg-purple-500/20 hover:text-purple-500"
+      >
+        <Info className="h-3 w-3" />
+      </button>
+      {show && (
+        <div className="absolute bottom-full left-1/2 z-50 mb-2 w-64 -translate-x-1/2 rounded-lg border border-border bg-popover p-3 text-sm shadow-lg">
+          <p className="text-foreground">{text}</p>
+          {link && (
+            <Link
+              href={link}
+              target="_blank"
+              className="mt-2 flex items-center gap-1 text-xs text-purple-500 hover:underline"
+            >
+              Learn more <ExternalLink className="h-3 w-3" />
+            </Link>
+          )}
+        </div>
+      )}
+    </span>
+  );
+}
 
 interface Config {
-  id: string;
   key: string;
   value: Record<string, unknown>;
-  description: string;
   updated_at: string;
-}
-
-interface Memory {
-  id: string;
-  user_id: string;
-  fact: string;
-  category: string;
-  importance: number;
-  created_at: string;
-  user?: { username: string; display_name: string };
-}
-
-interface Conversation {
-  id: string;
-  user_id: string;
-  title: string | null;
-  message_count: number;
-  updated_at: string;
-  user?: { username: string; display_name: string };
 }
 
 interface Stats {
@@ -55,71 +58,63 @@ interface Stats {
     conversations: number;
     messages: number;
     memories: number;
-    embeddings: number;
-    uniqueUsers: number;
     totalCost: number;
   };
-  messagesByDay: Record<string, number>;
-  memoryCategoryCounts: Record<string, number>;
-  embeddingTypeCounts: Record<string, number>;
 }
 
-type Tab = 'overview' | 'config' | 'memories' | 'conversations';
+interface Memory {
+  id: string;
+  fact: string;
+  category: string;
+  importance: number;
+  created_at: string;
+}
 
 export default function VibeBrainAdminPage() {
-  const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Data states
+  const [saving, setSaving] = useState(false);
   const [stats, setStats] = useState<Stats | null>(null);
   const [configs, setConfigs] = useState<Config[]>([]);
   const [memories, setMemories] = useState<Memory[]>([]);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
-  // Expanded sections
-  const [expandedConversation, setExpandedConversation] = useState<string | null>(null);
-  const [conversationMessages, setConversationMessages] = useState<Record<string, unknown>[]>([]);
-
-  const fetchStats = async () => {
-    const res = await fetch('/api/admin/vibe-brain/stats');
-    if (res.ok) {
-      const data = await res.json();
-      setStats(data);
-    }
-  };
-
-  const fetchConfigs = async () => {
-    const res = await fetch('/api/admin/vibe-brain/config');
-    if (res.ok) {
-      const data = await res.json();
-      setConfigs(data.configs || []);
-    }
-  };
-
-  const fetchMemories = async () => {
-    const res = await fetch('/api/admin/vibe-brain/memories?limit=100');
-    if (res.ok) {
-      const data = await res.json();
-      setMemories(data.memories || []);
-    }
-  };
-
-  const fetchConversations = async () => {
-    const res = await fetch('/api/admin/vibe-brain/conversations?limit=50');
-    if (res.ok) {
-      const data = await res.json();
-      setConversations(data.conversations || []);
-    }
-  };
+  // Simple state for main settings
+  const [personality, setPersonality] = useState('');
+  const [model, setModel] = useState('gpt-4o');
+  const [creativity, setCreativity] = useState(0.7);
 
   const loadData = async () => {
     setLoading(true);
-    setError(null);
     try {
-      await Promise.all([fetchStats(), fetchConfigs(), fetchMemories(), fetchConversations()]);
-    } catch {
-      setError('Failed to load data');
+      const [statsRes, configRes, memoriesRes] = await Promise.all([
+        fetch('/api/admin/vibe-brain/stats'),
+        fetch('/api/admin/vibe-brain/config'),
+        fetch('/api/admin/vibe-brain/memories?limit=20'),
+      ]);
+
+      if (statsRes.ok) {
+        setStats(await statsRes.json());
+      }
+      if (configRes.ok) {
+        const data = await configRes.json();
+        setConfigs(data.configs || []);
+
+        // Extract simple values
+        const promptConfig = data.configs?.find((c: Config) => c.key === 'system_prompt');
+        const modelConfig = data.configs?.find((c: Config) => c.key === 'model_settings');
+
+        if (promptConfig?.value?.content) {
+          setPersonality(promptConfig.value.content as string);
+        }
+        if (modelConfig?.value) {
+          setModel((modelConfig.value.model as string) || 'gpt-4o');
+          setCreativity((modelConfig.value.temperature as number) || 0.7);
+        }
+      }
+      if (memoriesRes.ok) {
+        const data = await memoriesRes.json();
+        setMemories(data.memories || []);
+      }
     } finally {
       setLoading(false);
     }
@@ -127,460 +122,261 @@ export default function VibeBrainAdminPage() {
 
   useEffect(() => {
     loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Get config by key
-  const getConfig = (key: string) => configs.find(c => c.key === key);
-
-  // Save config handler
   const saveConfig = useCallback(async (key: string, value: unknown) => {
-    const res = await fetch('/api/admin/vibe-brain/config', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key, value }),
-    });
-
-    if (res.ok) {
-      await fetchConfigs();
-    } else {
-      throw new Error('Failed to save configuration');
+    setSaving(true);
+    try {
+      await fetch('/api/admin/vibe-brain/config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key, value }),
+      });
+    } finally {
+      setSaving(false);
     }
   }, []);
 
-  const handleDeleteMemory = async (id: string) => {
-    // eslint-disable-next-line no-alert
-    if (!window.confirm('Delete this memory?')) {
-      return;
-    }
-
-    const res = await fetch(`/api/admin/vibe-brain/memories?id=${id}`, {
-      method: 'DELETE',
-    });
-
-    if (res.ok) {
-      setMemories(memories.filter(m => m.id !== id));
-    }
+  const handlePersonalitySave = () => {
+    const current = configs.find(c => c.key === 'system_prompt')?.value || {};
+    saveConfig('system_prompt', { ...current, content: personality });
   };
 
-  const handleExpandConversation = async (id: string) => {
-    if (expandedConversation === id) {
-      setExpandedConversation(null);
-      return;
-    }
-
-    const res = await fetch(`/api/admin/vibe-brain/conversations?conversationId=${id}`);
-    if (res.ok) {
-      const data = await res.json();
-      setConversationMessages(data.messages || []);
-      setExpandedConversation(id);
-    }
+  const handleModelSave = () => {
+    const current = configs.find(c => c.key === 'model_settings')?.value || {};
+    saveConfig('model_settings', { ...current, model, temperature: creativity });
   };
 
-  const tabs: { id: Tab; label: string; icon: typeof Brain }[] = [
-    { id: 'overview', label: 'Overview', icon: BarChart3 },
-    { id: 'config', label: 'Configuration', icon: Settings2 },
-    { id: 'memories', label: 'Memories', icon: Sparkles },
-    { id: 'conversations', label: 'Conversations', icon: MessageSquare },
-  ];
-
-  const categoryColors: Record<string, string> = {
-    preferences: 'bg-pink-500/10 text-pink-500',
-    goals: 'bg-amber-500/10 text-amber-500',
-    personal: 'bg-blue-500/10 text-blue-500',
-    interests: 'bg-green-500/10 text-green-500',
+  const deleteMemory = async (id: string) => {
+    await fetch(`/api/admin/vibe-brain/memories?id=${id}`, { method: 'DELETE' });
+    setMemories(memories.filter(m => m.id !== id));
   };
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-3xl space-y-8 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 p-4 shadow-lg shadow-purple-500/25">
-            <Brain className="h-10 w-10 text-white" />
+        <div className="flex items-center gap-3">
+          <div className="rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 p-3">
+            <Brain className="h-8 w-8 text-white" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Vibe Brain Admin</h1>
-            <p className="text-muted-foreground">
-              Configure AI personality, memory, and knowledge retrieval
-            </p>
+            <h1 className="text-2xl font-bold">Vibe Brain</h1>
+            <p className="text-sm text-muted-foreground">Make your AI assistant awesome</p>
           </div>
         </div>
         <button
           onClick={loadData}
           disabled={loading}
-          className="flex items-center gap-2 rounded-xl bg-muted px-5 py-2.5 font-medium transition-all hover:bg-muted/80 active:scale-95"
+          className="rounded-lg bg-muted px-4 py-2 text-sm hover:bg-muted/80"
         >
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
         </button>
       </div>
 
-      {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
-          {error}
+      {/* Quick Stats */}
+      {stats && (
+        <div className="grid grid-cols-4 gap-4">
+          <div className="rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-500/5 p-4">
+            <MessageSquare className="mb-2 h-5 w-5 text-blue-500" />
+            <p className="text-2xl font-bold">{stats.overview.conversations}</p>
+            <p className="text-xs text-muted-foreground">Chats</p>
+          </div>
+          <div className="rounded-xl bg-gradient-to-br from-green-500/10 to-green-500/5 p-4">
+            <Zap className="mb-2 h-5 w-5 text-green-500" />
+            <p className="text-2xl font-bold">{stats.overview.messages}</p>
+            <p className="text-xs text-muted-foreground">Messages</p>
+          </div>
+          <div className="rounded-xl bg-gradient-to-br from-purple-500/10 to-purple-500/5 p-4">
+            <Sparkles className="mb-2 h-5 w-5 text-purple-500" />
+            <p className="text-2xl font-bold">{stats.overview.memories}</p>
+            <p className="text-xs text-muted-foreground">Memories</p>
+          </div>
+          <div className="rounded-xl bg-gradient-to-br from-amber-500/10 to-amber-500/5 p-4">
+            <span className="mb-2 block text-lg">$</span>
+            <p className="text-2xl font-bold">{stats.overview.totalCost.toFixed(2)}</p>
+            <p className="text-xs text-muted-foreground">Cost</p>
+          </div>
         </div>
       )}
 
-      {/* Tabs */}
-      <div className="flex gap-1 rounded-xl bg-muted/50 p-1">
-        {tabs.map(tab => {
-          const Icon = tab.icon;
-          return (
+      {/* Main Settings - Super Simple */}
+      <div className="space-y-6 rounded-2xl border border-border bg-card p-6">
+        <h2 className="text-lg font-semibold">Personality</h2>
+
+        {/* Personality/System Prompt */}
+        <div>
+          <label className="mb-2 flex items-center text-sm font-medium">
+            How should Vibe Brain talk?
+            <InfoTip
+              text="This is the 'system prompt' - instructions that tell the AI how to behave and respond. Write it like you're describing a person's personality."
+              link="https://platform.openai.com/docs/guides/prompt-engineering"
+            />
+          </label>
+          <textarea
+            value={personality}
+            onChange={e => setPersonality(e.target.value)}
+            placeholder="You are a friendly, helpful AI assistant..."
+            className="h-48 w-full resize-none rounded-lg border border-border bg-background p-3 text-sm focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+          />
+          <div className="mt-2 flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">{personality.length} characters</span>
             <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all ${
-                activeTab === tab.id
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
+              onClick={handlePersonalitySave}
+              disabled={saving}
+              className="rounded-lg bg-purple-500 px-4 py-2 text-sm font-medium text-white hover:bg-purple-600 disabled:opacity-50"
             >
-              <Icon className="h-4 w-4" />
-              {tab.label}
+              {saving ? 'Saving...' : 'Save'}
             </button>
-          );
-        })}
-      </div>
-
-      {/* Tab Content */}
-      <div className="min-h-[500px]">
-        {/* Overview Tab */}
-        {activeTab === 'overview' && stats && (
-          <div className="space-y-6">
-            {/* Stats Grid */}
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
-              {[
-                {
-                  label: 'Conversations',
-                  value: stats.overview.conversations,
-                  icon: MessageSquare,
-                  color: 'text-blue-500 bg-blue-500/10',
-                },
-                {
-                  label: 'Messages',
-                  value: stats.overview.messages,
-                  icon: TrendingUp,
-                  color: 'text-green-500 bg-green-500/10',
-                },
-                {
-                  label: 'Memories',
-                  value: stats.overview.memories,
-                  icon: Sparkles,
-                  color: 'text-purple-500 bg-purple-500/10',
-                },
-                {
-                  label: 'Embeddings',
-                  value: stats.overview.embeddings,
-                  icon: Database,
-                  color: 'text-amber-500 bg-amber-500/10',
-                },
-                {
-                  label: 'Unique Users',
-                  value: stats.overview.uniqueUsers,
-                  icon: Users,
-                  color: 'text-pink-500 bg-pink-500/10',
-                },
-                {
-                  label: 'Total Cost',
-                  value: `$${stats.overview.totalCost.toFixed(2)}`,
-                  icon: DollarSign,
-                  color: 'text-emerald-500 bg-emerald-500/10',
-                },
-              ].map(stat => {
-                const Icon = stat.icon;
-                return (
-                  <div
-                    key={stat.label}
-                    className="rounded-2xl border border-border bg-card p-4 transition-shadow hover:shadow-md"
-                  >
-                    <div className={`mb-3 inline-flex rounded-xl p-2 ${stat.color}`}>
-                      <Icon className="h-5 w-5" />
-                    </div>
-                    <p className="text-2xl font-bold text-foreground">{stat.value}</p>
-                    <p className="text-sm text-muted-foreground">{stat.label}</p>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Charts */}
-            <div className="grid gap-6 md:grid-cols-2">
-              {/* Messages by Day */}
-              <div className="rounded-2xl border border-border bg-card p-6">
-                <h3 className="mb-4 font-semibold text-foreground">Messages (Last 7 Days)</h3>
-                <div className="flex h-40 items-end gap-2">
-                  {Object.entries(stats.messagesByDay)
-                    .sort(([a], [b]) => a.localeCompare(b))
-                    .map(([day, count]) => {
-                      const max = Math.max(...Object.values(stats.messagesByDay), 1);
-                      const height = (count / max) * 100;
-                      return (
-                        <div key={day} className="flex flex-1 flex-col items-center gap-2">
-                          <span className="text-xs font-medium text-foreground">{count}</span>
-                          <div
-                            className="w-full rounded-t-lg bg-gradient-to-t from-purple-500 to-pink-500 transition-all hover:opacity-80"
-                            style={{ height: `${Math.max(height, 4)}%` }}
-                          />
-                          <span className="text-xs text-muted-foreground">{day.slice(5)}</span>
-                        </div>
-                      );
-                    })}
-                </div>
-              </div>
-
-              {/* Memory Categories */}
-              <div className="rounded-2xl border border-border bg-card p-6">
-                <h3 className="mb-4 font-semibold text-foreground">Memory Categories</h3>
-                <div className="space-y-3">
-                  {Object.entries(stats.memoryCategoryCounts).map(([category, count]) => {
-                    const total = Object.values(stats.memoryCategoryCounts).reduce(
-                      (a, b) => a + b,
-                      1
-                    );
-                    const percentage = (count / total) * 100;
-                    return (
-                      <div key={category}>
-                        <div className="mb-1 flex items-center justify-between">
-                          <span className="text-sm capitalize text-foreground">{category}</span>
-                          <span className="text-sm font-medium text-muted-foreground">{count}</span>
-                        </div>
-                        <div className="h-2 overflow-hidden rounded-full bg-muted">
-                          <div
-                            className="h-full rounded-full bg-gradient-to-r from-purple-500 to-pink-500"
-                            style={{ width: `${percentage}%` }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
           </div>
-        )}
+        </div>
 
-        {/* Configuration Tab */}
-        {activeTab === 'config' && (
-          <div className="grid gap-6 lg:grid-cols-2">
-            {/* System Prompt - Full Width */}
-            <div className="lg:col-span-2">
-              <SystemPromptEditor
-                config={
-                  getConfig('system_prompt')?.value as { content: string; version: number } | null
-                }
-                onSave={async value => saveConfig('system_prompt', value)}
-                lastUpdated={getConfig('system_prompt')?.updated_at}
+        {/* Model & Creativity */}
+        <div className="grid gap-6 sm:grid-cols-2">
+          <div>
+            <label className="mb-2 flex items-center text-sm font-medium">
+              AI Model
+              <InfoTip
+                text="GPT-4o is smarter but costs more. GPT-4o-mini is faster and cheaper but less capable."
+                link="https://platform.openai.com/docs/models"
               />
-            </div>
-
-            {/* Model Settings */}
-            <ModelSettingsCard
-              config={
-                getConfig('model_settings')?.value as {
-                  model: string;
-                  temperature: number;
-                  max_tokens: number;
-                  top_p: number;
-                  frequency_penalty: number;
-                  presence_penalty: number;
-                } | null
-              }
-              onSave={async value => saveConfig('model_settings', value)}
-              lastUpdated={getConfig('model_settings')?.updated_at}
-            />
-
-            {/* RAG Settings */}
-            <RAGSettings
-              config={
-                getConfig('rag_settings')?.value as {
-                  max_results: number;
-                  content_types: string[];
-                  similarity_threshold: number;
-                  context_history_limit: number;
-                } | null
-              }
-              onSave={async value => saveConfig('rag_settings', value)}
-              lastUpdated={getConfig('rag_settings')?.updated_at}
-            />
-
-            {/* Tone Designer - Full Width */}
-            <div className="lg:col-span-2">
-              <ToneDesigner
-                config={
-                  getConfig('tones')?.value as {
-                    default: string;
-                    available: { id: string; name: string; modifier: string; icon?: string }[];
-                  } | null
-                }
-                onSave={async value => saveConfig('tones', value)}
-                lastUpdated={getConfig('tones')?.updated_at}
-              />
-            </div>
-
-            {/* Memory Settings - Full Width */}
-            <div className="lg:col-span-2">
-              <MemorySettings
-                config={
-                  getConfig('memory_extraction')?.value as {
-                    enabled: boolean;
-                    patterns: { regex: string; category: string; importance: number }[];
-                    auto_expire_days: number | null;
-                  } | null
-                }
-                onSave={async value => saveConfig('memory_extraction', value)}
-                lastUpdated={getConfig('memory_extraction')?.updated_at}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Memories Tab */}
-        {activeTab === 'memories' && (
-          <div className="space-y-4">
-            <div className="overflow-hidden rounded-2xl border border-border">
-              <table className="w-full">
-                <thead className="bg-muted/50">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
-                      Fact
-                    </th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
-                      Category
-                    </th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
-                      Importance
-                    </th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
-                      Created
-                    </th>
-                    <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {memories.map(memory => (
-                    <tr key={memory.id} className="transition-colors hover:bg-muted/30">
-                      <td className="max-w-md px-4 py-3 text-sm text-foreground">
-                        <div className="line-clamp-2">{memory.fact}</div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`rounded-full px-2.5 py-1 text-xs font-medium capitalize ${categoryColors[memory.category] || 'bg-muted text-muted-foreground'}`}
-                        >
-                          {memory.category}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <div className="h-2 w-16 overflow-hidden rounded-full bg-muted">
-                            <div
-                              className="h-full rounded-full bg-purple-500"
-                              style={{ width: `${memory.importance * 100}%` }}
-                            />
-                          </div>
-                          <span className="text-xs text-muted-foreground">
-                            {memory.importance.toFixed(1)}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-muted-foreground">
-                        {new Date(memory.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <button
-                          onClick={() => handleDeleteMemory(memory.id)}
-                          className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-500"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {memories.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                  <Sparkles className="mb-2 h-8 w-8" />
-                  <p>No memories found</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Conversations Tab */}
-        {activeTab === 'conversations' && (
-          <div className="space-y-3">
-            {conversations.map(conv => (
-              <div
-                key={conv.id}
-                className="overflow-hidden rounded-2xl border border-border bg-card transition-shadow hover:shadow-md"
-              >
+            </label>
+            <div className="flex gap-2">
+              {['gpt-4o', 'gpt-4o-mini'].map(m => (
                 <button
-                  onClick={() => handleExpandConversation(conv.id)}
-                  className="flex w-full items-center justify-between p-4 text-left transition-colors hover:bg-muted/30"
+                  key={m}
+                  onClick={() => setModel(m)}
+                  className={`flex-1 rounded-lg border-2 px-4 py-3 text-sm font-medium transition-all ${
+                    model === m
+                      ? 'border-purple-500 bg-purple-500/10 text-purple-500'
+                      : 'border-border hover:border-purple-300'
+                  }`}
                 >
-                  <div className="flex items-center gap-4">
-                    <div
-                      className={`rounded-lg p-2 transition-colors ${expandedConversation === conv.id ? 'bg-purple-500/20 text-purple-500' : 'bg-muted text-muted-foreground'}`}
-                    >
-                      {expandedConversation === conv.id ? (
-                        <ChevronDown className="h-4 w-4" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4" />
-                      )}
-                    </div>
-                    <div>
-                      <p className="font-medium text-foreground">
-                        @{conv.user?.username || 'unknown'}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {conv.message_count} messages
-                        {conv.title && ` • "${conv.title}"`}
-                      </p>
-                    </div>
-                  </div>
-                  <span className="text-sm text-muted-foreground">
-                    {new Date(conv.updated_at).toLocaleString()}
+                  {m === 'gpt-4o' ? 'Smart' : 'Fast'}
+                  <span className="mt-1 block text-xs opacity-60">
+                    {m === 'gpt-4o' ? '$$$' : '$'}
                   </span>
                 </button>
-                {expandedConversation === conv.id && (
-                  <div className="border-t border-border bg-muted/20 p-4">
-                    <div className="max-h-96 space-y-3 overflow-auto">
-                      {conversationMessages.map((msg: Record<string, unknown>) => (
-                        <div
-                          key={String(msg.id || msg.created_at)}
-                          className={`rounded-xl p-4 ${
-                            msg.role === 'user'
-                              ? 'ml-8 bg-muted'
-                              : 'mr-8 bg-gradient-to-br from-purple-500/10 to-pink-500/10'
-                          }`}
-                        >
-                          <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                            {msg.role === 'user' ? 'User' : 'Vibe Brain'}
-                          </p>
-                          <p className="text-sm text-foreground">{String(msg.content)}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-2 flex items-center text-sm font-medium">
+              Creativity: {creativity.toFixed(1)}
+              <InfoTip
+                text="Low = focused and consistent answers. High = more creative and varied responses. 0.7 is a good balance."
+                link="https://platform.openai.com/docs/api-reference/chat/create#temperature"
+              />
+            </label>
+            <Slider
+              value={[creativity]}
+              onValueChange={([v]) => setCreativity(v)}
+              min={0}
+              max={1.5}
+              step={0.1}
+              className="mt-4"
+            />
+            <div className="mt-1 flex justify-between text-xs text-muted-foreground">
+              <span>Focused</span>
+              <span>Creative</span>
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={handleModelSave}
+          disabled={saving}
+          className="w-full rounded-lg bg-purple-500 py-2 text-sm font-medium text-white hover:bg-purple-600 disabled:opacity-50"
+        >
+          {saving ? 'Saving...' : 'Save Model Settings'}
+        </button>
+      </div>
+
+      {/* Memories - What Vibe Brain Remembers */}
+      <div className="rounded-2xl border border-border bg-card p-6">
+        <h2 className="mb-4 flex items-center text-lg font-semibold">
+          <Sparkles className="mr-2 h-5 w-5 text-purple-500" />
+          What Vibe Brain Remembers
+          <InfoTip
+            text="Vibe Brain learns facts about users from conversations. These memories help personalize responses."
+            link="https://en.wikipedia.org/wiki/Memory_(artificial_intelligence)"
+          />
+        </h2>
+
+        {memories.length === 0 ? (
+          <p className="py-8 text-center text-muted-foreground">
+            No memories yet. Start chatting with Vibe Brain!
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {memories.slice(0, 10).map(memory => (
+              <div
+                key={memory.id}
+                className="flex items-center justify-between rounded-lg bg-muted/50 p-3"
+              >
+                <div className="flex-1">
+                  <p className="text-sm">{memory.fact}</p>
+                  <span className="mt-1 inline-block rounded-full bg-purple-500/10 px-2 py-0.5 text-xs text-purple-500">
+                    {memory.category}
+                  </span>
+                </div>
+                <button
+                  onClick={() => deleteMemory(memory.id)}
+                  className="ml-2 rounded p-1 text-muted-foreground hover:bg-red-500/10 hover:text-red-500"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
               </div>
             ))}
-            {conversations.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                <MessageSquare className="mb-2 h-8 w-8" />
-                <p>No conversations found</p>
-              </div>
-            )}
           </div>
         )}
+      </div>
 
-        {loading && (
-          <div className="flex items-center justify-center py-12">
-            <RefreshCw className="h-8 w-8 animate-spin text-purple-500" />
+      {/* Advanced Settings - Expandable */}
+      <div className="rounded-2xl border border-border bg-card">
+        <button
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="flex w-full items-center justify-between p-6 text-left"
+        >
+          <div className="flex items-center gap-2">
+            <Settings className="h-5 w-5 text-muted-foreground" />
+            <span className="font-semibold">Advanced Settings</span>
+            <InfoTip text="Technical settings for power users. Only change these if you know what you're doing!" />
+          </div>
+          <ChevronDown
+            className={`h-5 w-5 text-muted-foreground transition-transform ${showAdvanced ? 'rotate-180' : ''}`}
+          />
+        </button>
+
+        {showAdvanced && (
+          <div className="space-y-4 border-t border-border p-6">
+            {configs.map(config => (
+              <div key={config.key} className="rounded-lg bg-muted/30 p-4">
+                <div className="mb-2 flex items-center justify-between">
+                  <h4 className="text-sm font-medium capitalize">
+                    {config.key.replace(/_/g, ' ')}
+                  </h4>
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(config.updated_at).toLocaleDateString()}
+                  </span>
+                </div>
+                <pre className="max-h-48 overflow-auto rounded bg-background p-3 text-xs">
+                  {JSON.stringify(config.value, null, 2)}
+                </pre>
+              </div>
+            ))}
+
+            <p className="text-center text-xs text-muted-foreground">
+              Need to edit these?{' '}
+              <Link
+                href="https://supabase.com/dashboard"
+                target="_blank"
+                className="text-purple-500 hover:underline"
+              >
+                Edit in Supabase
+              </Link>
+            </p>
           </div>
         )}
       </div>
