@@ -6,7 +6,14 @@
 
 import { createServerAdminClient } from '@/lib/supabaseAdmin';
 
-import type { VibelogResult, UserResult, CommentResult, PlatformStatsResult } from './tools';
+import type {
+  VibelogResult,
+  UserResult,
+  CommentResult,
+  PlatformStatsResult,
+  RecentCommentResult,
+  NewMemberResult,
+} from './tools';
 
 /**
  * Execute a tool call and return the result
@@ -36,6 +43,10 @@ export async function executeTool(
       return getPlatformStats();
     case 'getVibelogComments':
       return getVibelogComments(args.vibelogId as string, (args.limit as number) || 5);
+    case 'getRecentComments':
+      return getRecentComments((args.limit as number) || 5);
+    case 'getNewMembers':
+      return getNewMembers((args.limit as number) || 5);
     default:
       return { error: `Unknown tool: ${toolName}` };
   }
@@ -277,29 +288,13 @@ async function getUserVibelogs(username: string, limit: number): Promise<Vibelog
 }
 
 /**
- * Get trending vibelogs
+ * Get trending/recent vibelogs - always returns content
  */
 async function getTrending(timeframe: string, limit: number): Promise<VibelogResult[]> {
   const supabase = await createServerAdminClient();
   const safeLimit = Math.min(limit, 10);
 
-  // Calculate date filter based on timeframe
-  const now = new Date();
-  let dateFilter: Date;
-  switch (timeframe) {
-    case 'today':
-      dateFilter = new Date(now.setHours(0, 0, 0, 0));
-      break;
-    case 'week':
-      dateFilter = new Date(now.setDate(now.getDate() - 7));
-      break;
-    case 'month':
-      dateFilter = new Date(now.setMonth(now.getMonth() - 1));
-      break;
-    default:
-      dateFilter = new Date(0); // all time
-  }
-
+  // First, just get the most recent vibelogs (no date filter to ensure we always get results)
   const { data: vibelogs, error } = await supabase
     .from('vibelogs')
     .select(
@@ -314,11 +309,11 @@ async function getTrending(timeframe: string, limit: number): Promise<VibelogRes
     `
     )
     .eq('is_published', true)
-    .gte('created_at', dateFilter.toISOString())
     .order('created_at', { ascending: false })
-    .limit(safeLimit * 2); // Get more to sort by engagement
+    .limit(safeLimit * 2);
 
-  if (error || !vibelogs) {
+  if (error || !vibelogs || vibelogs.length === 0) {
+    console.log('[TOOL] getTrending: No vibelogs found');
     return [];
   }
 
@@ -344,20 +339,50 @@ async function getTrending(timeframe: string, limit: number): Promise<VibelogRes
     commentCountMap.set(c.vibelog_id, (commentCountMap.get(c.vibelog_id) || 0) + 1);
   }
 
-  // Sort by engagement and take top results
-  const withEngagement = vibelogs.map(v => {
-    const profile = Array.isArray(v.profiles) ? v.profiles[0] : v.profiles;
-    return {
-      id: v.id,
-      title: v.title || 'Untitled',
-      teaser: v.teaser,
-      content: v.content?.slice(0, 300) || null,
-      username: (profile as { username: string })?.username || 'unknown',
-      createdAt: v.created_at,
-      reactionCount: reactionCountMap.get(v.id) || 0,
-      commentCount: commentCountMap.get(v.id) || 0,
-    };
-  });
+  // Map and optionally filter by timeframe
+  const now = new Date();
+  let dateFilter: Date | null = null;
+  if (timeframe === 'today') {
+    dateFilter = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  } else if (timeframe === 'week') {
+    dateFilter = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  } else if (timeframe === 'month') {
+    dateFilter = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  }
+
+  const withEngagement = vibelogs
+    .filter(v => !dateFilter || new Date(v.created_at) >= dateFilter)
+    .map(v => {
+      const profile = Array.isArray(v.profiles) ? v.profiles[0] : v.profiles;
+      return {
+        id: v.id,
+        title: v.title || 'Untitled',
+        teaser: v.teaser,
+        content: v.content?.slice(0, 300) || null,
+        username: (profile as { username: string })?.username || 'unknown',
+        createdAt: v.created_at,
+        reactionCount: reactionCountMap.get(v.id) || 0,
+        commentCount: commentCountMap.get(v.id) || 0,
+      };
+    });
+
+  // If timeframe filter removed all results, return recent ones instead
+  if (withEngagement.length === 0) {
+    console.log('[TOOL] getTrending: No vibelogs in timeframe, returning recent');
+    return vibelogs.slice(0, safeLimit).map(v => {
+      const profile = Array.isArray(v.profiles) ? v.profiles[0] : v.profiles;
+      return {
+        id: v.id,
+        title: v.title || 'Untitled',
+        teaser: v.teaser,
+        content: v.content?.slice(0, 300) || null,
+        username: (profile as { username: string })?.username || 'unknown',
+        createdAt: v.created_at,
+        reactionCount: reactionCountMap.get(v.id) || 0,
+        commentCount: commentCountMap.get(v.id) || 0,
+      };
+    });
+  }
 
   // Sort by total engagement
   withEngagement.sort(
@@ -483,4 +508,72 @@ async function getVibelogComments(vibelogId: string, limit: number): Promise<Com
       createdAt: c.created_at,
     };
   });
+}
+
+/**
+ * Get recent comments across all vibelogs
+ */
+async function getRecentComments(limit: number): Promise<RecentCommentResult[]> {
+  const supabase = await createServerAdminClient();
+  const safeLimit = Math.min(limit, 10);
+
+  const { data: comments, error } = await supabase
+    .from('comments')
+    .select(
+      `
+      id,
+      content,
+      created_at,
+      vibelog_id,
+      profiles!inner(username),
+      vibelogs!inner(id, title)
+    `
+    )
+    .order('created_at', { ascending: false })
+    .limit(safeLimit);
+
+  if (error || !comments) {
+    console.error('[TOOL] getRecentComments error:', error);
+    return [];
+  }
+
+  return comments.map(c => {
+    const profile = Array.isArray(c.profiles) ? c.profiles[0] : c.profiles;
+    const vibelog = Array.isArray(c.vibelogs) ? c.vibelogs[0] : c.vibelogs;
+    return {
+      id: c.id,
+      content: c.content?.slice(0, 200) || '',
+      username: (profile as { username: string })?.username || 'unknown',
+      vibelogId: c.vibelog_id,
+      vibelogTitle: (vibelog as { title: string })?.title || 'Untitled',
+      createdAt: c.created_at,
+    };
+  });
+}
+
+/**
+ * Get newest members on the platform
+ */
+async function getNewMembers(limit: number): Promise<NewMemberResult[]> {
+  const supabase = await createServerAdminClient();
+  const safeLimit = Math.min(limit, 10);
+
+  const { data: profiles, error } = await supabase
+    .from('profiles')
+    .select('id, username, display_name, bio, created_at')
+    .order('created_at', { ascending: false })
+    .limit(safeLimit);
+
+  if (error || !profiles) {
+    console.error('[TOOL] getNewMembers error:', error);
+    return [];
+  }
+
+  return profiles.map(p => ({
+    id: p.id,
+    username: p.username,
+    displayName: p.display_name,
+    bio: p.bio?.slice(0, 100) || null,
+    joinedAt: p.created_at,
+  }));
 }
