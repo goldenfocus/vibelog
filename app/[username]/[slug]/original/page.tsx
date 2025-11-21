@@ -12,5 +12,7 @@ export default async function OriginalPage({ params }: PageProps) {
 
   // Redirect to the main page with the original view
   // The ContentTabs component will handle showing the original tab
-  redirect(`/@${username}/${slug}#original`);
+  // Note: username already includes @ prefix from the route pattern
+  const cleanUsername = username.startsWith('@') ? username : `@${username}`;
+  redirect(`/${cleanUsername}/${slug}#original`);
 }
