@@ -8,6 +8,10 @@ import { createServerSupabaseClient } from '@/lib/supabase';
 export const metadata = {
   title: 'Admin Panel - Vibelog',
   description: 'Administrative dashboard for Vibelog',
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 // Force dynamic rendering to avoid caching admin checks
