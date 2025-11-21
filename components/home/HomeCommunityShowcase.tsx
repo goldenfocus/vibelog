@@ -117,18 +117,21 @@ export default function HomeCommunityShowcase({
         />
       )}
 
-      {/* Newest members - Futuristic Carousel */}
+      {/* Newest members - Avatar-centric Carousel */}
       {loading ? (
         <div className="py-6">
           <div className="mb-5 px-4 md:px-6">
             <div className="h-6 w-36 animate-pulse rounded-full bg-border/70" />
           </div>
-          <div className="flex gap-2.5 overflow-hidden px-4 md:px-6">
-            {Array.from({ length: 10 }).map((_, index) => (
+          <div className="flex gap-4 overflow-hidden px-4 md:px-6">
+            {Array.from({ length: 12 }).map((_, index) => (
               <div
                 key={`member-skeleton-${index}`}
-                className="h-[140px] w-[110px] flex-shrink-0 animate-pulse rounded-2xl border border-border/40 bg-card/60 backdrop-blur"
-              />
+                className="flex flex-shrink-0 flex-col items-center"
+              >
+                <div className="h-20 w-20 animate-pulse rounded-full bg-card/60 md:h-24 md:w-24" />
+                <div className="mt-2 h-3 w-16 animate-pulse rounded-full bg-card/40" />
+              </div>
             ))}
           </div>
         </div>
