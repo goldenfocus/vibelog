@@ -2,7 +2,7 @@
 
 import * as TabsPrimitive from '@radix-ui/react-tabs';
 import { FileText, Mic, Play, Pause, Loader2 } from 'lucide-react';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import * as React from 'react';
 
 import { cn } from '@/lib/utils';
@@ -80,30 +80,35 @@ export function ContentTabs({
   className,
   children,
 }: ContentTabsProps) {
-  const router = useRouter();
   const pathname = usePathname();
   const { currentTrack, isPlaying, play, pause } = useAudioPlayerStore();
   const [loadingTrack, setLoadingTrack] = React.useState<string | null>(null);
+  const [activeTab, setActiveTab] = React.useState<string>('vibelog');
 
   const hasOriginalMedia = !!(originalAudioUrl || videoUrl);
 
-  // Determine current view from URL
-  const isOriginalView = pathname?.endsWith('/original');
-  const defaultTab = isOriginalView ? 'original' : 'vibelog';
+  // Read hash from URL on mount and when it changes
+  React.useEffect(() => {
+    const updateFromHash = () => {
+      const hash = window.location.hash.replace('#', '');
+      if (hash === 'original' && hasOriginalMedia) {
+        setActiveTab('original');
+      } else {
+        setActiveTab('vibelog');
+      }
+    };
 
-  // Handle tab change with URL navigation
+    updateFromHash();
+    window.addEventListener('hashchange', updateFromHash);
+    return () => window.removeEventListener('hashchange', updateFromHash);
+  }, [hasOriginalMedia]);
+
+  // Handle tab change with hash navigation (avoids URL encoding issues)
   const handleTabChange = (value: string) => {
-    if (!pathname) {
-      return;
-    }
-
-    const basePath = pathname.replace(/\/(original|vibelogged)$/, '');
-
-    if (value === 'original') {
-      router.push(`${basePath}/original`);
-    } else {
-      router.push(`${basePath}/vibelogged`);
-    }
+    setActiveTab(value);
+    // Update URL hash without navigation/reload
+    const newHash = value === 'original' ? '#original' : '#vibelog';
+    window.history.replaceState(null, '', `${pathname}${newHash}`);
   };
 
   const handlePlayClick = async (audioUrl: string, trackType: 'vibelog' | 'original') => {
@@ -147,7 +152,7 @@ export function ContentTabs({
 
   return (
     <div className={cn('w-full', className)}>
-      <Tabs value={defaultTab} onValueChange={handleTabChange} className="w-full">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList>
           <TabsTrigger value="vibelog">
             <FileText className="h-4 w-4" />

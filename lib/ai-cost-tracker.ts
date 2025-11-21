@@ -8,7 +8,7 @@ const COST_RATES = {
     output: 0.0006, // per 1K tokens ($0.60/1M)
   },
   'tts-1-hd': 0.03, // per 1K characters
-  'dall-e-3': 0.04, // per image (1024x1024)
+  'dall-e-3': 0.08, // per image (1792x1024 wide format)
 };
 
 const DAILY_COST_LIMIT = 50; // $50 per day circuit breaker
@@ -33,18 +33,23 @@ export async function trackAICost(
     const supabase = await createServerAdminClient();
 
     // Log the usage (fire and forget - don't block on errors)
-    supabase.from('ai_usage_log').insert({
-      user_id: userId,
-      service,
-      endpoint: metadata?.endpoint,
-      estimated_cost: cost,
-      input_tokens: metadata?.input_tokens,
-      output_tokens: metadata?.output_tokens,
-      cache_hit: metadata?.cache_hit || false,
-      metadata,
-    }).then(({ error }) => {
-      if (error) console.warn('[COST TRACKER] Failed to log usage:', error.message);
-    });
+    supabase
+      .from('ai_usage_log')
+      .insert({
+        user_id: userId,
+        service,
+        endpoint: metadata?.endpoint,
+        estimated_cost: cost,
+        input_tokens: metadata?.input_tokens,
+        output_tokens: metadata?.output_tokens,
+        cache_hit: metadata?.cache_hit || false,
+        metadata,
+      })
+      .then(({ error }) => {
+        if (error) {
+          console.warn('[COST TRACKER] Failed to log usage:', error.message);
+        }
+      });
 
     // Check daily total
     const today = new Date().toISOString().split('T')[0];
@@ -62,22 +67,30 @@ export async function trackAICost(
     const currentTotal = (dailyCost?.total_cost || 0) + cost;
 
     // Update or insert daily cost (fire and forget)
-    supabase.from('ai_daily_costs').upsert(
-      {
-        date: today,
-        total_cost: currentTotal,
-      },
-      { onConflict: 'date' }
-    ).then(({ error }) => {
-      if (error) console.warn('[COST TRACKER] Failed to update daily cost:', error.message);
-    });
+    supabase
+      .from('ai_daily_costs')
+      .upsert(
+        {
+          date: today,
+          total_cost: currentTotal,
+        },
+        { onConflict: 'date' }
+      )
+      .then(({ error }) => {
+        if (error) {
+          console.warn('[COST TRACKER] Failed to update daily cost:', error.message);
+        }
+      });
 
     // Circuit breaker
     if (currentTotal > DAILY_COST_LIMIT) {
       console.error(
         `🚨 EMERGENCY: Daily AI cost exceeded $${DAILY_COST_LIMIT}! Current: $${currentTotal.toFixed(2)}`
       );
-      supabase.from('ai_daily_costs').update({ disabled_at: new Date().toISOString() }).eq('date', today);
+      supabase
+        .from('ai_daily_costs')
+        .update({ disabled_at: new Date().toISOString() })
+        .eq('date', today);
       return { allowed: false, dailyTotal: currentTotal };
     }
 

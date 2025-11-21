@@ -39,22 +39,23 @@ export const config = {
 
   // Rate limiting - AGGRESSIVE COST PROTECTION
   // Limits are per-user per-day to prevent cost spikes ($50/day circuit breaker)
+  // TODO: Lower these after testing! Currently set high for testing.
   rateLimits: {
     transcription: {
-      anonymous: { limit: isDev ? 100 : 10, window: '24 h' }, // ~$0.06/day max (10min)
-      authenticated: { limit: isDev ? 100 : 100, window: '24 h' }, // ~$0.60/day max (100min)
+      anonymous: { limit: 100, window: '24 h' }, // TESTING: was 10
+      authenticated: { limit: 1000, window: '24 h' }, // TESTING: was 100
     },
     generation: {
-      anonymous: { limit: isDev ? 50 : 5, window: '24 h' }, // ~$0.01/day max
-      authenticated: { limit: isDev ? 50 : 50, window: '24 h' }, // ~$0.05/day max
+      anonymous: { limit: 100, window: '24 h' }, // TESTING: was 5
+      authenticated: { limit: 1000, window: '24 h' }, // TESTING: was 50
     },
     tts: {
-      anonymous: { limit: isDev ? 20 : 3, window: '24 h' }, // ~$0.03/day max (300 chars each)
-      authenticated: { limit: isDev ? 20 : 20, window: '24 h' }, // ~$0.20/day max (300 chars each)
+      anonymous: { limit: 100, window: '24 h' }, // TESTING: was 3
+      authenticated: { limit: 1000, window: '24 h' }, // TESTING: was 20
     },
     images: {
-      anonymous: { limit: isDev ? 10 : 2, window: '24 h' }, // ~$0.08/day max
-      authenticated: { limit: isDev ? 10 : 10, window: '24 h' }, // ~$0.40/day max
+      anonymous: { limit: 100, window: '24 h' }, // TESTING: was 2
+      authenticated: { limit: 1000, window: '24 h' }, // TESTING: was 10
     },
   },
 
