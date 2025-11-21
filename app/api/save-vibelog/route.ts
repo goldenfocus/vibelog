@@ -227,7 +227,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           teaser: vibelogData.teaser,
           content: vibelogData.content,
           transcription: vibelogData.transcription,
-          cover_image_url: vibelogData.cover_image_url || undefined,
+          cover_image_url: vibelogData.cover_image_url || undefined, // Don't overwrite if not provided
           cover_image_alt: vibelogData.cover_image_alt || undefined,
           cover_image_width: vibelogData.cover_image_width || undefined,
           cover_image_height: vibelogData.cover_image_height || undefined,
