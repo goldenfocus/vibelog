@@ -5,6 +5,7 @@ import { getCachedResponse, setCachedResponse } from '@/lib/ai-cache';
 import { trackAICost, calculateWhisperCost, isDailyLimitExceeded } from '@/lib/ai-cost-tracker';
 import { config } from '@/lib/config';
 import { isDev } from '@/lib/env';
+import { normalizeVibeLog } from '@/lib/normalize-vibelog';
 import { rateLimit, tooManyResponse } from '@/lib/rateLimit';
 import { downloadFromStorage, deleteFromStorage } from '@/lib/storage';
 import { createServerSupabaseClient } from '@/lib/supabase';
@@ -269,7 +270,8 @@ export async function POST(request: NextRequest) {
 
     // Extract language metadata from verbose response
     const detectedLanguage = transcription.language || 'en'; // ISO 639-1 code
-    const transcriptionText = transcription.text;
+    // Normalize "vibelog" variations (Whisper often mishears it)
+    const transcriptionText = normalizeVibeLog(transcription.text);
     const actualDuration = transcription.duration || estimatedDurationSeconds;
 
     // 💰 COST TRACKING: Track this API call
