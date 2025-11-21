@@ -1,4 +1,4 @@
-import { Shield, Users, FileText, Settings, LayoutDashboard } from 'lucide-react';
+import { Shield, Users, FileText, Settings, LayoutDashboard, Brain } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
@@ -36,6 +36,11 @@ async function AdminSidebar({ currentPath }: { currentPath?: string }) {
       href: '/admin/config',
       label: 'Configuration',
       icon: Settings,
+    },
+    {
+      href: '/admin/vibe-brain',
+      label: 'Vibe Brain',
+      icon: Brain,
     },
   ];
 
