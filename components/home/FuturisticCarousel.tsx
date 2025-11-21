@@ -71,31 +71,6 @@ export function FuturisticCarousel({ vibelogs, title, subtitle }: FuturisticCaro
     updateScrollState();
   }, [updateScrollState]);
 
-  // Prevent vertical touch movement
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    const touch = e.touches[0];
-    const startY = touch.clientY;
-
-    const handleTouchMove = (moveEvent: TouchEvent) => {
-      const currentTouch = moveEvent.touches[0];
-      const deltaY = Math.abs(currentTouch.clientY - startY);
-      const deltaX = Math.abs(currentTouch.clientX - touch.clientX);
-
-      // If trying to scroll vertically more than horizontally, prevent it
-      if (deltaY > deltaX) {
-        moveEvent.preventDefault();
-      }
-    };
-
-    const handleTouchEnd = () => {
-      document.removeEventListener('touchmove', handleTouchMove);
-      document.removeEventListener('touchend', handleTouchEnd);
-    };
-
-    document.addEventListener('touchmove', handleTouchMove, { passive: false });
-    document.addEventListener('touchend', handleTouchEnd);
-  }, []);
-
   // Navigation handlers
   const scrollPrev = () => {
     const currentIndex = getActiveCardIndex();
@@ -154,18 +129,16 @@ export function FuturisticCarousel({ vibelogs, title, subtitle }: FuturisticCaro
         <div
           ref={containerRef}
           className={cn(
-            'flex gap-5 overflow-x-auto px-4 pb-6 md:px-6',
-            'snap-x snap-mandatory scroll-smooth',
-            'scrollbar-hide scroll-lock-y', // Hide scrollbar and lock vertical movement
-            '-mx-4 md:-mx-6' // Negative margin to allow cards to touch edges
+            'flex gap-5 overflow-x-auto overflow-y-hidden px-4 pb-6 md:px-6',
+            'snap-x snap-mandatory',
+            'scrollbar-hide',
+            '-mx-4 md:-mx-6'
           )}
           onScroll={handleScroll}
-          onTouchStart={handleTouchStart}
           style={{
-            scrollBehavior: 'smooth',
             WebkitOverflowScrolling: 'touch',
-            overscrollBehaviorX: 'contain',
-            overscrollBehaviorY: 'none',
+            overscrollBehavior: 'contain none',
+            touchAction: 'pan-x',
           }}
         >
           {/* Spacing div for left padding */}
