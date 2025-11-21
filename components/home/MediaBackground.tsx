@@ -11,6 +11,14 @@ interface MediaBackgroundProps {
   isPlaying?: boolean;
 }
 
+// OpenAI DALL-E URLs expire after ~1 hour, detect and skip them
+const isExpiredOpenAIUrl = (url: string | null | undefined): boolean => {
+  if (!url) {
+    return false;
+  }
+  return url.includes('oaidalleapiprodscus.blob.core.windows.net');
+};
+
 /**
  * Media background with parallax effect and Ken Burns animation
  * Displays video or image with smooth loading and hover effects
@@ -24,12 +32,17 @@ export function MediaBackground({
 }: MediaBackgroundProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [videoError, setVideoError] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Reset video error when videoUrl changes
+  // Skip expired OpenAI URLs entirely
+  const validCoverImage = coverImage && !isExpiredOpenAIUrl(coverImage) ? coverImage : null;
+
+  // Reset errors when URLs change
   useEffect(() => {
     setVideoError(false);
-  }, [videoUrl]);
+    setImageError(false);
+  }, [videoUrl, coverImage]);
 
   // Control video playback based on isPlaying prop
   useEffect(() => {
@@ -47,7 +60,7 @@ export function MediaBackground({
   }, [isPlaying, videoUrl, videoError]);
 
   const hasVideo = videoUrl && !videoError;
-  const hasImage = coverImage;
+  const hasImage = validCoverImage && !imageError;
 
   return (
     <div className={`absolute inset-0 overflow-hidden ${className}`}>
@@ -64,7 +77,7 @@ export function MediaBackground({
           muted
           playsInline
           preload="metadata" // Load first frame on mobile
-          poster={coverImage || undefined} // Use cover image as poster
+          poster={validCoverImage || undefined} // Use cover image as poster
           onLoadedData={() => setIsLoaded(true)}
           onLoadedMetadata={() => setIsLoaded(true)} // Also show on metadata load
           onError={() => setVideoError(true)}
@@ -75,7 +88,7 @@ export function MediaBackground({
       {hasImage && (!hasVideo || videoError) && (
         <div className="relative h-full w-full">
           <Image
-            src={coverImage}
+            src={validCoverImage}
             alt="Card background"
             fill
             className={`object-cover transition-opacity duration-500 ${
@@ -84,6 +97,7 @@ export function MediaBackground({
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 320px"
             quality={85}
             onLoad={() => setIsLoaded(true)}
+            onError={() => setImageError(true)}
             priority={false}
           />
         </div>
