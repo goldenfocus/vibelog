@@ -101,6 +101,7 @@ export function ScreenCaptureZone({
   // Refs
   const screenPreviewRef = useRef<HTMLVideoElement>(null);
   const cameraPreviewRef = useRef<HTMLVideoElement>(null);
+  const cameraRecordingRef = useRef<HTMLVideoElement>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const screenStreamRef = useRef<MediaStream | null>(null);
   const cameraStreamRef = useRef<MediaStream | null>(null);
@@ -286,6 +287,12 @@ export function ScreenCaptureZone({
 
       const compositeVideoStream = compositor.start();
       compositorRef.current = compositor;
+
+      // Attach camera stream to recording preview element
+      if (cameraStreamRef.current && cameraRecordingRef.current) {
+        cameraRecordingRef.current.srcObject = cameraStreamRef.current;
+        cameraRecordingRef.current.play().catch(console.error);
+      }
 
       // Live preview on canvas
       if (previewCanvasRef.current) {
@@ -570,21 +577,68 @@ export function ScreenCaptureZone({
           </motion.div>
         )}
 
-        {/* RECORDING STATE */}
+        {/* RECORDING STATE - Minimal overlay like Google Meet */}
         {status === 'recording' && (
           <motion.div
             key="recording"
             {...scaleIn}
-            className="relative aspect-video overflow-hidden rounded-2xl bg-black shadow-2xl"
+            className="relative aspect-video overflow-hidden rounded-2xl bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 shadow-2xl"
           >
-            <canvas
-              ref={previewCanvasRef}
-              width={1920}
-              height={1080}
-              className="h-full w-full object-contain"
-            />
+            {/* Hidden canvas for compositor (still needed for recording) */}
+            <canvas ref={previewCanvasRef} width={1920} height={1080} className="hidden" />
 
-            {/* Recording indicator with glow */}
+            {/* Recording visualization */}
+            <div className="flex h-full flex-col items-center justify-center">
+              {/* Animated recording ring */}
+              <div className="relative">
+                <motion.div
+                  animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                  className="absolute -inset-4 rounded-full bg-red-500/20"
+                />
+                <motion.div
+                  animate={{ scale: [1, 1.1, 1], opacity: [0.7, 1, 0.7] }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                  className="absolute -inset-2 rounded-full bg-red-500/30"
+                />
+                <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-red-600 shadow-lg shadow-red-500/50">
+                  <Monitor className="h-10 w-10 text-white" />
+                </div>
+              </div>
+
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="mt-6 text-lg font-medium text-white"
+              >
+                Recording your screen...
+              </motion.p>
+              <p className="mt-1 text-sm text-gray-400">Your screen is being captured</p>
+            </div>
+
+            {/* Camera PiP during recording */}
+            {hasCameraPip && cameraStreamRef.current && (
+              <motion.div
+                {...pipAnimation}
+                className={`absolute ${pipPositionStyles[pipPosition]} z-10`}
+              >
+                <div className="overflow-hidden rounded-xl shadow-2xl ring-2 ring-white/30">
+                  <video
+                    ref={cameraRecordingRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="h-24 w-32 object-cover sm:h-32 sm:w-44"
+                  />
+                  <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-red-600/90 px-2 py-0.5 text-[10px] font-bold text-white">
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
+                    LIVE
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Recording timer badge */}
             <motion.div
               animate={{
                 boxShadow: ['0 0 0 0 rgba(239, 68, 68, 0.4)', '0 0 0 8px rgba(239, 68, 68, 0)'],
