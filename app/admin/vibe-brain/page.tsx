@@ -7,12 +7,21 @@ import {
   Sparkles,
   BarChart3,
   RefreshCw,
-  Save,
   Trash2,
   ChevronDown,
   ChevronRight,
+  TrendingUp,
+  Users,
+  DollarSign,
+  Database,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+
+import { MemorySettings } from '@/components/admin/vibe-brain/MemorySettings';
+import { ModelSettingsCard } from '@/components/admin/vibe-brain/ModelSettingsCard';
+import { RAGSettings } from '@/components/admin/vibe-brain/RAGSettings';
+import { SystemPromptEditor } from '@/components/admin/vibe-brain/SystemPromptEditor';
+import { ToneDesigner } from '@/components/admin/vibe-brain/ToneDesigner';
 
 interface Config {
   id: string;
@@ -29,6 +38,7 @@ interface Memory {
   category: string;
   importance: number;
   created_at: string;
+  user?: { username: string; display_name: string };
 }
 
 interface Conversation {
@@ -66,11 +76,6 @@ export default function VibeBrainAdminPage() {
   const [configs, setConfigs] = useState<Config[]>([]);
   const [memories, setMemories] = useState<Memory[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
-
-  // Config editing
-  const [editingConfig, setEditingConfig] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState('');
-  const [saving, setSaving] = useState(false);
 
   // Expanded sections
   const [expandedConversation, setExpandedConversation] = useState<string | null>(null);
@@ -125,28 +130,23 @@ export default function VibeBrainAdminPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleSaveConfig = async (key: string) => {
-    setSaving(true);
-    try {
-      const parsed = JSON.parse(editValue);
-      const res = await fetch('/api/admin/vibe-brain/config', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key, value: parsed }),
-      });
+  // Get config by key
+  const getConfig = (key: string) => configs.find(c => c.key === key);
 
-      if (res.ok) {
-        await fetchConfigs();
-        setEditingConfig(null);
-      } else {
-        setError('Failed to save configuration');
-      }
-    } catch {
-      setError('Invalid JSON format');
-    } finally {
-      setSaving(false);
+  // Save config handler
+  const saveConfig = useCallback(async (key: string, value: unknown) => {
+    const res = await fetch('/api/admin/vibe-brain/config', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key, value }),
+    });
+
+    if (res.ok) {
+      await fetchConfigs();
+    } else {
+      throw new Error('Failed to save configuration');
     }
-  };
+  }, []);
 
   const handleDeleteMemory = async (id: string) => {
     // eslint-disable-next-line no-alert
@@ -184,25 +184,32 @@ export default function VibeBrainAdminPage() {
     { id: 'conversations', label: 'Conversations', icon: MessageSquare },
   ];
 
+  const categoryColors: Record<string, string> = {
+    preferences: 'bg-pink-500/10 text-pink-500',
+    goals: 'bg-amber-500/10 text-amber-500',
+    personal: 'bg-blue-500/10 text-blue-500',
+    interests: 'bg-green-500/10 text-green-500',
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 p-3">
-            <Brain className="h-8 w-8 text-white" />
+        <div className="flex items-center gap-4">
+          <div className="rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 p-4 shadow-lg shadow-purple-500/25">
+            <Brain className="h-10 w-10 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Vibe Brain Admin</h1>
-            <p className="text-sm text-muted-foreground">
-              Manage AI configuration, memories, and conversations
+            <h1 className="text-3xl font-bold text-foreground">Vibe Brain Admin</h1>
+            <p className="text-muted-foreground">
+              Configure AI personality, memory, and knowledge retrieval
             </p>
           </div>
         </div>
         <button
           onClick={loadData}
           disabled={loading}
-          className="flex items-center gap-2 rounded-lg bg-muted px-4 py-2 text-sm font-medium transition-colors hover:bg-muted/80"
+          className="flex items-center gap-2 rounded-xl bg-muted px-5 py-2.5 font-medium transition-all hover:bg-muted/80 active:scale-95"
         >
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           Refresh
@@ -210,23 +217,23 @@ export default function VibeBrainAdminPage() {
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
           {error}
         </div>
       )}
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-border">
+      <div className="flex gap-1 rounded-xl bg-muted/50 p-1">
         {tabs.map(tab => {
           const Icon = tab.icon;
           return (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
+              className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all ${
                 activeTab === tab.id
-                  ? 'border-purple-500 text-purple-600 dark:text-purple-400'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               <Icon className="h-4 w-4" />
@@ -237,43 +244,83 @@ export default function VibeBrainAdminPage() {
       </div>
 
       {/* Tab Content */}
-      <div className="min-h-[400px]">
+      <div className="min-h-[500px]">
         {/* Overview Tab */}
         {activeTab === 'overview' && stats && (
           <div className="space-y-6">
             {/* Stats Grid */}
             <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
               {[
-                { label: 'Conversations', value: stats.overview.conversations },
-                { label: 'Messages', value: stats.overview.messages },
-                { label: 'Memories', value: stats.overview.memories },
-                { label: 'Embeddings', value: stats.overview.embeddings },
-                { label: 'Unique Users', value: stats.overview.uniqueUsers },
-                { label: 'Total Cost', value: `$${stats.overview.totalCost.toFixed(3)}` },
-              ].map(stat => (
-                <div key={stat.label} className="rounded-lg border border-border bg-card p-4">
-                  <p className="text-2xl font-bold text-foreground">{stat.value}</p>
-                  <p className="text-sm text-muted-foreground">{stat.label}</p>
-                </div>
-              ))}
+                {
+                  label: 'Conversations',
+                  value: stats.overview.conversations,
+                  icon: MessageSquare,
+                  color: 'text-blue-500 bg-blue-500/10',
+                },
+                {
+                  label: 'Messages',
+                  value: stats.overview.messages,
+                  icon: TrendingUp,
+                  color: 'text-green-500 bg-green-500/10',
+                },
+                {
+                  label: 'Memories',
+                  value: stats.overview.memories,
+                  icon: Sparkles,
+                  color: 'text-purple-500 bg-purple-500/10',
+                },
+                {
+                  label: 'Embeddings',
+                  value: stats.overview.embeddings,
+                  icon: Database,
+                  color: 'text-amber-500 bg-amber-500/10',
+                },
+                {
+                  label: 'Unique Users',
+                  value: stats.overview.uniqueUsers,
+                  icon: Users,
+                  color: 'text-pink-500 bg-pink-500/10',
+                },
+                {
+                  label: 'Total Cost',
+                  value: `$${stats.overview.totalCost.toFixed(2)}`,
+                  icon: DollarSign,
+                  color: 'text-emerald-500 bg-emerald-500/10',
+                },
+              ].map(stat => {
+                const Icon = stat.icon;
+                return (
+                  <div
+                    key={stat.label}
+                    className="rounded-2xl border border-border bg-card p-4 transition-shadow hover:shadow-md"
+                  >
+                    <div className={`mb-3 inline-flex rounded-xl p-2 ${stat.color}`}>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <p className="text-2xl font-bold text-foreground">{stat.value}</p>
+                    <p className="text-sm text-muted-foreground">{stat.label}</p>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Charts */}
             <div className="grid gap-6 md:grid-cols-2">
               {/* Messages by Day */}
-              <div className="rounded-lg border border-border bg-card p-4">
+              <div className="rounded-2xl border border-border bg-card p-6">
                 <h3 className="mb-4 font-semibold text-foreground">Messages (Last 7 Days)</h3>
-                <div className="flex h-32 items-end gap-1">
+                <div className="flex h-40 items-end gap-2">
                   {Object.entries(stats.messagesByDay)
                     .sort(([a], [b]) => a.localeCompare(b))
                     .map(([day, count]) => {
-                      const max = Math.max(...Object.values(stats.messagesByDay));
-                      const height = max > 0 ? (count / max) * 100 : 0;
+                      const max = Math.max(...Object.values(stats.messagesByDay), 1);
+                      const height = (count / max) * 100;
                       return (
-                        <div key={day} className="flex flex-1 flex-col items-center gap-1">
+                        <div key={day} className="flex flex-1 flex-col items-center gap-2">
+                          <span className="text-xs font-medium text-foreground">{count}</span>
                           <div
-                            className="w-full rounded-t bg-purple-500"
-                            style={{ height: `${height}%` }}
+                            className="w-full rounded-t-lg bg-gradient-to-t from-purple-500 to-pink-500 transition-all hover:opacity-80"
+                            style={{ height: `${Math.max(height, 4)}%` }}
                           />
                           <span className="text-xs text-muted-foreground">{day.slice(5)}</span>
                         </div>
@@ -283,15 +330,30 @@ export default function VibeBrainAdminPage() {
               </div>
 
               {/* Memory Categories */}
-              <div className="rounded-lg border border-border bg-card p-4">
+              <div className="rounded-2xl border border-border bg-card p-6">
                 <h3 className="mb-4 font-semibold text-foreground">Memory Categories</h3>
-                <div className="space-y-2">
-                  {Object.entries(stats.memoryCategoryCounts).map(([category, count]) => (
-                    <div key={category} className="flex items-center justify-between">
-                      <span className="text-sm capitalize text-muted-foreground">{category}</span>
-                      <span className="font-medium text-foreground">{count}</span>
-                    </div>
-                  ))}
+                <div className="space-y-3">
+                  {Object.entries(stats.memoryCategoryCounts).map(([category, count]) => {
+                    const total = Object.values(stats.memoryCategoryCounts).reduce(
+                      (a, b) => a + b,
+                      1
+                    );
+                    const percentage = (count / total) * 100;
+                    return (
+                      <div key={category}>
+                        <div className="mb-1 flex items-center justify-between">
+                          <span className="text-sm capitalize text-foreground">{category}</span>
+                          <span className="text-sm font-medium text-muted-foreground">{count}</span>
+                        </div>
+                        <div className="h-2 overflow-hidden rounded-full bg-muted">
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-purple-500 to-pink-500"
+                            style={{ width: `${percentage}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -300,70 +362,83 @@ export default function VibeBrainAdminPage() {
 
         {/* Configuration Tab */}
         {activeTab === 'config' && (
-          <div className="space-y-4">
-            {configs.map(config => (
-              <div key={config.id} className="rounded-lg border border-border bg-card">
-                <div className="flex items-start justify-between border-b border-border p-4">
-                  <div>
-                    <h3 className="font-semibold capitalize text-foreground">
-                      {config.key.replace(/_/g, ' ')}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">{config.description}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Updated: {new Date(config.updated_at).toLocaleString()}
-                    </p>
-                  </div>
-                  {editingConfig === config.key ? (
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleSaveConfig(config.key)}
-                        disabled={saving}
-                        className="flex items-center gap-1 rounded bg-purple-500 px-3 py-1.5 text-sm text-white hover:bg-purple-600"
-                      >
-                        <Save className="h-3 w-3" />
-                        Save
-                      </button>
-                      <button
-                        onClick={() => setEditingConfig(null)}
-                        className="rounded bg-muted px-3 py-1.5 text-sm hover:bg-muted/80"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        setEditingConfig(config.key);
-                        setEditValue(JSON.stringify(config.value, null, 2));
-                      }}
-                      className="rounded bg-muted px-3 py-1.5 text-sm hover:bg-muted/80"
-                    >
-                      Edit
-                    </button>
-                  )}
-                </div>
-                <div className="p-4">
-                  {editingConfig === config.key ? (
-                    <textarea
-                      value={editValue}
-                      onChange={e => setEditValue(e.target.value)}
-                      className="h-64 w-full rounded-lg border border-border bg-background p-3 font-mono text-sm"
-                    />
-                  ) : (
-                    <pre className="max-h-64 overflow-auto rounded-lg bg-muted p-3 text-sm">
-                      {JSON.stringify(config.value, null, 2)}
-                    </pre>
-                  )}
-                </div>
-              </div>
-            ))}
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* System Prompt - Full Width */}
+            <div className="lg:col-span-2">
+              <SystemPromptEditor
+                config={
+                  getConfig('system_prompt')?.value as { content: string; version: number } | null
+                }
+                onSave={async value => saveConfig('system_prompt', value)}
+                lastUpdated={getConfig('system_prompt')?.updated_at}
+              />
+            </div>
+
+            {/* Model Settings */}
+            <ModelSettingsCard
+              config={
+                getConfig('model_settings')?.value as {
+                  model: string;
+                  temperature: number;
+                  max_tokens: number;
+                  top_p: number;
+                  frequency_penalty: number;
+                  presence_penalty: number;
+                } | null
+              }
+              onSave={async value => saveConfig('model_settings', value)}
+              lastUpdated={getConfig('model_settings')?.updated_at}
+            />
+
+            {/* RAG Settings */}
+            <RAGSettings
+              config={
+                getConfig('rag_settings')?.value as {
+                  max_results: number;
+                  content_types: string[];
+                  similarity_threshold: number;
+                  context_history_limit: number;
+                } | null
+              }
+              onSave={async value => saveConfig('rag_settings', value)}
+              lastUpdated={getConfig('rag_settings')?.updated_at}
+            />
+
+            {/* Tone Designer - Full Width */}
+            <div className="lg:col-span-2">
+              <ToneDesigner
+                config={
+                  getConfig('tones')?.value as {
+                    default: string;
+                    available: { id: string; name: string; modifier: string; icon?: string }[];
+                  } | null
+                }
+                onSave={async value => saveConfig('tones', value)}
+                lastUpdated={getConfig('tones')?.updated_at}
+              />
+            </div>
+
+            {/* Memory Settings - Full Width */}
+            <div className="lg:col-span-2">
+              <MemorySettings
+                config={
+                  getConfig('memory_extraction')?.value as {
+                    enabled: boolean;
+                    patterns: { regex: string; category: string; importance: number }[];
+                    auto_expire_days: number | null;
+                  } | null
+                }
+                onSave={async value => saveConfig('memory_extraction', value)}
+                lastUpdated={getConfig('memory_extraction')?.updated_at}
+              />
+            </div>
           </div>
         )}
 
         {/* Memories Tab */}
         {activeTab === 'memories' && (
           <div className="space-y-4">
-            <div className="rounded-lg border border-border">
+            <div className="overflow-hidden rounded-2xl border border-border">
               <table className="w-full">
                 <thead className="bg-muted/50">
                   <tr>
@@ -386,17 +461,29 @@ export default function VibeBrainAdminPage() {
                 </thead>
                 <tbody className="divide-y divide-border">
                   {memories.map(memory => (
-                    <tr key={memory.id} className="hover:bg-muted/30">
-                      <td className="max-w-md truncate px-4 py-3 text-sm text-foreground">
-                        {memory.fact}
+                    <tr key={memory.id} className="transition-colors hover:bg-muted/30">
+                      <td className="max-w-md px-4 py-3 text-sm text-foreground">
+                        <div className="line-clamp-2">{memory.fact}</div>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="rounded-full bg-purple-100 px-2 py-1 text-xs capitalize text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-xs font-medium capitalize ${categoryColors[memory.category] || 'bg-muted text-muted-foreground'}`}
+                        >
                           {memory.category}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-sm text-foreground">
-                        {memory.importance.toFixed(1)}
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-16 overflow-hidden rounded-full bg-muted">
+                            <div
+                              className="h-full rounded-full bg-purple-500"
+                              style={{ width: `${memory.importance * 100}%` }}
+                            />
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {memory.importance.toFixed(1)}
+                          </span>
+                        </div>
                       </td>
                       <td className="px-4 py-3 text-sm text-muted-foreground">
                         {new Date(memory.created_at).toLocaleDateString()}
@@ -404,7 +491,7 @@ export default function VibeBrainAdminPage() {
                       <td className="px-4 py-3 text-right">
                         <button
                           onClick={() => handleDeleteMemory(memory.id)}
-                          className="text-red-500 hover:text-red-600"
+                          className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-500"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -414,7 +501,10 @@ export default function VibeBrainAdminPage() {
                 </tbody>
               </table>
               {memories.length === 0 && (
-                <div className="p-8 text-center text-muted-foreground">No memories found</div>
+                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                  <Sparkles className="mb-2 h-8 w-8" />
+                  <p>No memories found</p>
+                </div>
               )}
             </div>
           </div>
@@ -422,24 +512,34 @@ export default function VibeBrainAdminPage() {
 
         {/* Conversations Tab */}
         {activeTab === 'conversations' && (
-          <div className="space-y-2">
+          <div className="space-y-3">
             {conversations.map(conv => (
-              <div key={conv.id} className="rounded-lg border border-border bg-card">
+              <div
+                key={conv.id}
+                className="overflow-hidden rounded-2xl border border-border bg-card transition-shadow hover:shadow-md"
+              >
                 <button
                   onClick={() => handleExpandConversation(conv.id)}
-                  className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/30"
+                  className="flex w-full items-center justify-between p-4 text-left transition-colors hover:bg-muted/30"
                 >
                   <div className="flex items-center gap-4">
-                    {expandedConversation === conv.id ? (
-                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                    )}
+                    <div
+                      className={`rounded-lg p-2 transition-colors ${expandedConversation === conv.id ? 'bg-purple-500/20 text-purple-500' : 'bg-muted text-muted-foreground'}`}
+                    >
+                      {expandedConversation === conv.id ? (
+                        <ChevronDown className="h-4 w-4" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4" />
+                      )}
+                    </div>
                     <div>
                       <p className="font-medium text-foreground">
                         @{conv.user?.username || 'unknown'}
                       </p>
-                      <p className="text-sm text-muted-foreground">{conv.message_count} messages</p>
+                      <p className="text-sm text-muted-foreground">
+                        {conv.message_count} messages
+                        {conv.title && ` • "${conv.title}"`}
+                      </p>
                     </div>
                   </div>
                   <span className="text-sm text-muted-foreground">
@@ -447,17 +547,19 @@ export default function VibeBrainAdminPage() {
                   </span>
                 </button>
                 {expandedConversation === conv.id && (
-                  <div className="border-t border-border p-4">
+                  <div className="border-t border-border bg-muted/20 p-4">
                     <div className="max-h-96 space-y-3 overflow-auto">
                       {conversationMessages.map((msg: Record<string, unknown>) => (
                         <div
                           key={String(msg.id || msg.created_at)}
-                          className={`rounded-lg p-3 ${
-                            msg.role === 'user' ? 'bg-muted' : 'bg-purple-50 dark:bg-purple-900/20'
+                          className={`rounded-xl p-4 ${
+                            msg.role === 'user'
+                              ? 'ml-8 bg-muted'
+                              : 'mr-8 bg-gradient-to-br from-purple-500/10 to-pink-500/10'
                           }`}
                         >
-                          <p className="mb-1 text-xs font-medium uppercase text-muted-foreground">
-                            {String(msg.role)}
+                          <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                            {msg.role === 'user' ? 'User' : 'Vibe Brain'}
                           </p>
                           <p className="text-sm text-foreground">{String(msg.content)}</p>
                         </div>
@@ -468,14 +570,17 @@ export default function VibeBrainAdminPage() {
               </div>
             ))}
             {conversations.length === 0 && (
-              <div className="p-8 text-center text-muted-foreground">No conversations found</div>
+              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                <MessageSquare className="mb-2 h-8 w-8" />
+                <p>No conversations found</p>
+              </div>
             )}
           </div>
         )}
 
         {loading && (
           <div className="flex items-center justify-center py-12">
-            <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+            <RefreshCw className="h-8 w-8 animate-spin text-purple-500" />
           </div>
         )}
       </div>

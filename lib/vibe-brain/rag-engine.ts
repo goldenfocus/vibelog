@@ -11,7 +11,8 @@ import { VIBE_BRAIN_TOOLS } from './tools';
 
 const openai = new OpenAI();
 
-const VIBE_BRAIN_SYSTEM_PROMPT = `You are Vibe Brain - the intelligent AI that powers VibeLog, a voice-to-publish platform where people share authentic thoughts through vibelogs.
+// Default system prompt (fallback if DB config not found)
+const DEFAULT_SYSTEM_PROMPT = `You are Vibe Brain - the intelligent AI that powers VibeLog, a voice-to-publish platform where people share authentic thoughts through vibelogs.
 
 ## Your Identity
 You are THE brain of VibeLog. You have REAL access to the platform database through tools. You can search vibelogs, find users, get trending content, and answer any question about the platform with real data.
@@ -57,6 +58,82 @@ When mentioning users or vibelogs from tool results, ALWAYS format as clickable 
 - Treat returning users like friends you're catching up with
 
 You're not just an assistant - you're the living brain of VibeLog with real database access. ALWAYS query and ALWAYS suggest real content!`;
+
+// Default model settings
+const DEFAULT_MODEL_SETTINGS = {
+  model: 'gpt-4o' as const,
+  temperature: 0.7,
+  max_tokens: 500,
+  top_p: 1,
+  frequency_penalty: 0,
+  presence_penalty: 0,
+};
+
+interface ModelSettings {
+  model: string;
+  temperature: number;
+  max_tokens: number;
+  top_p: number;
+  frequency_penalty: number;
+  presence_penalty: number;
+}
+
+interface VibeBrainConfig {
+  systemPrompt: string;
+  modelSettings: ModelSettings;
+}
+
+// Cache for config to avoid repeated DB calls
+let configCache: VibeBrainConfig | null = null;
+let configCacheTime = 0;
+const CONFIG_CACHE_TTL = 60000; // 1 minute cache
+
+/**
+ * Load Vibe Brain configuration from database
+ */
+async function loadConfig(): Promise<VibeBrainConfig> {
+  // Check cache
+  if (configCache && Date.now() - configCacheTime < CONFIG_CACHE_TTL) {
+    return configCache;
+  }
+
+  const supabase = await createServerAdminClient();
+
+  const { data: configs } = await supabase
+    .from('vibe_brain_config')
+    .select('key, value')
+    .in('key', ['system_prompt', 'model_settings']);
+
+  let systemPrompt = DEFAULT_SYSTEM_PROMPT;
+  let modelSettings = DEFAULT_MODEL_SETTINGS;
+
+  if (configs) {
+    for (const config of configs) {
+      if (config.key === 'system_prompt' && config.value?.content) {
+        systemPrompt = config.value.content as string;
+      }
+      if (config.key === 'model_settings') {
+        modelSettings = {
+          ...DEFAULT_MODEL_SETTINGS,
+          ...(config.value as typeof DEFAULT_MODEL_SETTINGS),
+        };
+      }
+    }
+  }
+
+  configCache = { systemPrompt, modelSettings };
+  configCacheTime = Date.now();
+
+  return configCache;
+}
+
+/**
+ * Clear the config cache (call this when config is updated)
+ */
+export function clearConfigCache(): void {
+  configCache = null;
+  configCacheTime = 0;
+}
 
 interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
@@ -179,8 +256,9 @@ export async function chat(
 ): Promise<ChatResponse> {
   const supabase = await createServerAdminClient();
 
-  // 1. Fetch user profile and memories
-  const [userProfile, memories] = await Promise.all([
+  // 1. Load config and fetch user profile and memories
+  const [config, userProfile, memories] = await Promise.all([
+    loadConfig(),
     getUserProfile(userId),
     getAllMemories(userId, 10),
   ]);
@@ -189,9 +267,7 @@ export async function chat(
   const initialContext = buildInitialContext(userProfile, memories);
 
   // 3. Build messages for GPT
-  const messages: ChatCompletionMessageParam[] = [
-    { role: 'system', content: VIBE_BRAIN_SYSTEM_PROMPT },
-  ];
+  const messages: ChatCompletionMessageParam[] = [{ role: 'system', content: config.systemPrompt }];
 
   // Add user context
   if (initialContext) {
@@ -221,12 +297,15 @@ export async function chat(
 
   for (let i = 0; i < MAX_ITERATIONS; i++) {
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: config.modelSettings.model,
       messages,
       tools: VIBE_BRAIN_TOOLS,
-      tool_choice: i === 0 ? 'auto' : 'auto', // Let GPT decide
-      max_tokens: 500,
-      temperature: 0.7,
+      tool_choice: 'auto',
+      max_tokens: config.modelSettings.max_tokens,
+      temperature: config.modelSettings.temperature,
+      top_p: config.modelSettings.top_p,
+      frequency_penalty: config.modelSettings.frequency_penalty,
+      presence_penalty: config.modelSettings.presence_penalty,
     });
 
     totalInputTokens += response.usage?.prompt_tokens || 0;
@@ -288,7 +367,9 @@ export async function chat(
 
     // 5. Track cost
     const cost = calculateGPTCost(tokensUsed.input, tokensUsed.output);
-    await trackAICost(userId, 'gpt-4o', cost, {
+    const modelForTracking =
+      config.modelSettings.model === 'gpt-4o-mini' ? 'gpt-4o-mini' : 'gpt-4o';
+    await trackAICost(userId, modelForTracking, cost, {
       endpoint: 'vibe-brain/chat',
       input_tokens: tokensUsed.input,
       output_tokens: tokensUsed.output,
