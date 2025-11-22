@@ -92,9 +92,19 @@ export function I18nProvider({ children, initialLocale = 'en' }: I18nProviderPro
         setLocaleState(firstSegment as SupportedLocale);
       }
     } else {
-      // No locale in URL = default locale (en)
-      if (locale !== 'en') {
-        setLocaleState('en');
+      // No locale in URL - check cookie before defaulting to English
+      // This handles middleware rewrites where URL stays clean but locale is in cookie
+      const cookieLocale = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('NEXT_LOCALE='))
+        ?.split('=')[1];
+
+      const targetLocale = (
+        cookieLocale && isLocaleSupported(cookieLocale) ? cookieLocale : 'en'
+      ) as SupportedLocale;
+
+      if (locale !== targetLocale) {
+        setLocaleState(targetLocale);
       }
     }
   }, [pathname, locale]);
