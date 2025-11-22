@@ -3,6 +3,7 @@
 import { AlertTriangle, Sparkles, Send } from 'lucide-react';
 import { FormEvent, KeyboardEvent, useCallback, useMemo, useState } from 'react';
 
+import { useI18n } from '@/components/providers/I18nProvider';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useConversation } from '@/hooks/useConversation';
@@ -10,7 +11,6 @@ import { cn } from '@/lib/utils';
 
 import MessageList from './MessageList';
 import VoiceInput from './VoiceInput';
-
 
 const STATE_LABELS = {
   generating: 'Generating',
@@ -23,6 +23,7 @@ const STATE_LABELS = {
  * Provides a mobile-first layout and connects directly to the conversation engine.
  */
 export default function ChatInterface() {
+  const { t } = useI18n();
   const {
     state,
     messages,
@@ -165,7 +166,7 @@ export default function ChatInterface() {
           value={inputValue}
           onChange={event => setInputValue(event.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Type a follow-up, e.g. “Make the intro more playful”"
+          placeholder={t('placeholders.chatFollowUp')}
           rows={3}
           className="min-h-[120px] w-full resize-none border-0 bg-transparent text-sm focus-visible:ring-0"
           data-testid="chat-input"

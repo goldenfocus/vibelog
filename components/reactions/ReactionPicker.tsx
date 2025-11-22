@@ -11,6 +11,7 @@
 import { Search, Clock, Smile, Heart, Zap, Coffee, Flag } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 
+import { useI18n } from '@/components/providers/I18nProvider';
 import { cn } from '@/lib/utils';
 import type { ReactionPickerProps } from '@/types/reactions';
 import { REACTION_PRESETS } from '@/types/reactions';
@@ -647,6 +648,7 @@ export function ReactionPicker({
       })
     : ALL_EMOJIS[activeCategory].emojis;
 
+  const { t } = useI18n();
   const displayedRecents = recentEmojis.slice(0, maxRecents);
 
   return (
@@ -663,7 +665,7 @@ export function ReactionPicker({
           <input
             ref={searchInputRef}
             type="text"
-            placeholder="Search emoji..."
+            placeholder={t('placeholders.emojiSearch')}
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             className="w-full rounded-lg border border-border/50 bg-muted/30 py-2 pl-10 pr-3 text-sm outline-none transition-colors focus:border-electric/50 focus:bg-background"

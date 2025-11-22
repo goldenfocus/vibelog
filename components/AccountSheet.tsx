@@ -68,7 +68,7 @@ export function AccountSheet({
   };
 
   return (
-    <AppSheet open={open} onOpenChange={onOpenChange} title="Account">
+    <AppSheet open={open} onOpenChange={onOpenChange} title={t('titles.account')}>
       {/* Profile Card - Click to view public profile */}
       <div className="shrink-0 border-b border-border px-4 py-4">
         <Link
