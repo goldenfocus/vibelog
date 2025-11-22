@@ -35,12 +35,13 @@ export const ErrorCodes = {
   GENERATION_ERROR: 'GENERATION_ERROR',
   SAVE_ERROR: 'SAVE_ERROR',
   UPLOAD_ERROR: 'UPLOAD_ERROR',
-  UNKNOWN_ERROR: 'UNKNOWN_ERROR'
+  UNKNOWN_ERROR: 'UNKNOWN_ERROR',
 } as const;
 
 // User-friendly error messages
 const ERROR_MESSAGES: Record<string, string> = {
-  [ErrorCodes.NETWORK_ERROR]: 'Connection error. Please check your internet connection and try again.',
+  [ErrorCodes.NETWORK_ERROR]:
+    'Connection error. Please check your internet connection and try again.',
   [ErrorCodes.API_ERROR]: 'Service temporarily unavailable. Please try again in a moment.',
   [ErrorCodes.VALIDATION_ERROR]: 'Invalid input. Please check your data and try again.',
   [ErrorCodes.AUTHENTICATION_ERROR]: 'Authentication required. Please log in to continue.',
@@ -49,14 +50,14 @@ const ERROR_MESSAGES: Record<string, string> = {
   [ErrorCodes.GENERATION_ERROR]: 'Content generation failed. Please try again.',
   [ErrorCodes.SAVE_ERROR]: 'Failed to save. Your data has been backed up locally.',
   [ErrorCodes.UPLOAD_ERROR]: 'File upload failed. Please try again.',
-  [ErrorCodes.UNKNOWN_ERROR]: 'An unexpected error occurred. Please try again.'
+  [ErrorCodes.UNKNOWN_ERROR]: 'An unexpected error occurred. Please try again.',
 };
 
 // Retryable error types
 const RETRYABLE_ERRORS = new Set([
   ErrorCodes.NETWORK_ERROR,
   ErrorCodes.API_ERROR,
-  ErrorCodes.RATE_LIMIT_ERROR
+  ErrorCodes.RATE_LIMIT_ERROR,
 ]);
 
 export class ErrorHandler {
@@ -76,7 +77,7 @@ export class ErrorHandler {
       message = error.message;
       details = {
         name: error.name,
-        stack: error.stack
+        stack: error.stack,
       };
 
       // Classify error based on message patterns
@@ -94,8 +95,12 @@ export class ErrorHandler {
     } else if (error && typeof error === 'object') {
       // Handle API error responses
       const apiError = error as any;
-      if (apiError.code) {code = apiError.code;}
-      if (apiError.message) {message = apiError.message;}
+      if (apiError.code) {
+        code = apiError.code;
+      }
+      if (apiError.message) {
+        message = apiError.message;
+      }
       details = apiError;
     }
 
@@ -107,7 +112,7 @@ export class ErrorHandler {
       message,
       userMessage,
       details: { ...details, context },
-      retryable
+      retryable,
     };
   }
 
@@ -115,16 +120,6 @@ export class ErrorHandler {
    * Logs error with appropriate level and context
    */
   static logError(error: AppError, context: ErrorContext = {}): void {
-    const logData = {
-      code: error.code,
-      message: error.message,
-      userMessage: error.userMessage,
-      retryable: error.retryable,
-      context,
-      timestamp: new Date().toISOString(),
-      details: error.details
-    };
-
     // Use structured logger for consistent error tracking
     logger.error('Application error occurred', {
       code: error.code,
@@ -181,7 +176,7 @@ export class ErrorHandler {
     } catch (error) {
       const appError = this.handleError(error, {
         ...context,
-        action: 'api_call'
+        action: 'api_call',
       });
       return { error: appError };
     }
@@ -195,8 +190,8 @@ export class ErrorHandler {
     requiredFields: string[],
     context: ErrorContext = {}
   ): AppError | null {
-    const missingFields = requiredFields.filter(field =>
-      data[field] === undefined || data[field] === null || data[field] === ''
+    const missingFields = requiredFields.filter(
+      field => data[field] === undefined || data[field] === null || data[field] === ''
     );
 
     if (missingFields.length > 0) {

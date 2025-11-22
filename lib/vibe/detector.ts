@@ -1,19 +1,13 @@
 /**
  * Vibe Detection Engine
- * 
+ *
  * AI-powered emotional intent analysis from text input.
  * Uses OpenAI GPT-4o-mini for vibe classification with structured output.
  */
 
 import OpenAI from 'openai';
 
-import type { 
-  VibeAnalysis, 
-  VibeScores, 
-  PrimaryVibe, 
-  MicroVibes, 
-  HiddenVibes 
-} from './types';
+import type { VibeAnalysis, VibeScores, PrimaryVibe, MicroVibes, HiddenVibes } from './types';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -24,21 +18,24 @@ const openai = new OpenAI({
  */
 export class VibeDetector {
   private modelVersion = '1.0.0';
-  
+
   /**
    * Analyze text for vibe metadata
    */
-  async analyze(text: string, context?: {
-    previousMessages?: string[];
-    customProfileId?: string;
-  }): Promise<VibeAnalysis> {
+  async analyze(
+    text: string,
+    context?: {
+      previousMessages?: string[];
+      customProfileId?: string;
+    }
+  ): Promise<VibeAnalysis> {
     const startTime = Date.now();
-    
+
     // Build context prompt
-    const contextPrompt = context?.previousMessages 
+    const contextPrompt = context?.previousMessages
       ? `Previous conversation context:\n${context.previousMessages.slice(-3).join('\n')}\n\n`
       : '';
-    
+
     const systemPrompt = `You are an expert emotional intelligence analyzer. Analyze the emotional intent and vibe of the given text.
 
 Return a JSON object with this exact structure:
@@ -99,10 +96,10 @@ Be playful, intuitive, and slightly unhinged in your analysis. Look for subtle e
 
       // Normalize and validate scores
       const scores = this.normalizeScores(parsed.scores);
-      
+
       // Determine primary vibe if not provided
       const primaryVibe = parsed.primaryVibe || this.determinePrimaryVibe(scores);
-      
+
       // Build complete analysis
       const analysis: VibeAnalysis = {
         scores,
@@ -120,7 +117,7 @@ Be playful, intuitive, and slightly unhinged in your analysis. Look for subtle e
       return analysis;
     } catch (error) {
       console.error('Vibe detection error:', error);
-      
+
       // Fallback to neutral vibe on error
       return this.getFallbackAnalysis(text);
     }
@@ -154,13 +151,13 @@ Be playful, intuitive, and slightly unhinged in your analysis. Look for subtle e
    */
   private normalizeMicroVibes(microVibes: Partial<MicroVibes>): MicroVibes {
     const normalized: MicroVibes = {};
-    
+
     for (const [key, value] of Object.entries(microVibes)) {
       if (typeof value === 'number') {
         normalized[key] = Math.min(100, Math.max(0, Math.round(value)));
       }
     }
-    
+
     return normalized;
   }
 
@@ -184,15 +181,15 @@ Be playful, intuitive, and slightly unhinged in your analysis. Look for subtle e
     // Find highest score
     const entries = Object.entries(scores) as [keyof VibeScores, number][];
     const sorted = entries.sort((a, b) => b[1] - a[1]);
-    
+
     const [topKey, topValue] = sorted[0];
-    const [secondKey, secondValue] = sorted[1];
-    
+    const [_secondKey, secondValue] = sorted[1];
+
     // If top two are close, it's mixed
     if (topValue - secondValue < 15) {
       return 'mixed';
     }
-    
+
     // Map score keys to primary vibes
     const vibeMap: Record<keyof VibeScores, PrimaryVibe> = {
       excitement: 'excited',
@@ -206,7 +203,7 @@ Be playful, intuitive, and slightly unhinged in your analysis. Look for subtle e
       confidence: 'confident',
       vulnerability: 'vulnerable',
     };
-    
+
     return vibeMap[topKey] || 'neutral';
   }
 
@@ -215,11 +212,21 @@ Be playful, intuitive, and slightly unhinged in your analysis. Look for subtle e
    */
   private detectLanguage(text: string): string {
     // Basic detection - can be enhanced with proper library
-    if (/[\u4e00-\u9fff]/.test(text)) {return 'zh';}
-    if (/[àáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ]/.test(text)) {return 'es';}
-    if (/[àâäèéêëîïôùûüÿç]/.test(text)) {return 'fr';}
-    if (/[äöüß]/.test(text)) {return 'de';}
-    if (/[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/.test(text)) {return 'vi';}
+    if (/[\u4e00-\u9fff]/.test(text)) {
+      return 'zh';
+    }
+    if (/[àáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ]/.test(text)) {
+      return 'es';
+    }
+    if (/[àâäèéêëîïôùûüÿç]/.test(text)) {
+      return 'fr';
+    }
+    if (/[äöüß]/.test(text)) {
+      return 'de';
+    }
+    if (/[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/.test(text)) {
+      return 'vi';
+    }
     return 'en';
   }
 
@@ -261,10 +268,10 @@ Be playful, intuitive, and slightly unhinged in your analysis. Look for subtle e
     // For streaming, analyze chunks of text as they come in
     const words = text.split(/\s+/);
     let accumulated = '';
-    
+
     for (const word of words) {
       accumulated += (accumulated ? ' ' : '') + word;
-      
+
       // Analyze every 5 words or at end
       if (words.indexOf(word) % 5 === 0 || words.indexOf(word) === words.length - 1) {
         const partial = await this.analyze(accumulated);
@@ -287,4 +294,3 @@ export function getVibeDetector(): VibeDetector {
   }
   return detectorInstance;
 }
-

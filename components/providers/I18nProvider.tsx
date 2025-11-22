@@ -1,8 +1,14 @@
-"use client";
+'use client';
 
-import { createContext, useContext, useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { isLocaleSupported, stripLocaleFromPath, addLocaleToPath, type Locale } from "@/lib/seo/hreflang";
+import { usePathname, useRouter } from 'next/navigation';
+import { createContext, useContext, useEffect, useState } from 'react';
+
+import {
+  isLocaleSupported,
+  stripLocaleFromPath,
+  addLocaleToPath,
+  type Locale,
+} from '@/lib/seo/hreflang';
 
 interface I18nContextType {
   locale: Locale;
@@ -16,8 +22,8 @@ const I18nContext = createContext<I18nContextType | null>(null);
 // Translation cache
 const translationCache: Record<string, any> = {};
 
-const SUPPORTED_LOCALES = ['en', 'es', 'fr', 'de', 'vi', 'zh'] as const;
-type SupportedLocale = typeof SUPPORTED_LOCALES[number];
+const _SUPPORTED_LOCALES = ['en', 'es', 'fr', 'de', 'vi', 'zh'] as const;
+type SupportedLocale = (typeof _SUPPORTED_LOCALES)[number];
 
 async function loadTranslations(locale: SupportedLocale) {
   if (translationCache[locale]) {
@@ -28,7 +34,7 @@ async function loadTranslations(locale: SupportedLocale) {
     const translations = await import(`../../locales/${locale}.json`);
     translationCache[locale] = translations.default;
     return translations.default;
-  } catch (error) {
+  } catch {
     console.warn(`Failed to load translations for ${locale}, falling back to English`);
     if (locale !== 'en') {
       return loadTranslations('en');
@@ -72,7 +78,9 @@ export function I18nProvider({ children, initialLocale = 'en' }: I18nProviderPro
 
   // Sync locale from URL on mount and pathname changes
   useEffect(() => {
-    if (!pathname) return;
+    if (!pathname) {
+      return;
+    }
 
     const segments = pathname.split('/').filter(Boolean);
     const firstSegment = segments[0];
@@ -136,11 +144,7 @@ export function I18nProvider({ children, initialLocale = 'en' }: I18nProviderPro
     isLoading,
   };
 
-  return (
-    <I18nContext.Provider value={value}>
-      {children}
-    </I18nContext.Provider>
-  );
+  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
 
 export function useI18n() {

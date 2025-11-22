@@ -23,7 +23,7 @@ export function useDominantColor(imageUrl?: string | null): string | undefined {
 
         await new Promise((resolve, reject) => {
           img.onload = resolve;
-          img.onerror = (e) => {
+          img.onerror = _e => {
             // Silently fail - don't log event object
             reject(new Error('Image failed to load'));
           };
@@ -46,7 +46,9 @@ export function useDominantColor(imageUrl?: string | null): string | undefined {
         const imageData = ctx.getImageData(0, 0, 50, 50);
         const data = imageData.data;
 
-        let r = 0, g = 0, b = 0;
+        let r = 0,
+          g = 0,
+          b = 0;
         let count = 0;
 
         // Sample every 4th pixel for better performance
@@ -76,7 +78,7 @@ export function useDominantColor(imageUrl?: string | null): string | undefined {
         }
 
         setDominantColor(`rgb(${r}, ${g}, ${b})`);
-      } catch (error) {
+      } catch {
         // Silently fallback to electric blue on error (CORS, 404, etc.)
         // No need to log - this is expected for some images
         setDominantColor('rgb(96, 165, 250)');

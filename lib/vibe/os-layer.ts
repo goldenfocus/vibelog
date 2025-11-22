@@ -1,16 +1,11 @@
 /**
  * Vibelog OS Layer
- * 
+ *
  * OS-level vibe monitoring, blocking, and UI enhancements.
  * Manages user's emotional state and applies vibe-based rules.
  */
 
-import type { 
-  UserVibeState, 
-  VibeAnalysis, 
-  VibeScores,
-  PrimaryVibe 
-} from './types';
+import type { UserVibeState, VibeAnalysis, VibeScores, PrimaryVibe } from './types';
 
 /**
  * Vibelog OS Layer Manager
@@ -38,7 +33,7 @@ export class VibelogOS {
       recentVibes: [],
       vibeThresholds: {
         doomscrollBlock: 75, // Block doomscrolling if stress > 75
-        vibeRaveTrigger: 80,  // Trigger VibeRave if excitement > 80
+        vibeRaveTrigger: 80, // Trigger VibeRave if excitement > 80
         clarityModeTrigger: 70, // Trigger clarity mode if chaos > 70
       },
       osSettings: {
@@ -51,18 +46,15 @@ export class VibelogOS {
       sessionStart: new Date().toISOString(),
     };
   }
-  
+
   /**
    * Update user vibe state with new analysis
    */
-  updateVibeState(
-    currentState: UserVibeState,
-    newVibe: VibeAnalysis
-  ): UserVibeState {
+  updateVibeState(currentState: UserVibeState, newVibe: VibeAnalysis): UserVibeState {
     // Update current vibe (weighted average with recent)
     const currentScores = currentState.currentVibe;
     const newScores = newVibe.scores;
-    
+
     // Weight: 70% new, 30% current (smooth transition)
     const updatedScores: VibeScores = {
       excitement: Math.round(currentScores.excitement * 0.3 + newScores.excitement * 0.7),
@@ -76,13 +68,13 @@ export class VibelogOS {
       confidence: Math.round(currentScores.confidence * 0.3 + newScores.confidence * 0.7),
       vulnerability: Math.round(currentScores.vulnerability * 0.3 + newScores.vulnerability * 0.7),
     };
-    
+
     // Update primary vibe
     const primaryVibe = this.determinePrimaryVibe(updatedScores);
-    
+
     // Add to recent vibes (keep last 20)
     const recentVibes = [...currentState.recentVibes, newVibe].slice(-20);
-    
+
     return {
       ...currentState,
       currentVibe: updatedScores,
@@ -91,7 +83,7 @@ export class VibelogOS {
       lastUpdated: new Date().toISOString(),
     };
   }
-  
+
   /**
    * Check if action should be blocked based on vibe
    */
@@ -106,9 +98,9 @@ export class VibelogOS {
     if (!state.osSettings.blockingEnabled) {
       return { blocked: false };
     }
-    
+
     const { currentVibe, vibeThresholds } = state;
-    
+
     switch (action) {
       case 'doomscroll':
         if (currentVibe.stress > vibeThresholds.doomscrollBlock) {
@@ -119,7 +111,7 @@ export class VibelogOS {
           };
         }
         break;
-        
+
       case 'social-media':
         if (currentVibe.stress > 80 || currentVibe.chaos > 75) {
           return {
@@ -129,7 +121,7 @@ export class VibelogOS {
           };
         }
         break;
-        
+
       case 'work':
         if (currentVibe.stress > 90) {
           return {
@@ -139,7 +131,7 @@ export class VibelogOS {
           };
         }
         break;
-        
+
       case 'shopping':
         if (currentVibe.chaos > 80 && currentVibe.stress > 70) {
           return {
@@ -150,10 +142,10 @@ export class VibelogOS {
         }
         break;
     }
-    
+
     return { blocked: false };
   }
-  
+
   /**
    * Check if VibeRave mode should be triggered
    */
@@ -161,13 +153,15 @@ export class VibelogOS {
     if (!state.osSettings.uiEnhancementsEnabled) {
       return false;
     }
-    
+
     const { currentVibe, vibeThresholds } = state;
-    
-    return currentVibe.excitement > vibeThresholds.vibeRaveTrigger ||
-           (currentVibe.excitement > 70 && currentVibe.confidence > 75);
+
+    return (
+      currentVibe.excitement > vibeThresholds.vibeRaveTrigger ||
+      (currentVibe.excitement > 70 && currentVibe.confidence > 75)
+    );
   }
-  
+
   /**
    * Check if Clarity Mode should be triggered
    */
@@ -175,13 +169,15 @@ export class VibelogOS {
     if (!state.osSettings.uiEnhancementsEnabled) {
       return false;
     }
-    
+
     const { currentVibe, vibeThresholds } = state;
-    
-    return currentVibe.chaos > vibeThresholds.clarityModeTrigger ||
-           (currentVibe.stress > 70 && currentVibe.chaos > 60);
+
+    return (
+      currentVibe.chaos > vibeThresholds.clarityModeTrigger ||
+      (currentVibe.stress > 70 && currentVibe.chaos > 60)
+    );
   }
-  
+
   /**
    * Generate UI enhancement config based on vibe
    */
@@ -201,9 +197,12 @@ export class VibelogOS {
     };
   } {
     const { currentVibe, primaryVibe } = state;
-    
+
     // Color mapping based on primary vibe
-    const colorMap: Record<PrimaryVibe, { primary: string; secondary: string; background: string }> = {
+    const colorMap: Record<
+      PrimaryVibe,
+      { primary: string; secondary: string; background: string }
+    > = {
       excited: { primary: '#FF6B6B', secondary: '#FFE66D', background: '#FFF5E6' },
       humorous: { primary: '#4ECDC4', secondary: '#FFE66D', background: '#F7FFF7' },
       flirty: { primary: '#FF6B9D', secondary: '#FFB6C1', background: '#FFF0F5' },
@@ -217,13 +216,13 @@ export class VibelogOS {
       neutral: { primary: '#95A5A6', secondary: '#BDC3C7', background: '#ECF0F1' },
       mixed: { primary: '#A8E6CF', secondary: '#D4F1F4', background: '#F0F8F8' },
     };
-    
+
     const colors = colorMap[primaryVibe] || colorMap.neutral;
-    
+
     // Animation intensity based on excitement/chaos
     const animationIntensity = Math.min(100, (currentVibe.excitement + currentVibe.chaos) / 2);
     let animationType: 'pulse' | 'wave' | 'particle' | 'none' = 'none';
-    
+
     if (currentVibe.excitement > 70) {
       animationType = 'particle';
     } else if (currentVibe.chaos > 60) {
@@ -231,11 +230,11 @@ export class VibelogOS {
     } else if (currentVibe.excitement > 50) {
       animationType = 'pulse';
     }
-    
+
     // Haptics based on intensity
     const hapticsEnabled = currentVibe.excitement > 60 || currentVibe.stress > 70;
     const hapticsIntensity = Math.min(100, Math.max(currentVibe.excitement, currentVibe.stress));
-    
+
     return {
       colors,
       animations: {
@@ -248,21 +247,21 @@ export class VibelogOS {
       },
     };
   }
-  
+
   /**
    * Determine primary vibe from scores
    */
   private determinePrimaryVibe(scores: VibeScores): PrimaryVibe {
     const entries = Object.entries(scores) as [keyof VibeScores, number][];
     const sorted = entries.sort((a, b) => b[1] - a[1]);
-    
+
     const [topKey, topValue] = sorted[0];
-    const [secondKey, secondValue] = sorted[1];
-    
+    const [_secondKey, secondValue] = sorted[1];
+
     if (topValue - secondValue < 15) {
       return 'mixed';
     }
-    
+
     const vibeMap: Record<keyof VibeScores, PrimaryVibe> = {
       excitement: 'excited',
       humor: 'humorous',
@@ -275,7 +274,7 @@ export class VibelogOS {
       confidence: 'confident',
       vulnerability: 'vulnerable',
     };
-    
+
     return vibeMap[topKey] || 'neutral';
   }
 }
@@ -289,4 +288,3 @@ export function getVibelogOS(): VibelogOS {
   }
   return osInstance;
 }
-

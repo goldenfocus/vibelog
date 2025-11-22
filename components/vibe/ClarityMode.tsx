@@ -1,6 +1,6 @@
 /**
  * Clarity Mode Component
- * 
+ *
  * Shows the true intention of messages, stripping away emotional masking
  */
 
@@ -19,12 +19,12 @@ interface ClarityModeProps {
   className?: string;
 }
 
-export function ClarityMode({ text, vibe, className }: ClarityModeProps) {
+export function ClarityMode({ text: _text, vibe, className }: ClarityModeProps) {
   const [expanded, setExpanded] = useState(false);
-  
+
   const safetyFilter = getSafetyFilter();
   const humorModule = getHumorModule();
-  
+
   const safety = safetyFilter.analyze(vibe);
   const notOkayCheck = humorModule.checkNotOkayButOkay(vibe);
   const sarcasm = humorModule.detectSarcasm(vibe);
@@ -41,9 +41,14 @@ export function ClarityMode({ text, vibe, className }: ClarityModeProps) {
   safety.warnings.forEach(warning => {
     insights.push({
       type: warning.type === 'harmful' ? 'warning' : 'masking',
-      title: warning.type === 'passiveAggressive' ? 'Passive-Aggressive Detected' :
-             warning.type === 'hiddenFrustration' ? 'Hidden Frustration' :
-             warning.type === 'emotionalMasking' ? 'Emotional Masking' : 'Safety Concern',
+      title:
+        warning.type === 'passiveAggressive'
+          ? 'Passive-Aggressive Detected'
+          : warning.type === 'hiddenFrustration'
+            ? 'Hidden Frustration'
+            : warning.type === 'emotionalMasking'
+              ? 'Emotional Masking'
+              : 'Safety Concern',
       message: warning.message,
       severity: warning.severity,
     });
@@ -93,7 +98,9 @@ export function ClarityMode({ text, vibe, className }: ClarityModeProps) {
       <div className={cn('rounded-lg border border-green-200 bg-green-50 p-4', className)}>
         <div className="flex items-center gap-2">
           <span className="text-green-600">✓</span>
-          <span className="text-sm font-medium text-green-800">Message appears authentic and clear</span>
+          <span className="text-sm font-medium text-green-800">
+            Message appears authentic and clear
+          </span>
         </div>
       </div>
     );
@@ -101,10 +108,7 @@ export function ClarityMode({ text, vibe, className }: ClarityModeProps) {
 
   return (
     <div className={cn('rounded-lg border border-blue-200 bg-blue-50', className)}>
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full p-4 text-left"
-      >
+      <button onClick={() => setExpanded(!expanded)} className="w-full p-4 text-left">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-blue-600">🔍</span>
@@ -118,16 +122,16 @@ export function ClarityMode({ text, vibe, className }: ClarityModeProps) {
       </button>
 
       {expanded && (
-        <div className="border-t border-blue-200 p-4 space-y-3">
+        <div className="space-y-3 border-t border-blue-200 p-4">
           {insights.map((insight, i) => (
             <div
               key={i}
               className={cn(
                 'rounded-lg p-3',
-                insight.type === 'warning' && 'bg-red-50 border border-red-200',
-                insight.type === 'masking' && 'bg-yellow-50 border border-yellow-200',
-                insight.type === 'humor' && 'bg-purple-50 border border-purple-200',
-                insight.type === 'info' && 'bg-blue-50 border border-blue-200'
+                insight.type === 'warning' && 'border border-red-200 bg-red-50',
+                insight.type === 'masking' && 'border border-yellow-200 bg-yellow-50',
+                insight.type === 'humor' && 'border border-purple-200 bg-purple-50',
+                insight.type === 'info' && 'border border-blue-200 bg-blue-50'
               )}
             >
               <div className="flex items-start gap-2">
@@ -141,9 +145,7 @@ export function ClarityMode({ text, vibe, className }: ClarityModeProps) {
                   <div className="font-medium text-gray-900">{insight.title}</div>
                   <div className="mt-1 text-sm text-gray-700">{insight.message}</div>
                   {insight.severity && (
-                    <div className="mt-1 text-xs text-gray-500">
-                      Severity: {insight.severity}
-                    </div>
+                    <div className="mt-1 text-xs text-gray-500">Severity: {insight.severity}</div>
                   )}
                 </div>
               </div>
@@ -154,4 +156,3 @@ export function ClarityMode({ text, vibe, className }: ClarityModeProps) {
     </div>
   );
 }
-

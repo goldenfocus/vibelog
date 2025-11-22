@@ -4,7 +4,13 @@
  */
 
 import { Metadata } from 'next';
-import { generateHreflangLinks, generateCanonicalUrl, getAlternateLocales, type Locale } from './hreflang';
+
+import {
+  generateHreflangLinks,
+  generateCanonicalUrl,
+  getAlternateLocales,
+  type Locale,
+} from './hreflang';
 
 interface GeneratePageMetadataParams {
   title: string;

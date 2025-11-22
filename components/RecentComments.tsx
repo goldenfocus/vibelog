@@ -82,7 +82,7 @@ export default function RecentComments() {
           <MessageCircle className="mx-auto mb-4 h-12 w-12 text-gray-600" />
           <p className="text-lg font-medium text-white">Comments will be available soon!</p>
           <p className="text-sm text-gray-400">
-            We're setting up the comment system. Check back shortly!
+            We&apos;re setting up the comment system. Check back shortly!
           </p>
         </div>
       </div>

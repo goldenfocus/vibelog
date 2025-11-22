@@ -278,7 +278,7 @@ export class AudioEngine {
         this.streamRef.getTracks().forEach(track => {
           try {
             track.stop();
-          } catch (err) {
+          } catch {
             // Ignore errors when stopping tracks during cleanup
             // This can happen during navigation/unmount
           }

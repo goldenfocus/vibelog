@@ -47,7 +47,10 @@ export const LOCALE_METADATA: Record<Locale, { name: string; nativeName: string;
  * // }
  * ```
  */
-export function generateHreflangLinks(path: string, currentLocale: Locale = DEFAULT_LOCALE): Record<string, string> {
+export function generateHreflangLinks(
+  path: string,
+  _currentLocale: Locale = DEFAULT_LOCALE
+): Record<string, string> {
   const links: Record<string, string> = {};
 
   // Ensure path starts with /
@@ -144,9 +147,13 @@ export function extractLocaleFromPath(path: string): Locale {
 export function stripLocaleFromPath(path: string): string {
   const locale = extractLocaleFromPath(path);
 
-  if (locale === DEFAULT_LOCALE) return path;
+  if (locale === DEFAULT_LOCALE) {
+    return path;
+  }
 
-  if (path === `/${locale}`) return '/';
+  if (path === `/${locale}`) {
+    return '/';
+  }
   if (path.startsWith(`/${locale}/`)) {
     return path.slice(`/${locale}`.length);
   }
@@ -162,7 +169,9 @@ export function stripLocaleFromPath(path: string): string {
  * @returns Path with locale prefix (or unchanged if default locale)
  */
 export function addLocaleToPath(path: string, locale: Locale): string {
-  if (locale === DEFAULT_LOCALE) return path;
+  if (locale === DEFAULT_LOCALE) {
+    return path;
+  }
 
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
   return `/${locale}${cleanPath}`;
