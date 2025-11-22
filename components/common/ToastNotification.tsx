@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect } from 'react';
 
 export interface ToastState {
@@ -27,6 +26,7 @@ export function ToastNotification({
 
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [toast.visible, onHide, autoHideDelay]);
 
   if (!toast.visible) {return null;}

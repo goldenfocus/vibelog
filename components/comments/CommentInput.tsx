@@ -75,6 +75,7 @@ export default function CommentInput({
       };
     } else {
       setVideoBlobUrl(null);
+      return undefined;
     }
   }, [videoBlob]);
 

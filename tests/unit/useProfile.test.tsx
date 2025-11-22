@@ -116,7 +116,9 @@ describe('useProfile', () => {
       });
 
       const selectChain = mockSupabaseClient.from.mock.results[0].value;
-      expect(selectChain.select).toHaveBeenCalledWith('*');
+      expect(selectChain.select).toHaveBeenCalledWith(
+        'id, username, display_name, avatar_url, bio, header_image, default_writing_tone, keep_filler_words, is_public, total_vibelogs, total_views, subscription_tier, is_premium, created_at, updated_at'
+      );
 
       const eqChain = selectChain.select.mock.results[0].value;
       expect(eqChain.eq).toHaveBeenCalledWith('id', userId);

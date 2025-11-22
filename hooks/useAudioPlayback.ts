@@ -121,6 +121,7 @@ export function useAudioPlayback(audioBlob: Blob | null): UseAudioPlaybackReturn
         URL.revokeObjectURL(url);
       };
     } else {
+      return undefined;
       setAudioUrl(null);
       setDuration(0);
     }

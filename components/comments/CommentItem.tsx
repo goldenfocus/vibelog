@@ -113,6 +113,7 @@ export default function CommentItem({
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
+    return undefined;
   }, [showMenu]);
 
   // Cleanup on unmount

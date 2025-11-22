@@ -550,6 +550,7 @@ export function ScreenCaptureZone({
         e.returnValue = ''; // Chrome requires returnValue to be set
         return ''; // Some browsers use return value
       }
+      return undefined;
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);

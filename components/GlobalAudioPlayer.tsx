@@ -35,7 +35,7 @@ export default function GlobalAudioPlayer() {
   // Initialize audio element once
   useEffect(() => {
     if (audioElement) {
-      return; // Already initialized
+      return undefined; // Already initialized
     }
 
     const audio = new Audio();

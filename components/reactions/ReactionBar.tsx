@@ -74,6 +74,7 @@ export function ReactionBar({
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
+    return undefined;
   }, [showPicker]);
 
   // Handle emoji selection from picker
