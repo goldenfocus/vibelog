@@ -277,19 +277,37 @@ class Logger {
     this.log(LogLevel.WARN, message, context);
   }
 
-  error(message: string, contextOrError?: Record<string, unknown> | Error, error?: Error): void {
-    // Handle both signatures: error(msg, context, error) and error(msg, error)
+  error(
+    message: string,
+    contextOrError?: Record<string, unknown> | Error,
+    errorOrContext?: Error | Record<string, unknown>
+  ): void {
+    // Handle multiple signatures:
+    // - error(msg, error) - error only
+    // - error(msg, context, error) - context and error
+    // - error(msg, error, context) - error and context (for convenience)
     if (contextOrError instanceof Error) {
-      this.log(LogLevel.ERROR, message, undefined, contextOrError);
+      // Second param is Error
+      const context = errorOrContext && !(errorOrContext instanceof Error) ? errorOrContext : undefined;
+      this.log(LogLevel.ERROR, message, context, contextOrError);
     } else {
+      // Second param is context (or undefined)
+      const error = errorOrContext instanceof Error ? errorOrContext : undefined;
       this.log(LogLevel.ERROR, message, contextOrError, error);
     }
   }
 
-  fatal(message: string, contextOrError?: Record<string, unknown> | Error, error?: Error): void {
+  fatal(
+    message: string,
+    contextOrError?: Record<string, unknown> | Error,
+    errorOrContext?: Error | Record<string, unknown>
+  ): void {
+    // Handle multiple signatures (same as error method)
     if (contextOrError instanceof Error) {
-      this.log(LogLevel.FATAL, message, undefined, contextOrError);
+      const context = errorOrContext && !(errorOrContext instanceof Error) ? errorOrContext : undefined;
+      this.log(LogLevel.FATAL, message, context, contextOrError);
     } else {
+      const error = errorOrContext instanceof Error ? errorOrContext : undefined;
       this.log(LogLevel.FATAL, message, contextOrError, error);
     }
   }
