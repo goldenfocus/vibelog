@@ -442,12 +442,22 @@
       "stats": {
         "creators": "Total Creators",
         "vibelogs": "Total Vibelogs",
-        "views": "Total Views"
+        "views": "Total Views",
+        "likes": "Likes",
+        "remixes": "Remixes"
       },
       "empty": {
         "title": "No creators found",
         "filtered": "No creators match \"{{query}}\"",
         "default": "Be the first to create a vibelog!"
+      },
+      "topCreator": "Top Creator",
+      "joined": {
+        "label": "Joined {{time}}",
+        "new": "New creator! 🌟",
+        "days": "{{count}} days ago",
+        "months": "{{count}} months ago",
+        "years": "{{count}} years ago"
       }
     }
   },

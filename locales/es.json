@@ -368,24 +368,34 @@
     },
     "people": {
       "title": "Personas",
-      "subtitle": "Descubre creadores y sus últimos posts basados en voz.",
+      "subtitle": "Descubre creadores y sus últimas publicaciones basadas en voz.",
       "creatorBio": "Bio y actividad reciente.",
-      "badge": "Discover Amazing Creators",
-      "searchPlaceholder": "Search creators, vibelogs...",
+      "badge": "Descubre creadores increíbles",
+      "searchPlaceholder": "Busca creadores, vibelogs...",
       "sort": {
         "popular": "Popular",
-        "active": "Active",
-        "recent": "New"
+        "active": "Activo",
+        "recent": "Nuevo"
       },
       "stats": {
-        "creators": "Total Creators",
-        "vibelogs": "Total Vibelogs",
-        "views": "Total Views"
+        "creators": "Total de creadores",
+        "vibelogs": "Total de vibelogs",
+        "views": "Total de vistas",
+        "likes": "Me gusta",
+        "remixes": "Remezclas"
       },
       "empty": {
-        "title": "No creators found",
-        "filtered": "No creators match \"{{query}}\"",
-        "default": "Be the first to create a vibelog!"
+        "title": "No se encontraron creadores",
+        "filtered": "Ningún creador coincide con \"{{query}}\"",
+        "default": "¡Sé el primero en crear un vibelog!"
+      },
+      "topCreator": "Creador destacado",
+      "joined": {
+        "label": "Se unió {{time}}",
+        "new": "¡Creador nuevo! 🌟",
+        "days": "hace {{count}} días",
+        "months": "hace {{count}} meses",
+        "years": "hace {{count}} años"
       }
     }
   },

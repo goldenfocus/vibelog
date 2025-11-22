@@ -4,6 +4,8 @@ import { User, Eye, Heart, Zap, Calendar, Crown } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 
+import { useI18n } from '@/components/providers/I18nProvider';
+
 interface CreatorCardProps {
   username: string;
   displayName: string;
@@ -29,20 +31,22 @@ export default function CreatorCard({
   subscriptionTier = 'free',
   index = 0,
 }: CreatorCardProps) {
+  const { t } = useI18n();
   const [isHovered, setIsHovered] = useState(false);
 
   // Calculate days since joined
   const daysSinceJoined = Math.floor(
     (Date.now() - new Date(joinedDate).getTime()) / (1000 * 60 * 60 * 24)
   );
-  const joinedText =
+  const relativeJoined =
     daysSinceJoined < 7
-      ? 'New creator! 🌟'
+      ? t('pages.people.joined.new')
       : daysSinceJoined < 30
-        ? `${daysSinceJoined} days ago`
+        ? t('pages.people.joined.days', { count: daysSinceJoined })
         : daysSinceJoined < 365
-          ? `${Math.floor(daysSinceJoined / 30)} months ago`
-          : `${Math.floor(daysSinceJoined / 365)} years ago`;
+          ? t('pages.people.joined.months', { count: Math.floor(daysSinceJoined / 30) })
+          : t('pages.people.joined.years', { count: Math.floor(daysSinceJoined / 365) });
+  const joinedText = t('pages.people.joined.label', { time: relativeJoined });
 
   // Determine if this is a top creator (high engagement)
   const engagementScore = totalVibelogs * 10 + totalViews + totalLikes * 5 + totalRemixes * 3;
@@ -69,7 +73,7 @@ export default function CreatorCard({
         {isTopCreator && (
           <div className="absolute right-4 top-4 flex items-center gap-1 rounded-full bg-electric/10 px-2 py-1 text-xs font-medium text-electric">
             <Crown className="h-3 w-3" />
-            <span>Top Creator</span>
+            <span>{t('pages.people.topCreator')}</span>
           </div>
         )}
 
@@ -105,12 +109,20 @@ export default function CreatorCard({
 
         {/* Stats Grid */}
         <div className="mb-4 grid grid-cols-2 gap-3">
-          <StatItem icon={Zap} label="Vibelogs" value={totalVibelogs} />
-          <StatItem icon={Eye} label="Views" value={formatNumber(totalViews)} />
-          <StatItem icon={Heart} label="Likes" value={formatNumber(totalLikes)} />
+          <StatItem icon={Zap} label={t('pages.people.stats.vibelogs')} value={totalVibelogs} />
+          <StatItem
+            icon={Eye}
+            label={t('pages.people.stats.views')}
+            value={formatNumber(totalViews)}
+          />
+          <StatItem
+            icon={Heart}
+            label={t('pages.people.stats.likes')}
+            value={formatNumber(totalLikes)}
+          />
           <StatItem
             icon={Zap}
-            label="Remixes"
+            label={t('pages.people.stats.remixes')}
             value={formatNumber(totalRemixes)}
             highlight={totalRemixes > 0}
           />
@@ -119,16 +131,7 @@ export default function CreatorCard({
         {/* Joined Date */}
         <div className="flex items-center gap-2 border-t border-border/30 pt-4 text-xs text-muted-foreground">
           <Calendar className="h-3 w-3" />
-          <span>Joined {joinedText}</span>
-        </div>
-
-        {/* Hover overlay */}
-        <div
-          className={`absolute inset-0 flex items-center justify-center rounded-2xl bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'pointer-events-none opacity-0'} `}
-        >
-          <div className="rounded-lg bg-electric px-6 py-3 font-semibold text-white shadow-lg">
-            View Profile →
-          </div>
+          <span>{joinedText}</span>
         </div>
       </div>
 

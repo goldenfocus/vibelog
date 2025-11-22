@@ -430,8 +430,8 @@
     },
     "people": {
       "title": "Personen",
-      "subtitle": "Entdecken Sie Ersteller und ihre neuesten sprachbasierten Posts.",
-      "creatorBio": "Biographie und aktuelle Aktivitäten.",
+      "subtitle": "Entdecken Sie Ersteller und ihre neuesten sprachbasierten Beiträge.",
+      "creatorBio": "Biografie und aktuelle Aktivitäten.",
       "badge": "Entdecke großartige Creator",
       "searchPlaceholder": "Suche nach Creatorn, Vibelogs...",
       "sort": {
@@ -442,12 +442,22 @@
       "stats": {
         "creators": "Gesamtanzahl Creator",
         "vibelogs": "Gesamtanzahl Vibelogs",
-        "views": "Gesamtaufrufe"
+        "views": "Gesamtaufrufe",
+        "likes": "Likes",
+        "remixes": "Remixes"
       },
       "empty": {
         "title": "Keine Creator gefunden",
         "filtered": "Keine Creator passen zu \"{{query}}\"",
         "default": "Sei der Erste, der einen Vibelog erstellt!"
+      },
+      "topCreator": "Top-Creator",
+      "joined": {
+        "label": "Beigetreten vor {{time}}",
+        "new": "Neuer Creator! 🌟",
+        "days": "{{count}} Tagen",
+        "months": "{{count}} Monaten",
+        "years": "{{count}} Jahren"
       }
     }
   },
