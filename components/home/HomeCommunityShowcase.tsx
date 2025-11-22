@@ -1,6 +1,10 @@
 'use client';
 
+import { ArrowRight } from 'lucide-react';
+import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
+
+import { cn } from '@/lib/utils';
 
 import type { CommentCardData } from './CommentCard';
 import { CommentCarousel } from './CommentCarousel';
@@ -158,11 +162,22 @@ export default function HomeCommunityShowcase({
       {/* Recent Vibes Section */}
       <section className="space-y-4">
         {/* Title - OUTSIDE the box */}
-        <div className="px-4 md:px-6">
-          <h2 className="bg-gradient-to-r from-electric via-purple-400 to-pink-400 bg-clip-text text-2xl font-bold text-transparent md:text-3xl">
-            Recent Vibes
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">Join the conversation</p>
+        <div className="flex items-center justify-between px-4 md:px-6">
+          <div>
+            <h2 className="bg-gradient-to-r from-electric via-purple-400 to-pink-400 bg-clip-text text-2xl font-bold text-transparent md:text-3xl">
+              Recent Vibes
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">Join the conversation</p>
+          </div>
+          <Link
+            href="/vibes"
+            className={cn(
+              'group flex items-center gap-1.5 rounded-full bg-electric/10 px-4 py-2 text-sm font-medium text-electric transition-all hover:bg-electric/20 hover:shadow-lg hover:shadow-electric/20'
+            )}
+          >
+            View All
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+          </Link>
         </div>
 
         {/* Carousel Box */}

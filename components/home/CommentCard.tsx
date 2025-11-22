@@ -3,6 +3,7 @@
 import { ExternalLink, MessageCircle, Mic, User, Video } from 'lucide-react';
 import Link from 'next/link';
 
+import { formatTimeAgo, getCommentDisplayText, getCommentType, truncateText } from '@/lib/comments';
 import { cn } from '@/lib/utils';
 
 export interface CommentCardData {
@@ -38,41 +39,8 @@ interface CommentCardProps {
   isActive?: boolean;
 }
 
-function truncateText(text: string, maxLength: number = 120) {
-  if (text.length <= maxLength) {
-    return text;
-  }
-  return text.slice(0, maxLength).trim() + '...';
-}
-
-function formatTimeAgo(dateString: string) {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-  if (diffInSeconds < 60) {
-    return 'just now';
-  }
-  if (diffInSeconds < 3600) {
-    const mins = Math.floor(diffInSeconds / 60);
-    return `${mins}m ago`;
-  }
-  if (diffInSeconds < 86400) {
-    const hours = Math.floor(diffInSeconds / 3600);
-    return `${hours}h ago`;
-  }
-  if (diffInSeconds < 604800) {
-    const days = Math.floor(diffInSeconds / 86400);
-    return `${days}d ago`;
-  }
-  const weeks = Math.floor(diffInSeconds / 604800);
-  return `${weeks}w ago`;
-}
-
 export function CommentCard({ comment, index, isActive = false }: CommentCardProps) {
-  const isVoice = !!comment.audioUrl;
-  const isVideo = !!comment.videoUrl;
-  const hasMedia = isVoice || isVideo;
+  const { isVoice, isVideo, hasMedia } = getCommentType(comment);
   const vibelogSlug = comment.vibelog.slug || comment.vibelog.id;
 
   const TypeIcon = isVideo ? Video : isVoice ? Mic : MessageCircle;
@@ -108,11 +76,7 @@ export function CommentCard({ comment, index, isActive = false }: CommentCardPro
           <div className="mb-2 flex items-start gap-2">
             <TypeIcon className={cn('mt-0.5 h-4 w-4 flex-shrink-0', typeColor)} />
             <p className="text-sm leading-relaxed text-foreground/90">
-              {comment.content
-                ? truncateText(comment.content, 100)
-                : isVoice
-                  ? 'Voice vibe - tap to listen'
-                  : 'Video vibe - tap to watch'}
+              {getCommentDisplayText(comment, 100)}
             </p>
           </div>
         </div>
