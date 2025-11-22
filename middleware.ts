@@ -166,7 +166,7 @@ export function middleware(req: NextRequest) {
 
   // Get the clean pathname (without locale prefix)
   const cleanPathname = stripLocalePrefix(pathname);
-  const currentLocale = pathLocale || DEFAULT_LOCALE;
+  const currentLocale = pathLocale || detectedLocale;
 
   // Handle /v/slug -> /@anonymous/slug redirect (preserve locale)
   if (cleanPathname.startsWith('/v/')) {
