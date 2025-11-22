@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 
 import Navigation from '@/components/Navigation';
 import { LikedVibelogs } from '@/components/profile/LikedVibelogs';
-import { ProfileVibelogs } from '@/components/profile/ProfileVibelogs';
+import { ProfileVibelogsWrapper } from '@/components/profile/ProfileVibelogsWrapper';
 import { SocialLinks } from '@/components/profile/SocialLinks';
 import { ZoomableImage } from '@/components/profile/ZoomableImage';
 import { formatMonthYear } from '@/lib/date-utils';
@@ -352,7 +352,7 @@ export default async function ProfilePage({ params }: PageProps) {
         {/* Vibelogs Section */}
         <div className="border-t border-border/50 bg-gradient-to-b from-background to-surface-subtle">
           <div className="mx-auto max-w-5xl px-4 py-12">
-            <ProfileVibelogs
+            <ProfileVibelogsWrapper
               vibelogs={vibelogs}
               username={profile.username}
               displayName={displayName}

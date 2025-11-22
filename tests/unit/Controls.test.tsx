@@ -7,16 +7,23 @@ import type { RecordingState } from '@/components/mic/Controls';
 // Mock I18n provider
 vi.mock('@/components/providers/I18nProvider', () => ({
   useI18n: () => ({
-    t: (key: string) => {
+    t: (key: string, params?: Record<string, any>) => {
       const translations: Record<string, string> = {
         'recorder.idle': 'Tap to start recording',
         'recorder.recording': 'Recording...',
         'recorder.processing': 'Processing your vibe...',
         'recorder.done': 'Complete! Tap to start over',
-        'components.micRecorder.freePlanLimit': 'Free plan: {timeLimit}',
-        'components.micRecorder.timeRemaining': '{seconds} seconds remaining',
+        'components.micRecorder.freePlanLimit': 'Free plan: {{timeLimit}}',
+        'components.micRecorder.timeRemaining': '{{seconds}}s remaining',
       };
-      return translations[key] || key;
+      let result = translations[key] || key;
+      // Handle interpolation with {{variable}} format
+      if (params) {
+        Object.entries(params).forEach(([paramKey, value]) => {
+          result = result.replace(new RegExp(`\\{\\{${paramKey}\\}\\}`, 'g'), String(value));
+        });
+      }
+      return result;
     },
   }),
 }));
@@ -99,7 +106,7 @@ describe('Controls Component', () => {
       );
 
       expect(screen.getByTestId('time-warning')).toBeInTheDocument();
-      expect(screen.getByText(/20 seconds remaining/)).toBeInTheDocument();
+      expect(screen.getByText(/20s remaining/)).toBeInTheDocument();
     });
 
     it('does not show warning when not near limit', () => {
