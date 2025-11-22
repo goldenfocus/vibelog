@@ -1,0 +1,169 @@
+/**
+ * SEO utilities for generating hreflang alternate links
+ *
+ * This ensures Google (and other search engines) properly index
+ * each language version of pages and show the correct language
+ * to users based on their location/preferences.
+ *
+ * Also critical for AEO (Answer Engine Optimization) - AI agents
+ * can clearly identify language variants from URL structure.
+ */
+
+export const SUPPORTED_LOCALES = ['en', 'vi', 'es', 'fr', 'de', 'zh'] as const;
+export type Locale = (typeof SUPPORTED_LOCALES)[number];
+export const DEFAULT_LOCALE: Locale = 'en';
+
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://vibelog.io';
+
+/**
+ * Language metadata for each supported locale
+ */
+export const LOCALE_METADATA: Record<Locale, { name: string; nativeName: string; flag: string }> = {
+  en: { name: 'English', nativeName: 'English', flag: '🌐' },
+  vi: { name: 'Vietnamese', nativeName: 'Tiếng Việt', flag: '🇻🇳' },
+  es: { name: 'Spanish', nativeName: 'Español', flag: '🇪🇸' },
+  fr: { name: 'French', nativeName: 'Français', flag: '🇫🇷' },
+  de: { name: 'German', nativeName: 'Deutsch', flag: '🇩🇪' },
+  zh: { name: 'Chinese', nativeName: '中文', flag: '🇨🇳' },
+};
+
+/**
+ * Generate hreflang alternate links for a given path
+ *
+ * @param path - The path without locale prefix (e.g., '/community', '/@user/slug')
+ * @param currentLocale - The current locale
+ * @returns Object mapping locale codes to full URLs
+ *
+ * @example
+ * ```ts
+ * const links = generateHreflangLinks('/community', 'en');
+ * // Returns:
+ * // {
+ * //   'en': 'https://vibelog.io/community',
+ * //   'vi': 'https://vibelog.io/vi/community',
+ * //   'es': 'https://vibelog.io/es/community',
+ * //   ...
+ * //   'x-default': 'https://vibelog.io/community'
+ * // }
+ * ```
+ */
+export function generateHreflangLinks(path: string, currentLocale: Locale = DEFAULT_LOCALE): Record<string, string> {
+  const links: Record<string, string> = {};
+
+  // Ensure path starts with /
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+
+  // Generate URL for each locale
+  SUPPORTED_LOCALES.forEach(locale => {
+    const localePath = locale === DEFAULT_LOCALE ? cleanPath : `/${locale}${cleanPath}`;
+    links[locale] = `${BASE_URL}${localePath}`;
+  });
+
+  // Add x-default (typically points to default locale)
+  // This tells search engines which version to show when no specific language matches
+  links['x-default'] = `${BASE_URL}${cleanPath}`;
+
+  return links;
+}
+
+/**
+ * Generate canonical URL for a given path and locale
+ *
+ * @param path - The path without locale prefix
+ * @param locale - The locale
+ * @returns Canonical URL
+ *
+ * @example
+ * ```ts
+ * generateCanonicalUrl('/community', 'vi'); // https://vibelog.io/vi/community
+ * generateCanonicalUrl('/community', 'en'); // https://vibelog.io/community
+ * ```
+ */
+export function generateCanonicalUrl(path: string, locale: Locale = DEFAULT_LOCALE): string {
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  const localePath = locale === DEFAULT_LOCALE ? cleanPath : `/${locale}${cleanPath}`;
+  return `${BASE_URL}${localePath}`;
+}
+
+/**
+ * Get alternate locales (all locales except current)
+ *
+ * Used for OpenGraph og:locale:alternate tags
+ *
+ * @param currentLocale - The current locale
+ * @returns Array of alternate locale codes
+ */
+export function getAlternateLocales(currentLocale: Locale): Locale[] {
+  return SUPPORTED_LOCALES.filter(locale => locale !== currentLocale);
+}
+
+/**
+ * Convert locale code to full language name
+ *
+ * @param locale - The locale code
+ * @param useNativeName - Whether to return native name instead of English name
+ * @returns Language name
+ */
+export function getLanguageName(locale: Locale, useNativeName: boolean = false): string {
+  return useNativeName ? LOCALE_METADATA[locale].nativeName : LOCALE_METADATA[locale].name;
+}
+
+/**
+ * Check if a locale is supported
+ *
+ * @param locale - The locale to check
+ * @returns Whether the locale is supported
+ */
+export function isLocaleSupported(locale: string): locale is Locale {
+  return (SUPPORTED_LOCALES as readonly string[]).includes(locale);
+}
+
+/**
+ * Extract locale from a full URL path
+ *
+ * @param path - Full URL path (e.g., '/vi/community' or '/community')
+ * @returns Locale if found, otherwise default locale
+ */
+export function extractLocaleFromPath(path: string): Locale {
+  const segments = path.split('/').filter(Boolean);
+  const firstSegment = segments[0];
+
+  if (firstSegment && isLocaleSupported(firstSegment)) {
+    return firstSegment;
+  }
+
+  return DEFAULT_LOCALE;
+}
+
+/**
+ * Strip locale prefix from path
+ *
+ * @param path - Full path with potential locale prefix
+ * @returns Path without locale prefix
+ */
+export function stripLocaleFromPath(path: string): string {
+  const locale = extractLocaleFromPath(path);
+
+  if (locale === DEFAULT_LOCALE) return path;
+
+  if (path === `/${locale}`) return '/';
+  if (path.startsWith(`/${locale}/`)) {
+    return path.slice(`/${locale}`.length);
+  }
+
+  return path;
+}
+
+/**
+ * Add locale prefix to path
+ *
+ * @param path - Path without locale prefix
+ * @param locale - Locale to add
+ * @returns Path with locale prefix (or unchanged if default locale)
+ */
+export function addLocaleToPath(path: string, locale: Locale): string {
+  if (locale === DEFAULT_LOCALE) return path;
+
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  return `/${locale}${cleanPath}`;
+}

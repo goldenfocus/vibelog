@@ -15,6 +15,8 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '50mb', // Increased from default 4.5MB to support video uploads
     },
   },
+  // Note: App Router uses [locale] dynamic segments instead of i18n config
+  // Locale detection handled in middleware.ts
   images: {
     remotePatterns: [
       {

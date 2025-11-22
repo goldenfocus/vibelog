@@ -1,4 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { match } from '@formatjs/intl-localematcher';
+import Negotiator from 'negotiator';
+
+// Supported locales for VibeLog
+const SUPPORTED_LOCALES = ['en', 'vi', 'es', 'fr', 'de', 'zh'] as const;
+type Locale = (typeof SUPPORTED_LOCALES)[number];
+const DEFAULT_LOCALE: Locale = 'en';
 
 // Block internal lab routes in production
 const LAB_ROUTES = new Set(['/mic-lab', '/transcript-lab', '/processing-lab', '/publish-lab']);
@@ -24,13 +31,98 @@ const APP_ROUTES = new Set([
   '/lab',
 ]);
 
+/**
+ * Intelligent locale detection with fallback chain:
+ * 1. URL path locale (highest priority)
+ * 2. Cookie preference (user's saved choice)
+ * 3. Accept-Language header (browser preference)
+ * 4. Default locale (en)
+ */
+function getLocale(request: NextRequest): Locale {
+  const pathname = request.nextUrl.pathname;
+
+  // 1. Check if URL already has a locale prefix
+  const pathnameLocale = SUPPORTED_LOCALES.find(
+    (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
+  );
+  if (pathnameLocale) return pathnameLocale;
+
+  // 2. Check cookie (user preference from language switcher)
+  const cookieLocale = request.cookies.get('NEXT_LOCALE')?.value;
+  if (cookieLocale && (SUPPORTED_LOCALES as readonly string[]).includes(cookieLocale)) {
+    return cookieLocale as Locale;
+  }
+
+  // 3. Check Accept-Language header (browser preference)
+  const acceptLanguage = request.headers.get('accept-language');
+  if (acceptLanguage) {
+    try {
+      const headers = { 'accept-language': acceptLanguage };
+      const languages = new Negotiator({ headers }).languages();
+      const detectedLocale = match(languages, [...SUPPORTED_LOCALES], DEFAULT_LOCALE);
+      return detectedLocale as Locale;
+    } catch (error) {
+      // Fallback to default if locale matching fails
+      console.warn('Locale detection failed:', error);
+    }
+  }
+
+  // 4. Default locale
+  return DEFAULT_LOCALE;
+}
+
+/**
+ * Check if pathname has a locale prefix
+ */
+function pathnameHasLocale(pathname: string): boolean {
+  return SUPPORTED_LOCALES.some(
+    (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
+  );
+}
+
+/**
+ * Extract locale from pathname if present
+ */
+function getLocaleFromPathname(pathname: string): Locale | null {
+  const locale = SUPPORTED_LOCALES.find(
+    (loc) => pathname.startsWith(`/${loc}/`) || pathname === `/${loc}`
+  );
+  return locale || null;
+}
+
+/**
+ * Strip locale prefix from pathname
+ */
+function stripLocalePrefix(pathname: string): string {
+  const locale = getLocaleFromPathname(pathname);
+  if (!locale) return pathname;
+
+  if (pathname === `/${locale}`) return '/';
+  return pathname.slice(`/${locale}`.length);
+}
+
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+
+  // Skip middleware for:
+  // - API routes
+  // - Next.js internals (_next)
+  // - Static files (contains .)
+  // - Favicon
+  if (
+    pathname.startsWith('/api') ||
+    pathname.startsWith('/_next') ||
+    pathname === '/favicon.ico' ||
+    (pathname.includes('.') && !pathname.includes('/@'))
+  ) {
+    return NextResponse.next();
+  }
 
   // Block internal lab routes in production
   if (process.env.NODE_ENV === 'production') {
     for (const base of LAB_ROUTES) {
-      if (pathname === base || pathname.startsWith(`${base}/`)) {
+      const pathWithoutLocale = stripLocalePrefix(pathname);
+      if (pathWithoutLocale === base || pathWithoutLocale.startsWith(`${base}/`)) {
         const url = req.nextUrl.clone();
         url.pathname = '/';
         return NextResponse.redirect(url);
@@ -38,57 +130,97 @@ export function middleware(req: NextRequest) {
     }
   }
 
-  // Redirect /v/slug to /@anonymous/slug (301 permanent redirect)
-  if (pathname.startsWith('/v/')) {
-    const slug = pathname.slice(3); // Remove '/v/'
+  // Detect user's preferred locale
+  const detectedLocale = getLocale(req);
+  const hasLocale = pathnameHasLocale(pathname);
+  const pathLocale = getLocaleFromPathname(pathname);
+
+  // If no locale in URL and user prefers non-default locale, redirect
+  if (!hasLocale && detectedLocale !== DEFAULT_LOCALE) {
+    const url = req.nextUrl.clone();
+    url.pathname = `/${detectedLocale}${pathname}`;
+    const response = NextResponse.redirect(url);
+    response.cookies.set('NEXT_LOCALE', detectedLocale, {
+      maxAge: 31536000, // 1 year
+      path: '/',
+    });
+    return response;
+  }
+
+  // Get the clean pathname (without locale prefix)
+  const cleanPathname = stripLocalePrefix(pathname);
+  const currentLocale = pathLocale || DEFAULT_LOCALE;
+
+  // Handle /v/slug -> /@anonymous/slug redirect (preserve locale)
+  if (cleanPathname.startsWith('/v/')) {
+    const slug = cleanPathname.slice(3); // Remove '/v/'
     if (slug) {
       const url = req.nextUrl.clone();
-      url.pathname = `/@anonymous/${slug}`;
+      const newPath = `/@anonymous/${slug}`;
+      url.pathname = currentLocale !== DEFAULT_LOCALE ? `/${currentLocale}${newPath}` : newPath;
       return NextResponse.redirect(url, 301);
     }
   }
 
   // Rewrite /@username to /username internally (browser shows @, Next.js routes without @)
-  if (pathname.startsWith('/@')) {
+  if (cleanPathname.startsWith('/@')) {
     const url = req.nextUrl.clone();
-    url.pathname = pathname.replace(/^\/@/, '/'); // Replace /@ with /
-    return NextResponse.rewrite(url);
+    const internalPath = cleanPathname.replace(/^\/@/, '/');
+    url.pathname = currentLocale !== DEFAULT_LOCALE ? `/${currentLocale}${internalPath}` : internalPath;
+    const response = NextResponse.rewrite(url);
+    response.cookies.set('NEXT_LOCALE', currentLocale, {
+      maxAge: 31536000,
+      path: '/',
+    });
+    return response;
   }
 
-  // Redirect /username to /@username (301 permanent redirect)
+  // Redirect /username to /@username (301 permanent redirect, preserve locale)
   // Only redirect if:
   // 1. Path starts with / but NOT with /@
   // 2. It's not a known app route
   // 3. It's not a file (has no extension)
+  const firstSegment = cleanPathname.split('/').filter(Boolean)[0];
   if (
-    pathname.startsWith('/') &&
-    !pathname.startsWith('/@') &&
-    !pathname.startsWith('/_next') &&
-    !APP_ROUTES.has(pathname.split('/')[1] ? `/${pathname.split('/')[1]}` : pathname) &&
-    !pathname.includes('.')
+    cleanPathname.startsWith('/') &&
+    !cleanPathname.startsWith('/@') &&
+    firstSegment &&
+    !APP_ROUTES.has(`/${firstSegment}`) &&
+    !cleanPathname.includes('.')
   ) {
-    const segments = pathname.split('/').filter(Boolean);
+    const segments = cleanPathname.split('/').filter(Boolean);
     // Only redirect single-segment paths (username) or two-segment paths (username/slug)
     if (segments.length > 0 && segments.length <= 2) {
       const url = req.nextUrl.clone();
-      url.pathname = `/@${segments.join('/')}`;
+      const newPath = `/@${segments.join('/')}`;
+      url.pathname = currentLocale !== DEFAULT_LOCALE ? `/${currentLocale}${newPath}` : newPath;
       return NextResponse.redirect(url, 301);
     }
   }
 
-  return NextResponse.next();
+  // Set locale cookie for all requests
+  const response = NextResponse.next();
+  response.cookies.set('NEXT_LOCALE', currentLocale, {
+    maxAge: 31536000,
+    path: '/',
+  });
+
+  // Pass pathname to layout via headers for locale detection
+  response.headers.set('x-pathname', pathname);
+
+  return response;
 }
 
 export const config = {
   matcher: [
-    '/mic-lab/:path*',
-    '/transcript-lab/:path*',
-    '/processing-lab/:path*',
-    '/publish-lab/:path*',
-    '/v/:path*',
-    '/:username',
-    '/:username/:slug',
-    '/@:username',
-    '/@:username/:slug',
+    /*
+     * Match all request paths except:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public files (e.g. robots.txt)
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|mp3|mp4|wav)$).*)',
   ],
 };
