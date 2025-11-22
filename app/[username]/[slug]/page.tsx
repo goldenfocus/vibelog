@@ -2,6 +2,7 @@ import { User } from 'lucide-react';
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { headers } from 'next/headers';
 
 import Comments from '@/components/comments/Comments';
 import Navigation from '@/components/Navigation';
@@ -10,6 +11,8 @@ import RelatedVibelogs from '@/components/RelatedVibelogs';
 import VibelogEditButton from '@/components/VibelogEditButton';
 import { formatFullDate } from '@/lib/date-utils';
 import { createServerSupabaseClient } from '@/lib/supabase';
+import { generateVibelogMetadata } from '@/lib/seo/metadata';
+import { extractLocaleFromPath } from '@/lib/seo/hreflang';
 
 interface PageProps {
   params: Promise<{
@@ -275,75 +278,48 @@ async function getVibelog(username: string, slug: string) {
   };
 }
 
-// Generate dynamic metadata for SEO
+// Generate SEO metadata with hreflang tags for vibelog pages (LEGENDARY i18n SEO)
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { username, slug } = await params;
+
+  // Detect locale from URL
+  const headersList = await headers();
+  const pathname = headersList.get('x-pathname') || `/@${username}/${slug}`;
+  const locale = extractLocaleFromPath(pathname);
+
+  // Fetch vibelog data
   const vibelog = await getVibelog(username, slug);
 
   if (!vibelog) {
     return {
-      title: 'Vibelog Not Found',
+      title: 'Vibelog Not Found | vibelog.io',
+      description: 'The vibelog you are looking for does not exist.',
     };
   }
 
-  // Normalize username for consistent URLs
+  // Normalize username
   const normalizedUsername = username.startsWith('@') ? username.slice(1) : username;
 
-  // Extract first paragraph for description
+  // Extract teaser/description
   const description =
     vibelog.teaser ||
     vibelog.content
-      .split('\n\n')
+      ?.split('\n\n')
       .find(p => p.trim() && !p.startsWith('#'))
       ?.substring(0, 160) ||
     `Read ${vibelog.title} by @${normalizedUsername} on VibeLog`;
 
-  const imageUrl = vibelog.cover_image_url || 'https://vibelog.io/og-image.png';
-
-  return {
-    title: `${vibelog.title} | @${normalizedUsername} on VibeLog`,
-    description,
-    keywords: vibelog.tags?.join(', ') || 'vibelog, voice content, audio to text',
-    authors: [{ name: vibelog.author.display_name || normalizedUsername }],
-    openGraph: {
-      title: vibelog.title,
-      description,
-      type: 'article',
-      publishedTime: vibelog.published_at,
-      authors: [vibelog.author.display_name || normalizedUsername],
-      images: [
-        {
-          url: imageUrl,
-          width: 1200,
-          height: 630,
-          alt: vibelog.title,
-        },
-      ],
-      url: `https://vibelog.io/@${normalizedUsername}/${slug}`,
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: vibelog.title,
-      description,
-      images: [imageUrl],
-      creator: `@${normalizedUsername}`,
-    },
-    alternates: {
-      canonical: `https://vibelog.io/@${normalizedUsername}/${slug}`,
-      types: {
-        'application/json': `https://vibelog.io/@${normalizedUsername}/${slug}.json`,
-      },
-    },
-    robots: {
-      index: true,
-      follow: true,
-    },
-    other: {
-      'article:published_time': vibelog.published_at,
-      'article:author': vibelog.author.display_name || normalizedUsername,
-      'article:section': 'Vibelog',
-    },
-  };
+  // Generate SEO-optimized metadata with hreflang
+  return generateVibelogMetadata({
+    title: vibelog.title,
+    teaser: description,
+    username: normalizedUsername,
+    slug: slug,
+    locale,
+    coverImage: vibelog.cover_image_url || undefined,
+    publishedAt: vibelog.published_at || vibelog.created_at,
+    updatedAt: vibelog.created_at,
+  });
 }
 
 export default async function VibelogPage({ params }: PageProps) {

@@ -1,10 +1,12 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { isLocaleSupported, stripLocaleFromPath, addLocaleToPath, type Locale } from "@/lib/seo/hreflang";
 
 interface I18nContextType {
-  locale: string;
-  setLocale: (locale: string) => void;
+  locale: Locale;
+  setLocale: (locale: Locale) => void;
   t: (key: string, variables?: Record<string, any>) => string;
   isLoading: boolean;
 }
@@ -39,10 +41,17 @@ function getNestedValue(obj: Record<string, unknown>, path: string): string | un
   return path.split('.').reduce((current, key) => current?.[key], obj) as string | undefined;
 }
 
-export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocaleState] = useState<SupportedLocale>('en');
+interface I18nProviderProps {
+  children: React.ReactNode;
+  initialLocale?: Locale;
+}
+
+export function I18nProvider({ children, initialLocale = 'en' }: I18nProviderProps) {
+  const [locale, setLocaleState] = useState<SupportedLocale>(initialLocale);
   const [translations, setTranslations] = useState<Record<string, unknown>>({});
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
 
   // Load translations when locale changes
   useEffect(() => {
@@ -61,37 +70,62 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     loadAndSetTranslations();
   }, [locale]);
 
-  // Load saved locale from localStorage on mount
+  // Sync locale from URL on mount and pathname changes
   useEffect(() => {
-    const savedLocale = localStorage.getItem('vibelog-locale');
-    if (savedLocale && SUPPORTED_LOCALES.includes(savedLocale as SupportedLocale)) {
-      setLocaleState(savedLocale as SupportedLocale);
+    if (!pathname) return;
+
+    const segments = pathname.split('/').filter(Boolean);
+    const firstSegment = segments[0];
+
+    // Check if first segment is a locale
+    if (firstSegment && isLocaleSupported(firstSegment)) {
+      if (locale !== firstSegment) {
+        setLocaleState(firstSegment as SupportedLocale);
+      }
     } else {
-      // Try to detect browser language
-      const browserLang = navigator.language.split('-')[0];
-      if ((SUPPORTED_LOCALES as readonly string[]).includes(browserLang)) {
-        setLocaleState(browserLang as SupportedLocale);
+      // No locale in URL = default locale (en)
+      if (locale !== 'en') {
+        setLocaleState('en');
       }
     }
-  }, []);
+  }, [pathname, locale]);
 
-  const setLocale = (newLocale: string) => {
-    if ((SUPPORTED_LOCALES as readonly string[]).includes(newLocale)) {
-      setLocaleState(newLocale as SupportedLocale);
-      localStorage.setItem('vibelog-locale', newLocale);
+  /**
+   * Change locale and navigate to the new URL
+   * This is the key function that makes language switching work with URLs
+   */
+  const setLocale = (newLocale: Locale) => {
+    if (!isLocaleSupported(newLocale)) {
+      console.warn(`Unsupported locale: ${newLocale}`);
+      return;
     }
+
+    // Get current path without locale prefix
+    const pathWithoutLocale = stripLocaleFromPath(pathname);
+
+    // Add new locale prefix (or keep clean if 'en')
+    const newPath = addLocaleToPath(pathWithoutLocale, newLocale);
+
+    // Set cookie for persistence
+    document.cookie = `NEXT_LOCALE=${newLocale}; path=/; max-age=31536000`;
+
+    // Update state immediately for instant UI feedback
+    setLocaleState(newLocale as SupportedLocale);
+
+    // Navigate to new URL (middleware will handle the rest)
+    router.push(newPath);
   };
 
   const t = (key: string, variables?: Record<string, any>): string => {
     const value = getNestedValue(translations, key);
     const template = value || key;
-    
+
     if (variables && typeof template === 'string') {
       return template.replace(/\{\{(\w+)\}\}/g, (match, variableName) => {
         return variables[variableName] !== undefined ? String(variables[variableName]) : match;
       });
     }
-    
+
     return template;
   };
 
