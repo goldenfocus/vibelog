@@ -47,6 +47,16 @@ export async function POST(request: Request) {
 
     const { message, conversationId } = parsed.data;
 
+    // Check for onboarding questions
+    const lowerMessage = message.toLowerCase().trim();
+    const isOnboarding =
+      lowerMessage === 'what is vibelog?' ||
+      lowerMessage === 'what is vibelog' ||
+      lowerMessage === 'how does it work?' ||
+      lowerMessage === 'how does it work' ||
+      lowerMessage === 'show me some examples' ||
+      lowerMessage === 'show me some examples.';
+
     // Get or create conversation
     const { id: activeConversationId, isNew } = await getOrCreateConversation(
       user.id,
@@ -56,8 +66,8 @@ export async function POST(request: Request) {
     // Get conversation history if continuing
     const history = isNew ? [] : await getConversationHistory(activeConversationId, user.id);
 
-    // Generate response
-    const response = await chat(user.id, activeConversationId, message, history);
+    // Generate response with onboarding hint if needed
+    const response = await chat(user.id, activeConversationId, message, history, isOnboarding);
 
     return NextResponse.json({
       message: response.message,

@@ -252,7 +252,8 @@ export async function chat(
   userId: string,
   conversationId: string,
   userMessage: string,
-  conversationHistory: ChatMessage[] = []
+  conversationHistory: ChatMessage[] = [],
+  isOnboarding = false
 ): Promise<ChatResponse> {
   const supabase = await createServerAdminClient();
 
@@ -268,6 +269,21 @@ export async function chat(
 
   // 3. Build messages for GPT
   const messages: ChatCompletionMessageParam[] = [{ role: 'system', content: config.systemPrompt }];
+
+  // Add onboarding enhancement if needed
+  if (isOnboarding) {
+    messages.push({
+      role: 'system',
+      content: `The user is asking an onboarding question. Provide a comprehensive, engaging answer with:
+- Clear explanations in markdown formatting
+- Use clickable links when referencing features or examples
+- For "What is VibeLog?": Explain the philosophy, culture, voice-first creation, and platform values
+- For "How does it work?": Walk through the technical flow from voice → AI → publish with specific details
+- For "Show me some examples": Use getLatestVibelogs tool to fetch real examples categorized by type (text, audio, video, screen recordings) and format them beautifully with previews
+
+Keep it informative but conversational. Use emojis where appropriate. Make it feel like a friend explaining something cool.`,
+    });
+  }
 
   // Add user context
   if (initialContext) {
