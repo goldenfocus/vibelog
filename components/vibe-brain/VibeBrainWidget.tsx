@@ -89,6 +89,7 @@ export function VibeBrainWidget() {
     isOpen,
     isMinimized,
     showHistory,
+    hasSeenNotification,
     messages,
     isLoading,
     error,
@@ -140,10 +141,12 @@ export function VibeBrainWidget() {
         aria-label="Open Vibe Brain"
       >
         <Brain className="h-7 w-7" />
-        <span className="absolute -right-1 -top-1 flex h-4 w-4">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-pink-400 opacity-75"></span>
-          <span className="relative inline-flex h-4 w-4 rounded-full bg-pink-500"></span>
-        </span>
+        {!hasSeenNotification && (
+          <span className="absolute -right-1 -top-1 flex h-4 w-4">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-pink-400 opacity-75"></span>
+            <span className="relative inline-flex h-4 w-4 rounded-full bg-pink-500"></span>
+          </span>
+        )}
       </button>
     );
   }
@@ -270,15 +273,17 @@ export function VibeBrainWidget() {
                   platform. Ask me anything!
                 </p>
                 <div className="mt-4 flex flex-wrap justify-center gap-2">
-                  {["What's my name?", "Who's most active?", "What's trending?"].map(suggestion => (
-                    <button
-                      key={suggestion}
-                      onClick={() => sendMessage(suggestion)}
-                      className="rounded-full bg-white/5 px-3 py-1.5 text-xs text-white/80 transition-colors hover:bg-white/10"
-                    >
-                      {suggestion}
-                    </button>
-                  ))}
+                  {['What is VibeLog?', 'How does it work?', 'Show me some examples'].map(
+                    suggestion => (
+                      <button
+                        key={suggestion}
+                        onClick={() => sendMessage(suggestion)}
+                        className="rounded-full bg-white/5 px-3 py-1.5 text-xs text-white/80 transition-colors hover:bg-white/10"
+                      >
+                        {suggestion}
+                      </button>
+                    )
+                  )}
                 </div>
               </div>
             ) : (

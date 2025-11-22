@@ -26,6 +26,7 @@ interface VibeBrainState {
   isOpen: boolean;
   isMinimized: boolean;
   showHistory: boolean;
+  hasSeenNotification: boolean;
 
   // Chat state
   conversationId: string | null;
@@ -44,6 +45,7 @@ interface VibeBrainState {
   minimize: () => void;
   maximize: () => void;
   toggleHistory: () => void;
+  dismissNotification: () => void;
 
   // Chat actions
   sendMessage: (content: string) => Promise<void>;
@@ -58,6 +60,8 @@ export const useVibeBrainStore = create<VibeBrainState>((set, get) => ({
   isOpen: false,
   isMinimized: false,
   showHistory: false,
+  hasSeenNotification:
+    typeof window !== 'undefined' ? localStorage.getItem('vibe-brain-seen') === 'true' : false,
   conversationId: null,
   messages: [],
   isLoading: false,
@@ -69,11 +73,15 @@ export const useVibeBrainStore = create<VibeBrainState>((set, get) => ({
   open: () => set({ isOpen: true, isMinimized: false }),
   close: () => set({ isOpen: false }),
   toggle: () => {
-    const { isOpen, isMinimized } = get();
+    const { isOpen, isMinimized, hasSeenNotification } = get();
     if (isOpen && !isMinimized) {
       set({ isOpen: false });
     } else {
       set({ isOpen: true, isMinimized: false });
+      // Dismiss notification on first open
+      if (!hasSeenNotification) {
+        get().dismissNotification();
+      }
     }
   },
   minimize: () => set({ isMinimized: true }),
@@ -85,6 +93,12 @@ export const useVibeBrainStore = create<VibeBrainState>((set, get) => ({
       get().loadPastConversations();
     }
     set({ showHistory: !showHistory });
+  },
+  dismissNotification: () => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('vibe-brain-seen', 'true');
+    }
+    set({ hasSeenNotification: true });
   },
 
   // Chat actions
