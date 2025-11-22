@@ -123,6 +123,7 @@ do $$ begin
 end $$;
 
 -- Trigger to auto-create profile when user signs up
+-- Fixed to use correct Supabase field names (raw_app_meta_data not app_metadata)
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -146,6 +147,8 @@ begin
     final_username := base_username || username_suffix;
   end loop;
 
+  -- Insert new profile
+  -- Note: Production uses subscription_status (not subscription_tier) with default 'active'
   insert into public.profiles (
     id,
     email,
@@ -162,14 +165,15 @@ begin
     google_locale,
     username,
     display_name,
-    last_sign_in_at
+    last_sign_in_at,
+    is_premium
   )
   values (
     new.id,
     new.email,
     coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name'),
     new.raw_user_meta_data->>'avatar_url',
-    split_part(new.app_metadata->>'provider', ',', 1),
+    split_part(new.raw_app_meta_data->>'provider', ',', 1),  -- Fixed: raw_app_meta_data not app_metadata
     new.raw_user_meta_data->>'sub',
     new.raw_user_meta_data->>'name',
     new.raw_user_meta_data->>'given_name',
@@ -178,15 +182,16 @@ begin
     new.raw_user_meta_data->>'email',
     (new.raw_user_meta_data->>'email_verified')::boolean,
     new.raw_user_meta_data->>'locale',
-    final_username,  -- Use conflict-free username
+    final_username,
     coalesce(new.raw_user_meta_data->>'name', split_part(new.email, '@', 1)),
-    now()
+    now(),
+    false  -- Everyone starts as free tier
   );
   return new;
 exception
   when others then
     -- Log error but don't fail user creation
-    raise warning 'Failed to create profile for user %: %', new.id, sqlerrm;
+    raise warning 'Failed to create profile for user % (id: %): % - %', new.email, new.id, sqlerrm, sqlstate;
     return new;
 end;
 $$;
