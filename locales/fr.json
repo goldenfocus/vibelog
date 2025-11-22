@@ -57,6 +57,12 @@
     "shareOnX": "Partager sur X"
   },
   "editor": {
+    "listen": "Écouter",
+    "pause": "Pause",
+    "generating": "Génération...",
+    "shareOnX": "Partager sur X"
+  },
+  "editor": {
     "titleLabel": "Titre",
     "contentLabel": "Contenu (Markdown)",
     "teaserLabel": "Accroche (Optionnel)",
@@ -476,12 +482,7 @@
     "account": "Détails du Compte",
     "signedInWith": "Connecté avec",
     "comingSoon": "Votre bibliothèque de vibelogs bientôt disponible — sauvegardez, organisez et publiez facilement",
-    "screenShare": "Partage d'écran",
-    "yourVibelogs": "Vos Vibelogs",
-    "viewAll": "Voir tout",
-    "loadingVibelogs": "Chargement de vos vibelogs...",
-    "noVibelogsTitle": "Vous n'avez pas encore créé de vibelogs",
-    "noVibelogsDescription": "Cliquez sur \"Nouveau Vibelog\" ci-dessus pour enregistrer votre premier 🎤"
+    "screenShare": "Partage d'écran"
   },
   "buttons": {
     "cancel": "Annuler",

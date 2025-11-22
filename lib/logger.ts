@@ -218,12 +218,44 @@ class Logger {
 
   /**
    * Send to error tracking service (Sentry, etc.)
+   *
+   * To enable Sentry integration:
+   * 1. Install: npm install @sentry/nextjs
+   * 2. Initialize Sentry in next.config.ts or instrumentation.ts
+   * 3. Uncomment the Sentry code below
    */
   private sendToErrorTracking(entry: LogEntry): void {
-    // TODO: Integrate with Sentry or similar service
-    // For now, just ensure it's logged to console
     if (entry.level >= LogLevel.ERROR) {
-      console.error('[ERROR_TRACKING]', JSON.stringify(entry));
+      // Sentry integration (uncomment when Sentry is installed)
+      // if (typeof window === 'undefined' && typeof require !== 'undefined') {
+      //   try {
+      //     const Sentry = require('@sentry/nextjs');
+      //     if (entry.error) {
+      //       Sentry.captureException(entry.error, {
+      //         level: entry.level === LogLevel.FATAL ? 'fatal' : 'error',
+      //         tags: { component: entry.context?.component },
+      //         extra: entry.context,
+      //       });
+      //     } else {
+      //       Sentry.captureMessage(entry.message, {
+      //         level: entry.level === LogLevel.FATAL ? 'fatal' : 'error',
+      //         tags: { component: entry.context?.component },
+      //         extra: entry.context,
+      //       });
+      //     }
+      //   } catch (e) {
+      //     // Sentry not available, fall through to console logging
+      //   }
+      // }
+
+      // Always log to console as fallback
+      if (isProd) {
+        // In production, use structured JSON logging
+        console.error(JSON.stringify(entry));
+      } else {
+        // In development, pretty print is already handled by prettyPrint()
+        // This is just a safety fallback
+      }
     }
   }
 

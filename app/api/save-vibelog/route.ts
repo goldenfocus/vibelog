@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { checkAndBlockBots } from '@/lib/botid-check';
+import { createApiLogger } from '@/lib/logger';
 import {
   createVibelog,
   handleAsyncTasks,
@@ -17,6 +18,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   let requestBody: SaveVibelogRequest | null = null;
   let supabase: Awaited<ReturnType<typeof createServerSupabaseClient>> | null = null;
   let vibelogData: any = null;
+  const logger = createApiLogger();
 
   try {
     // === STEP 0: BOT PROTECTION ===
@@ -26,13 +28,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     // === STEP 1: PARSE REQUEST ===
-    console.log('🚀 [VIBELOG-SAVE] Starting bulletproof save process...');
+    logger.info('Starting bulletproof save process', { endpoint: '/api/save-vibelog' });
 
     try {
       requestBody = await request.json();
-      console.log('📥 [VIBELOG-SAVE] Request parsed successfully');
+      logger.debug('Request parsed successfully');
     } catch (parseError) {
-      console.error('❌ [VIBELOG-SAVE] Failed to parse request body:', parseError);
+      logger.error('Failed to parse request body', parseError as Error);
       return NextResponse.json(
         {
           success: false,
@@ -45,7 +47,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // === STEP 2: VALIDATE AND NORMALIZE DATA ===
     if (!requestBody || !requestBody.content) {
-      console.error('❌ [VIBELOG-SAVE] Missing required content field');
+      logger.warn('Missing required content field');
       return NextResponse.json(
         {
           success: false,
@@ -61,10 +63,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     } = await supabase.auth.getUser();
     const userId = user?.id || null;
 
+    // Update logger with user context
+    if (userId) {
+      logger.setContext({ userId });
+    }
+
     const { data: normalizedData, warnings } = await normalizeVibelogData(requestBody, userId);
     vibelogData = normalizedData;
 
-    console.log('✅ [VIBELOG-SAVE] Data normalized:', {
+    logger.info('Data normalized successfully', {
       title: vibelogData.title,
       teaserLength: vibelogData.teaser.length,
       contentLength: vibelogData.content.length,
@@ -78,7 +85,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // === STEP 3: UPDATE OR INSERT ===
     if (requestBody.vibelogId) {
-      console.log('💾 [VIBELOG-SAVE] Updating existing vibelog:', requestBody.vibelogId);
+      logger.info('Updating existing vibelog', { vibelogId: requestBody.vibelogId });
       try {
         const result = await updateVibelog(requestBody.vibelogId, vibelogData, userId!, supabase);
 
@@ -92,6 +99,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             : `/@${user?.user_metadata?.username || 'user'}/${result.slug}`;
         }
 
+        logger.info('Vibelog updated successfully', {
+          vibelogId: result.vibelogId,
+          slug: result.slug,
+          isAnonymous: result.isAnonymous,
+        });
+
         return NextResponse.json({
           success: true,
           vibelogId: result.vibelogId,
@@ -102,7 +115,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           warnings: warnings.length > 0 ? warnings : undefined,
         });
       } catch (updateError: unknown) {
-        console.error('❌ [VIBELOG-SAVE] Update failed:', updateError);
+        logger.error('Update failed', updateError as Error, {
+          vibelogId: requestBody.vibelogId,
+        });
         const message = updateError instanceof Error ? updateError.message : 'Unknown error';
         const status =
           message === 'Vibelog not found' ? 404 : message === 'Permission denied' ? 403 : 500;
@@ -122,7 +137,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     // === STEP 3B: TRY DIRECT INSERT (new vibelog) ===
-    console.log('💾 [VIBELOG-SAVE] Attempting direct insert...');
+    logger.info('Attempting direct insert');
     try {
       const result = await createVibelog(vibelogData, userId, supabase);
 
@@ -135,12 +150,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           : `/@${user?.user_metadata?.username || user?.email?.split('@')[0] || 'user'}/${result.slug}`
         : null;
 
-      console.log(
-        '✅ [VIBELOG-SAVE] Direct insert successful:',
-        result.vibelogId,
-        'Slug:',
-        result.slug
-      );
+      logger.info('Direct insert successful', {
+        vibelogId: result.vibelogId,
+        slug: result.slug,
+        isAnonymous: result.isAnonymous,
+      });
 
       return NextResponse.json({
         success: true,
@@ -154,7 +168,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         warnings: warnings.length > 0 ? warnings : undefined,
       });
     } catch (directInsertError) {
-      console.error('❌ [VIBELOG-SAVE] Direct insert failed:', directInsertError);
+      logger.error('Direct insert failed', directInsertError as Error);
 
       // Fallback: Log to failures
       await logVibelogFailure(vibelogData, directInsertError, supabase);
@@ -170,10 +184,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       });
     }
   } catch (uncaughtError) {
-    console.error('💥 [VIBELOG-SAVE] UNCAUGHT ERROR:', uncaughtError);
+    logger.fatal('Uncaught error in save-vibelog', uncaughtError as Error);
 
     if (supabase && requestBody) {
       await logVibelogFailure(requestBody, uncaughtError, supabase);
+      logger.info('Emergency data capture successful', { hasRequestBody: !!requestBody });
       return NextResponse.json({
         success: true,
         message: 'Emergency data capture successful - will be recovered',
