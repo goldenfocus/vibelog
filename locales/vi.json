@@ -442,12 +442,22 @@
       "stats": {
         "creators": "Tổng số nhà sáng tạo",
         "vibelogs": "Tổng số vibelog",
-        "views": "Tổng lượt xem"
+        "views": "Tổng lượt xem",
+        "likes": "Lượt thích",
+        "remixes": "Bản phối lại"
       },
       "empty": {
         "title": "Không tìm thấy nhà sáng tạo",
         "filtered": "Không nhà sáng tạo nào khớp với \"{{query}}\"",
         "default": "Hãy là người đầu tiên tạo một vibelog!"
+      },
+      "topCreator": "Nhà sáng tạo nổi bật",
+      "joined": {
+        "label": "Tham gia {{time}}",
+        "new": "Nhà sáng tạo mới! 🌟",
+        "days": "{{count}} ngày trước",
+        "months": "{{count}} tháng trước",
+        "years": "{{count}} năm trước"
       }
     }
   },

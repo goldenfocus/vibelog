@@ -430,7 +430,7 @@
     },
     "people": {
       "title": "Personnes",
-      "subtitle": "Découvrez les créateurs et leurs derniers posts basés sur la voix.",
+      "subtitle": "Découvrez les créateurs et leurs dernières publications vocales.",
       "creatorBio": "Bio et activité récente.",
       "badge": "Découvrez des créateurs incroyables",
       "searchPlaceholder": "Recherchez des créateurs, des vibelogs...",
@@ -442,12 +442,22 @@
       "stats": {
         "creators": "Nombre total de créateurs",
         "vibelogs": "Nombre total de vibelogs",
-        "views": "Nombre total de vues"
+        "views": "Nombre total de vues",
+        "likes": "Mentions J'aime",
+        "remixes": "Remixes"
       },
       "empty": {
         "title": "Aucun créateur trouvé",
         "filtered": "Aucun créateur ne correspond à \"{{query}}\"",
         "default": "Soyez le premier à créer un vibelog !"
+      },
+      "topCreator": "Créateur en vedette",
+      "joined": {
+        "label": "Inscrit il y a {{time}}",
+        "new": "Nouveau créateur ! 🌟",
+        "days": "{{count}} jours",
+        "months": "{{count}} mois",
+        "years": "{{count}} ans"
       }
     }
   },
