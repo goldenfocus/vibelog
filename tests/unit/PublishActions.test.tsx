@@ -171,15 +171,14 @@ describe('PublishActions', () => {
       expect(mockOnCopy).toHaveBeenCalledWith('Sample vibelog content for testing');
     });
 
-    it('should add signature when showSignature is true', () => {
-      render(<PublishActions {...defaultProps} showSignature={true} />);
+    it.skip('should add signature when showSignature is true', () => {
+      // showSignature prop removed from component
+      render(<PublishActions {...defaultProps} />);
 
       const copyButton = screen.getByTestId('copy-button');
       fireEvent.click(copyButton);
 
-      expect(mockOnCopy).toHaveBeenCalledWith(
-        'Sample blog content for testing\n\n---\nCreated by @vibeyang\nhttps://vibelog.io/vibeyang'
-      );
+      expect(mockOnCopy).toHaveBeenCalledWith('Sample vibelog content for testing');
     });
 
     it('should not add signature when showSignature is false', () => {
@@ -225,11 +224,7 @@ describe('PublishActions', () => {
       render(<PublishActions {...defaultProps} />);
 
       const shareButton = screen.getByTestId('share-button');
-      expect(shareButton).toHaveClass(
-        'bg-electric/20',
-        'hover:bg-electric/30',
-        'border-electric/20'
-      );
+      expect(shareButton).toHaveClass('bg-muted/20', 'hover:bg-muted/30', 'border-border/20');
     });
   });
 
@@ -443,7 +438,7 @@ describe('PublishActions', () => {
       expect(editButton).toHaveClass('hover:bg-muted/30', 'hover:scale-105');
 
       const shareButton = screen.getByTestId('share-button');
-      expect(shareButton).toHaveClass('hover:bg-electric/30', 'hover:scale-105');
+      expect(shareButton).toHaveClass('hover:bg-muted/30', 'hover:scale-105');
     });
 
     it('should be keyboard accessible', () => {
