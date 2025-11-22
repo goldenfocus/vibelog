@@ -38,13 +38,13 @@ export default function Navigation() {
 
   const navLinks = useMemo(
     () => [
-      { href: '/about', label: t('navigation.about') },
-      { href: '/faq', label: t('navigation.faq') },
-      { href: '/pricing', label: t('navigation.pricing') },
-      { href: '/community', label: t('navigation.community') },
-      { href: '/people', label: t('navigation.people') },
+      { href: `/${locale}/about`, label: t('navigation.about') },
+      { href: `/${locale}/faq`, label: t('navigation.faq') },
+      { href: `/${locale}/pricing`, label: t('navigation.pricing') },
+      { href: `/${locale}/community`, label: t('navigation.community') },
+      { href: `/${locale}/people`, label: t('navigation.people') },
     ],
-    [t]
+    [t, locale]
   );
 
   const isActive = (path: string) => pathname === path;

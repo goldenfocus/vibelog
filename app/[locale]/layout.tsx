@@ -24,7 +24,7 @@ interface LocaleLayoutProps {
 
 // Generate static params for all supported locales
 export async function generateStaticParams() {
-  return SUPPORTED_LOCALES.map((locale) => ({ locale }));
+  return SUPPORTED_LOCALES.map(locale => ({ locale }));
 }
 
 // Generate metadata dynamically based on locale
@@ -36,6 +36,7 @@ export async function generateMetadata({ params }: LocaleLayoutProps): Promise<M
   }
 
   const hreflangLinks = generateHreflangLinks('/', locale as Locale);
+  const canonicalUrl = `https://vibelog.io/${locale}`;
 
   return {
     title: 'Vibe → Share Everywhere | vibelog.io',
@@ -54,7 +55,7 @@ export async function generateMetadata({ params }: LocaleLayoutProps): Promise<M
     },
     metadataBase: new URL('https://vibelog.io'),
     alternates: {
-      canonical: hreflangLinks[locale],
+      canonical: canonicalUrl,
       languages: hreflangLinks,
     },
     openGraph: {
