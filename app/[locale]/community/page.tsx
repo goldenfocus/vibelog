@@ -123,7 +123,15 @@ export default function Community() {
             {!loading && !error && vibelogs.length > 0 && (
               <div className="space-y-8">
                 {vibelogs.map(vibelog => (
-                  <VibelogCard key={vibelog.id} vibelog={vibelog} onRemix={handleRemix} />
+                  <VibelogCard
+                    key={vibelog.id}
+                    vibelog={vibelog}
+                    onRemix={handleRemix}
+                    onDeleteSuccess={vibelogId => {
+                      // Remove deleted vibelog from state
+                      setVibelogs(prev => prev.filter(v => v.id !== vibelogId));
+                    }}
+                  />
                 ))}
               </div>
             )}

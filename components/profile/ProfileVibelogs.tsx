@@ -35,11 +35,13 @@ export function ProfileVibelogs({
   username,
   displayName,
   avatarUrl,
+  onRefresh,
 }: {
   vibelogs: Vibelog[];
   username: string;
   displayName: string;
   avatarUrl?: string | null;
+  onRefresh?: () => void;
 }) {
   const { t } = useI18n();
   const [searchQuery, setSearchQuery] = useState('');
@@ -203,7 +205,15 @@ export function ProfileVibelogs({
               className="animate-in fade-in-50 slide-in-from-bottom-4"
               style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'backwards' }}
             >
-              <VibelogCard vibelog={vibelog} />
+              <VibelogCard
+                vibelog={vibelog}
+                onDeleteSuccess={() => {
+                  // Call parent refresh to reload vibelogs from server
+                  if (onRefresh) {
+                    onRefresh();
+                  }
+                }}
+              />
             </div>
           ))}
         </div>
