@@ -97,7 +97,7 @@ export default function TextEditTab({
       {/* Title */}
       <div>
         <Label htmlFor="title" className="mb-2 block">
-          Title
+          {t('editor.titleLabel')}
         </Label>
         <input
           id="title"
@@ -112,7 +112,7 @@ export default function TextEditTab({
       {/* Content */}
       <div>
         <Label htmlFor="content" className="mb-2 block">
-          Content (Markdown)
+          {t('editor.contentLabel')}
         </Label>
         <Textarea
           id="content"
@@ -126,7 +126,7 @@ export default function TextEditTab({
       {/* Teaser */}
       <div>
         <Label htmlFor="teaser" className="mb-2 block">
-          Teaser (Optional)
+          {t('editor.teaserLabel')}
         </Label>
         <Textarea
           id="teaser"
@@ -141,30 +141,30 @@ export default function TextEditTab({
       <div className="rounded-xl border border-border/50 bg-background/50 p-4">
         <h3 className="mb-4 flex items-center gap-2 font-semibold">
           <Sparkles className="h-4 w-4 text-electric" />
-          Regenerate with AI
+          {t('editor.regenerateWithAI')}
         </h3>
         <div className="space-y-4">
           <div>
             <Label htmlFor="tone" className="mb-2 block">
-              Tone
+              {t('editor.toneLabel')}
             </Label>
             <Select value={tone} onValueChange={setTone}>
               <SelectTrigger id="tone">
                 <SelectValue placeholder={t('placeholders.toneSelect')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="professional">Professional</SelectItem>
-                <SelectItem value="casual">Casual</SelectItem>
-                <SelectItem value="humorous">Humorous</SelectItem>
-                <SelectItem value="inspiring">Inspiring</SelectItem>
-                <SelectItem value="analytical">Analytical</SelectItem>
-                <SelectItem value="storytelling">Storytelling</SelectItem>
+                <SelectItem value="professional">{t('editor.tones.professional')}</SelectItem>
+                <SelectItem value="casual">{t('editor.tones.casual')}</SelectItem>
+                <SelectItem value="humorous">{t('editor.tones.humorous')}</SelectItem>
+                <SelectItem value="inspiring">{t('editor.tones.inspiring')}</SelectItem>
+                <SelectItem value="analytical">{t('editor.tones.analytical')}</SelectItem>
+                <SelectItem value="storytelling">{t('editor.tones.storytelling')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div>
             <Label htmlFor="prompt" className="mb-2 block">
-              Additional Instructions (Optional)
+              {t('editor.additionalInstructions')}
             </Label>
             <Textarea
               id="prompt"
@@ -178,12 +178,12 @@ export default function TextEditTab({
             {isRegenerating ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Regenerating...
+                {t('editor.regenerating')}
               </>
             ) : (
               <>
                 <Sparkles className="mr-2 h-4 w-4" />
-                Regenerate Text
+                {t('editor.regenerateText')}
               </>
             )}
           </Button>

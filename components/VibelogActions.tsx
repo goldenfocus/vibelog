@@ -486,7 +486,7 @@ export default function VibelogActions({
                   data-testid="owner-menu-button"
                 >
                   <MoreVertical className={iconClass} />
-                  {!isCompact && <span className={labelClass}>Manage</span>}
+                  {!isCompact && <span className={labelClass}>{t('actions.manage')}</span>}
                 </button>
 
                 {isMenuOpen && (
@@ -498,7 +498,7 @@ export default function VibelogActions({
                         data-testid="menu-edit-button"
                       >
                         <Edit className="h-4 w-4" />
-                        <span>Edit</span>
+                        <span>{t('actions.edit')}</span>
                       </button>
                       <button
                         onClick={handleDeleteClick}
@@ -506,7 +506,7 @@ export default function VibelogActions({
                         data-testid="menu-delete-button"
                       >
                         <Trash2 className="h-4 w-4" />
-                        <span>Delete</span>
+                        <span>{t('actions.delete')}</span>
                       </button>
                     </div>
                   </div>
@@ -529,13 +529,13 @@ export default function VibelogActions({
                 {isOwnVibelog ? (
                   <>
                     <Edit className={iconClass} />
-                    {isCompact && <span className={labelClass}>Edit</span>}
-                    {!isCompact && <span className={labelClass}>Edit</span>}
+                    {isCompact && <span className={labelClass}>{t('actions.edit')}</span>}
+                    {!isCompact && <span className={labelClass}>{t('actions.edit')}</span>}
                   </>
                 ) : (
                   <>
                     <Sparkles className="h-4 w-4" />
-                    <span>Remix</span>
+                    <span>{t('components.vibelogCard.remix')}</span>
                   </>
                 )}
               </button>
@@ -574,7 +574,11 @@ export default function VibelogActions({
                 </div>
 
                 <span className={labelClass}>
-                  {isLoading ? 'Generating...' : isPlaying ? t('titles.pause') : t('titles.listen')}
+                  {isLoading
+                    ? t('actions.generating')
+                    : isPlaying
+                      ? t('actions.pause')
+                      : t('actions.listen')}
                 </span>
               </button>
             )}
@@ -640,7 +644,7 @@ export default function VibelogActions({
               ) : (
                 <XIcon className={iconClass} />
               )}
-              {!isCompact && <span className={labelClass}>X</span>}
+              {!isCompact && <span className={labelClass}>{t('actions.shareOnX')}</span>}
             </button>
 
             {/* Generic Share Button */}
@@ -652,7 +656,7 @@ export default function VibelogActions({
                 data-testid="share-button"
               >
                 <Share2 className={iconClass} />
-                <span className={labelClass}>Share</span>
+                <span className={labelClass}>{t('actions.share')}</span>
               </button>
             )}
 

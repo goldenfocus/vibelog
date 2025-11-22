@@ -10,7 +10,12 @@
     "closeMenu": "Close menu",
     "accountMenu": "Account menu",
     "dashboard": "Dashboard",
-    "signIn": "Đăng nhập"
+    "signIn": "Đăng nhập",
+    "loading": "Đang tải điều hướng"
+  },
+  "common": {
+    "loading": "Đang tải...",
+    "retry": "Thử lại"
   },
   "hero": {
     "title": {
@@ -42,7 +47,40 @@
     "edit": "Chỉnh sửa",
     "save": "Lưu",
     "share": "Chia sẻ",
-    "recordNew": "Ghi Nội Dung Mới"
+    "recordNew": "Ghi Nội Dung Mới",
+    "manage": "Quản lý",
+    "delete": "Xóa",
+    "remix": "Phối lại",
+    "listen": "Nghe",
+    "pause": "Tạm dừng",
+    "generating": "Đang tạo...",
+    "shareOnX": "Chia sẻ lên X"
+  },
+  "editor": {
+    "titleLabel": "Tiêu đề",
+    "contentLabel": "Nội dung (Markdown)",
+    "teaserLabel": "Tóm tắt (Tùy chọn)",
+    "regenerateWithAI": "Tái tạo bằng AI",
+    "toneLabel": "Giọng điệu",
+    "additionalInstructions": "Hướng dẫn thêm (tùy chọn)",
+    "regenerateText": "Tái tạo văn bản",
+    "regenerating": "Đang tái tạo...",
+    "tones": {
+      "professional": "Chuyên nghiệp",
+      "casual": "Thoải mái",
+      "humorous": "Hài hước",
+      "inspiring": "Truyền cảm hứng",
+      "analytical": "Phân tích",
+      "storytelling": "Kể chuyện"
+    }
+  },
+  "home": {
+    "modes": {
+      "text": "Tạo bằng văn bản",
+      "audio": "Tạo bằng âm thanh",
+      "video": "Tạo bằng video",
+      "screen": "Ghi màn hình"
+    }
   },
   "features": {
     "input": {
@@ -76,6 +114,38 @@
   "meta": {
     "title": "VibeLog - Từ Giọng Nói Đến Vibelog Trong Vài Giây",
     "description": "Biến giọng nói của bạn thành vibelogs hoàn thiện ngay lập tức. Nói vibe của bạn, AI làm phần còn lại. Xuất bản mọi nơi chỉ với một chạm."
+  },
+  "screenRecorder": {
+    "modalTitle": "Ghi màn hình",
+    "modalSubtitle": "Ghi màn hình với camera tùy chọn - hoàn hảo cho hướng dẫn và demo.",
+    "clickToMove": "Nhấp để di chuyển",
+    "live": "TRỰC TIẾP",
+    "screenReady": "Sẵn sàng chia sẻ màn hình",
+    "addCamera": "Thêm camera",
+    "removeCamera": "Gỡ bỏ",
+    "recording": "Đang ghi màn hình...",
+    "capturing": "Màn hình của bạn đang được ghi",
+    "timeRemaining": "Còn {{seconds}}s",
+    "preview": "Xem trước",
+    "idleTitle": "Sẵn sàng ghi lại điều kỳ diệu?",
+    "idleSubtitle": "Chia sẻ màn hình để bắt đầu",
+    "waitingForAccess": "Đang chờ quyền truy cập màn hình...",
+    "uploading": "Đang tải lên... {{percent}}%",
+    "uploaded": "Đã tải bản ghi!",
+    "shareScreen": "Chia sẻ màn hình",
+    "startRecording": "Bắt đầu ghi",
+    "stopRecording": "Dừng ghi",
+    "retake": "Ghi lại",
+    "useRecording": "Dùng bản ghi này",
+    "tryAgain": "Thử lại",
+    "rec": "REC",
+    "errors": {
+      "generic": "Không truy cập được màn hình",
+      "permissionDenied": "Bị từ chối quyền chia sẻ màn hình. Hãy cho phép truy cập.",
+      "notFound": "Không có màn hình để chia sẻ.",
+      "inUse": "Màn hình đang được ứng dụng khác sử dụng.",
+      "cancelled": "Chia sẻ màn hình đã bị hủy."
+    }
   },
   "components": {
     "micRecorder": {
@@ -144,6 +214,56 @@
     "faq": {
       "title": "Câu Hỏi Thường Gặp",
       "subtitle": "Mọi thứ bạn cần biết về việc chuyển đổi giọng nói thành nội dung.",
+      "items": [
+        {
+          "question": "vibelog.io là gì? ⚡",
+          "answer": "Nhấn ghi, nói điều bạn muốn, chúng tôi biến thành bài viết chỉn chu—tiêu đề, mục, đầy đủ. ✨"
+        },
+        {
+          "question": "Bạn hỗ trợ những ngôn ngữ nào?",
+          "answer": "Hơn 50 và còn tăng. Tạo cho thế giới bằng giọng của bạn. 🌍"
+        },
+        {
+          "question": "Độ chính xác của phiên âm thế nào?",
+          "answer": "Độ chính xác cấp độ creator, cải thiện với ngữ cảnh và bạn chỉnh sửa nhanh chóng."
+        },
+        {
+          "question": "Tôi có thể chỉnh sửa bài viết không?",
+          "answer": "Chắc chắn—toàn quyền trước khi xuất bản."
+        },
+        {
+          "question": "Gói Miễn phí có gì?",
+          "answer": "Ghi âm không giới hạn, chỉnh sửa cơ bản, mỗi lần 5 phút, watermark, và cộng đồng."
+        },
+        {
+          "question": "Influencer (12$/tháng) có gì?",
+          "answer": "30 phút/ lần, không watermark, AI ưu tiên, kết nối mạng xã hội, tự động đăng, mẫu, phân tích, hỗ trợ email."
+        },
+        {
+          "question": "Còn Marketing Agency (99$/tháng)?",
+          "answer": "Thời gian không giới hạn, đội nhóm, gắn thương hiệu, domain riêng, phân tích nâng cao, lịch đăng, API, hỗ trợ điện thoại ưu tiên, quản lý riêng."
+        },
+        {
+          "question": "Tôi có thể ghi bao lâu?",
+          "answer": "Miễn phí 5 phút • Influencer 30 phút • Agency không giới hạn."
+        },
+        {
+          "question": "Tôi có thể đăng ở đâu?",
+          "answer": "Blog & trang web, LinkedIn, Medium, WordPress, X, IG, TikTok, FB, YouTube Shorts, WhatsApp, Telegram, Slack, email… và hơn nữa 📢"
+        },
+        {
+          "question": "Dữ liệu của tôi có an toàn không?",
+          "answer": "Có—được mã hóa, riêng tư, thuộc về bạn."
+        },
+        {
+          "question": "Có hoạt động trên di động không?",
+          "answer": "Có. Hiển thị đẹp trên điện thoại. Ứng dụng native đang được phát triển. 📱"
+        },
+        {
+          "question": "Nhu cầu đội nhóm hoặc tùy chỉnh?",
+          "answer": "Gói Agency đáp ứng—hoặc nhắn chúng tôi để có giải pháp riêng."
+        }
+      ],
       "questions": {
         "howItWorks": {
           "question": "vibelog.io hoạt động như thế nào?",
@@ -162,6 +282,19 @@
         "title": "Vẫn có câu hỏi?",
         "description": "Không tìm thấy câu trả lời bạn đang tìm kiếm? Đội ngũ của chúng tôi ở đây để giúp đỡ.",
         "button": "Liên Hệ Hỗ Trợ"
+      },
+      "form": {
+        "nameLabel": "Tên",
+        "emailLabel": "Email",
+        "messageLabel": "Tin nhắn",
+        "namePlaceholder": "Tên của bạn",
+        "emailPlaceholder": "ban@email.com",
+        "messagePlaceholder": "Chào đội VibeLog, tôi có câu hỏi về...",
+        "sendMessage": "Gửi tin nhắn",
+        "sending": "Đang gửi...",
+        "sentTitle": "Đã gửi tin nhắn! ✨",
+        "sentSubtitle": "Chúng tôi sẽ phản hồi sớm.",
+        "sendAnother": "Gửi tin nhắn khác"
       }
     },
     "pricing": {
@@ -282,6 +415,10 @@
     "community": {
       "title": "Cộng Đồng",
       "subtitle": "Tham gia các nhà sáng tạo đang xây dựng với quy trình làm việc dựa trên giọng nói.",
+      "loading": "Đang tải vibelogs...",
+      "error": "Không tải được vibelogs",
+      "empty": "Chưa có vibelog nào. Hãy là người đầu tiên tạo một chiếc!",
+      "create": "Tạo Vibelog",
       "announcements": {
         "title": "Thông Báo",
         "description": "Cập nhật mới nhất và ghi chú phát hành."
@@ -294,7 +431,24 @@
     "people": {
       "title": "Mọi Người",
       "subtitle": "Khám phá các nhà sáng tạo và những bài đăng dựa trên giọng nói mới nhất của họ.",
-      "creatorBio": "Tiểu sử và hoạt động gần đây."
+      "creatorBio": "Tiểu sử và hoạt động gần đây.",
+      "badge": "Khám phá các nhà sáng tạo tuyệt vời",
+      "searchPlaceholder": "Tìm kiếm nhà sáng tạo, vibelog...",
+      "sort": {
+        "popular": "Phổ biến",
+        "active": "Hoạt động",
+        "recent": "Mới"
+      },
+      "stats": {
+        "creators": "Tổng số nhà sáng tạo",
+        "vibelogs": "Tổng số vibelog",
+        "views": "Tổng lượt xem"
+      },
+      "empty": {
+        "title": "Không tìm thấy nhà sáng tạo",
+        "filtered": "Không nhà sáng tạo nào khớp với \"{{query}}\"",
+        "default": "Hãy là người đầu tiên tạo một vibelog!"
+      }
     }
   },
   "auth": {
@@ -311,7 +465,18 @@
     "newVibelog": "Vibelog Mới",
     "account": "Thông Tin Tài Khoản",
     "signedInWith": "Đã đăng nhập bằng",
-    "comingSoon": "Thư viện vibelog của bạn sắp ra mắt — lưu trữ, sắp xếp và xuất bản dễ dàng"
+    "comingSoon": "Thư viện vibelog của bạn sắp ra mắt — lưu trữ, sắp xếp và xuất bản dễ dàng",
+    "screenShare": "Chia sẻ màn hình",
+    "yourVibelogs": "Vibelogs của bạn",
+    "viewAll": "Xem tất cả",
+    "loadingVibelogs": "Đang tải vibelogs của bạn...",
+    "noVibelogsTitle": "Bạn chưa tạo vibelog nào",
+    "noVibelogsDescription": "Nhấp \"Vibelog Mới\" ở trên để ghi chiếc đầu tiên 🎤"
+  },
+  "buttons": {
+    "cancel": "Hủy",
+    "delete": "Xóa",
+    "retry": "Try Again"
   },
   "toasts": {
     "comments": {
@@ -500,9 +665,5 @@
   "confirmations": {
     "deleteComment": "Bạn có chắc chắn muốn xóa bình luận này không?",
     "deleteVibelog": "Bạn có chắc chắn muốn xóa VibeLog này không? Hành động này không thể hoàn tác."
-  },
-  "buttons": {
-    "cancel": "Hủy",
-    "delete": "Xóa"
   }
 }

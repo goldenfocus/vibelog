@@ -136,7 +136,7 @@ export default function DashboardPage() {
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center">
           <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-electric border-t-transparent"></div>
-          <p className="text-muted-foreground">Loading...</p>
+          <p className="text-muted-foreground">{t('common.loading')}</p>
         </div>
       </div>
     );
@@ -220,7 +220,7 @@ export default function DashboardPage() {
               className="flex items-center gap-2 border-blue-500/30 bg-gradient-to-r from-blue-500/10 to-purple-500/10 hover:from-blue-500/20 hover:to-purple-500/20"
             >
               <Monitor className="h-4 w-4" />
-              Screen Share
+              {t('dashboard.screenShare')}
             </Button>
           </div>
 
@@ -232,7 +232,7 @@ export default function DashboardPage() {
           {/* Your Vibelogs Section */}
           <div className="mt-16">
             <div className="mb-8 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-foreground">Your Vibelogs</h2>
+              <h2 className="text-2xl font-bold text-foreground">{t('dashboard.yourVibelogs')}</h2>
               {vibelogs.length > 0 && (
                 <Button
                   onClick={() =>
@@ -243,7 +243,7 @@ export default function DashboardPage() {
                   variant="outline"
                   size="sm"
                 >
-                  View All
+                  {t('dashboard.viewAll')}
                 </Button>
               )}
             </div>
@@ -252,16 +252,16 @@ export default function DashboardPage() {
               <div className="flex justify-center py-12">
                 <div className="text-center">
                   <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-electric border-t-transparent"></div>
-                  <p className="text-muted-foreground">Loading your vibelogs...</p>
+                  <p className="text-muted-foreground">{t('dashboard.loadingVibelogs')}</p>
                 </div>
               </div>
             ) : vibelogs.length === 0 ? (
               <div className="rounded-2xl border border-border/30 bg-card/30 p-12 text-center backdrop-blur-sm">
                 <p className="mb-4 text-lg text-muted-foreground">
-                  You haven&apos;t created any vibelogs yet
+                  {t('dashboard.noVibelogsTitle')}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Click &quot;New Vibelog&quot; above to start recording your first one! 🎤
+                  {t('dashboard.noVibelogsDescription')}
                 </p>
               </div>
             ) : (
@@ -289,9 +289,9 @@ export default function DashboardPage() {
             </button>
 
             <div className="mb-6">
-              <h2 className="mb-2 text-2xl font-bold">Screen Share Recording</h2>
+              <h2 className="mb-2 text-2xl font-bold">{t('screenRecorder.modalTitle')}</h2>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Record your screen with optional camera overlay - perfect for tutorials and demos!
+                {t('screenRecorder.modalSubtitle')}
               </p>
             </div>
 

@@ -10,7 +10,70 @@
     "closeMenu": "Close menu",
     "accountMenu": "Account menu",
     "dashboard": "Dashboard",
-    "signIn": "Sign In"
+    "signIn": "Sign In",
+    "loading": "Loading navigation"
+  },
+  "screenRecorder": {
+    "modalTitle": "Screen Share Recording",
+    "modalSubtitle": "Record your screen with optional camera overlay - perfect for tutorials and demos!",
+    "clickToMove": "Click to move",
+    "live": "LIVE",
+    "screenReady": "Screen Ready",
+    "addCamera": "Add Camera",
+    "removeCamera": "Remove",
+    "recording": "Recording your screen...",
+    "capturing": "Your screen is being captured",
+    "timeRemaining": "{{seconds}}s remaining",
+    "preview": "Preview",
+    "idleTitle": "Ready to capture magic?",
+    "idleSubtitle": "Share your screen to get started",
+    "waitingForAccess": "Waiting for screen access...",
+    "uploading": "Uploading... {{percent}}%",
+    "uploaded": "Recording uploaded!",
+    "shareScreen": "Share Screen",
+    "startRecording": "Start Recording",
+    "stopRecording": "Stop Recording",
+    "retake": "Retake",
+    "useRecording": "Use This Recording",
+    "tryAgain": "Try Again",
+    "rec": "REC",
+    "errors": {
+      "generic": "Failed to access screen",
+      "permissionDenied": "Screen share permission denied. Please allow screen access.",
+      "notFound": "No screen available to share.",
+      "inUse": "Screen is already in use by another application.",
+      "cancelled": "Screen share was cancelled."
+    }
+  },
+  "home": {
+    "modes": {
+      "text": "Create with text",
+      "audio": "Create with audio",
+      "video": "Create with video",
+      "screen": "Record screen share"
+    }
+  },
+  "editor": {
+    "titleLabel": "Title",
+    "contentLabel": "Content (Markdown)",
+    "teaserLabel": "Teaser (Optional)",
+    "regenerateWithAI": "Regenerate with AI",
+    "toneLabel": "Tone",
+    "additionalInstructions": "Additional Instructions (Optional)",
+    "regenerateText": "Regenerate Text",
+    "regenerating": "Regenerating...",
+    "tones": {
+      "professional": "Professional",
+      "casual": "Casual",
+      "humorous": "Humorous",
+      "inspiring": "Inspiring",
+      "analytical": "Analytical",
+      "storytelling": "Storytelling"
+    }
+  },
+  "common": {
+    "loading": "Loading...",
+    "retry": "Try Again"
   },
   "hero": {
     "title": {
@@ -42,7 +105,14 @@
     "edit": "Edit",
     "save": "Save",
     "share": "Share",
-    "recordNew": "Record New Content"
+    "recordNew": "Record New Content",
+    "manage": "Manage",
+    "delete": "Delete",
+    "remix": "Remix",
+    "listen": "Listen",
+    "pause": "Pause",
+    "generating": "Generating...",
+    "shareOnX": "Share on X"
   },
   "features": {
     "input": {
@@ -144,6 +214,56 @@
     "faq": {
       "title": "Frequently Asked Questions",
       "subtitle": "Everything you need to know about transforming your voice into content.",
+      "items": [
+        {
+          "question": "What is vibelog.io? ⚡",
+          "answer": "Hit record, speak your truth, we turn it into a polished post—headlines, sections, the works. ✨"
+        },
+        {
+          "question": "Which languages do you support?",
+          "answer": "50+ and counting. Create for the world, in your voice. 🌍"
+        },
+        {
+          "question": "How accurate is the transcription?",
+          "answer": "Creator-grade accurate, improves with context, and you can tweak anything fast."
+        },
+        {
+          "question": "Can I edit the post?",
+          "answer": "Absolutely—full control before you publish."
+        },
+        {
+          "question": "What's in the Free plan?",
+          "answer": "Unlimited recordings, core polish, 5-minute takes, watermark, and the community ride."
+        },
+        {
+          "question": "What do I get with Influencer ($12/mo)?",
+          "answer": "30-minute takes, no watermark, priority AI, social plugs, auto-publish, templates, analytics, email support."
+        },
+        {
+          "question": "What about Marketing Agency ($99/mo)?",
+          "answer": "Unlimited time, teams, brand theming, custom domain, advanced analytics, scheduling, API, priority phone, dedicated manager."
+        },
+        {
+          "question": "How long can I record?",
+          "answer": "Free 5 min • Influencer 30 min • Agency unlimited."
+        },
+        {
+          "question": "Where can I publish?",
+          "answer": "Blogs & sites, LinkedIn, Medium, WordPress, X, IG, TikTok, FB, YouTube Shorts, WhatsApp, Telegram, Slack, email… and more 📢"
+        },
+        {
+          "question": "Is my data safe?",
+          "answer": "Yes—encrypted, private, yours."
+        },
+        {
+          "question": "Does it work on mobile?",
+          "answer": "Yep. Looks great on phones. Native apps are brewing. 📱"
+        },
+        {
+          "question": "Team or custom needs?",
+          "answer": "Agency has you covered—or ping us for a custom fit."
+        }
+      ],
       "questions": {
         "howItWorks": {
           "question": "How does vibelog.io work?",
@@ -162,6 +282,19 @@
         "title": "Still have questions?",
         "description": "Can't find the answer you're looking for? Our team is here to help.",
         "button": "Contact Support"
+      },
+      "form": {
+        "nameLabel": "Name",
+        "emailLabel": "Email",
+        "messageLabel": "Message",
+        "namePlaceholder": "Your name",
+        "emailPlaceholder": "your@email.com",
+        "messagePlaceholder": "Hi VibeLog team, I have a question about...",
+        "sendMessage": "Send Message",
+        "sending": "Sending...",
+        "sentTitle": "Message sent! ✨",
+        "sentSubtitle": "We'll get back to you soon.",
+        "sendAnother": "Send another message"
       }
     },
     "pricing": {
@@ -282,6 +415,10 @@
     "community": {
       "title": "Community",
       "subtitle": "Join creators building with voice-first workflows.",
+      "loading": "Loading vibelogs...",
+      "error": "Failed to load vibelogs",
+      "empty": "No vibelogs yet. Be the first to create one!",
+      "create": "Create Vibelog",
       "announcements": {
         "title": "Announcements",
         "description": "Latest updates and release notes."
@@ -294,7 +431,24 @@
     "people": {
       "title": "People",
       "subtitle": "Discover creators and their latest voice-first posts.",
-      "creatorBio": "Bio and recent activity."
+      "creatorBio": "Bio and recent activity.",
+      "badge": "Discover Amazing Creators",
+      "searchPlaceholder": "Search creators, vibelogs...",
+      "sort": {
+        "popular": "Popular",
+        "active": "Active",
+        "recent": "New"
+      },
+      "stats": {
+        "creators": "Total Creators",
+        "vibelogs": "Total Vibelogs",
+        "views": "Total Views"
+      },
+      "empty": {
+        "title": "No creators found",
+        "filtered": "No creators match \"{{query}}\"",
+        "default": "Be the first to create a vibelog!"
+      }
     }
   },
   "auth": {
@@ -311,7 +465,13 @@
     "newVibelog": "New Vibelog",
     "account": "Account Details",
     "signedInWith": "Signed in with",
-    "comingSoon": "Your vibelogs library coming soon — save, organize & publish with ease"
+    "comingSoon": "Your vibelogs library coming soon — save, organize & publish with ease",
+    "screenShare": "Screen Share",
+    "yourVibelogs": "Your Vibelogs",
+    "viewAll": "View All",
+    "loadingVibelogs": "Loading your vibelogs...",
+    "noVibelogsTitle": "You haven't created any vibelogs yet",
+    "noVibelogsDescription": "Click \"New Vibelog\" above to start recording your first one! 🎤"
   },
   "toasts": {
     "comments": {
@@ -503,6 +663,7 @@
   },
   "buttons": {
     "cancel": "Cancel",
-    "delete": "Delete"
+    "delete": "Delete",
+    "retry": "Try Again"
   }
 }
