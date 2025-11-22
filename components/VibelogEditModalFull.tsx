@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
+import { useI18n } from '@/components/providers/I18nProvider';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -32,6 +33,7 @@ export default function VibelogEditModalFull({
   vibelog,
 }: VibelogEditModalFullProps) {
   const router = useRouter();
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<EditTab>('text');
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -114,13 +116,13 @@ export default function VibelogEditModalFull({
         setCoverImage(data.url);
         setSelectedImage(null);
         setImagePreview(null);
-        toast.success('Image uploaded successfully!');
+        toast.success(t('toasts.vibelogs.imageUploaded'));
       } else {
-        throw new Error(data.error || 'Failed to upload image');
+        throw new Error(data.error || t('toasts.vibelogs.imageUploadFailed'));
       }
     } catch (error) {
       console.error('Image upload error:', error);
-      toast.error('Failed to upload image');
+      toast.error(t('toasts.vibelogs.imageUploadFailed'));
     } finally {
       setIsUploadingImage(false);
     }
@@ -148,13 +150,13 @@ export default function VibelogEditModalFull({
       const data = await response.json();
       if (data.success && data.url) {
         setCoverImage(data.url);
-        toast.success('Image regenerated successfully!');
+        toast.success(t('toasts.vibelogs.imageRegenerated'));
       } else {
-        throw new Error(data.error || 'Failed to regenerate image');
+        throw new Error(data.error || t('toasts.vibelogs.imageRegenerateFailed'));
       }
     } catch (error) {
       console.error('Image regeneration error:', error);
-      toast.error('Failed to regenerate image');
+      toast.error(t('toasts.vibelogs.imageRegenerateFailed'));
     } finally {
       setIsRegeneratingImage(false);
     }
@@ -179,7 +181,7 @@ export default function VibelogEditModalFull({
     if (updates.slug) {
       setSlug(updates.slug);
     }
-    toast.success('AI suggestions applied! Click "Save Changes" to persist.');
+    toast.success(t('toasts.vibelogs.aiSuggestionsApplied'));
   };
 
   const handleSave = async () => {
@@ -235,10 +237,10 @@ export default function VibelogEditModalFull({
 
       router.refresh();
       onClose();
-      toast.success('Vibelog updated successfully!');
+      toast.success(t('toasts.vibelogs.updated'));
     } catch (error) {
       console.error('Save error:', error);
-      toast.error('Failed to save changes');
+      toast.error(t('toasts.vibelogs.updateFailed'));
     } finally {
       setIsSaving(false);
     }
@@ -309,7 +311,7 @@ export default function VibelogEditModalFull({
                   value={title}
                   onChange={e => setTitle(e.target.value)}
                   className="w-full rounded-lg border border-border/30 bg-background/50 px-4 py-3 text-lg font-semibold text-foreground placeholder-muted-foreground transition-colors focus:border-electric focus:outline-none focus:ring-2 focus:ring-electric/20"
-                  placeholder="Enter vibelog title..."
+                  placeholder={t('placeholders.vibelogTitleEdit')}
                 />
               </div>
 
@@ -322,7 +324,7 @@ export default function VibelogEditModalFull({
                   value={content}
                   onChange={e => setContent(e.target.value)}
                   className="min-h-[400px] font-mono text-sm"
-                  placeholder="Edit your vibelog content..."
+                  placeholder={t('placeholders.vibelogContentEdit')}
                 />
               </div>
 
@@ -335,7 +337,7 @@ export default function VibelogEditModalFull({
                   value={teaser}
                   onChange={e => setTeaser(e.target.value)}
                   className="min-h-[100px]"
-                  placeholder="Optional teaser text for previews..."
+                  placeholder={t('placeholders.teaserText')}
                 />
               </div>
 
@@ -381,7 +383,7 @@ export default function VibelogEditModalFull({
                       <Label className="mb-2 block">Preview</Label>
                       <img
                         src={imagePreview}
-                        alt="Preview"
+                        alt={t('altText.preview')}
                         className="max-h-[200px] w-full rounded-xl object-cover"
                       />
                     </div>
@@ -421,7 +423,7 @@ export default function VibelogEditModalFull({
                       id="image-prompt"
                       value={prompt}
                       onChange={e => setPrompt(e.target.value)}
-                      placeholder="e.g., make it more colorful, add a sunset, cinematic style"
+                      placeholder={t('placeholders.imagePrompt')}
                       className="min-h-[80px]"
                     />
                   </div>

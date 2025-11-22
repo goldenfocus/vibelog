@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useI18n } from '@/components/providers/I18nProvider';
 import { ReactionBar } from '@/components/reactions/ReactionBar';
 import VibelogActions from '@/components/VibelogActions';
 import VibelogContentRenderer from '@/components/VibelogContentRenderer';
@@ -47,6 +48,7 @@ interface VibelogCardProps {
 export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
   const router = useRouter();
   const { user } = useAuth(); // Check if user is logged in
+  const { t } = useI18n();
   const isLoggedIn = !!user;
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const videoUrl = vibelog.video_url || null;
@@ -163,12 +165,12 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
         throw new Error('Failed to delete vibelog');
       }
 
-      toast.success('Vibelog deleted successfully');
+      toast.success(t('toasts.vibelogs.deleted'));
       // Refresh the page to update the list
       router.refresh();
     } catch (error) {
       console.error('Delete error:', error);
-      toast.error('Failed to delete vibelog');
+      toast.error(t('toasts.vibelogs.deleteFailed'));
     }
   };
 

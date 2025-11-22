@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useI18n } from '@/components/providers/I18nProvider';
 import { createClient } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 
@@ -23,6 +24,7 @@ const QUICK_REACTIONS = ['👍', '❤️', '😂', '🎉', '🤔', '👏'];
 
 export function CommentReactions({ commentId, className }: CommentReactionsProps) {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [reactions, setReactions] = useState<Reaction[]>([]);
   const [showPicker, setShowPicker] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -54,7 +56,7 @@ export function CommentReactions({ commentId, className }: CommentReactionsProps
 
   const handleReaction = async (emoji: string) => {
     if (!user) {
-      toast.error('Please sign in to react');
+      toast.error(t('toasts.reactions.signInRequired'));
       return;
     }
 
@@ -124,7 +126,7 @@ export function CommentReactions({ commentId, className }: CommentReactionsProps
       }
     } catch (error) {
       console.error('Error toggling reaction:', error);
-      toast.error('Failed to add reaction');
+      toast.error(t('toasts.reactions.addFailed'));
       // Refresh to get correct state
       fetchReactions();
     } finally {

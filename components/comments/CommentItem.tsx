@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 
 import CommentInput from '@/components/comments/CommentInput';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useI18n } from '@/components/providers/I18nProvider';
 import { ReactionBar } from '@/components/reactions/ReactionBar';
 import { useAudioPlayerStore } from '@/state/audio-player-store';
 import type { MediaAttachment } from '@/types/comments';
@@ -66,6 +67,7 @@ export default function CommentItem({
   depth = 0,
 }: CommentItemProps) {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [isLoading, setIsLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(comment.content || '');
@@ -191,7 +193,7 @@ export default function CommentItem({
 
   const handleSaveEdit = async () => {
     if (!editedContent.trim()) {
-      toast.error('Comment cannot be empty');
+      toast.error(t('toasts.comments.empty'));
       return;
     }
 
@@ -213,14 +215,14 @@ export default function CommentItem({
         throw new Error(error.error || 'Failed to update comment');
       }
 
-      toast.success('Comment updated!');
+      toast.success(t('toasts.comments.updated'));
       setIsEditing(false);
       if (onUpdate) {
         onUpdate();
       }
     } catch (error) {
       console.error('Error updating comment:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to update comment');
+      toast.error(error instanceof Error ? error.message : t('toasts.comments.updateFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -233,7 +235,7 @@ export default function CommentItem({
 
   const handleDelete = async () => {
     // eslint-disable-next-line no-alert
-    if (!window.confirm('Are you sure you want to delete this comment?')) {
+    if (!window.confirm(t('confirmations.deleteComment'))) {
       return;
     }
 
@@ -249,13 +251,13 @@ export default function CommentItem({
         throw new Error(error.error || 'Failed to delete comment');
       }
 
-      toast.success('Comment deleted!');
+      toast.success(t('toasts.comments.deleted'));
       if (onDelete) {
         onDelete();
       }
     } catch (error) {
       console.error('Error deleting comment:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to delete comment');
+      toast.error(error instanceof Error ? error.message : t('toasts.comments.deleteFailed'));
     } finally {
       setIsDeleting(false);
     }
@@ -428,7 +430,7 @@ export default function CommentItem({
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={attachment.url}
-                  alt="Comment attachment"
+                  alt={t('altText.commentAttachment')}
                   className="h-full w-full object-cover transition-transform group-hover:scale-105"
                 />
               ) : (

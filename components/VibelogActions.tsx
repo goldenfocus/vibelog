@@ -20,6 +20,7 @@ import ExportButton from '@/components/ExportButton';
 import { XIcon } from '@/components/icons/XIcon';
 import LikersPopover from '@/components/LikersPopover';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useI18n } from '@/components/providers/I18nProvider';
 import { AudioPreviewLimiter } from '@/lib/audioLimiter';
 import type { ExportFormat } from '@/lib/export';
 import { useAudioPlayerStore } from '@/state/audio-player-store';
@@ -74,6 +75,7 @@ export default function VibelogActions({
   className = '',
 }: VibelogActionsProps) {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [copySuccess, setCopySuccess] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -137,7 +139,7 @@ export default function VibelogActions({
   const handlePlayClick = async () => {
     // Only use creator's original audio - NO TTS!
     if (!audioUrl) {
-      toast.error('No audio available for this vibelog');
+      toast.error(t('toasts.vibelogs.noAudio'));
       return;
     }
 
@@ -180,7 +182,7 @@ export default function VibelogActions({
     // Validate audio URL exists
     if (!audioUrl || audioUrl.trim() === '') {
       console.error('[VibelogActions] No audio URL available', { vibelogId, audioUrl });
-      toast.error('Audio not available for this vibelog');
+      toast.error(t('toasts.vibelogs.audioNotAvailable'));
       return;
     }
 
@@ -257,7 +259,7 @@ export default function VibelogActions({
 
       if (!response.ok) {
         const error = await response.json();
-        toast.error(error.error || 'Failed to generate share link');
+        toast.error(error.error || t('toasts.vibelogs.shareLinkFailed'));
         return;
       }
 
@@ -267,7 +269,7 @@ export default function VibelogActions({
       window.open(shareUrl, '_blank', 'noopener,noreferrer');
     } catch (error) {
       console.error('Twitter share error:', error);
-      toast.error('Failed to share on X');
+      toast.error(t('toasts.vibelogs.shareXFailed'));
     } finally {
       setIsGeneratingShareUrl(false);
     }
@@ -368,11 +370,11 @@ export default function VibelogActions({
 
           // Show user-friendly error message
           if (response.status === 401) {
-            toast.error('Please sign in to like vibelogs');
+            toast.error(t('toasts.vibelogs.signInToLike'));
           } else if (response.status === 404) {
-            toast.error('Vibelog not found');
+            toast.error(t('toasts.vibelogs.notFound'));
           } else {
-            toast.error(data.error || 'Failed to update like');
+            toast.error(data.error || t('toasts.vibelogs.likeFailed'));
           }
           return;
         }
@@ -401,7 +403,7 @@ export default function VibelogActions({
         // Revert on error using original values
         setIsLiked(originalLikedState);
         setLikeCount(originalLikeCount);
-        toast.error('Network error. Please try again.');
+        toast.error(t('toasts.vibelogs.networkError'));
       } finally {
         setIsLiking(false);
         lastLikeRequestRef.current = null;
@@ -480,7 +482,7 @@ export default function VibelogActions({
                 <button
                   onClick={() => setIsMenuOpen(!isMenuOpen)}
                   className={baseButtonClass}
-                  title="More options"
+                  title={t('titles.moreOptions')}
                   data-testid="owner-menu-button"
                 >
                   <MoreVertical className={iconClass} />
@@ -521,7 +523,7 @@ export default function VibelogActions({
                     ? baseButtonClass
                     : `${baseButtonClass} ml-auto flex touch-manipulation items-center gap-2 rounded-lg bg-electric/10 px-4 py-2 font-medium text-electric transition-all duration-200 hover:bg-electric hover:text-white active:scale-95 active:bg-electric/80`
                 }
-                title={isOwnVibelog ? 'Edit' : 'Remix'}
+                title={isOwnVibelog ? t('titles.edit') : t('titles.remix')}
                 data-testid={isOwnVibelog ? 'edit-button' : 'remix-button'}
               >
                 {isOwnVibelog ? (
@@ -543,11 +545,13 @@ export default function VibelogActions({
             <button
               onClick={handleCopyClick}
               className={baseButtonClass}
-              title={copySuccess ? 'Copied!' : 'Copy'}
+              title={copySuccess ? t('titles.copied') : t('titles.copy')}
               data-testid="copy-button"
             >
               <Copy className={iconClass} />
-              <span className={labelClass}>{copySuccess ? 'Copied!' : 'Copy'}</span>
+              <span className={labelClass}>
+                {copySuccess ? t('titles.copied') : t('titles.copy')}
+              </span>
             </button>
 
             {/* Listen Button with original audio or TTS - only show if audio exists */}
@@ -556,7 +560,7 @@ export default function VibelogActions({
                 onClick={handlePlayClick}
                 disabled={isLoading}
                 className={`${baseButtonClass} relative ${isCompact ? '' : 'overflow-hidden'}`}
-                title={isPlaying ? 'Pause' : 'Listen'}
+                title={isPlaying ? t('titles.pause') : t('titles.listen')}
                 data-testid="listen-button"
               >
                 <div className="relative flex items-center justify-center">
@@ -570,7 +574,7 @@ export default function VibelogActions({
                 </div>
 
                 <span className={labelClass}>
-                  {isLoading ? 'Generating...' : isPlaying ? 'Pause' : 'Listen'}
+                  {isLoading ? 'Generating...' : isPlaying ? t('titles.pause') : t('titles.listen')}
                 </span>
               </button>
             )}
@@ -585,7 +589,13 @@ export default function VibelogActions({
                 onClick={handleLikeClick}
                 disabled={isLiking}
                 className={`${baseButtonClass} ${isLiked ? 'text-red-500 hover:text-red-600 active:text-red-700' : ''}`}
-                title={user ? (isLiked ? 'Unlike' : 'Like') : 'Sign in to like'}
+                title={
+                  user
+                    ? isLiked
+                      ? t('titles.unlike')
+                      : t('titles.like')
+                    : t('titles.signInToLike')
+                }
                 data-testid="like-button"
               >
                 {isLiking ? (
@@ -610,7 +620,7 @@ export default function VibelogActions({
                 }
               }}
               className={baseButtonClass}
-              title="View comments"
+              title={t('titles.viewComments')}
               data-testid="comment-button"
             >
               <MessageCircle className={iconClass} />
@@ -622,7 +632,7 @@ export default function VibelogActions({
               onClick={handleTwitterShareClick}
               disabled={isGeneratingShareUrl}
               className={baseButtonClass}
-              title="Share on X"
+              title={t('titles.shareOnX')}
               data-testid="twitter-share-button"
             >
               {isGeneratingShareUrl ? (
@@ -638,7 +648,7 @@ export default function VibelogActions({
               <button
                 onClick={handleShareClick}
                 className={baseButtonClass}
-                title="Share"
+                title={t('titles.share')}
                 data-testid="share-button"
               >
                 <Share2 className={iconClass} />
@@ -684,25 +694,25 @@ export default function VibelogActions({
           data-testid="delete-confirm-dialog"
         >
           <div className="w-full max-w-md rounded-xl border border-border/50 bg-card p-6 shadow-2xl">
-            <h3 className="mb-4 text-lg font-semibold text-foreground">Delete VibeLog?</h3>
-            <p className="mb-6 text-sm text-muted-foreground">
-              Are you sure you want to delete this VibeLog? This action cannot be undone.
-            </p>
+            <h3 className="mb-4 text-lg font-semibold text-foreground">
+              {t('confirmations.deleteVibelog').split('?')[0]}?
+            </h3>
+            <p className="mb-6 text-sm text-muted-foreground">{t('confirmations.deleteVibelog')}</p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={handleCancelDelete}
                 className="touch-manipulation rounded-lg border border-border/50 px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted/50 active:bg-muted/70"
                 data-testid="delete-cancel-button"
               >
-                Cancel
+                {t('buttons.cancel')}
               </button>
               <button
                 onClick={handleConfirmDelete}
                 className="touch-manipulation rounded-lg bg-destructive px-4 py-3 text-sm font-medium text-destructive-foreground transition-colors hover:bg-destructive/90 active:bg-destructive/80"
                 data-testid="delete-confirm-button"
-                aria-label="Delete vibelog"
+                aria-label={t('ariaLabels.deleteVibelog')}
               >
-                Delete
+                {t('buttons.delete')}
               </button>
             </div>
           </div>
