@@ -265,7 +265,7 @@ export default function DashboardPage() {
                 </p>
               </div>
             ) : (
-              <FuturisticCarousel vibelogs={vibelogs} title="" subtitle="" />
+              <FuturisticCarousel vibelogs={vibelogs} />
             )}
           </div>
         </div>

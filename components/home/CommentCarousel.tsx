@@ -1,6 +1,5 @@
 'use client';
 
-import { ArrowLeft, ArrowRight, MessageCircle } from 'lucide-react';
 import { useRef, useState, useCallback } from 'react';
 
 import { cn } from '@/lib/utils';
@@ -9,15 +8,11 @@ import { CommentCard, type CommentCardData } from './CommentCard';
 
 interface CommentCarouselProps {
   comments: CommentCardData[];
-  title?: string;
-  subtitle?: string;
 }
 
-export function CommentCarousel({ comments, title, subtitle }: CommentCarouselProps) {
+export function CommentCarousel({ comments }: CommentCarouselProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(true);
 
   const cardWidth = 260;
   const gap = 16;
@@ -48,9 +43,6 @@ export function CommentCarousel({ comments, title, subtitle }: CommentCarouselPr
       return;
     }
 
-    const { scrollLeft, scrollWidth, clientWidth } = containerRef.current;
-    setCanScrollLeft(scrollLeft > 10);
-    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
     setActiveIndex(getActiveCardIndex());
   }, [getActiveCardIndex]);
 
@@ -79,71 +71,17 @@ export function CommentCarousel({ comments, title, subtitle }: CommentCarouselPr
   };
 
   if (!comments || comments.length === 0) {
-    return (
-      <section className="py-6">
-        {(title || subtitle) && (
-          <div className="mb-4 flex items-center gap-2 px-4 md:px-6">
-            <MessageCircle className="h-5 w-5 text-electric" />
-            {title && <h2 className="text-lg font-semibold text-foreground md:text-xl">{title}</h2>}
-          </div>
-        )}
-        <div className="rounded-xl border border-border/30 bg-card/30 p-6 text-center">
-          <MessageCircle className="mx-auto mb-3 h-10 w-10 text-muted-foreground/50" />
-          <p className="text-sm text-muted-foreground">
-            No comments yet. Be the first to share your vibe!
-          </p>
-        </div>
-      </section>
-    );
+    return null;
   }
 
   return (
     <section
-      className="relative w-full py-6"
+      className="relative w-full"
       onKeyDown={handleKeyDown}
       tabIndex={0}
       role="region"
-      aria-label={title || 'Comment carousel'}
+      aria-label="Comment carousel"
     >
-      <div className="mb-4 flex items-center justify-between px-4 md:px-6">
-        <div className="flex items-center gap-2">
-          <MessageCircle className="h-5 w-5 text-electric" />
-          {title && <h2 className="text-lg font-semibold text-foreground md:text-xl">{title}</h2>}
-          {subtitle && (
-            <span className="hidden text-sm text-muted-foreground sm:inline">· {subtitle}</span>
-          )}
-        </div>
-
-        <div className="flex gap-2">
-          <button
-            onClick={scrollPrev}
-            disabled={!canScrollLeft}
-            className={cn(
-              'flex h-8 w-8 items-center justify-center rounded-full border border-border/50 bg-card/50 transition-all',
-              canScrollLeft
-                ? 'hover:border-electric/50 hover:bg-electric/10'
-                : 'cursor-not-allowed opacity-40'
-            )}
-            aria-label="Previous comments"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </button>
-          <button
-            onClick={scrollNext}
-            disabled={!canScrollRight}
-            className={cn(
-              'flex h-8 w-8 items-center justify-center rounded-full border border-border/50 bg-card/50 transition-all',
-              canScrollRight
-                ? 'hover:border-electric/50 hover:bg-electric/10'
-                : 'cursor-not-allowed opacity-40'
-            )}
-            aria-label="Next comments"
-          >
-            <ArrowRight className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-
       <div
         ref={containerRef}
         className={cn(

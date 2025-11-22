@@ -10,15 +10,13 @@ import type { HomeFeedVibelog } from './HomeCommunityShowcase';
 
 interface FuturisticCarouselProps {
   vibelogs: HomeFeedVibelog[];
-  title?: string;
-  subtitle?: string;
 }
 
 /**
  * Futuristic carousel with native CSS snap scrolling
  * Features smooth scroll, snap-to-card, keyboard navigation, and responsive design
  */
-export function FuturisticCarousel({ vibelogs, title, subtitle }: FuturisticCarouselProps) {
+export function FuturisticCarousel({ vibelogs }: FuturisticCarouselProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -103,26 +101,12 @@ export function FuturisticCarousel({ vibelogs, title, subtitle }: FuturisticCaro
 
   return (
     <section
-      className="relative w-full py-8"
+      className="relative w-full"
       onKeyDown={handleKeyDown}
       tabIndex={0}
       role="region"
-      aria-label={title || 'Vibelog carousel'}
+      aria-label="Vibelog carousel"
     >
-      {/* Header */}
-      {(title || subtitle) && (
-        <div className="mb-6 px-4 md:px-6">
-          {title && (
-            <h2 className="bg-gradient-electric bg-clip-text text-2xl font-bold text-transparent md:text-3xl">
-              {title}
-            </h2>
-          )}
-          {subtitle && (
-            <p className="mt-1 text-sm text-muted-foreground md:text-base">{subtitle}</p>
-          )}
-        </div>
-      )}
-
       {/* Carousel container */}
       <div className="relative">
         {/* Scroll container */}
