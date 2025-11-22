@@ -168,21 +168,6 @@ export function middleware(req: NextRequest) {
   const cleanPathname = stripLocalePrefix(pathname);
   const currentLocale = pathLocale || DEFAULT_LOCALE;
 
-  // If no locale in URL, rewrite to /en/path internally to match [locale] directory structure
-  // This keeps URL clean (no /en/) while routing to correct locale directory
-  // This handles ALL clean URLs regardless of cookie state
-  if (!hasLocale) {
-    const url = req.nextUrl.clone();
-    url.pathname = `/en${pathname}`;
-    const response = NextResponse.rewrite(url);
-    response.cookies.set('NEXT_LOCALE', DEFAULT_LOCALE, {
-      maxAge: 31536000,
-      path: '/',
-    });
-    response.headers.set('x-pathname', pathname);
-    return response;
-  }
-
   // Handle /v/slug -> /@anonymous/slug redirect (preserve locale)
   if (cleanPathname.startsWith('/v/')) {
     const slug = cleanPathname.slice(3); // Remove '/v/'
@@ -195,6 +180,7 @@ export function middleware(req: NextRequest) {
   }
 
   // Rewrite /@username to /username internally (browser shows @, Next.js routes without @)
+  // Handle this BEFORE the general locale rewrite to ensure proper path transformation
   if (cleanPathname.startsWith('/@')) {
     const url = req.nextUrl.clone();
     const internalPath = cleanPathname.replace(/^\/@/, '/');
@@ -205,6 +191,21 @@ export function middleware(req: NextRequest) {
       maxAge: 31536000,
       path: '/',
     });
+    return response;
+  }
+
+  // If no locale in URL, rewrite to /en/path internally to match [locale] directory structure
+  // This keeps URL clean (no /en/) while routing to correct locale directory
+  // This handles ALL clean URLs regardless of cookie state
+  if (!hasLocale) {
+    const url = req.nextUrl.clone();
+    url.pathname = `/en${pathname}`;
+    const response = NextResponse.rewrite(url);
+    response.cookies.set('NEXT_LOCALE', DEFAULT_LOCALE, {
+      maxAge: 31536000,
+      path: '/',
+    });
+    response.headers.set('x-pathname', pathname);
     return response;
   }
 
