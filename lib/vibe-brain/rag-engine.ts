@@ -4,6 +4,7 @@ import type { ChatCompletionMessageParam } from 'openai/resources/chat/completio
 import { trackAICost, calculateGPTCost, estimateTokens } from '@/lib/ai-cost-tracker';
 import { createServerAdminClient } from '@/lib/supabaseAdmin';
 
+import { searchSimilarContent } from './embedding-service';
 import { getAllMemories, extractMemoriesFromConversation } from './memory-service';
 import { getUserProfile, type UserProfile } from './platform-queries';
 import { executeTool } from './tool-executor';
@@ -272,16 +273,35 @@ export async function chat(
 
   // Add onboarding enhancement if needed
   if (isOnboarding) {
+    // Search documentation for relevant content
+    const docResults = await searchSimilarContent(userMessage, {
+      contentTypes: ['documentation'],
+      limit: 5,
+      threshold: 0.6, // Lower threshold for better recall
+    });
+
+    // Format documentation context
+    const docContext = docResults
+      .map(
+        doc =>
+          `📄 From ${(doc.metadata as { source?: string }).source || 'documentation'} (${(doc.metadata as { section?: string }).section || 'General'}):\n${doc.text_chunk}`
+      )
+      .join('\n\n---\n\n');
+
     messages.push({
       role: 'system',
-      content: `The user is asking an onboarding question. Provide a comprehensive, engaging answer with:
-- Clear explanations in markdown formatting
-- Use clickable links when referencing features or examples
-- For "What is VibeLog?": Explain the philosophy, culture, voice-first creation, and platform values
-- For "How does it work?": Walk through the technical flow from voice → AI → publish with specific details
-- For "Show me some examples": Use getLatestVibelogs tool to fetch real examples categorized by type (text, audio, video, screen recordings) and format them beautifully with previews
+      content: `The user is asking an onboarding question. Use the documentation below to provide a comprehensive, accurate answer.
 
-Keep it informative but conversational. Use emojis where appropriate. Make it feel like a friend explaining something cool.`,
+${docContext ? `**Platform Documentation:**\n\n${docContext}\n\n` : ''}
+
+**Guidelines:**
+- Provide clear explanations using markdown formatting
+- Use clickable links when referencing features (format: [text](/path))
+- For "What is VibeLog?": Explain philosophy, culture, voice-first creation, platform values
+- For "How does it work?": Walk through technical flow (voice → transcription → AI → publish)
+- For "Show me examples": Use getLatestVibelogs tool to fetch real vibelogs by type
+
+Keep it informative but conversational. Use emojis where appropriate. Make it feel like a friend explaining something cool while staying accurate to the documentation.`,
     });
   }
 

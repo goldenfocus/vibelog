@@ -117,16 +117,17 @@ export async function DELETE(
     }
 
     // Revalidate the vibelog page cache to remove it immediately
-    if (vibelog.profiles?.username && vibelog.slug) {
-      const vibelogPath = `/@${vibelog.profiles.username}/${vibelog.slug}`;
+    const profile = Array.isArray(vibelog.profiles) ? vibelog.profiles[0] : vibelog.profiles;
+    if (profile?.username && vibelog.slug) {
+      const vibelogPath = `/@${profile.username}/${vibelog.slug}`;
       revalidatePath(vibelogPath);
       console.log('✅ Revalidated cache for deleted vibelog:', vibelogPath);
     }
 
     // Also revalidate dashboard and profile pages
     revalidatePath('/dashboard');
-    if (vibelog.profiles?.username) {
-      revalidatePath(`/@${vibelog.profiles.username}`);
+    if (profile?.username) {
+      revalidatePath(`/@${profile.username}`);
     }
 
     // Return success with optional storage cleanup warnings

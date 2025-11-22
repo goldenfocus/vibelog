@@ -9,6 +9,7 @@
 3. **Read before write** - Always check existing patterns before creating new code.
 4. **Test what matters** - If it can break prod, it needs a test.
 5. **Delete > Comment** - Remove dead code, don't comment it out.
+6. **Update evolution.md** - When shipping significant features or architectural changes, update `evolution.md` to document the evolution. This file is embedded in Vibe Brain's RAG system for AI-powered documentation.
 
 ## Tech Stack
 

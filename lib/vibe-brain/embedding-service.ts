@@ -8,7 +8,7 @@ const openai = new OpenAI();
 // Cost: $0.02 per 1M tokens for text-embedding-3-small
 const EMBEDDING_COST_PER_TOKEN = 0.00000002;
 
-export type ContentType = 'vibelog' | 'comment' | 'profile';
+export type ContentType = 'vibelog' | 'comment' | 'profile' | 'documentation';
 
 interface EmbeddingInput {
   contentType: ContentType;
@@ -179,7 +179,11 @@ export async function searchSimilarContent(
     similarity: number;
   }>
 > {
-  const { contentTypes = ['vibelog', 'comment', 'profile'], limit = 10, threshold = 0.7 } = options;
+  const {
+    contentTypes = ['vibelog', 'comment', 'profile', 'documentation'],
+    limit = 10,
+    threshold = 0.7,
+  } = options;
 
   const supabase = await createServerAdminClient();
 
