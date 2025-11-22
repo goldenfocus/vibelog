@@ -308,6 +308,7 @@ async function getLatestVibelogs(limit: number): Promise<VibelogResult[]> {
     `
     )
     .eq('is_published', true)
+    .eq('is_public', true)
     .order('created_at', { ascending: false })
     .limit(safeLimit);
 
