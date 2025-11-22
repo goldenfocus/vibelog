@@ -1,12 +1,19 @@
-"use client";
+'use client';
 
-import { createContext, useContext, useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { isLocaleSupported, stripLocaleFromPath, addLocaleToPath, type Locale } from "@/lib/seo/hreflang";
+import { usePathname, useRouter } from 'next/navigation';
+import { createContext, useContext, useEffect, useState } from 'react';
+
+import {
+  isLocaleSupported,
+  stripLocaleFromPath,
+  addLocaleToPath,
+  type Locale,
+} from '@/lib/seo/hreflang';
 
 interface I18nContextType {
   locale: Locale;
   setLocale: (locale: Locale) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   t: (key: string, variables?: Record<string, any>) => string;
   isLoading: boolean;
 }
@@ -14,10 +21,10 @@ interface I18nContextType {
 const I18nContext = createContext<I18nContextType | null>(null);
 
 // Translation cache
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const translationCache: Record<string, any> = {};
 
-const SUPPORTED_LOCALES = ['en', 'es', 'fr', 'de', 'vi', 'zh'] as const;
-type SupportedLocale = typeof SUPPORTED_LOCALES[number];
+type SupportedLocale = 'en' | 'es' | 'fr' | 'de' | 'vi' | 'zh';
 
 async function loadTranslations(locale: SupportedLocale) {
   if (translationCache[locale]) {
@@ -28,7 +35,7 @@ async function loadTranslations(locale: SupportedLocale) {
     const translations = await import(`../../locales/${locale}.json`);
     translationCache[locale] = translations.default;
     return translations.default;
-  } catch (error) {
+  } catch {
     console.warn(`Failed to load translations for ${locale}, falling back to English`);
     if (locale !== 'en') {
       return loadTranslations('en');
@@ -72,7 +79,9 @@ export function I18nProvider({ children, initialLocale = 'en' }: I18nProviderPro
 
   // Sync locale from URL on mount and pathname changes
   useEffect(() => {
-    if (!pathname) return;
+    if (!pathname) {
+      return;
+    }
 
     const segments = pathname.split('/').filter(Boolean);
     const firstSegment = segments[0];
@@ -106,16 +115,20 @@ export function I18nProvider({ children, initialLocale = 'en' }: I18nProviderPro
     // Add new locale prefix (or keep clean if 'en')
     const newPath = addLocaleToPath(pathWithoutLocale, newLocale);
 
-    // Set cookie for persistence
+    // Set cookie for persistence FIRST (before navigation)
+    // This ensures middleware sees the new locale immediately
     document.cookie = `NEXT_LOCALE=${newLocale}; path=/; max-age=31536000`;
 
     // Update state immediately for instant UI feedback
     setLocaleState(newLocale as SupportedLocale);
 
-    // Navigate to new URL (middleware will handle the rest)
+    // Navigate to new URL and force server refresh
+    // router.refresh() ensures middleware re-runs with fresh cookie state
     router.push(newPath);
+    router.refresh();
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const t = (key: string, variables?: Record<string, any>): string => {
     const value = getNestedValue(translations, key);
     const template = value || key;
@@ -136,11 +149,7 @@ export function I18nProvider({ children, initialLocale = 'en' }: I18nProviderPro
     isLoading,
   };
 
-  return (
-    <I18nContext.Provider value={value}>
-      {children}
-    </I18nContext.Provider>
-  );
+  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
 
 export function useI18n() {
