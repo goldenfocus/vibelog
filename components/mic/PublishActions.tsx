@@ -1,6 +1,6 @@
 'use client';
 
-import { Copy, Share, Edit, X, LogIn } from 'lucide-react';
+import { Copy, Share, Edit, X, LogIn, Save } from 'lucide-react';
 import React, { useState } from 'react';
 
 import ExportButton from '@/components/ExportButton';
@@ -16,6 +16,7 @@ export interface PublishActionsProps {
   isTeaserContent?: boolean;
   onCopy: (content: string) => Promise<void> | void;
   onEdit: () => void;
+  onSave?: () => void;
   onShare: () => void;
   onUpgradePrompt?: (message: string, benefits: string[]) => void;
   onExport?: (format: ExportFormat) => void;
@@ -87,6 +88,7 @@ export default function PublishActions({
   isTeaserContent: _isTeaserContent = false,
   onCopy,
   onEdit,
+  onSave,
   onShare,
   onUpgradePrompt: _onUpgradePrompt,
   onExport,
@@ -95,6 +97,7 @@ export default function PublishActions({
   const DEBUG_MODE = process.env.NODE_ENV !== 'production';
   const { t } = useI18n();
   const [showEditPopup, setShowEditPopup] = useState(false);
+  const [showSavePopup, setShowSavePopup] = useState(false);
 
   // TTS preview removed - use only original audio
 
@@ -104,6 +107,14 @@ export default function PublishActions({
       return;
     }
     onEdit();
+  };
+
+  const handleSaveClick = () => {
+    if (!isLoggedIn) {
+      setShowSavePopup(true);
+      return;
+    }
+    onSave?.();
   };
 
   const handleCopyClick = async () => {
@@ -117,6 +128,7 @@ export default function PublishActions({
   };
 
   const closeEditPopup = () => setShowEditPopup(false);
+  const closeSavePopup = () => setShowSavePopup(false);
 
   return (
     <>
@@ -149,6 +161,17 @@ export default function PublishActions({
         {/* TTS Preview removed - use only original audio */}
 
         <button
+          onClick={handleSaveClick}
+          className="group flex min-w-[70px] flex-col items-center gap-2 rounded-2xl border border-border/20 bg-muted/20 p-3 transition-all duration-200 hover:scale-105 hover:bg-muted/30 sm:min-w-[80px] sm:p-4"
+          data-testid="save-button"
+        >
+          <Save className="h-5 w-5 text-foreground transition-colors group-hover:text-electric sm:h-6 sm:w-6" />
+          <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">
+            {t('actions.save')}
+          </span>
+        </button>
+
+        <button
           onClick={onShare}
           className="group flex min-w-[70px] flex-col items-center gap-2 rounded-2xl border border-border/20 bg-muted/20 p-3 transition-all duration-200 hover:scale-105 hover:bg-muted/30 sm:min-w-[80px] sm:p-4"
           data-testid="share-button"
@@ -163,6 +186,7 @@ export default function PublishActions({
       </div>
 
       <LoginPopup type="edit" isOpen={showEditPopup} onClose={closeEditPopup} />
+      <LoginPopup type="save" isOpen={showSavePopup} onClose={closeSavePopup} />
     </>
   );
 }

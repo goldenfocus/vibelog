@@ -126,9 +126,7 @@ export default function Controls({
         </button>
 
         <div className="mt-6 text-center">
-          {recordingState !== 'idle' && (
-            <p className="mb-2 text-lg text-muted-foreground">{getStatusText()}</p>
-          )}
+          <p className="mb-2 text-lg text-muted-foreground">{getStatusText()}</p>
           {recordingState === 'recording' && (
             <div className="flex flex-col items-center space-y-2">
               <div
