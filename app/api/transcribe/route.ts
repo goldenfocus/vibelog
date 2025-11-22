@@ -3,6 +3,7 @@ import OpenAI from 'openai';
 
 import { getCachedResponse, setCachedResponse } from '@/lib/ai-cache';
 import { trackAICost, calculateWhisperCost, isDailyLimitExceeded } from '@/lib/ai-cost-tracker';
+import { checkAndBlockBots } from '@/lib/botid-check';
 import { config } from '@/lib/config';
 import { isDev } from '@/lib/env';
 import { normalizeVibeLog } from '@/lib/normalize-vibelog';
@@ -16,6 +17,12 @@ export const maxDuration = 60; // 60 seconds for transcription
 
 export async function POST(request: NextRequest) {
   try {
+    // 🛡️ BOT PROTECTION: Block automated bots
+    const botCheck = await checkAndBlockBots();
+    if (botCheck) {
+      return botCheck;
+    }
+
     // 🛡️ CIRCUIT BREAKER: Check if daily cost limit exceeded
     if (await isDailyLimitExceeded()) {
       return NextResponse.json(

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
 import { trackAICost, calculateImageCost, isDailyLimitExceeded } from '@/lib/ai-cost-tracker';
+import { checkAndBlockBots } from '@/lib/botid-check';
 import { config } from '@/lib/config';
 import { generateCoverPrompt } from '@/lib/cover-prompt-generator';
 import { isDev } from '@/lib/env';
@@ -13,6 +14,12 @@ export const maxDuration = 60; // DALL-E can take up to 60 seconds (cover images
 
 export async function POST(request: NextRequest) {
   try {
+    // 🛡️ BOT PROTECTION: Block automated bots
+    const botCheck = await checkAndBlockBots();
+    if (botCheck) {
+      return botCheck;
+    }
+
     // 🛡️ CIRCUIT BREAKER: Check if daily cost limit exceeded
     if (await isDailyLimitExceeded()) {
       return NextResponse.json(

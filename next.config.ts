@@ -1,3 +1,4 @@
+import { withBotId } from 'botid/next/config';
 import type { NextConfig } from 'next';
 
 // Bundle analyzer configuration (only enabled when ANALYZE=true)
@@ -90,4 +91,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withBundleAnalyzer(nextConfig);
+export default withBotId(withBundleAnalyzer(nextConfig));
