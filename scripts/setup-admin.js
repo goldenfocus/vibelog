@@ -21,16 +21,19 @@ async function setAdminFlags() {
   for (const email of adminEmails) {
     try {
       // Update profile to set is_admin = true
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/profiles?email=eq.${encodeURIComponent(email)}`, {
-        method: 'PATCH',
-        headers: {
-          'apikey': SERVICE_ROLE_KEY,
-          'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=minimal'
-        },
-        body: JSON.stringify({ is_admin: true })
-      });
+      const response = await fetch(
+        `${SUPABASE_URL}/rest/v1/profiles?email=eq.${encodeURIComponent(email)}`,
+        {
+          method: 'PATCH',
+          headers: {
+            apikey: SERVICE_ROLE_KEY,
+            Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+            'Content-Type': 'application/json',
+            Prefer: 'return=minimal',
+          },
+          body: JSON.stringify({ is_admin: true }),
+        }
+      );
 
       if (response.ok) {
         console.log(`✅ ${email} - Admin privileges granted`);
@@ -38,7 +41,6 @@ async function setAdminFlags() {
         const text = await response.text();
         console.error(`❌ ${email} - Failed: ${response.status} ${text}`);
       }
-
     } catch (err) {
       console.error(`❌ ${email} - Error: ${err.message}`);
     }

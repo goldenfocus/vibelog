@@ -15,14 +15,17 @@ async function listProfiles() {
   console.log('📋 Fetching all profiles...\n');
 
   try {
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=email,username,display_name,is_admin&order=created_at.desc&limit=20`, {
-      method: 'GET',
-      headers: {
-        'apikey': SERVICE_ROLE_KEY,
-        'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
-        'Content-Type': 'application/json'
+    const response = await fetch(
+      `${SUPABASE_URL}/rest/v1/profiles?select=email,username,display_name,is_admin&order=created_at.desc&limit=20`,
+      {
+        method: 'GET',
+        headers: {
+          apikey: SERVICE_ROLE_KEY,
+          Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+          'Content-Type': 'application/json',
+        },
       }
-    });
+    );
 
     if (response.ok) {
       const data = await response.json();
@@ -37,10 +40,11 @@ async function listProfiles() {
       });
 
       // Find vibeyang
-      const vibeyang = data.find(p =>
-        p.email?.includes('vibeyang') ||
-        p.username?.includes('vibeyang') ||
-        p.display_name?.includes('vibeyang')
+      const vibeyang = data.find(
+        p =>
+          p.email?.includes('vibeyang') ||
+          p.username?.includes('vibeyang') ||
+          p.display_name?.includes('vibeyang')
       );
 
       if (vibeyang) {
@@ -51,13 +55,11 @@ async function listProfiles() {
       } else {
         console.log('⚠️  No profile matching "vibeyang" found');
       }
-
     } else {
       const text = await response.text();
       console.error(`❌ Failed: ${response.status}`);
       console.error(text);
     }
-
   } catch (err) {
     console.error(`❌ Error: ${err.message}`);
   }

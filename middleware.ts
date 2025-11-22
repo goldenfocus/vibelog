@@ -21,6 +21,7 @@ const APP_ROUTES = new Set([
   '/transcript-lab',
   '/processing-lab',
   '/publish-lab',
+  '/lab',
 ]);
 
 export function middleware(req: NextRequest) {

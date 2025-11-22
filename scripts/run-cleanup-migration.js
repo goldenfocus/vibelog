@@ -11,12 +11,12 @@ async function runMigration() {
 
   // Individual DROP statements for better control
   const statements = [
-    "DROP INDEX IF EXISTS public.profiles_voice_clone_id_idx",
-    "DROP INDEX IF EXISTS public.vibelogs_voice_clone_id_idx",
-    "ALTER TABLE public.profiles DROP COLUMN IF EXISTS voice_clone_id",
-    "ALTER TABLE public.profiles DROP COLUMN IF EXISTS voice_clone_name",
-    "ALTER TABLE public.profiles DROP COLUMN IF EXISTS voice_cloning_enabled",
-    "ALTER TABLE public.vibelogs DROP COLUMN IF EXISTS voice_clone_id"
+    'DROP INDEX IF EXISTS public.profiles_voice_clone_id_idx',
+    'DROP INDEX IF EXISTS public.vibelogs_voice_clone_id_idx',
+    'ALTER TABLE public.profiles DROP COLUMN IF EXISTS voice_clone_id',
+    'ALTER TABLE public.profiles DROP COLUMN IF EXISTS voice_clone_name',
+    'ALTER TABLE public.profiles DROP COLUMN IF EXISTS voice_cloning_enabled',
+    'ALTER TABLE public.vibelogs DROP COLUMN IF EXISTS voice_clone_id',
   ];
 
   for (const sql of statements) {
@@ -26,11 +26,11 @@ async function runMigration() {
       const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/query`, {
         method: 'POST',
         headers: {
-          'apikey': SERVICE_ROLE_KEY,
-          'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+          apikey: SERVICE_ROLE_KEY,
+          Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ sql })
+        body: JSON.stringify({ sql }),
       });
 
       if (response.ok) {

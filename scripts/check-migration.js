@@ -65,7 +65,9 @@ async function checkMigration() {
     return false;
   }
 
-  console.log('✅ Profile columns (auto_post_twitter, twitter_post_format, twitter_custom_template) exist');
+  console.log(
+    '✅ Profile columns (auto_post_twitter, twitter_post_format, twitter_custom_template) exist'
+  );
   console.log('\n🎉 Migration successfully applied!');
   console.log('   You should now see the Twitter Auto-Posting section in Settings → Profile\n');
   return true;

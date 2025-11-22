@@ -12,9 +12,9 @@ async function checkTables() {
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=is_admin&limit=1`, {
       headers: {
-        'apikey': SERVICE_ROLE_KEY,
-        'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
-      }
+        apikey: SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+      },
     });
     if (res.ok) {
       console.log('   ✅ is_admin column EXISTS\n');
@@ -35,9 +35,9 @@ async function checkTables() {
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/admin_audit_log?limit=1`, {
       headers: {
-        'apikey': SERVICE_ROLE_KEY,
-        'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
-      }
+        apikey: SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+      },
     });
     if (res.ok) {
       console.log('   ✅ admin_audit_log table EXISTS\n');
@@ -54,9 +54,9 @@ async function checkTables() {
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/tts_usage_log?limit=1`, {
       headers: {
-        'apikey': SERVICE_ROLE_KEY,
-        'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
-      }
+        apikey: SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+      },
     });
     if (res.ok) {
       console.log('   ✅ tts_usage_log table EXISTS\n');
@@ -72,9 +72,9 @@ async function checkTables() {
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/comments?limit=1`, {
       headers: {
-        'apikey': SERVICE_ROLE_KEY,
-        'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
-      }
+        apikey: SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+      },
     });
     if (res.ok) {
       console.log('   ✅ comments table EXISTS\n');
@@ -88,12 +88,15 @@ async function checkTables() {
   // Check admin users
   console.log('5. Checking admin users...');
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?is_admin=eq.true&select=email,username,is_admin`, {
-      headers: {
-        'apikey': SERVICE_ROLE_KEY,
-        'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/profiles?is_admin=eq.true&select=email,username,is_admin`,
+      {
+        headers: {
+          apikey: SERVICE_ROLE_KEY,
+          Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+        },
       }
-    });
+    );
     if (res.ok) {
       const admins = await res.json();
       if (admins.length > 0) {

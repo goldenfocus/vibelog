@@ -18,7 +18,7 @@ fetch('https://www.vibelog.io/api/video/generate', {
     aspectRatio: '16:9',
   }),
 })
-  .then(async (response) => {
+  .then(async response => {
     console.log('📥 Initial response:', response.status, response.statusText);
     const text = await response.text();
 
@@ -36,7 +36,7 @@ fetch('https://www.vibelog.io/api/video/generate', {
       console.log('Raw response:', text.substring(0, 500));
     }
   })
-  .catch((error) => {
+  .catch(error => {
     console.error('\n💥 Request failed:', error.message);
 
     // This is expected if it times out, which means it's working!

@@ -12,16 +12,16 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 async function checkVibelog() {
   const slug = 'welcome-to-the-era-of-vibe-flow-communication-pb6kx0ml';
-  
+
   console.log('Checking vibelog:', slug);
-  
+
   // Try public_slug first
   let { data, error } = await supabase
     .from('vibelogs')
     .select('id, title, slug, public_slug, audio_url, user_id, is_public, is_published')
     .eq('public_slug', slug)
     .maybeSingle();
-  
+
   if (!data) {
     // Try slug field
     const result = await supabase
@@ -29,21 +29,21 @@ async function checkVibelog() {
       .select('id, title, slug, public_slug, audio_url, user_id, is_public, is_published')
       .eq('slug', slug)
       .maybeSingle();
-    
+
     data = result.data;
     error = result.error;
   }
-  
+
   if (error) {
     console.error('Error:', error);
     return;
   }
-  
+
   if (!data) {
     console.log('Vibelog not found');
     return;
   }
-  
+
   console.log('Found vibelog:');
   console.log('  ID:', data.id);
   console.log('  Title:', data.title);
@@ -56,7 +56,9 @@ async function checkVibelog() {
   console.log('  Has Audio?', !!data.audio_url);
 }
 
-checkVibelog().then(() => process.exit(0)).catch(err => {
-  console.error(err);
-  process.exit(1);
-});
+checkVibelog()
+  .then(() => process.exit(0))
+  .catch(err => {
+    console.error(err);
+    process.exit(1);
+  });

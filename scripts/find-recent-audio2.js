@@ -12,19 +12,18 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 async function findRecentAudio() {
   const vibelogId = 'fc572854-d02c-438d-a71b-9cdaa2859a75';
-  
+
   console.log('Checking for audio files for vibelog:', vibelogId);
-  
+
   // Check sessions folder for anonymous uploads
-  const { data: sessionFiles, error: sessionError } = await supabase
-    .storage
+  const { data: sessionFiles, error: sessionError } = await supabase.storage
     .from('vibelogs')
     .list('sessions', {
       limit: 100,
       offset: 0,
-      sortBy: { column: 'created_at', order: 'desc' }
+      sortBy: { column: 'created_at', order: 'desc' },
     });
-  
+
   if (sessionError) {
     console.error('Error listing session files:', sessionError);
   } else {
@@ -37,14 +36,14 @@ async function findRecentAudio() {
       });
     }
   }
-  
+
   // Check the vibelog record
   const { data: vibelog } = await supabase
     .from('vibelogs')
     .select('id, title, created_at, audio_url')
     .eq('id', vibelogId)
     .single();
-  
+
   if (vibelog) {
     console.log('\nVibelog details:');
     const created = new Date(vibelog.created_at);
@@ -53,7 +52,9 @@ async function findRecentAudio() {
   }
 }
 
-findRecentAudio().then(() => process.exit(0)).catch(err => {
-  console.error(err);
-  process.exit(1);
-});
+findRecentAudio()
+  .then(() => process.exit(0))
+  .catch(err => {
+    console.error(err);
+    process.exit(1);
+  });

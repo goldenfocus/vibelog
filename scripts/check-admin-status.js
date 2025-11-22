@@ -15,14 +15,17 @@ async function checkAdminStatus() {
   console.log('🔍 Checking admin status for vibeyang@gmail.com...\n');
 
   try {
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/profiles?email=eq.vibeyang@gmail.com&select=email,is_admin`, {
-      method: 'GET',
-      headers: {
-        'apikey': SERVICE_ROLE_KEY,
-        'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
-        'Content-Type': 'application/json'
+    const response = await fetch(
+      `${SUPABASE_URL}/rest/v1/profiles?email=eq.vibeyang@gmail.com&select=email,is_admin`,
+      {
+        method: 'GET',
+        headers: {
+          apikey: SERVICE_ROLE_KEY,
+          Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+          'Content-Type': 'application/json',
+        },
       }
-    });
+    );
 
     if (response.ok) {
       const data = await response.json();
@@ -45,7 +48,6 @@ async function checkAdminStatus() {
       console.error(`❌ Failed: ${response.status}`);
       console.error(text);
     }
-
   } catch (err) {
     console.error(`❌ Error: ${err.message}`);
   }
