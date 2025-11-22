@@ -4,6 +4,7 @@ import { Loader2, Save } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { useI18n } from '@/components/providers/I18nProvider';
 import { useSaveVibelog } from '@/hooks/useSaveVibelog';
 
 interface TextCreatorProps {
@@ -12,6 +13,7 @@ interface TextCreatorProps {
 }
 
 export function TextCreator({ remixContent, onSaveSuccess }: TextCreatorProps) {
+  const { t } = useI18n();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState(remixContent || '');
   const { saveVibelog, isSaving } = useSaveVibelog();
@@ -40,8 +42,8 @@ export function TextCreator({ remixContent, onSaveSuccess }: TextCreatorProps) {
 
         // Show success message
         const vibelogUrl = result.publicUrl || `/vibelogs/${result.vibelogId}`;
-        toast.success('Vibelog published! Redirecting...', {
-          description: 'You can regenerate with different tones on the next page',
+        toast.success(t('toasts.vibelogs.published'), {
+          description: t('toasts.vibelogs.publishedDescription'),
           duration: 2000,
         });
 
@@ -52,7 +54,7 @@ export function TextCreator({ remixContent, onSaveSuccess }: TextCreatorProps) {
       }
     } catch (error) {
       console.error('Failed to save vibelog:', error);
-      toast.error('Failed to save vibelog. Please try again.');
+      toast.error(t('toasts.vibelogs.saveFailed'));
     }
   };
 
@@ -64,7 +66,7 @@ export function TextCreator({ remixContent, onSaveSuccess }: TextCreatorProps) {
         {/* Title Input */}
         <input
           type="text"
-          placeholder="Title (optional)"
+          placeholder={t('placeholders.vibelogTitle')}
           value={title}
           onChange={e => setTitle(e.target.value)}
           className="mb-4 w-full rounded-lg border border-border/50 bg-background px-4 py-3 text-lg font-medium text-foreground placeholder:text-muted-foreground focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
@@ -73,7 +75,7 @@ export function TextCreator({ remixContent, onSaveSuccess }: TextCreatorProps) {
 
         {/* Content Textarea */}
         <textarea
-          placeholder="Write your thoughts..."
+          placeholder={t('placeholders.vibelogContent')}
           value={content}
           onChange={e => setContent(e.target.value)}
           rows={8}

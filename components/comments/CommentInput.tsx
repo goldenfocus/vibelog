@@ -9,6 +9,7 @@ import { AudioEngine } from '@/components/mic/AudioEngine';
 import Controls from '@/components/mic/Controls';
 import Waveform from '@/components/mic/Waveform';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useI18n } from '@/components/providers/I18nProvider';
 import { useToneSettings } from '@/hooks/useToneSettings';
 import type { WritingTone } from '@/hooks/useToneSettings';
 import { createClient } from '@/lib/supabase';
@@ -36,6 +37,7 @@ export default function CommentInput({
   onCancel: _onCancel, // Reserved for future use
 }: CommentInputProps) {
   const { user, loading: authLoading } = useAuth();
+  const { t } = useI18n();
   const { tone, setTone } = useToneSettings();
   const [inputMode, setInputMode] = useState<'text' | 'voice' | 'video'>('text');
   const [textContent, setTextContent] = useState('');
@@ -76,45 +78,48 @@ export default function CommentInput({
     }
   }, [videoBlob]);
 
-  const transcribeAudio = useCallback(async (blob: Blob) => {
-    try {
-      setRecordingState('transcribing');
+  const transcribeAudio = useCallback(
+    async (blob: Blob) => {
+      try {
+        setRecordingState('transcribing');
 
-      const formData = new FormData();
-      formData.append('audio', blob, 'comment.webm');
+        const formData = new FormData();
+        formData.append('audio', blob, 'comment.webm');
 
-      const response = await fetch('/api/transcribe', {
-        method: 'POST',
-        body: formData,
-      });
+        const response = await fetch('/api/transcribe', {
+          method: 'POST',
+          body: formData,
+        });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to transcribe audio');
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to transcribe audio');
+        }
+
+        const { transcription } = await response.json();
+        console.log('✅ Transcription received:', transcription);
+
+        if (!transcription || transcription.trim() === '') {
+          throw new Error('Transcription is empty. Please try recording again with clearer audio.');
+        }
+
+        setTranscript(transcription);
+        setOriginalTranscript(transcription); // Save original for comparison
+        setRecordingState('reviewing');
+        toast.success(t('toasts.comments.transcriptionReady'));
+      } catch (error) {
+        console.error('❌ Transcription error:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to transcribe audio';
+        toast.error(t('toasts.comments.transcriptionFailed', { error: errorMessage }));
+
+        // Fall back to allowing direct posting without transcript
+        // Set an empty transcript but stay in processing state so they can post audio
+        setTranscript('');
+        setRecordingState('processing');
       }
-
-      const { transcription } = await response.json();
-      console.log('✅ Transcription received:', transcription);
-
-      if (!transcription || transcription.trim() === '') {
-        throw new Error('Transcription is empty. Please try recording again with clearer audio.');
-      }
-
-      setTranscript(transcription);
-      setOriginalTranscript(transcription); // Save original for comparison
-      setRecordingState('reviewing');
-      toast.success('Transcription ready! Review and edit before posting.');
-    } catch (error) {
-      console.error('❌ Transcription error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to transcribe audio';
-      toast.error(`${errorMessage}. You can still post the audio without a transcript.`);
-
-      // Fall back to allowing direct posting without transcript
-      // Set an empty transcript but stay in processing state so they can post audio
-      setTranscript('');
-      setRecordingState('processing');
-    }
-  }, []);
+    },
+    [t]
+  );
 
   // Initialize audio engine
   useEffect(() => {
@@ -151,7 +156,7 @@ export default function CommentInput({
 
     const hasPermission = await audioEngineRef.current.requestPermission();
     if (!hasPermission) {
-      toast.error('Microphone permission denied');
+      toast.error(t('toasts.comments.microphoneDenied'));
       return;
     }
 
@@ -209,13 +214,13 @@ export default function CommentInput({
       }
     } catch (error) {
       console.error('Error starting camera preview:', error);
-      toast.error('Failed to access camera. Please check permissions.');
+      toast.error(t('toasts.comments.cameraFailed'));
     }
   };
 
   const startVideoRecording = () => {
     if (!videoStream) {
-      toast.error('Camera not ready');
+      toast.error(t('toasts.comments.cameraNotReady'));
       return;
     }
 
@@ -256,14 +261,14 @@ export default function CommentInput({
           // Auto-stop at 60 seconds
           if (newTime >= 60) {
             stopVideoRecording();
-            toast.info('Maximum recording time reached (60 seconds)');
+            toast.info(t('toasts.comments.maxRecordingTime'));
           }
           return newTime;
         });
       }, 1000);
     } catch (error) {
       console.error('Error starting video recording:', error);
-      toast.error('Failed to start recording.');
+      toast.error(t('toasts.comments.recordingFailed'));
     }
   };
 
@@ -310,7 +315,7 @@ export default function CommentInput({
 
   const handleRegenerateComment = async () => {
     if (!transcript.trim()) {
-      toast.error('No transcript to enhance');
+      toast.error(t('toasts.comments.noTranscript'));
       return;
     }
 
@@ -336,10 +341,10 @@ export default function CommentInput({
 
       const { enhanced_content } = await response.json();
       setTranscript(enhanced_content);
-      toast.success(`✨ Comment enhanced with ${tone} tone!`);
+      toast.success(t('toasts.comments.enhanced', { tone }));
     } catch (error) {
       console.error('Error regenerating comment:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to enhance comment');
+      toast.error(error instanceof Error ? error.message : t('toasts.comments.enhanceFailed'));
     } finally {
       setIsRegenerating(false);
     }
@@ -366,27 +371,27 @@ export default function CommentInput({
 
   const handleSubmit = async () => {
     if (!user) {
-      toast.error('Please sign in to comment');
+      toast.error(t('toasts.comments.signInRequired'));
       return;
     }
 
     if (inputMode === 'text' && !textContent.trim()) {
-      toast.error('Please enter a comment');
+      toast.error(t('toasts.comments.enterComment'));
       return;
     }
 
     if (inputMode === 'voice' && !audioBlob) {
-      toast.error('Please record a voice comment');
+      toast.error(t('toasts.comments.recordVoice'));
       return;
     }
 
     if (inputMode === 'voice' && recordingState === 'reviewing' && !transcript.trim()) {
-      toast.error('Please enter a comment or re-record');
+      toast.error(t('toasts.comments.enterOrRecord'));
       return;
     }
 
     if (inputMode === 'video' && !videoBlob) {
-      toast.error('Please record a video comment');
+      toast.error(t('toasts.comments.recordVideo'));
       return;
     }
 
@@ -413,7 +418,7 @@ export default function CommentInput({
           throw new Error(error.error || 'Failed to submit comment');
         }
 
-        toast.success('Your vibe comment is live! 🔥');
+        toast.success(t('toasts.comments.live'));
         setTextContent('');
         setAttachments([]);
         onCommentAdded();
@@ -461,7 +466,7 @@ export default function CommentInput({
           throw new Error(error.error || 'Failed to submit comment');
         }
 
-        toast.success('Your voice vibe is live! 🎤✨');
+        toast.success(t('toasts.comments.voiceLive'));
         resetRecording();
         onCommentAdded();
       } else if (inputMode === 'video' && videoBlob) {
@@ -532,13 +537,13 @@ export default function CommentInput({
 
         console.log('Video comment created successfully');
 
-        toast.success('Your video vibe is live! 🎥✨');
+        toast.success(t('toasts.comments.videoLive'));
         resetVideoRecording();
         onCommentAdded();
       }
     } catch (error) {
       console.error('Error submitting comment:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to submit comment');
+      toast.error(error instanceof Error ? error.message : t('toasts.comments.submitFailed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -619,7 +624,7 @@ export default function CommentInput({
           <textarea
             value={textContent}
             onChange={e => setTextContent(e.target.value)}
-            placeholder="Write your comment..."
+            placeholder={t('placeholders.comment')}
             className="w-full resize-none rounded-lg border border-border/30 bg-background px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-electric focus:outline-none"
             rows={3}
           />
@@ -738,7 +743,7 @@ export default function CommentInput({
                   <textarea
                     value={customInstructions}
                     onChange={e => setCustomInstructions(e.target.value)}
-                    placeholder="e.g., 'Make it more concise' or 'Add an emoji'"
+                    placeholder={t('placeholders.commentEnhance')}
                     className="w-full resize-none rounded-lg border border-border/30 bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-electric focus:outline-none"
                     rows={2}
                   />
@@ -768,7 +773,7 @@ export default function CommentInput({
               <textarea
                 value={transcript}
                 onChange={e => setTranscript(e.target.value)}
-                placeholder="Edit your transcription..."
+                placeholder={t('placeholders.transcriptEdit')}
                 className="w-full resize-none rounded-lg border border-border/30 bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-electric focus:outline-none"
                 rows={4}
               />

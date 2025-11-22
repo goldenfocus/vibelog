@@ -4,6 +4,7 @@ import { Loader2, Sparkles, Upload } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { useI18n } from '@/components/providers/I18nProvider';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -21,6 +22,7 @@ export default function ImageEditTab({
   currentTitle,
   onImageChange,
 }: ImageEditTabProps) {
+  const { t } = useI18n();
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [coverImage, setCoverImage] = useState(currentImage || '');
@@ -67,13 +69,13 @@ export default function ImageEditTab({
         setSelectedImage(null);
         setImagePreview(null);
         onImageChange(data.url);
-        toast.success('Image uploaded successfully!');
+        toast.success(t('toasts.vibelogs.imageUploaded'));
       } else {
-        throw new Error(data.error || 'Failed to upload image');
+        throw new Error(data.error || t('toasts.vibelogs.imageUploadFailed'));
       }
     } catch (error) {
       console.error('Image upload error:', error);
-      toast.error('Failed to upload image');
+      toast.error(t('toasts.vibelogs.imageUploadFailed'));
     } finally {
       setIsUploadingImage(false);
     }
@@ -161,7 +163,7 @@ export default function ImageEditTab({
               <Label className="mb-2 block">Preview</Label>
               <img
                 src={imagePreview}
-                alt="Preview"
+                alt={t('altText.preview')}
                 className="max-h-[200px] w-full rounded-xl object-cover"
               />
             </div>
@@ -201,7 +203,7 @@ export default function ImageEditTab({
               id="image-prompt"
               value={prompt}
               onChange={e => setPrompt(e.target.value)}
-              placeholder="e.g., make it more colorful, add a sunset, cinematic style"
+              placeholder={t('placeholders.imagePrompt')}
               className="min-h-[80px]"
             />
           </div>

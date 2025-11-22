@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { ContentTabs } from '@/components/content/ContentTabs';
+import { useI18n } from '@/components/providers/I18nProvider';
 import { ReactionBar } from '@/components/reactions/ReactionBar';
 import VibelogActions from '@/components/VibelogActions';
 import VibelogContentRenderer from '@/components/VibelogContentRenderer';
@@ -39,6 +40,7 @@ interface PublicVibelogContentProps {
 
 export default function PublicVibelogContent({ vibelog }: PublicVibelogContentProps) {
   const router = useRouter();
+  const { t } = useI18n();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const videoUrl = vibelog.video_url || null;
 
@@ -74,12 +76,12 @@ export default function PublicVibelogContent({ vibelog }: PublicVibelogContentPr
         throw new Error('Failed to delete vibelog');
       }
 
-      toast.success('Vibelog deleted successfully');
+      toast.success(t('toasts.vibelogs.deleted'));
       // Redirect to dashboard after deletion
       router.push('/dashboard');
     } catch (error) {
       console.error('Delete error:', error);
-      toast.error('Failed to delete vibelog');
+      toast.error(t('toasts.vibelogs.deleteFailed'));
     }
   };
 

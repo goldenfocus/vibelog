@@ -4,6 +4,7 @@ import { Image, Video, X, Upload, Loader2, Sparkles } from 'lucide-react';
 import { useState, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
 
+import { useI18n } from '@/components/providers/I18nProvider';
 import { IMAGE_FILTERS, type ImageFilter } from '@/lib/image-filters';
 import { cn } from '@/lib/utils';
 import type { MediaAttachment } from '@/types/comments';
@@ -23,6 +24,7 @@ export default function MediaAttachmentZone({
   maxImageSize = 10,
   maxVideoSize = 100,
 }: MediaAttachmentZoneProps) {
+  const { t } = useI18n();
   const [uploading, setUploading] = useState<string[]>([]);
   const [dragActive, setDragActive] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -40,7 +42,7 @@ export default function MediaAttachmentZone({
         const isVideo = file.type.startsWith('video/');
 
         if (!isImage && !isVideo) {
-          toast.error('Only images and videos are allowed');
+          toast.error(t('toasts.attachments.onlyMedia'));
           return null;
         }
 
@@ -48,7 +50,9 @@ export default function MediaAttachmentZone({
         const maxSize = isImage ? maxImageSize : maxVideoSize;
         const fileSizeMB = file.size / (1024 * 1024);
         if (fileSizeMB > maxSize) {
-          toast.error(`File too large. Max ${maxSize}MB for ${isImage ? 'images' : 'videos'}`);
+          toast.error(
+            t('toasts.attachments.fileTooLarge', { maxSize, type: isImage ? 'images' : 'videos' })
+          );
           return null;
         }
 
@@ -92,17 +96,17 @@ export default function MediaAttachmentZone({
           });
         }
 
-        toast.success(`${isImage ? 'Image' : 'Video'} uploaded successfully!`);
+        toast.success(t('toasts.attachments.uploaded', { type: isImage ? 'Image' : 'Video' }));
         return attachment;
       } catch (error) {
         console.error('Upload error:', error);
-        toast.error(error instanceof Error ? error.message : 'Upload failed');
+        toast.error(error instanceof Error ? error.message : t('toasts.attachments.uploadFailed'));
         return null;
       } finally {
         setUploading(prev => prev.filter(id => id !== fileId));
       }
     },
-    [maxImageSize, maxVideoSize]
+    [maxImageSize, maxVideoSize, t]
   );
 
   const handleFiles = async (files: FileList | null) => {
@@ -112,7 +116,7 @@ export default function MediaAttachmentZone({
 
     const remainingSlots = maxFiles - attachments.length;
     if (files.length > remainingSlots) {
-      toast.error(`Maximum ${maxFiles} files allowed. You can add ${remainingSlots} more.`);
+      toast.error(t('toasts.attachments.maxFiles', { max: maxFiles, remaining: remainingSlots }));
       return;
     }
 
@@ -133,7 +137,7 @@ export default function MediaAttachmentZone({
 
   const removeAttachment = (index: number) => {
     onChange(attachments.filter((_, i) => i !== index));
-    toast.success('Attachment removed');
+    toast.success(t('toasts.attachments.removed'));
     if (editingIndex === index) {
       setEditingIndex(null);
     }
@@ -148,7 +152,7 @@ export default function MediaAttachmentZone({
     };
     onChange(updated);
     setSelectedFilter(filter);
-    toast.success(`Filter "${filter.name}" applied!`);
+    toast.success(t('toasts.attachments.filterApplied', { name: filter.name }));
   };
 
   const toggleEdit = (index: number) => {
@@ -242,7 +246,7 @@ export default function MediaAttachmentZone({
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={attachment.url}
-                      alt={`Attachment ${index + 1}`}
+                      alt={t('altText.attachment', { index: index + 1 })}
                       className="h-full w-full object-cover transition-transform group-hover:scale-105"
                       style={{ filter: (attachment as any).filter || 'none' }}
                     />
@@ -258,8 +262,8 @@ export default function MediaAttachmentZone({
                       <button
                         onClick={() => toggleEdit(index)}
                         className="rounded-full bg-electric p-2 text-white transition-transform hover:scale-110"
-                        aria-label="Edit filters"
-                        title="Apply filters"
+                        aria-label={t('ariaLabels.editFilters')}
+                        title={t('titles.applyFilters')}
                       >
                         <Sparkles className="h-4 w-4" />
                       </button>
@@ -267,7 +271,7 @@ export default function MediaAttachmentZone({
                     <button
                       onClick={() => removeAttachment(index)}
                       className="rounded-full bg-red-500 p-2 text-white transition-transform hover:scale-110"
-                      aria-label="Remove attachment"
+                      aria-label={t('ariaLabels.removeAttachment')}
                     >
                       <X className="h-4 w-4" />
                     </button>
@@ -306,7 +310,7 @@ export default function MediaAttachmentZone({
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src={attachment.url}
-                              alt={filter.name}
+                              alt={t('altText.filter', { name: filter.name })}
                               className="h-full w-full object-cover"
                               style={{ filter: filter.cssFilter }}
                             />
