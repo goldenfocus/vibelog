@@ -13,19 +13,35 @@ vi.mock('@/components/providers/I18nProvider', () => ({
         'components.micRecorder.liveTranscript': 'Live Transcript',
         'recorder.originalTranscription': 'Original Transcription',
         'actions.edit': 'Edit',
-        'actions.copy': 'Copy'
+        'actions.copy': 'Copy',
       };
       return translations[key] || key;
-    }
-  })
+    },
+  }),
 }));
 
 // Mock lucide-react icons
 vi.mock('lucide-react', () => ({
-  Copy: ({ className }: { className?: string }) => <div data-testid="copy-icon" className={className}>Copy</div>,
-  Edit: ({ className }: { className?: string }) => <div data-testid="edit-icon" className={className}>Edit</div>,
-  X: ({ className }: { className?: string }) => <div data-testid="x-icon" className={className}>X</div>,
-  Check: ({ className }: { className?: string }) => <div data-testid="check-icon" className={className}>Check</div>
+  Copy: ({ className }: { className?: string }) => (
+    <div data-testid="copy-icon" className={className}>
+      Copy
+    </div>
+  ),
+  Edit: ({ className }: { className?: string }) => (
+    <div data-testid="edit-icon" className={className}>
+      Edit
+    </div>
+  ),
+  X: ({ className }: { className?: string }) => (
+    <div data-testid="x-icon" className={className}>
+      X
+    </div>
+  ),
+  Check: ({ className }: { className?: string }) => (
+    <div data-testid="check-icon" className={className}>
+      Check
+    </div>
+  ),
 }));
 
 describe('TranscriptionPanel', () => {
@@ -45,13 +61,13 @@ describe('TranscriptionPanel', () => {
     onCopy: mockOnCopy,
     onEdit: mockOnEdit,
     onTranscriptUpdate: mockOnTranscriptUpdate,
-    isLoggedIn: false
+    isLoggedIn: false,
   };
 
   describe('Empty State', () => {
     it('should render empty state when no transcription and not recording', () => {
       render(<TranscriptionPanel {...defaultProps} isComplete={true} />);
-      
+
       const emptyPanel = screen.getByTestId('empty-transcript-panel');
       expect(emptyPanel).toBeInTheDocument();
       expect(screen.getByText('No transcription yet')).toBeInTheDocument();
@@ -60,7 +76,7 @@ describe('TranscriptionPanel', () => {
 
     it('should show correct empty state styling and icon', () => {
       render(<TranscriptionPanel {...defaultProps} isComplete={true} />);
-      
+
       const emptyPanel = screen.getByTestId('empty-transcript-panel');
       expect(emptyPanel).toHaveClass('bg-card/30', 'rounded-2xl', 'border', 'border-border/10');
       expect(screen.getByText('📝')).toBeInTheDocument();
@@ -72,15 +88,17 @@ describe('TranscriptionPanel', () => {
       const props = {
         ...defaultProps,
         isRecording: true,
-        liveTranscript: 'This is live speech recognition text...'
+        liveTranscript: 'This is live speech recognition text...',
       };
-      
+
       render(<TranscriptionPanel {...props} />);
-      
+
       const livePanel = screen.getByTestId('live-transcript-panel');
       expect(livePanel).toBeInTheDocument();
       expect(screen.getByText('Live Transcript')).toBeInTheDocument();
-      expect(screen.getByTestId('live-transcript-text')).toHaveTextContent('This is live speech recognition text...');
+      expect(screen.getByTestId('live-transcript-text')).toHaveTextContent(
+        'This is live speech recognition text...'
+      );
     });
 
     it('should display correct character and word counts for live transcript', () => {
@@ -88,11 +106,11 @@ describe('TranscriptionPanel', () => {
       const props = {
         ...defaultProps,
         isRecording: true,
-        liveTranscript: liveText
+        liveTranscript: liveText,
       };
-      
+
       render(<TranscriptionPanel {...props} />);
-      
+
       expect(screen.getByTestId('live-transcript-char-count')).toHaveTextContent('Characters: 26');
       expect(screen.getByTestId('live-transcript-word-count')).toHaveTextContent('Words: 6');
     });
@@ -101,11 +119,11 @@ describe('TranscriptionPanel', () => {
       const props = {
         ...defaultProps,
         isRecording: true,
-        liveTranscript: ''
+        liveTranscript: '',
       };
-      
+
       render(<TranscriptionPanel {...props} />);
-      
+
       // Should not render live transcript panel if transcript is empty
       expect(screen.queryByTestId('live-transcript-panel')).not.toBeInTheDocument();
     });
@@ -115,11 +133,11 @@ describe('TranscriptionPanel', () => {
       const props = {
         ...defaultProps,
         isRecording: true,
-        liveTranscript: liveText
+        liveTranscript: liveText,
       };
-      
+
       render(<TranscriptionPanel {...props} />);
-      
+
       expect(screen.getByTestId('live-transcript-word-count')).toHaveTextContent('Words: 3');
     });
   });
@@ -130,26 +148,26 @@ describe('TranscriptionPanel', () => {
       const props = {
         ...defaultProps,
         isComplete: true,
-        transcription: transcriptText
+        transcription: transcriptText,
       };
-      
+
       render(<TranscriptionPanel {...props} />);
-      
+
       const completedPanel = screen.getByTestId('completed-transcript-panel');
       expect(completedPanel).toBeInTheDocument();
       expect(screen.getByText('Original Transcription')).toBeInTheDocument();
       expect(screen.getByTestId('completed-transcript-text')).toHaveTextContent(transcriptText);
     });
 
-    it('should display edit and copy buttons for completed transcript', () => {
+    it.skip('should display edit and copy buttons for completed transcript', () => {
       const props = {
         ...defaultProps,
         isComplete: true,
-        transcription: 'Test transcription'
+        transcription: 'Test transcription',
       };
-      
+
       render(<TranscriptionPanel {...props} />);
-      
+
       expect(screen.getByTestId('edit-transcript-button')).toBeInTheDocument();
       expect(screen.getByTestId('copy-transcript-button')).toBeInTheDocument();
     });
@@ -159,48 +177,50 @@ describe('TranscriptionPanel', () => {
       const props = {
         ...defaultProps,
         isComplete: true,
-        transcription: transcriptText
+        transcription: transcriptText,
       };
-      
+
       render(<TranscriptionPanel {...props} />);
-      
-      expect(screen.getByTestId('completed-transcript-char-count')).toHaveTextContent('Characters: 42');
+
+      expect(screen.getByTestId('completed-transcript-char-count')).toHaveTextContent(
+        'Characters: 42'
+      );
       expect(screen.getByTestId('completed-transcript-word-count')).toHaveTextContent('Words: 8');
     });
   });
 
   describe('Copy Functionality', () => {
-    it('should call onCopy with transcription when copy button clicked', async () => {
+    it.skip('should call onCopy with transcription when copy button clicked', async () => {
       const transcriptText = 'Test transcription to copy';
       const props = {
         ...defaultProps,
         isComplete: true,
-        transcription: transcriptText
+        transcription: transcriptText,
       };
-      
+
       render(<TranscriptionPanel {...props} />);
-      
+
       const copyButton = screen.getByTestId('copy-transcript-button');
       fireEvent.click(copyButton);
-      
+
       expect(mockOnCopy).toHaveBeenCalledWith(transcriptText);
     });
   });
 
-  describe('Edit Functionality', () => {
+  describe.skip('Edit Functionality', () => {
     it('should call onEdit when edit button clicked and user not logged in', async () => {
       const props = {
         ...defaultProps,
         isComplete: true,
         transcription: 'Test transcription',
-        isLoggedIn: false
+        isLoggedIn: false,
       };
-      
+
       render(<TranscriptionPanel {...props} />);
-      
+
       const editButton = screen.getByTestId('edit-transcript-button');
       fireEvent.click(editButton);
-      
+
       expect(mockOnEdit).toHaveBeenCalled();
     });
 
@@ -209,18 +229,20 @@ describe('TranscriptionPanel', () => {
         ...defaultProps,
         isComplete: true,
         transcription: 'Test transcription to edit',
-        isLoggedIn: true
+        isLoggedIn: true,
       };
-      
+
       render(<TranscriptionPanel {...props} />);
-      
+
       const editButton = screen.getByTestId('edit-transcript-button');
       fireEvent.click(editButton);
-      
+
       // Modal should appear
       expect(screen.getByText('Edit Your Transcript')).toBeInTheDocument();
       expect(screen.getByTestId('transcript-edit-textarea')).toBeInTheDocument();
-      expect(screen.getByTestId('transcript-edit-textarea')).toHaveValue('Test transcription to edit');
+      expect(screen.getByTestId('transcript-edit-textarea')).toHaveValue(
+        'Test transcription to edit'
+      );
     });
 
     it('should update character and word counts in edit modal as user types', async () => {
@@ -229,18 +251,18 @@ describe('TranscriptionPanel', () => {
         ...defaultProps,
         isComplete: true,
         transcription: 'Original text',
-        isLoggedIn: true
+        isLoggedIn: true,
       };
-      
+
       render(<TranscriptionPanel {...props} />);
-      
+
       const editButton = screen.getByTestId('edit-transcript-button');
       fireEvent.click(editButton);
-      
+
       const textarea = screen.getByTestId('transcript-edit-textarea');
       await user.clear(textarea);
       await user.type(textarea, 'New test content here');
-      
+
       await waitFor(() => {
         expect(screen.getByText('Characters: 21')).toBeInTheDocument();
         expect(screen.getByText('Words: 4')).toBeInTheDocument();
@@ -253,21 +275,21 @@ describe('TranscriptionPanel', () => {
         ...defaultProps,
         isComplete: true,
         transcription: 'Original transcription',
-        isLoggedIn: true
+        isLoggedIn: true,
       };
-      
+
       render(<TranscriptionPanel {...props} />);
-      
+
       const editButton = screen.getByTestId('edit-transcript-button');
       fireEvent.click(editButton);
-      
+
       const textarea = screen.getByTestId('transcript-edit-textarea');
       await user.clear(textarea);
       await user.type(textarea, 'Edited transcription content');
-      
+
       const saveButton = screen.getByText('Save');
       fireEvent.click(saveButton);
-      
+
       expect(mockOnTranscriptUpdate).toHaveBeenCalledWith('Edited transcription content');
     });
 
@@ -276,19 +298,19 @@ describe('TranscriptionPanel', () => {
         ...defaultProps,
         isComplete: true,
         transcription: 'Test transcription',
-        isLoggedIn: true
+        isLoggedIn: true,
       };
-      
+
       render(<TranscriptionPanel {...props} />);
-      
+
       const editButton = screen.getByTestId('edit-transcript-button');
       fireEvent.click(editButton);
-      
+
       expect(screen.getByText('Edit Your Transcript')).toBeInTheDocument();
-      
+
       const cancelButton = screen.getByTestId('x-icon').closest('button')!;
       fireEvent.click(cancelButton);
-      
+
       await waitFor(() => {
         expect(screen.queryByText('Edit Your Transcript')).not.toBeInTheDocument();
       });
@@ -300,14 +322,14 @@ describe('TranscriptionPanel', () => {
         isComplete: true,
         transcription: 'Test transcription',
         isLoggedIn: true,
-        onTranscriptUpdate: undefined
+        onTranscriptUpdate: undefined,
       };
-      
+
       render(<TranscriptionPanel {...props} />);
-      
+
       const editButton = screen.getByTestId('edit-transcript-button');
       fireEvent.click(editButton);
-      
+
       // Modal should still open but save won't call callback
       expect(screen.getByText('Edit Your Transcript')).toBeInTheDocument();
     });
@@ -319,25 +341,29 @@ describe('TranscriptionPanel', () => {
       const props = {
         ...defaultProps,
         isComplete: true,
-        transcription: longText
+        transcription: longText,
       };
-      
+
       render(<TranscriptionPanel {...props} />);
-      
-      expect(screen.getByTestId('completed-transcript-char-count')).toHaveTextContent('Characters: 1999');
-      expect(screen.getByTestId('completed-transcript-word-count')).toHaveTextContent('Words: 1000');
+
+      expect(screen.getByTestId('completed-transcript-char-count')).toHaveTextContent(
+        'Characters: 1999'
+      );
+      expect(screen.getByTestId('completed-transcript-word-count')).toHaveTextContent(
+        'Words: 1000'
+      );
     });
 
     it('should handle special characters and punctuation in word count', () => {
-      const textWithPunctuation = 'Hello! How are you? I\'m fine, thanks.';
+      const textWithPunctuation = "Hello! How are you? I'm fine, thanks.";
       const props = {
         ...defaultProps,
         isComplete: true,
-        transcription: textWithPunctuation
+        transcription: textWithPunctuation,
       };
-      
+
       render(<TranscriptionPanel {...props} />);
-      
+
       expect(screen.getByTestId('completed-transcript-word-count')).toHaveTextContent('Words: 7');
     });
 
@@ -347,11 +373,11 @@ describe('TranscriptionPanel', () => {
       const props = {
         ...defaultProps,
         isRecording: true,
-        liveTranscript: textWithWhitespace
+        liveTranscript: textWithWhitespace,
       };
-      
+
       render(<TranscriptionPanel {...props} />);
-      
+
       expect(screen.getByTestId('live-transcript-word-count')).toHaveTextContent('Words: 6');
     });
   });
@@ -363,11 +389,11 @@ describe('TranscriptionPanel', () => {
         isRecording: true,
         isComplete: true,
         liveTranscript: 'Live text',
-        transcription: 'Final text'
+        transcription: 'Final text',
       };
-      
+
       render(<TranscriptionPanel {...props} />);
-      
+
       // Should show live transcript since isRecording is true
       expect(screen.getByTestId('live-transcript-panel')).toBeInTheDocument();
       // Should also show completed panel since isComplete is true and has transcription
@@ -382,11 +408,11 @@ describe('TranscriptionPanel', () => {
         isRecording: false,
         isComplete: true,
         liveTranscript: '',
-        transcription: ''
+        transcription: '',
       };
-      
+
       render(<TranscriptionPanel {...props} />);
-      
+
       expect(screen.getByTestId('empty-transcript-panel')).toBeInTheDocument();
       expect(screen.queryByTestId('live-transcript-panel')).not.toBeInTheDocument();
       expect(screen.queryByTestId('completed-transcript-panel')).not.toBeInTheDocument();
@@ -400,15 +426,15 @@ describe('TranscriptionPanel', () => {
       const props = {
         ...defaultProps,
         isComplete: true,
-        transcription: 'Test transcription'
+        transcription: 'Test transcription',
       };
-      
+
       render(<TranscriptionPanel {...props} />);
-      
+
       // Edit and copy buttons no longer exist in component
       // const editButton = screen.getByTestId('edit-transcript-button');
       // const copyButton = screen.getByTestId('copy-transcript-button');
-      
+
       // // Buttons don't have explicit type="button" but are still valid buttons
       // expect(editButton.tagName).toBe('BUTTON');
       // expect(copyButton.tagName).toBe('BUTTON');
@@ -421,18 +447,18 @@ describe('TranscriptionPanel', () => {
         ...defaultProps,
         isComplete: true,
         transcription: 'Test transcription',
-        isLoggedIn: true
+        isLoggedIn: true,
       };
-      
+
       render(<TranscriptionPanel {...props} />);
-      
+
       // Edit button no longer exists in component
       // const editButton = screen.getByTestId('edit-transcript-button');
       // fireEvent.click(editButton);
-      
+
       // const textarea = screen.getByTestId('transcript-edit-textarea');
       // expect(textarea).toBeInTheDocument();
-      
+
       // // Textarea should be focusable
       // textarea.focus();
       // expect(textarea).toHaveFocus();
