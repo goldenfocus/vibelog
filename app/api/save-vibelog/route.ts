@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { checkAndBlockBots } from '@/lib/botid-check';
 import {
   createVibelog,
   handleAsyncTasks,
@@ -18,6 +19,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   let vibelogData: any = null;
 
   try {
+    // === STEP 0: BOT PROTECTION ===
+    const botCheck = await checkAndBlockBots();
+    if (botCheck) {
+      return botCheck;
+    }
+
     // === STEP 1: PARSE REQUEST ===
     console.log('🚀 [VIBELOG-SAVE] Starting bulletproof save process...');
 

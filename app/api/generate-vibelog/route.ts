@@ -7,6 +7,7 @@ import {
   isDailyLimitExceeded,
   estimateTokens,
 } from '@/lib/ai-cost-tracker';
+import { checkAndBlockBots } from '@/lib/botid-check';
 import { config } from '@/lib/config';
 import { isDev } from '@/lib/env';
 import { rateLimit, tooManyResponse } from '@/lib/rateLimit';
@@ -43,6 +44,12 @@ function postProcessContent(content: string): string {
 
 export async function POST(request: NextRequest) {
   try {
+    // 🛡️ BOT PROTECTION: Block automated bots
+    const botCheck = await checkAndBlockBots();
+    if (botCheck) {
+      return botCheck;
+    }
+
     // 🛡️ CIRCUIT BREAKER: Check if daily cost limit exceeded
     if (await isDailyLimitExceeded()) {
       return NextResponse.json(
