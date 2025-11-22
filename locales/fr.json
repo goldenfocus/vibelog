@@ -60,6 +60,7 @@
   },
   "toast": {
     "copied": "✨ Copié dans le presse-papier !",
+    "copiedWithImage": "✨ Copié avec image de couverture !",
     "copyFailed": "❌ Échec de la copie",
     "copiedForSharing": "📋 Copié pour partage !",
     "signInToSave": "🔒 Connectez-vous pour sauvegarder vos vibelogs !"
@@ -114,7 +115,9 @@
         "htmlTitle": "HTML",
         "htmlDesc": "Génération de balisage propre pour publication web",
         "polishTitle": "POLISSAGE",
-        "polishDesc": "Vérifications de qualité finale et touches de perfection"
+        "polishDesc": "Vérifications de qualité finale et touches de perfection",
+        "imageTitle": "IMAGE",
+        "imageDesc": "Création d'une image de couverture à partager"
       },
       "unlockMessage": "pour débloquer votre vibelog complet et partager partout !",
       "createdBy": "Créé par",
@@ -130,7 +133,8 @@
       "speakLouder": "🤫 Parlez un peu plus fort...",
       "loginRequired": "Connexion Requise",
       "freePlanLimit": "Plan gratuit : {{timeLimit}} max",
-      "timeRemaining": "{{seconds}}s restantes"
+      "timeRemaining": "{{seconds}}s restantes",
+      "liveTranscript": "Transcription en direct"
     },
     "vibelogCard": {
       "remix": "Remixer"

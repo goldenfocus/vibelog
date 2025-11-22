@@ -60,6 +60,7 @@
   },
   "toast": {
     "copied": "✨ Đã sao chép vào clipboard!",
+    "copiedWithImage": "✨ Đã sao chép kèm ảnh bìa!",
     "copyFailed": "❌ Sao chép thất bại",
     "copiedForSharing": "📋 Đã sao chép để chia sẻ!",
     "signInToSave": "🔒 Đăng nhập để lưu vibelogs của bạn!"
@@ -114,7 +115,9 @@
         "htmlTitle": "HTML",
         "htmlDesc": "Tạo markup sạch để xuất bản web",
         "polishTitle": "HOÀN THIỆN",
-        "polishDesc": "Kiểm tra chất lượng cuối cùng và hoàn thiện"
+        "polishDesc": "Kiểm tra chất lượng cuối cùng và hoàn thiện",
+        "imageTitle": "HÌNH ẢNH",
+        "imageDesc": "Tạo ảnh bìa để chia sẻ"
       },
       "loginEditMessage": "Vui lòng đăng nhập để chỉnh sửa vibelogs của bạn. Chỉnh sửa cho phép bạn hoàn thiện nội dung trước khi chia sẻ với thế giới.",
       "signInToEdit": "Đăng nhập để chỉnh sửa",
@@ -130,7 +133,8 @@
       "createdBy": "Tạo bởi",
       "yourRecording": "Bản Ghi Của Bạn",
       "freePlanLimit": "Gói miễn phí: tối đa {{timeLimit}}",
-      "timeRemaining": "còn {{seconds}}s"
+      "timeRemaining": "còn {{seconds}}s",
+      "liveTranscript": "Phiên âm trực tiếp"
     },
     "vibelogCard": {
       "remix": "Phối lại"
