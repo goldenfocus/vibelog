@@ -37,7 +37,7 @@ export default function Home() {
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center">
           <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-electric border-t-transparent"></div>
-          <p className="text-muted-foreground">Loading...</p>
+          <p className="text-muted-foreground">{t('common.loading')}</p>
         </div>
       </div>
     );
@@ -80,7 +80,7 @@ export default function Home() {
                   ? 'border-purple-600 bg-purple-50 shadow-lg dark:border-purple-400 dark:bg-purple-900/20'
                   : 'border-border/30 bg-card/50 hover:border-border hover:bg-card/80'
               }`}
-              aria-label="Create with text"
+              aria-label={t('home.modes.text')}
             >
               <FileText
                 className={`h-8 w-8 sm:h-10 sm:w-10 ${
@@ -99,7 +99,7 @@ export default function Home() {
                   ? 'border-purple-600 bg-purple-50 shadow-lg dark:border-purple-400 dark:bg-purple-900/20'
                   : 'border-border/30 bg-card/50 hover:border-border hover:bg-card/80'
               }`}
-              aria-label="Create with audio"
+              aria-label={t('home.modes.audio')}
             >
               <Mic
                 className={`h-8 w-8 sm:h-10 sm:w-10 ${
@@ -118,7 +118,7 @@ export default function Home() {
                   ? 'border-purple-600 bg-purple-50 shadow-lg dark:border-purple-400 dark:bg-purple-900/20'
                   : 'border-border/30 bg-card/50 hover:border-border hover:bg-card/80'
               }`}
-              aria-label="Create with video"
+              aria-label={t('home.modes.video')}
             >
               <Video
                 className={`h-8 w-8 sm:h-10 sm:w-10 ${
@@ -137,7 +137,7 @@ export default function Home() {
                   ? 'border-blue-600 bg-blue-50 shadow-lg dark:border-blue-400 dark:bg-blue-900/20'
                   : 'border-border/30 bg-card/50 hover:border-border hover:bg-card/80'
               }`}
-              aria-label="Record screen share"
+              aria-label={t('home.modes.screen')}
             >
               <Monitor
                 className={`h-8 w-8 sm:h-10 sm:w-10 ${

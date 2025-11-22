@@ -82,7 +82,7 @@ export default function Pricing() {
               </span>
               {isYearly && (
                 <span className="rounded-full bg-electric/20 px-2 py-1 text-sm text-electric">
-                  Save ~30% with yearly
+                  {t('pages.pricing.billing.yearlyDiscount')}
                 </span>
               )}
             </div>
@@ -165,9 +165,9 @@ export default function Pricing() {
                           </div>
                         ));
                       }
-                      return <div>Loading features...</div>;
+                      return <div>{t('common.loading')}</div>;
                     } catch {
-                      return <div>Loading...</div>;
+                      return <div>{t('common.loading')}</div>;
                     }
                   })()}
                 </div>

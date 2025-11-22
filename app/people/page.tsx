@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 
 import CreatorCard from '@/components/CreatorCard';
 import Navigation from '@/components/Navigation';
+import { useI18n } from '@/components/providers/I18nProvider';
 import { createClient } from '@/lib/supabase';
 
 interface Vibelog {
@@ -30,6 +31,7 @@ interface Creator {
 type SortOption = 'recent' | 'popular' | 'active';
 
 export default function PeoplePage() {
+  const { t } = useI18n();
   const [creators, setCreators] = useState<Creator[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -156,13 +158,13 @@ export default function PeoplePage() {
           <div className="mb-12 text-center">
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-electric/30 bg-electric/5 px-4 py-2 text-sm font-medium text-electric">
               <Users className="h-4 w-4" />
-              <span>Discover Amazing Creators</span>
+              <span>{t('pages.people.badge')}</span>
             </div>
             <h1 className="mb-4 bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-5xl font-bold text-transparent dark:from-blue-400 dark:to-violet-400 sm:text-6xl">
-              People
+              {t('pages.people.title')}
             </h1>
             <p className="mx-auto max-w-2xl text-xl text-muted-foreground">
-              Discover creators and their latest voice-first posts. Join the vibelog community.
+              {t('pages.people.subtitle')}
             </p>
           </div>
 
@@ -173,7 +175,7 @@ export default function PeoplePage() {
               <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="Search creators, vibelogs..."
+                placeholder={t('pages.people.searchPlaceholder')}
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 className="w-full rounded-lg border border-border/50 bg-muted/30 py-2 pl-10 pr-4 text-sm transition-all focus:border-electric/50 focus:outline-none focus:ring-2 focus:ring-electric/20"
@@ -186,34 +188,39 @@ export default function PeoplePage() {
                 active={sortBy === 'popular'}
                 onClick={() => setSortBy('popular')}
                 icon={TrendingUp}
-                label="Popular"
+                label={t('pages.people.sort.popular')}
               />
               <SortButton
                 active={sortBy === 'active'}
                 onClick={() => setSortBy('active')}
                 icon={Sparkles}
-                label="Active"
+                label={t('pages.people.sort.active')}
               />
               <SortButton
                 active={sortBy === 'recent'}
                 onClick={() => setSortBy('recent')}
                 icon={Users}
-                label="New"
+                label={t('pages.people.sort.recent')}
               />
             </div>
           </div>
 
           {/* Stats Banner */}
           <div className="mb-8 grid gap-4 sm:grid-cols-3">
-            <StatCard label="Total Creators" value={creators.length} icon={Users} color="blue" />
             <StatCard
-              label="Total Vibelogs"
+              label={t('pages.people.stats.creators')}
+              value={creators.length}
+              icon={Users}
+              color="blue"
+            />
+            <StatCard
+              label={t('pages.people.stats.vibelogs')}
               value={creators.reduce((sum, c) => sum + c.total_vibelogs, 0)}
               icon={Sparkles}
               color="violet"
             />
             <StatCard
-              label="Total Views"
+              label={t('pages.people.stats.views')}
               value={formatNumber(creators.reduce((sum, c) => sum + c.total_views, 0))}
               icon={TrendingUp}
               color="electric"
@@ -261,11 +268,11 @@ export default function PeoplePage() {
                   <Search className="h-12 w-12 text-muted-foreground" />
                 </div>
               </div>
-              <h2 className="mb-2 text-xl font-semibold">No creators found</h2>
+              <h2 className="mb-2 text-xl font-semibold">{t('pages.people.empty.title')}</h2>
               <p className="text-muted-foreground">
                 {searchQuery
-                  ? `No creators match "${searchQuery}"`
-                  : 'Be the first to create a vibelog!'}
+                  ? t('pages.people.empty.filtered', { query: searchQuery })
+                  : t('pages.people.empty.default')}
               </p>
             </div>
           )}

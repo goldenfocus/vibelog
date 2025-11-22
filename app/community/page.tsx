@@ -51,14 +51,14 @@ export default function Community() {
       const response = await fetch('/api/get-vibelogs?limit=50');
 
       if (!response.ok) {
-        throw new Error('Failed to fetch vibelogs');
+        throw new Error(t('pages.community.error'));
       }
 
       const data = await response.json();
       setVibelogs(data.vibelogs || []);
     } catch (err) {
       console.error('Error fetching vibelogs:', err);
-      setError('Failed to load vibelogs');
+      setError(t('pages.community.error'));
     } finally {
       setLoading(false);
     }
@@ -92,32 +92,30 @@ export default function Community() {
             {loading && (
               <div className="flex items-center justify-center py-16">
                 <div className="h-8 w-8 animate-spin rounded-full border-4 border-electric border-t-transparent"></div>
-                <span className="ml-3 text-muted-foreground">Loading vibelogs...</span>
+                <span className="ml-3 text-muted-foreground">{t('pages.community.loading')}</span>
               </div>
             )}
 
             {error && (
               <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-6 text-center">
-                <p className="text-red-500">{error}</p>
+                <p className="text-red-500">{t('pages.community.error')}</p>
                 <button
                   onClick={fetchVibelogs}
                   className="mt-4 rounded-lg bg-electric px-4 py-2 font-medium text-white transition-colors hover:bg-electric-glow"
                 >
-                  Try Again
+                  {t('buttons.retry')}
                 </button>
               </div>
             )}
 
             {!loading && !error && vibelogs.length === 0 && (
               <div className="rounded-2xl border border-border/20 bg-card p-12 text-center">
-                <p className="text-xl text-muted-foreground">
-                  No vibelogs yet. Be the first to create one!
-                </p>
+                <p className="text-xl text-muted-foreground">{t('pages.community.empty')}</p>
                 <button
                   onClick={() => router.push('/')}
                   className="mt-6 rounded-lg bg-electric px-6 py-3 font-medium text-white transition-colors hover:bg-electric-glow"
                 >
-                  Create Vibelog
+                  {t('pages.community.create')}
                 </button>
               </div>
             )}

@@ -10,7 +10,12 @@
     "closeMenu": "Close menu",
     "accountMenu": "Account menu",
     "dashboard": "Dashboard",
-    "signIn": "登录"
+    "signIn": "登录",
+    "loading": "正在加载导航"
+  },
+  "common": {
+    "loading": "加载中...",
+    "retry": "重试"
   },
   "hero": {
     "title": {
@@ -42,7 +47,40 @@
     "edit": "编辑",
     "save": "保存",
     "share": "分享",
-    "recordNew": "录制新内容"
+    "recordNew": "录制新内容",
+    "manage": "管理",
+    "delete": "删除",
+    "remix": "重新创作",
+    "listen": "收听",
+    "pause": "暂停",
+    "generating": "正在生成...",
+    "shareOnX": "分享到 X"
+  },
+  "editor": {
+    "titleLabel": "标题",
+    "contentLabel": "内容（Markdown）",
+    "teaserLabel": "摘要（可选）",
+    "regenerateWithAI": "使用 AI 重写",
+    "toneLabel": "语气",
+    "additionalInstructions": "其他说明（可选）",
+    "regenerateText": "重写文本",
+    "regenerating": "正在重写...",
+    "tones": {
+      "professional": "专业",
+      "casual": "随意",
+      "humorous": "幽默",
+      "inspiring": "鼓舞",
+      "analytical": "分析",
+      "storytelling": "叙事"
+    }
+  },
+  "home": {
+    "modes": {
+      "text": "使用文本创建",
+      "audio": "使用音频创建",
+      "video": "使用视频创建",
+      "screen": "录制屏幕"
+    }
   },
   "features": {
     "input": {
@@ -76,6 +114,38 @@
   "meta": {
     "title": "VibeLog - 几秒钟从语音到博客",
     "description": "立即将您的声音转换为精美的博客文章。说出您的 vibe，AI 处理其余部分。一键发布到任何地方。"
+  },
+  "screenRecorder": {
+    "modalTitle": "屏幕录制",
+    "modalSubtitle": "可选摄像头叠加的屏幕录制，适合教程和演示。",
+    "clickToMove": "点击移动",
+    "live": "直播",
+    "screenReady": "屏幕已就绪",
+    "addCamera": "添加摄像头",
+    "removeCamera": "移除",
+    "recording": "正在录制屏幕...",
+    "capturing": "正在捕获屏幕",
+    "timeRemaining": "剩余 {{seconds}}秒",
+    "preview": "预览",
+    "idleTitle": "准备好捕捉灵感了吗？",
+    "idleSubtitle": "分享屏幕以开始",
+    "waitingForAccess": "正在等待屏幕权限...",
+    "uploading": "正在上传... {{percent}}%",
+    "uploaded": "录制已上传！",
+    "shareScreen": "分享屏幕",
+    "startRecording": "开始录制",
+    "stopRecording": "停止录制",
+    "retake": "重新录制",
+    "useRecording": "使用此录制",
+    "tryAgain": "再试一次",
+    "rec": "REC",
+    "errors": {
+      "generic": "无法访问屏幕",
+      "permissionDenied": "屏幕共享被拒绝。请允许访问屏幕。",
+      "notFound": "没有可共享的屏幕。",
+      "inUse": "屏幕正被其他应用使用。",
+      "cancelled": "屏幕共享已取消。"
+    }
   },
   "components": {
     "micRecorder": {
@@ -144,6 +214,56 @@
     "faq": {
       "title": "常见问题",
       "subtitle": "关于将您的声音转换为内容的一切需要了解的信息。",
+      "items": [
+        {
+          "question": "什么是 vibelog.io？⚡",
+          "answer": "点击录制，说出你的想法，我们将其变成精美文章——标题、分段，一应俱全。✨"
+        },
+        {
+          "question": "支持哪些语言？",
+          "answer": "50+ 并持续增加。用你的声音为世界创作。🌍"
+        },
+        {
+          "question": "转录有多准确？",
+          "answer": "创作者级别的准确度，随着上下文提升，你也能快速调整。"
+        },
+        {
+          "question": "我可以编辑帖子吗？",
+          "answer": "当然——发布前完全掌控。"
+        },
+        {
+          "question": "免费计划包含什么？",
+          "answer": "无限录音、基础润色、5 分钟时长、水印和社区。"
+        },
+        {
+          "question": "Influencer（$12/月）有什么？",
+          "answer": "30 分钟时长、无水印、优先 AI、社交集成、自动发布、模板、分析、邮件支持。"
+        },
+        {
+          "question": "Marketing Agency（$99/月）呢？",
+          "answer": "无限时长、团队、品牌定制、自定义域名、高级分析、排程、API、优先电话支持、专属经理。"
+        },
+        {
+          "question": "我可以录多久？",
+          "answer": "免费 5 分钟 • Influencer 30 分钟 • Agency 无限制。"
+        },
+        {
+          "question": "我可以发布到哪里？",
+          "answer": "博客和网站、LinkedIn、Medium、WordPress、X、IG、TikTok、FB、YouTube Shorts、WhatsApp、Telegram、Slack、邮件……等等 📢"
+        },
+        {
+          "question": "我的数据安全吗？",
+          "answer": "是的——加密、私密、属于你。"
+        },
+        {
+          "question": "在手机上能用吗？",
+          "answer": "可以。手机效果很好。原生应用正在开发中。📱"
+        },
+        {
+          "question": "团队或定制需求？",
+          "answer": "Agency 计划涵盖——或者联系我们获取定制方案。"
+        }
+      ],
       "questions": {
         "howItWorks": {
           "question": "vibelog.io 是如何工作的？",
@@ -162,6 +282,19 @@
         "title": "还有问题吗？",
         "description": "找不到您要找的答案？我们的团队随时为您提供帮助。",
         "button": "联系支持"
+      },
+      "form": {
+        "nameLabel": "姓名",
+        "emailLabel": "邮箱",
+        "messageLabel": "消息",
+        "namePlaceholder": "你的名字",
+        "emailPlaceholder": "you@email.com",
+        "messagePlaceholder": "嗨 VibeLog 团队，我有个问题关于...",
+        "sendMessage": "发送消息",
+        "sending": "正在发送...",
+        "sentTitle": "消息已发送！✨",
+        "sentSubtitle": "我们会尽快回复你。",
+        "sendAnother": "再发一条消息"
       }
     },
     "pricing": {
@@ -282,6 +415,10 @@
     "community": {
       "title": "社区",
       "subtitle": "加入正在使用基于语音的工作流程进行构建的创作者。",
+      "loading": "正在加载 vibelogs...",
+      "error": "加载 vibelogs 失败",
+      "empty": "还没有 vibelog。成为第一个创建的人吧！",
+      "create": "创建 Vibelog",
       "announcements": {
         "title": "公告",
         "description": "最新更新和发布说明。"
@@ -294,7 +431,24 @@
     "people": {
       "title": "人员",
       "subtitle": "发现创作者和他们最新的基于语音的帖子。",
-      "creatorBio": "简介和最近活动。"
+      "creatorBio": "简介和最近活动。",
+      "badge": "发现优秀创作者",
+      "searchPlaceholder": "搜索创作者、vibelog...",
+      "sort": {
+        "popular": "热门",
+        "active": "活跃",
+        "recent": "最新"
+      },
+      "stats": {
+        "creators": "创作者总数",
+        "vibelogs": "Vibelog 总数",
+        "views": "总浏览量"
+      },
+      "empty": {
+        "title": "未找到创作者",
+        "filtered": "没有创作者匹配“{{query}}”",
+        "default": "成为第一个创建 vibelog 的人吧！"
+      }
     }
   },
   "auth": {
@@ -311,6 +465,205 @@
     "newVibelog": "新建Vibelog",
     "account": "账户详情",
     "signedInWith": "登录方式",
-    "comingSoon": "您的vibelog库即将推出 — 轻松保存、整理和发布"
+    "comingSoon": "您的vibelog库即将推出 — 轻松保存、整理和发布",
+    "screenShare": "屏幕分享",
+    "yourVibelogs": "您的 Vibelogs",
+    "viewAll": "查看全部",
+    "loadingVibelogs": "正在加载您的 vibelogs...",
+    "noVibelogsTitle": "您还没有创建 vibelog",
+    "noVibelogsDescription": "点击上方“新建Vibelog”来录制第一个吧 🎤"
+  },
+  "buttons": {
+    "cancel": "取消",
+    "delete": "删除",
+    "retry": "重试"
+  },
+  "toasts": {
+    "comments": {
+      "empty": "Comment cannot be empty",
+      "updated": "Comment updated!",
+      "deleted": "Comment deleted!",
+      "updateFailed": "Failed to update comment",
+      "deleteFailed": "Failed to delete comment",
+      "transcriptionReady": "Transcription ready! Review and edit before posting.",
+      "transcriptionFailed": "{{error}}. You can still post the audio without a transcript.",
+      "enhanced": "✨ Comment enhanced with {{tone}} tone!",
+      "enhanceFailed": "Failed to enhance comment",
+      "signInRequired": "Please sign in to comment",
+      "enterComment": "Please enter a comment",
+      "recordVoice": "Please record a voice comment",
+      "enterOrRecord": "Please enter a comment or re-record",
+      "recordVideo": "Please record a video comment",
+      "live": "Your vibe comment is live! 🔥",
+      "voiceLive": "Your voice vibe is live! 🎤✨",
+      "videoLive": "Your video vibe is live! 🎥✨",
+      "submitFailed": "Failed to submit comment",
+      "microphoneDenied": "Microphone permission denied",
+      "cameraFailed": "Failed to access camera. Please check permissions.",
+      "cameraNotReady": "Camera not ready",
+      "maxRecordingTime": "Maximum recording time reached (60 seconds)",
+      "recordingFailed": "Failed to start recording.",
+      "noTranscript": "No transcript to enhance"
+    },
+    "vibelogs": {
+      "deleted": "Vibelog deleted successfully",
+      "deleteFailed": "Failed to delete vibelog",
+      "noAudio": "No audio available for this vibelog",
+      "audioNotAvailable": "Audio not available for this vibelog",
+      "shareLinkFailed": "Failed to generate share link",
+      "shareXFailed": "Failed to share on X",
+      "signInToLike": "Please sign in to like vibelogs",
+      "notFound": "Vibelog not found",
+      "likeFailed": "Failed to update like",
+      "networkError": "Network error. Please try again.",
+      "published": "Vibelog published! Redirecting...",
+      "publishedDescription": "You can regenerate with different tones on the next page",
+      "saveFailed": "Failed to save vibelog. Please try again.",
+      "updated": "Vibelog updated successfully!",
+      "updateFailed": "Failed to save changes",
+      "imageUploaded": "Image uploaded successfully!",
+      "imageUploadFailed": "Failed to upload image",
+      "imageRegenerated": "Image regenerated successfully!",
+      "imageRegenerateFailed": "Failed to regenerate image",
+      "textRegenerated": "Text regenerated successfully!",
+      "textRegenerateFailed": "Failed to regenerate text",
+      "aiSuggestionsApplied": "AI suggestions applied! Click \"Save Changes\" to persist."
+    },
+    "reactions": {
+      "signInRequired": "Please sign in to react",
+      "addFailed": "Failed to add reaction"
+    },
+    "attachments": {
+      "onlyMedia": "Only images and videos are allowed",
+      "fileTooLarge": "File too large. Max {{maxSize}}MB for {{type}}",
+      "uploaded": "{{type}} uploaded successfully!",
+      "uploadFailed": "Upload failed",
+      "maxFiles": "Maximum {{max}} files allowed. You can add {{remaining}} more.",
+      "removed": "Attachment removed",
+      "filterApplied": "Filter \"{{name}}\" applied!"
+    },
+    "notifications": {
+      "allMarkedRead": "All notifications marked as read",
+      "markReadFailed": "Failed to mark all as read"
+    }
+  },
+  "placeholders": {
+    "comment": "Write your comment...",
+    "commentEnhance": "e.g., 'Make it more concise' or 'Add an emoji'",
+    "transcriptEdit": "Edit your transcription...",
+    "vibeBrain": "Ask Vibe Brain anything...",
+    "systemPrompt": "Enter the system prompt for Vibe Brain...",
+    "ragSearch": "Search vibelogs about AI...",
+    "memoryPattern": "Regular expression pattern...",
+    "memoryExample": "I love building AI products...",
+    "imagePrompt": "e.g., make it more colorful, add a sunset, cinematic style",
+    "emojiSearch": "Search emoji...",
+    "chatFollowUp": "Type a follow-up, e.g. \"Make the intro more playful\"",
+    "searchVibelogs": "Search vibelogs...",
+    "vibelogTitle": "Title (optional)",
+    "vibelogContent": "Write your thoughts...",
+    "vibelogTitleEdit": "Enter vibelog title...",
+    "vibelogContentEdit": "Edit your vibelog content...",
+    "teaserText": "Optional teaser text for previews...",
+    "toneSelect": "Select tone (optional)",
+    "tonePrompt": "e.g., make this hilarious but don't talk about my mom",
+    "transcriptContent": "Edit your transcript content...",
+    "transcriptDuringSilence": "Your transcript appears here... (editable during silence)",
+    "autoPostTemplate": "Example: New vibelog! {title}\\n\\n{content}\\n\\nCheck it out: {url}",
+    "username": "your-username",
+    "displayName": "How should we call you?",
+    "bio": "Tell the community about yourself..."
+  },
+  "ariaLabels": {
+    "memberCarousel": "Member carousel",
+    "previousMembers": "Previous members",
+    "nextMembers": "Next members",
+    "goToMember": "Go to member {{index}}",
+    "openVibeBrain": "Open Vibe Brain",
+    "switchCamera": "Switch camera",
+    "vibelogCarousel": "Vibelog carousel",
+    "previousVibelogs": "Previous vibelogs",
+    "nextVibelogs": "Next vibelogs",
+    "goToVibelog": "Go to vibelog {{index}}",
+    "commentCarousel": "Comment carousel",
+    "goToComment": "Go to comment {{index}}",
+    "pauseNarration": "Pause AI narration",
+    "playNarration": "Play AI narration",
+    "pauseOriginal": "Pause original audio",
+    "playOriginal": "Play original audio",
+    "moreReactions": "{{count}} more reactions",
+    "addReaction": "Add reaction",
+    "reactWith": "React with {{emoji}}",
+    "playMedia": "Play {{type}}",
+    "deleteVibelog": "Delete vibelog",
+    "loadingNavigation": "Loading navigation",
+    "openNavigation": "Open navigation menu",
+    "openAccountMenu": "Open account menu",
+    "notifications": "Notifications",
+    "notificationsUnread": "Notifications ({{count}} unread)",
+    "closeNotifications": "Close notifications",
+    "xLogo": "X Logo",
+    "editFilters": "Edit filters",
+    "removeAttachment": "Remove attachment",
+    "removeVideo": "Remove video",
+    "selectVideo": "Select video file",
+    "closePlayer": "Close player",
+    "loadingAudio": "Loading audio",
+    "pauseAudio": "Pause audio",
+    "playAudio": "Play audio",
+    "toneSettings": "Tone settings",
+    "closeSettings": "Close settings",
+    "closeTranscription": "Close transcription editor",
+    "closeEditor": "Close editor",
+    "closeUpgrade": "Close upgrade prompt",
+    "enableAutoPost": "Enable auto-posting to X",
+    "selectTone": "Select tone",
+    "regenerateVibelog": "Regenerate vibelog",
+    "closeModal": "Close"
+  },
+  "altText": {
+    "banner": "{{name}}'s banner",
+    "avatar": "{{name}}",
+    "vibelogTitle": "{{title}}",
+    "authorAvatar": "{{name}}",
+    "coverPreview": "Cover preview",
+    "cardBackground": "Card background",
+    "commentAttachment": "Comment attachment",
+    "attachment": "Attachment {{index}}",
+    "filter": "{{name}}",
+    "preview": "Preview",
+    "imageType": "{{type}}"
+  },
+  "titles": {
+    "account": "Account",
+    "pastConversations": "Past conversations",
+    "newConversation": "New conversation",
+    "minimize": "Minimize",
+    "close": "Close",
+    "personalityTones": "Personality Tones",
+    "systemPrompt": "System Prompt",
+    "ragSettings": "RAG Settings",
+    "modelSettings": "Model Settings",
+    "memoryExtraction": "Memory Extraction",
+    "moreOptions": "More options",
+    "pause": "Pause",
+    "listen": "Listen",
+    "edit": "Edit",
+    "remix": "Remix",
+    "copied": "Copied!",
+    "copy": "Copy",
+    "unlike": "Unlike",
+    "like": "Like",
+    "signInToLike": "Sign in to like",
+    "viewComments": "View comments",
+    "shareOnX": "Share on X",
+    "share": "Share",
+    "markAllRead": "Mark all as read",
+    "applyFilters": "Apply filters",
+    "contentSettings": "Content settings"
+  },
+  "confirmations": {
+    "deleteComment": "Are you sure you want to delete this comment?",
+    "deleteVibelog": "Are you sure you want to delete this VibeLog? This action cannot be undone."
   }
 }

@@ -29,61 +29,9 @@ export default function FAQ() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const faqData: FAQItem[] = [
-    {
-      question: 'What is vibelog.io? ⚡',
-      answer:
-        'Hit record, speak your truth, we turn it into a polished post—headlines, sections, the works. ✨',
-    },
-    {
-      question: 'Which languages do you support?',
-      answer: '50+ and counting. Create for the world, in your voice. 🌍',
-    },
-    {
-      question: 'How accurate is the transcription?',
-      answer: 'Creator-grade accurate, improves with context, and you can tweak anything fast.',
-    },
-    {
-      question: 'Can I edit the post?',
-      answer: 'Absolutely—full control before you publish.',
-    },
-    {
-      question: "What's in the Free plan?",
-      answer:
-        'Unlimited recordings, core polish, 5-minute takes, watermark, and the community ride.',
-    },
-    {
-      question: 'What do I get with Influencer ($12/mo)?',
-      answer:
-        '30-minute takes, no watermark, priority AI, social plugs, auto-publish, templates, analytics, email support.',
-    },
-    {
-      question: 'What about Marketing Agency ($99/mo)?',
-      answer:
-        'Unlimited time, teams, brand theming, custom domain, advanced analytics, scheduling, API, priority phone, dedicated manager.',
-    },
-    {
-      question: 'How long can I record?',
-      answer: 'Free 5 min • Influencer 30 min • Agency unlimited.',
-    },
-    {
-      question: 'Where can I publish?',
-      answer:
-        'Blogs & sites, LinkedIn, Medium, WordPress, X, IG, TikTok, FB, YouTube Shorts, WhatsApp, Telegram, Slack, email… and more 📢',
-    },
-    {
-      question: 'Is my data safe?',
-      answer: 'Yes—encrypted, private, yours.',
-    },
-    {
-      question: 'Does it work on mobile?',
-      answer: 'Yep. Looks great on phones. Native apps are brewing. 📱',
-    },
-    {
-      question: 'Team or custom needs?',
-      answer: 'Agency has you covered—or ping us for a custom fit.',
-    },
-  ];
+  const faqData: FAQItem[] = Array.isArray(t('pages.faq.items') as unknown as FAQItem[])
+    ? (t('pages.faq.items') as unknown as FAQItem[]) || []
+    : [];
 
   const toggleItem = (index: number) => {
     const newOpenItems = new Set(openItems);
@@ -160,7 +108,7 @@ export default function FAQ() {
           </div>
 
           {/* FAQ Accordion */}
-          <h2 className="sr-only">Frequently Asked Questions</h2>
+          <h2 className="sr-only">{t('pages.faq.title')}</h2>
           <div className="mb-16 space-y-4">
             {Array.isArray(faqData) &&
               faqData.map((item, index) => {
@@ -237,7 +185,7 @@ export default function FAQ() {
                         htmlFor="name"
                         className="mb-2 block text-sm font-medium text-foreground"
                       >
-                        Name
+                        {t('pages.faq.form.nameLabel')}
                       </label>
                       <input
                         type="text"
@@ -247,7 +195,7 @@ export default function FAQ() {
                         onChange={handleInputChange}
                         required
                         className="w-full rounded-xl border border-border/20 bg-background/50 px-4 py-3 text-foreground placeholder-muted-foreground backdrop-blur-sm transition-colors focus:border-electric focus:outline-none focus:ring-2 focus:ring-electric/20"
-                        placeholder="Your name"
+                        placeholder={t('pages.faq.form.namePlaceholder')}
                       />
                     </div>
                     <div>
@@ -255,7 +203,7 @@ export default function FAQ() {
                         htmlFor="email"
                         className="mb-2 block text-sm font-medium text-foreground"
                       >
-                        Email
+                        {t('pages.faq.form.emailLabel')}
                       </label>
                       <input
                         type="email"
@@ -265,7 +213,7 @@ export default function FAQ() {
                         onChange={handleInputChange}
                         required
                         className="w-full rounded-xl border border-border/20 bg-background/50 px-4 py-3 text-foreground placeholder-muted-foreground backdrop-blur-sm transition-colors focus:border-electric focus:outline-none focus:ring-2 focus:ring-electric/20"
-                        placeholder="your@email.com"
+                        placeholder={t('pages.faq.form.emailPlaceholder')}
                       />
                     </div>
                   </div>
@@ -274,7 +222,7 @@ export default function FAQ() {
                       htmlFor="message"
                       className="mb-2 block text-sm font-medium text-foreground"
                     >
-                      Message
+                      {t('pages.faq.form.messageLabel')}
                     </label>
                     <textarea
                       id="message"
@@ -284,7 +232,7 @@ export default function FAQ() {
                       required
                       rows={4}
                       className="w-full resize-none rounded-xl border border-border/20 bg-background/50 px-4 py-3 text-foreground placeholder-muted-foreground backdrop-blur-sm transition-colors focus:border-electric focus:outline-none focus:ring-2 focus:ring-electric/20"
-                      placeholder="Hi VibeLog team, I have a question about..."
+                      placeholder={t('pages.faq.form.messagePlaceholder')}
                     />
                   </div>
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -293,7 +241,7 @@ export default function FAQ() {
                       onClick={() => setShowForm(false)}
                       className="px-6 py-3 text-muted-foreground transition-colors hover:text-foreground"
                     >
-                      Cancel
+                      {t('buttons.cancel')}
                     </button>
                     <button
                       type="submit"
@@ -303,12 +251,12 @@ export default function FAQ() {
                       {isSubmitting ? (
                         <>
                           <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white" />
-                          Sending...
+                          {t('pages.faq.form.sending')}
                         </>
                       ) : (
                         <>
                           <Send className="h-5 w-5" />
-                          Send Message
+                          {t('pages.faq.form.sendMessage')}
                         </>
                       )}
                     </button>
@@ -333,8 +281,10 @@ export default function FAQ() {
                       />
                     </svg>
                   </div>
-                  <h3 className="mb-2 text-xl font-semibold text-foreground">Message sent! ✨</h3>
-                  <p className="mb-6 text-muted-foreground">We&apos;ll get back to you soon.</p>
+                  <h3 className="mb-2 text-xl font-semibold text-foreground">
+                    {t('pages.faq.form.sentTitle')}
+                  </h3>
+                  <p className="mb-6 text-muted-foreground">{t('pages.faq.form.sentSubtitle')}</p>
                   <button
                     onClick={() => {
                       setSubmitted(false);
@@ -342,7 +292,7 @@ export default function FAQ() {
                     }}
                     className="text-electric transition-colors hover:text-electric-glow"
                   >
-                    Send another message
+                    {t('pages.faq.form.sendAnother')}
                   </button>
                 </div>
               )}

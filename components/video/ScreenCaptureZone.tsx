@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 
+import { useI18n } from '@/components/providers/I18nProvider';
 import { useVideoUpload } from '@/hooks/useVideoUpload';
 import { AudioMixer } from '@/lib/media/AudioMixer';
 import { StreamCompositor, PipPosition } from '@/lib/media/StreamCompositor';
@@ -78,6 +79,7 @@ export function ScreenCaptureZone({
   isPremium = false,
   enableCameraPip = true,
 }: ScreenCaptureZoneProps) {
+  const { t } = useI18n();
   const { uploadVideo, uploadProgress: uploadProgressState } = useVideoUpload();
 
   const [status, setStatus] = useState<
@@ -215,23 +217,29 @@ export function ScreenCaptureZone({
       setStatus('screen-ready');
     } catch (err: unknown) {
       hasRequestedScreen.current = false;
-      let errorDetails = 'Failed to access screen';
+      let errorKey: string | null = 'screenRecorder.errors.generic';
 
       if (err instanceof Error) {
         if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-          errorDetails = 'Screen share permission denied. Please allow screen access.';
+          errorKey = 'screenRecorder.errors.permissionDenied';
         } else if (err.name === 'NotFoundError') {
-          errorDetails = 'No screen available to share.';
+          errorKey = 'screenRecorder.errors.notFound';
         } else if (err.name === 'NotReadableError') {
-          errorDetails = 'Screen is already in use by another application.';
+          errorKey = 'screenRecorder.errors.inUse';
         } else if (err.name === 'AbortError') {
-          errorDetails = 'Screen share was cancelled.';
+          errorKey = 'screenRecorder.errors.cancelled';
         } else {
-          errorDetails = err.message;
+          errorKey = err.message ? undefined : 'screenRecorder.errors.generic';
         }
       }
 
-      setError(errorDetails);
+      setError(
+        errorKey
+          ? t(errorKey)
+          : err instanceof Error
+            ? err.message
+            : t('screenRecorder.errors.generic')
+      );
       setStatus('error');
     }
   };
@@ -617,12 +625,14 @@ export function ScreenCaptureZone({
                     />
                     {/* Hover overlay with position hint */}
                     <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
-                      <span className="text-xs font-medium text-white">Click to move</span>
+                      <span className="text-xs font-medium text-white">
+                        {t('screenRecorder.clickToMove')}
+                      </span>
                     </div>
                     {/* Live indicator */}
                     <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-green-500/90 px-2 py-0.5 text-[10px] font-bold text-white">
                       <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
-                      LIVE
+                      {t('screenRecorder.live')}
                     </div>
                   </div>
                 </motion.div>
@@ -636,7 +646,7 @@ export function ScreenCaptureZone({
               className="absolute left-4 top-4 flex items-center gap-2 rounded-full bg-green-500/90 px-3 py-1.5 text-sm font-medium text-white shadow-lg backdrop-blur-sm"
             >
               <CheckCircle className="h-4 w-4" />
-              <span>Screen Ready</span>
+              <span>{t('screenRecorder.screenReady')}</span>
             </motion.div>
 
             {/* Add/Remove Camera Button (floating) */}
@@ -653,7 +663,7 @@ export function ScreenCaptureZone({
                     className="flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white backdrop-blur-md transition-all hover:scale-105 hover:bg-white/20"
                   >
                     <Camera className="h-4 w-4" />
-                    Add Camera
+                    {t('screenRecorder.addCamera')}
                   </button>
                 ) : (
                   <button
@@ -661,7 +671,7 @@ export function ScreenCaptureZone({
                     className="flex items-center gap-2 rounded-full bg-red-500/80 px-4 py-2 text-sm font-medium text-white backdrop-blur-md transition-all hover:scale-105 hover:bg-red-500"
                   >
                     <CameraOff className="h-4 w-4" />
-                    Remove
+                    {t('screenRecorder.removeCamera')}
                   </button>
                 )}
               </motion.div>
@@ -703,9 +713,9 @@ export function ScreenCaptureZone({
                 animate={{ opacity: 1 }}
                 className="mt-6 text-lg font-medium text-white"
               >
-                Recording your screen...
+                {t('screenRecorder.recording')}
               </motion.p>
-              <p className="mt-1 text-sm text-gray-400">Your screen is being captured</p>
+              <p className="mt-1 text-sm text-gray-400">{t('screenRecorder.capturing')}</p>
             </div>
 
             {/* Camera PiP during recording */}
@@ -754,7 +764,9 @@ export function ScreenCaptureZone({
                 animate={{ opacity: 1, y: 0 }}
                 className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-orange-500/90 px-4 py-2 text-sm font-medium text-white shadow-lg"
               >
-                {maxDurationSeconds - recordingTime}s remaining
+                {t('screenRecorder.timeRemaining', {
+                  seconds: maxDurationSeconds - recordingTime,
+                })}
               </motion.div>
             )}
           </motion.div>
@@ -770,7 +782,7 @@ export function ScreenCaptureZone({
             <video src={videoBlobUrlRef.current} controls className="h-full w-full" />
             <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-sm font-medium text-white backdrop-blur-sm">
               <Sparkles className="h-4 w-4" />
-              <span>Preview</span>
+              <span>{t('screenRecorder.preview')}</span>
             </div>
           </motion.div>
         )}
@@ -790,10 +802,10 @@ export function ScreenCaptureZone({
               <Monitor className="h-10 w-10 text-white" />
             </motion.div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              Ready to capture magic?
+              {t('screenRecorder.idleTitle')}
             </h3>
             <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-              Share your screen to get started
+              {t('screenRecorder.idleSubtitle')}
             </p>
           </motion.div>
         )}
@@ -812,7 +824,7 @@ export function ScreenCaptureZone({
               <RefreshCw className="h-12 w-12 text-blue-500" />
             </motion.div>
             <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-              Waiting for screen access...
+              {t('screenRecorder.waitingForAccess')}
             </p>
           </motion.div>
         )}
@@ -831,7 +843,7 @@ export function ScreenCaptureZone({
               <RefreshCw className="h-12 w-12 text-green-500" />
             </motion.div>
             <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-              Uploading... {uploadProgressState?.percentage || 0}%
+              {t('screenRecorder.uploading', { percent: uploadProgressState?.percentage || 0 })}
             </p>
             {/* Progress bar */}
             <div className="mt-4 h-2 w-48 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
@@ -860,7 +872,7 @@ export function ScreenCaptureZone({
               <CheckCircle className="h-12 w-12 text-white" />
             </motion.div>
             <p className="mt-4 text-lg font-semibold text-green-600 dark:text-green-400">
-              Recording uploaded!
+              {t('screenRecorder.uploaded')}
             </p>
           </motion.div>
         )}
@@ -895,7 +907,7 @@ export function ScreenCaptureZone({
             className="flex min-w-[200px] flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4 font-semibold text-white shadow-lg transition-shadow hover:shadow-xl"
           >
             <Monitor className="h-5 w-5" />
-            Share Screen
+            {t('screenRecorder.shareScreen')}
           </motion.button>
         )}
 
@@ -907,7 +919,7 @@ export function ScreenCaptureZone({
             className="flex min-w-[200px] flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-500 to-red-600 px-6 py-4 font-semibold text-white shadow-lg transition-shadow hover:shadow-xl"
           >
             <Video className="h-5 w-5" />
-            Start Recording
+            {t('screenRecorder.startRecording')}
           </motion.button>
         )}
 
@@ -919,7 +931,7 @@ export function ScreenCaptureZone({
             className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gray-900 px-6 py-4 font-semibold text-white shadow-lg transition-shadow hover:bg-black hover:shadow-xl dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100"
           >
             <StopCircle className="h-5 w-5" />
-            Stop Recording
+            {t('screenRecorder.stopRecording')}
           </motion.button>
         )}
 
@@ -932,7 +944,7 @@ export function ScreenCaptureZone({
               className="flex items-center gap-2 rounded-xl border border-gray-300 px-6 py-3 font-medium transition-colors hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800"
             >
               <X className="h-5 w-5" />
-              Retake
+              {t('screenRecorder.retake')}
             </motion.button>
 
             <motion.button
@@ -942,7 +954,7 @@ export function ScreenCaptureZone({
               className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 px-6 py-4 font-semibold text-white shadow-lg transition-shadow hover:shadow-xl"
             >
               <Check className="h-5 w-5" />
-              Use This Recording
+              {t('screenRecorder.useRecording')}
             </motion.button>
           </>
         )}
@@ -955,7 +967,7 @@ export function ScreenCaptureZone({
             className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gray-100 px-6 py-4 font-semibold text-gray-900 transition-colors hover:bg-gray-200 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700"
           >
             <RefreshCw className="h-5 w-5" />
-            Try Again
+            {t('screenRecorder.tryAgain')}
           </motion.button>
         )}
       </motion.div>

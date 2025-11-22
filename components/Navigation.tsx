@@ -237,7 +237,7 @@ export default function Navigation() {
               <>
                 <button
                   disabled
-                  aria-label="Loading navigation"
+                  aria-label={t('navigation.loading')}
                   className="flex h-10 w-10 items-center justify-center rounded-lg border border-border/40 bg-muted/60 text-foreground lg:hidden"
                 >
                   <Menu className="h-5 w-5" />
@@ -264,7 +264,7 @@ export default function Navigation() {
                         setIsMobileNavOpen(true);
                         e.currentTarget.blur(); // Prevent aria-hidden focus warning
                       }}
-                      aria-label="Open navigation menu"
+                      aria-label={t('navigation.openMenu')}
                       className="flex h-10 w-10 items-center justify-center rounded-lg border border-border/40 bg-muted/60 text-foreground lg:hidden"
                     >
                       <Menu className="h-5 w-5" />
@@ -279,7 +279,7 @@ export default function Navigation() {
                         setIsMobileUserOpen(true);
                         e.currentTarget.blur(); // Prevent aria-hidden focus warning
                       }}
-                      aria-label="Open account menu"
+                      aria-label={t('navigation.accountMenu')}
                       className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border/40 lg:hidden"
                       style={getAvatarContainerStyle(avatarUrl && !avatarError)}
                     >
@@ -304,7 +304,7 @@ export default function Navigation() {
                     {/* Not logged in: Show hamburger + sign in button */}
                     <button
                       onClick={() => setIsMobileNavOpen(true)}
-                      aria-label="Open navigation menu"
+                      aria-label={t('navigation.openMenu')}
                       className="flex h-10 w-10 items-center justify-center rounded-lg border border-border/40 bg-muted/60 text-foreground lg:hidden"
                     >
                       <Menu className="h-5 w-5" />
