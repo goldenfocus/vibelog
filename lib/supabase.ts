@@ -1,8 +1,8 @@
 import { createBrowserClient } from '@supabase/ssr';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://example.supabase.co';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'mock-key';
 
 // Client-side Supabase client with Brave-compatible settings
 export const createClient = () =>

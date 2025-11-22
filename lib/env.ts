@@ -88,7 +88,12 @@ function validateEnv() {
       // Only throw on server - on client, log and return process.env as-is
       // This prevents the app from crashing if env vars weren't bundled at build time
       if (isServer) {
-        throw new Error(`Environment validation failed: ${errorMessages.join(', ')}`);
+        // In development, just warn instead of crashing to allow UI development
+        if (process.env.NODE_ENV === 'development') {
+          console.error('⚠️ Environment validation failed, but continuing for development...');
+        } else {
+          throw new Error(`Environment validation failed: ${errorMessages.join(', ')}`);
+        }
       }
       // Client: return the minimal object we attempted to validate so
       // consumers still get the inlined values.
