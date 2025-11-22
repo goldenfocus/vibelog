@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const { data: vibelog, error } = await supabase
     .from('vibelogs')
-    .select('seo_title, seo_description, title, cover_url, cover_image_url')
+    .select('seo_title, seo_description, title, cover_image_url')
     .eq('public_slug', slug)
     .single();
 
@@ -36,7 +36,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
-  const coverImage = vibelog.cover_url || vibelog.cover_image_url;
+  const coverImage = vibelog.cover_image_url;
 
   // Create unique metadata per vibelog
   const fallbackDescription =
