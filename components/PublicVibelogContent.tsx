@@ -73,7 +73,13 @@ export default function PublicVibelogContent({ vibelog }: PublicVibelogContentPr
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete vibelog');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('Delete failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData,
+        });
+        throw new Error(errorData.error || `Failed to delete (${response.status})`);
       }
 
       toast.success(t('toasts.vibelogs.deleted'));
@@ -81,7 +87,7 @@ export default function PublicVibelogContent({ vibelog }: PublicVibelogContentPr
       router.push('/dashboard');
     } catch (error) {
       console.error('Delete error:', error);
-      toast.error(t('toasts.vibelogs.deleteFailed'));
+      toast.error(error instanceof Error ? error.message : t('toasts.vibelogs.deleteFailed'));
     }
   };
 
