@@ -84,7 +84,7 @@ export default function ToneSettings({ disabled = false }: ToneSettingsProps) {
   // Close panel when clicking outside
   useEffect(() => {
     if (!isOpen) {
-      return;
+      return undefined;
     }
 
     const handleClickOutside = (event: MouseEvent) => {
@@ -112,7 +112,7 @@ export default function ToneSettings({ disabled = false }: ToneSettingsProps) {
   // Close on escape key
   useEffect(() => {
     if (!isOpen) {
-      return;
+      return undefined;
     }
 
     const handleEscape = (event: KeyboardEvent) => {

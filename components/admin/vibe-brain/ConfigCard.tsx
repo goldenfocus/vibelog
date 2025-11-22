@@ -29,7 +29,7 @@ export function ConfigCard({
   // Auto-save with debounce
   useEffect(() => {
     if (!isDirty) {
-      return;
+      return undefined;
     }
 
     if (saveTimeoutRef.current) {

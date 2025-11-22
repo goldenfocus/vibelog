@@ -57,6 +57,7 @@ export default function LikersPopover({
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
+    return undefined;
   }, [isOpen]);
 
   // Fetch likers when popover opens (only if not already loaded)

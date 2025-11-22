@@ -218,12 +218,44 @@ class Logger {
 
   /**
    * Send to error tracking service (Sentry, etc.)
+   *
+   * To enable Sentry integration:
+   * 1. Install: npm install @sentry/nextjs
+   * 2. Initialize Sentry in next.config.ts or instrumentation.ts
+   * 3. Uncomment the Sentry code below
    */
   private sendToErrorTracking(entry: LogEntry): void {
-    // TODO: Integrate with Sentry or similar service
-    // For now, just ensure it's logged to console
     if (entry.level >= LogLevel.ERROR) {
-      console.error('[ERROR_TRACKING]', JSON.stringify(entry));
+      // Sentry integration (uncomment when Sentry is installed)
+      // if (typeof window === 'undefined' && typeof require !== 'undefined') {
+      //   try {
+      //     const Sentry = require('@sentry/nextjs');
+      //     if (entry.error) {
+      //       Sentry.captureException(entry.error, {
+      //         level: entry.level === LogLevel.FATAL ? 'fatal' : 'error',
+      //         tags: { component: entry.context?.component },
+      //         extra: entry.context,
+      //       });
+      //     } else {
+      //       Sentry.captureMessage(entry.message, {
+      //         level: entry.level === LogLevel.FATAL ? 'fatal' : 'error',
+      //         tags: { component: entry.context?.component },
+      //         extra: entry.context,
+      //       });
+      //     }
+      //   } catch (e) {
+      //     // Sentry not available, fall through to console logging
+      //   }
+      // }
+
+      // Always log to console as fallback
+      if (isProd) {
+        // In production, use structured JSON logging
+        console.error(JSON.stringify(entry));
+      } else {
+        // In development, pretty print is already handled by prettyPrint()
+        // This is just a safety fallback
+      }
     }
   }
 
@@ -245,19 +277,37 @@ class Logger {
     this.log(LogLevel.WARN, message, context);
   }
 
-  error(message: string, contextOrError?: Record<string, unknown> | Error, error?: Error): void {
-    // Handle both signatures: error(msg, context, error) and error(msg, error)
+  error(
+    message: string,
+    contextOrError?: Record<string, unknown> | Error,
+    errorOrContext?: Error | Record<string, unknown>
+  ): void {
+    // Handle multiple signatures:
+    // - error(msg, error) - error only
+    // - error(msg, context, error) - context and error
+    // - error(msg, error, context) - error and context (for convenience)
     if (contextOrError instanceof Error) {
-      this.log(LogLevel.ERROR, message, undefined, contextOrError);
+      // Second param is Error
+      const context = errorOrContext && !(errorOrContext instanceof Error) ? errorOrContext : undefined;
+      this.log(LogLevel.ERROR, message, context, contextOrError);
     } else {
+      // Second param is context (or undefined)
+      const error = errorOrContext instanceof Error ? errorOrContext : undefined;
       this.log(LogLevel.ERROR, message, contextOrError, error);
     }
   }
 
-  fatal(message: string, contextOrError?: Record<string, unknown> | Error, error?: Error): void {
+  fatal(
+    message: string,
+    contextOrError?: Record<string, unknown> | Error,
+    errorOrContext?: Error | Record<string, unknown>
+  ): void {
+    // Handle multiple signatures (same as error method)
     if (contextOrError instanceof Error) {
-      this.log(LogLevel.FATAL, message, undefined, contextOrError);
+      const context = errorOrContext && !(errorOrContext instanceof Error) ? errorOrContext : undefined;
+      this.log(LogLevel.FATAL, message, context, contextOrError);
     } else {
+      const error = errorOrContext instanceof Error ? errorOrContext : undefined;
       this.log(LogLevel.FATAL, message, contextOrError, error);
     }
   }

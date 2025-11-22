@@ -15,13 +15,13 @@ export function useVibelogTransfer(userId: string | null | undefined) {
 
   useEffect(() => {
     if (!userId || transferred) {
-      return;
+      return undefined;
     }
 
     const sessionId = getSessionId();
     if (!sessionId) {
       setTransferred(true);
-      return;
+      return undefined;
     }
 
     let mounted = true;

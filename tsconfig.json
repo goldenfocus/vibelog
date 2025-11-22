@@ -7,19 +7,25 @@
         "./*"
       ]
     },
-    "noImplicitAny": false,
-    "noUnusedParameters": false,
+    // Incremental strictness improvements
+    // Start with safer defaults while maintaining compatibility
+    "noImplicitAny": false, // Will enable incrementally via tsconfig.strict.json
+    "noUnusedParameters": false, // Warns in ESLint instead
     "skipLibCheck": true,
     "allowJs": true,
-    "noUnusedLocals": false,
-    "strictNullChecks": false,
+    "noUnusedLocals": false, // Warns in ESLint instead
+    "strictNullChecks": false, // Will enable incrementally
     "target": "ES2017",
     "lib": [
       "dom",
       "dom.iterable",
       "esnext"
     ],
-    "strict": false,
+    "strict": false, // Incrementally enabling via tsconfig.strict.json for new files
+    // Improved type checking without breaking existing code
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": false, // Can enable later for stricter array access
     "noEmit": true,
     "incremental": true,
     "module": "esnext",

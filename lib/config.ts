@@ -39,23 +39,23 @@ export const config = {
 
   // Rate limiting - AGGRESSIVE COST PROTECTION
   // Limits are per-user per-day to prevent cost spikes ($50/day circuit breaker)
-  // TODO: Lower these after testing! Currently set high for testing.
+  // Production values: balanced between user experience and cost control
   rateLimits: {
     transcription: {
-      anonymous: { limit: 100, window: '24 h' }, // TESTING: was 10
-      authenticated: { limit: 1000, window: '24 h' }, // TESTING: was 100
+      anonymous: { limit: 10, window: '24 h' }, // Free tier: 10 transcriptions/day
+      authenticated: { limit: 100, window: '24 h' }, // Premium tier: 100 transcriptions/day
     },
     generation: {
-      anonymous: { limit: 100, window: '24 h' }, // TESTING: was 5
-      authenticated: { limit: 1000, window: '24 h' }, // TESTING: was 50
+      anonymous: { limit: 5, window: '24 h' }, // Free tier: 5 generations/day
+      authenticated: { limit: 50, window: '24 h' }, // Premium tier: 50 generations/day
     },
     tts: {
-      anonymous: { limit: 100, window: '24 h' }, // TESTING: was 3
-      authenticated: { limit: 1000, window: '24 h' }, // TESTING: was 20
+      anonymous: { limit: 3, window: '24 h' }, // Free tier: 3 TTS generations/day
+      authenticated: { limit: 20, window: '24 h' }, // Premium tier: 20 TTS generations/day
     },
     images: {
-      anonymous: { limit: 100, window: '24 h' }, // TESTING: was 2
-      authenticated: { limit: 1000, window: '24 h' }, // TESTING: was 10
+      anonymous: { limit: 2, window: '24 h' }, // Free tier: 2 image generations/day
+      authenticated: { limit: 10, window: '24 h' }, // Premium tier: 10 image generations/day
     },
   },
 

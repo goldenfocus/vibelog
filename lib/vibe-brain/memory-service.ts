@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { createServerAdminClient } from '@/lib/supabaseAdmin';
 
 import { generateEmbedding } from './embedding-service';
@@ -41,11 +42,20 @@ export async function storeMemory(
   });
 
   if (error) {
-    console.error('[VIBE BRAIN] Failed to store memory:', error);
+    logger.error('Failed to store memory', error, {
+      userId,
+      category,
+      importance,
+    });
     throw error;
   }
 
-  console.log(`[VIBE BRAIN] Stored memory for user ${userId}: "${fact.slice(0, 50)}..."`);
+  logger.info('Memory stored successfully', {
+    userId,
+    factPreview: fact.slice(0, 50),
+    category,
+    importance,
+  });
 }
 
 /**
@@ -68,7 +78,11 @@ export async function retrieveMemories(
   });
 
   if (error) {
-    console.error('[VIBE BRAIN] Failed to retrieve memories:', error);
+    logger.error('Failed to retrieve memories', error, {
+      userId,
+      query: query.slice(0, 100),
+      limit,
+    });
     return [];
   }
 
@@ -90,7 +104,10 @@ export async function getAllMemories(userId: string, limit: number = 20): Promis
     .limit(limit);
 
   if (error) {
-    console.error('[VIBE BRAIN] Failed to get all memories:', error);
+    logger.error('Failed to get all memories', error, {
+      userId,
+      limit,
+    });
     return [];
   }
 
@@ -108,7 +125,9 @@ export async function extractMemoriesFromConversation(
   messageId?: string
 ): Promise<void> {
   // Simple heuristic extraction for now
-  // TODO: Use GPT to extract more nuanced memories
+  // Future enhancement: Use GPT-4o to extract more nuanced memories with better context understanding
+  // This would improve memory quality by understanding implicit facts, relationships, and user intent
+  // Implementation: Call GPT-4o with conversation context and structured prompt to extract facts
 
   const extractionPatterns = [
     // Preferences

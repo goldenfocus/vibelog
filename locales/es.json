@@ -52,6 +52,12 @@
     "generating": "Generating...",
     "shareOnX": "Share on X"
   },
+  "editor": {
+    "listen": "Listen",
+    "pause": "Pause",
+    "generating": "Generating...",
+    "shareOnX": "Share on X"
+  },
   "features": {
     "input": {
       "title": "Entrada",
@@ -366,6 +372,10 @@
       "empty": "No vibelogs yet. Be the first to create one!",
       "create": "Create Vibelog"
     },
+    "dashboard": {
+      "yourVibelogs": "Your Vibelogs",
+      "viewAll": "View All"
+    },
     "people": {
       "title": "Personas",
       "subtitle": "Descubre creadores y sus últimas publicaciones basadas en voz.",
@@ -414,12 +424,7 @@
     "account": "Detalles de la Cuenta",
     "signedInWith": "Conectado con",
     "comingSoon": "Tu biblioteca de vibelogs próximamente — guarda, organiza y publica con facilidad",
-    "screenShare": "Screen Share",
-    "yourVibelogs": "Your Vibelogs",
-    "viewAll": "View All",
-    "loadingVibelogs": "Loading your vibelogs...",
-    "noVibelogsTitle": "You haven't created any vibelogs yet",
-    "noVibelogsDescription": "Click \"New Vibelog\" above to start recording your first one! 🎤"
+    "screenShare": "Screen Share"
   },
   "screenRecorder": {
     "modalTitle": "Screen Share Recording",

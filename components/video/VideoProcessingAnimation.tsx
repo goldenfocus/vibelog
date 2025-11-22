@@ -215,7 +215,7 @@ export default function VideoProcessingAnimation({
 
   useEffect(() => {
     if (!isVisible || isAnimating) {
-      return;
+      return undefined;
     }
 
     const id = setTimeout(() => {

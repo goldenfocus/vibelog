@@ -63,6 +63,7 @@ export function VibeMessageBubble({
       }, 50);
       return () => clearInterval(interval);
     }
+    return undefined;
   }, [intensity]);
 
   // Calculate dynamic border radius with morphing

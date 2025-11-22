@@ -18,7 +18,7 @@ export function AppSheet({
   // Hard scroll lock for iOS
   useEffect(() => {
     if (!open) {
-      return;
+      return undefined;
     }
     const { overflow } = document.body.style;
     document.body.style.overflow = 'hidden';

@@ -31,7 +31,7 @@ export function useScrollPhysics(
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
-    if (!enabled || !containerRef.current) {return;}
+    if (!enabled || !containerRef.current) {return undefined;}
 
     const container = containerRef.current;
     const totalCardWidth = cardWidth + gap;

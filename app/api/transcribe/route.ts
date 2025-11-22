@@ -6,6 +6,7 @@ import { trackAICost, calculateWhisperCost, isDailyLimitExceeded } from '@/lib/a
 import { checkAndBlockBots } from '@/lib/botid-check';
 import { config } from '@/lib/config';
 import { isDev } from '@/lib/env';
+import { createApiLogger } from '@/lib/logger';
 import { normalizeVibeLog } from '@/lib/normalize-vibelog';
 import { rateLimit, tooManyResponse } from '@/lib/rateLimit';
 import { downloadFromStorage, deleteFromStorage } from '@/lib/storage';
@@ -16,6 +17,8 @@ export const runtime = 'nodejs';
 export const maxDuration = 60; // 60 seconds for transcription
 
 export async function POST(request: NextRequest) {
+  const logger = createApiLogger();
+
   try {
     // 🛡️ BOT PROTECTION: Block automated bots
     const botCheck = await checkAndBlockBots();
@@ -25,6 +28,7 @@ export async function POST(request: NextRequest) {
 
     // 🛡️ CIRCUIT BREAKER: Check if daily cost limit exceeded
     if (await isDailyLimitExceeded()) {
+      logger.warn('Daily cost limit exceeded - circuit breaker triggered');
       return NextResponse.json(
         {
           error: 'Service temporarily unavailable',
@@ -39,6 +43,11 @@ export async function POST(request: NextRequest) {
     const supa = await createServerSupabaseClient();
     const { data: auth } = await supa.auth.getUser();
     const userId = auth?.user?.id;
+
+    // Update logger with user context
+    if (userId) {
+      logger.setContext({ userId });
+    }
 
     // Use rate limits from config (AGGRESSIVE LIMITS for cost protection)
     const limits = config.rateLimits.transcription;
@@ -87,7 +96,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Missing storagePath in request body' }, { status: 400 });
       }
 
-      console.log('📥 Downloading media from storage:', storagePath);
+      logger.info('Downloading media from storage', { storagePath });
 
       try {
         // Download file from Supabase Storage
@@ -108,9 +117,13 @@ export async function POST(request: NextRequest) {
           type: blob.type || 'audio/webm',
         });
 
-        console.log('✅ Downloaded:', audioFile.size, 'bytes', isVideo ? '(video)' : '(audio)');
+        logger.info('Downloaded media from storage', {
+          size: audioFile.size,
+          type: isVideo ? 'video' : 'audio',
+          fileExt,
+        });
       } catch (storageError) {
-        console.error('Storage download failed:', storageError);
+        logger.error('Storage download failed', storageError as Error, { storagePath });
         return NextResponse.json(
           {
             error: 'Failed to download media from storage',
@@ -200,22 +213,22 @@ export async function POST(request: NextRequest) {
     // Detect if it's a video or audio file
     const isVideo = audioFile.type?.startsWith('video/');
 
-    if (isDev) {
-      console.log(
-        `${isVideo ? '🎥' : '🎤'} Transcribing ${isVideo ? 'video' : 'audio'}:`,
-        audioFile.size,
-        'bytes',
-        audioFile.type,
-        storagePath ? `(from storage: ${storagePath})` : '(direct upload)'
-      );
-    }
+    logger.info('Starting transcription', {
+      mediaType: isVideo ? 'video' : 'audio',
+      size: audioFile.size,
+      mimeType: audioFile.type,
+      source: storagePath ? 'storage' : 'direct_upload',
+      storagePath: storagePath || undefined,
+    });
 
     // 🔍 CACHE CHECK: Check if we already transcribed this audio
     const audioBuffer = await audioFile.arrayBuffer();
     const cachedResult = await getCachedResponse('transcription', Buffer.from(audioBuffer));
 
     if (cachedResult) {
-      console.log('💾 Cache hit! Returning cached transcription (saved API call)');
+      logger.info('Cache hit - returning cached transcription', {
+        savedCost: true,
+      });
 
       // Track cache hit (no cost)
       await trackAICost(userId || null, 'whisper', 0, {
@@ -233,7 +246,7 @@ export async function POST(request: NextRequest) {
       config.ai.openai.apiKey === 'dummy_key' ||
       config.ai.openai.apiKey === 'your_openai_api_key_here'
     ) {
-      console.warn('🧪 Using mock transcription for development/testing');
+      logger.warn('Using mock transcription for development/testing');
       await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API delay
       return NextResponse.json({
         transcription:
@@ -293,6 +306,7 @@ export async function POST(request: NextRequest) {
 
     if (!allowed) {
       // Circuit breaker triggered mid-request
+      logger.warn('Circuit breaker triggered mid-request - daily cost limit exceeded');
       return NextResponse.json(
         {
           error: 'Daily cost limit exceeded',
@@ -303,11 +317,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (isDev) {
-      console.log('✅ Transcription completed:', transcriptionText.substring(0, 100) + '...');
-      console.log('🌐 Detected language:', detectedLanguage);
-      console.log(`💰 Cost: $${cost.toFixed(4)} (${actualDuration.toFixed(1)}s audio)`);
-    }
+    logger.info('Transcription completed successfully', {
+      transcriptionPreview: transcriptionText.substring(0, 100),
+      detectedLanguage,
+      cost: cost.toFixed(4),
+      duration: actualDuration.toFixed(1),
+    });
 
     const result = {
       transcription: transcriptionText,
@@ -320,17 +335,17 @@ export async function POST(request: NextRequest) {
 
     // Clean up storage file after successful transcription
     if (storagePath) {
-      console.log('🧹 Cleaning up storage file:', storagePath);
+      logger.debug('Cleaning up storage file', { storagePath });
       // Fire and forget - don't wait for deletion
       deleteFromStorage(storagePath).catch(err =>
-        console.warn('Failed to delete storage file:', err)
+        logger.warn('Failed to delete storage file', { error: err, storagePath })
       );
     }
 
     return NextResponse.json(result);
   } catch (error) {
     // Always log detailed error in production for debugging
-    console.error('Transcription error:', error);
+    logger.error('Transcription error', error as Error);
 
     // Provide more detailed error information
     let errorMessage = 'Failed to transcribe audio';
@@ -362,9 +377,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Always log detailed error for debugging
-      console.error('[TRANSCRIPTION ERROR]', {
-        message: error.message,
-        name: error.name,
+      logger.error('Transcription error details', error as Error, {
         hasApiKey: !!config.ai.openai.apiKey,
         apiKeyPrefix: config.ai.openai.apiKey?.substring(0, 10) + '...',
       });

@@ -256,7 +256,7 @@ export default function ProcessingAnimation({
 
   useEffect(() => {
     if (!isVisible || isAnimating) {
-      return;
+      return undefined;
     }
 
     // Defer starting processing to the next tick so initial render assertions pass

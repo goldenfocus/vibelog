@@ -151,6 +151,7 @@ export default function VibelogActions({
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
+    return undefined;
   }, [isMenuOpen]);
 
   // Cleanup preview limiter on unmount

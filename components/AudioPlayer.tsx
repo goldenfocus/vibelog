@@ -73,6 +73,7 @@ export default function AudioPlayer({ audioBlob, playback }: AudioPlayerProps) {
       };
     } else {
       setBlobUrl(null);
+      return undefined;
     }
   }, [audioBlob, setTrack, t]);
 

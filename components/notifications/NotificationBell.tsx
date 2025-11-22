@@ -37,7 +37,7 @@ export default function NotificationBell() {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) {
-        return;
+        return undefined;
       }
 
       const channel = supabase

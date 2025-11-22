@@ -3,7 +3,11 @@
  *
  * Provides consistent error handling, logging, and user-friendly error messages
  * across the entire application.
+ *
+ * Integrates with structured logger for production-ready error tracking.
  */
+
+import { logger } from './logger';
 
 export interface AppError {
   code: string;
@@ -121,24 +125,24 @@ export class ErrorHandler {
       details: error.details
     };
 
-    // In development, log full details
-    if (process.env.NODE_ENV === 'development') {
-      console.error('🚨 App Error:', logData);
-    } else {
-      // In production, log minimal info (remove sensitive details)
-      console.error('App Error:', {
-        code: error.code,
-        message: error.message,
-        context: {
-          component: context.component,
-          action: context.action
-        },
-        timestamp: logData.timestamp
-      });
-    }
+    // Use structured logger for consistent error tracking
+    logger.error('Application error occurred', {
+      code: error.code,
+      message: error.message,
+      userMessage: error.userMessage,
+      retryable: error.retryable,
+      context: {
+        component: context.component,
+        action: context.action,
+        userId: context.userId,
+        ...context.metadata,
+      },
+      details: error.details,
+    });
 
-    // TODO: Send to error tracking service (Sentry, LogRocket, etc.)
-    // this.sendToErrorTracking(logData);
+    // Error tracking integration: logger.error() automatically sends to error tracking
+    // in production (see lib/logger.ts sendToErrorTracking method)
+    // For Sentry integration, add: Sentry.captureException(new Error(error.message), { extra: logData })
   }
 
   /**

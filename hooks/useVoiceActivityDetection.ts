@@ -59,7 +59,7 @@ export function useVoiceActivityDetection({
       setSilenceDuration(0);
       silenceStartTimeRef.current = null;
       voiceStartTimeRef.current = null;
-      return;
+      return undefined;
     }
 
     // Monitor audio levels and detect voice activity

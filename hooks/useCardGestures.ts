@@ -36,7 +36,7 @@ export function useCardGestures(
 
   useEffect(() => {
     const element = elementRef.current;
-    if (!element) {return;}
+    if (!element) {return undefined;}
 
     const handleTouchStart = (e: TouchEvent) => {
       const touch = e.touches[0];
@@ -50,7 +50,7 @@ export function useCardGestures(
       }, 500);
     };
 
-    const handleTouchMove = (e: TouchEvent) => {
+    const handleTouchMove = (_e: TouchEvent) => {
       // Cancel long-press if user moves finger
       if (longPressTimerRef.current) {
         clearTimeout(longPressTimerRef.current);
@@ -133,6 +133,7 @@ export function useCardGestures(
       const timer = setTimeout(() => setGesture(null), 100);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [gesture]);
 
   return gesture;

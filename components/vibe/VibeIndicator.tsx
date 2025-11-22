@@ -61,11 +61,11 @@ export function VibeIndicator({
   };
 
   useEffect(() => {
-    if (!animated || !canvasRef.current) {return;}
+    if (!animated || !canvasRef.current) {return undefined;}
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-    if (!ctx) {return;}
+    if (!ctx) {return undefined;}
 
     const rect = canvas.getBoundingClientRect();
     canvas.width = rect.width * window.devicePixelRatio;
@@ -105,7 +105,7 @@ export function VibeIndicator({
 
       // Particles
       if (calculatedIntensity > 60) {
-        particles.forEach((particle, i) => {
+        particles.forEach((particle) => {
           particle.x += particle.vx;
           particle.y += particle.vy;
           particle.life -= 0.02;
