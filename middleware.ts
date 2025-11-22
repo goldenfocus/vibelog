@@ -160,18 +160,8 @@ export function middleware(req: NextRequest) {
       });
       return response;
     }
-
-    // Cookie exists but user navigated to no-locale URL = intentional English selection
-    // Clear the non-English cookie and proceed with English
-    if (cookieLocale !== DEFAULT_LOCALE) {
-      // User explicitly chose English by navigating to clean URL
-      // Update cookie to reflect this choice
-      const response = NextResponse.rewrite(req.nextUrl.clone());
-      response.cookies.set('NEXT_LOCALE', DEFAULT_LOCALE, {
-        maxAge: 31536000,
-        path: '/',
-      });
-    }
+    // If cookie exists and user is on clean URL, treat as English
+    // (don't redirect - just fall through to English rewrite below)
   }
 
   // Get the clean pathname (without locale prefix)
