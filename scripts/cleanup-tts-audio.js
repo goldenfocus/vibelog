@@ -95,9 +95,7 @@ async function cleanupTTSAudio() {
   console.log(`✅ Remaining TTS audio URLs: ${remainingTTS?.length || 0}\n`);
 
   // Show summary
-  const { data: summary } = await supabase
-    .from('vibelogs')
-    .select('audio_url');
+  const { data: summary } = await supabase.from('vibelogs').select('audio_url');
 
   const total = summary.length;
   const withAudio = summary.filter(v => v.audio_url).length;

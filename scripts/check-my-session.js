@@ -46,5 +46,5 @@ async function checkSession() {
 checkSession();
 `);
 
-console.log('\n3. This will show if you\'re logged in and if your account has is_admin=true');
-console.log('\n💡 If it shows you\'re not admin, the session is stale - log out and back in!');
+console.log("\n3. This will show if you're logged in and if your account has is_admin=true");
+console.log("\n💡 If it shows you're not admin, the session is stale - log out and back in!");

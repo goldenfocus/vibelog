@@ -20,7 +20,9 @@ async function listVibelogs() {
 
   const { data: vibelogs, error } = await supabase
     .from('vibelogs')
-    .select('id, title, teaser, content, cover_image_url, video_url, video_generation_status, created_at')
+    .select(
+      'id, title, teaser, content, cover_image_url, video_url, video_generation_status, created_at'
+    )
     .order('created_at', { ascending: false })
     .limit(10);
 
@@ -48,10 +50,8 @@ async function listVibelogs() {
   });
 
   // Find a good candidate for video generation
-  const candidate = vibelogs.find(vl =>
-    !vl.video_url &&
-    vl.video_generation_status !== 'generating' &&
-    (vl.content || vl.teaser)
+  const candidate = vibelogs.find(
+    vl => !vl.video_url && vl.video_generation_status !== 'generating' && (vl.content || vl.teaser)
   );
 
   if (candidate) {

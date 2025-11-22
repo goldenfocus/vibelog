@@ -28,17 +28,17 @@ const postData = JSON.stringify({ query: sql });
 const options = {
   method: 'POST',
   headers: {
-    'apikey': SERVICE_ROLE_KEY,
-    'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+    apikey: SERVICE_ROLE_KEY,
+    Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
     'Content-Type': 'application/json',
     'Content-Length': Buffer.byteLength(postData),
-  }
+  },
 };
 
-const req = https.request(dbUrl, options, (res) => {
+const req = https.request(dbUrl, options, res => {
   let data = '';
 
-  res.on('data', (chunk) => {
+  res.on('data', chunk => {
     data += chunk;
   });
 
@@ -53,7 +53,7 @@ const req = https.request(dbUrl, options, (res) => {
       console.error(data);
 
       if (res.statusCode === 404) {
-        console.log('\n💡 The exec RPC endpoint doesn\'t exist.');
+        console.log("\n💡 The exec RPC endpoint doesn't exist.");
         console.log('   Please run the SQL manually in Supabase Dashboard:');
         console.log('   https://supabase.com/dashboard/project/ogqcycqctxulcvhjeiii/sql/new');
         console.log('\n📄 Copy this file: consolidated-migrations.sql');
@@ -62,7 +62,7 @@ const req = https.request(dbUrl, options, (res) => {
   });
 });
 
-req.on('error', (error) => {
+req.on('error', error => {
   console.error('❌ Request failed:', error.message);
   console.log('\n💡 Please run the SQL manually in Supabase Dashboard:');
   console.log('   https://supabase.com/dashboard/project/ogqcycqctxulcvhjeiii/sql/new');

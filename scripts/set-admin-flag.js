@@ -19,12 +19,12 @@ async function setAdminFlag() {
     const response = await fetch(`${SUPABASE_URL}/rest/v1/profiles?email=eq.vibeyang@gmail.com`, {
       method: 'PATCH',
       headers: {
-        'apikey': SERVICE_ROLE_KEY,
-        'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+        apikey: SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
         'Content-Type': 'application/json',
-        'Prefer': 'return=representation'
+        Prefer: 'return=representation',
       },
-      body: JSON.stringify({ is_admin: true })
+      body: JSON.stringify({ is_admin: true }),
     });
 
     if (response.ok) {
@@ -43,7 +43,6 @@ async function setAdminFlag() {
         console.log('   ALTER TABLE profiles ADD COLUMN is_admin BOOLEAN DEFAULT FALSE;');
       }
     }
-
   } catch (err) {
     console.error(`❌ Error: ${err.message}`);
   }

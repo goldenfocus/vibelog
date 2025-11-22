@@ -29,7 +29,8 @@ const supabase = createClient(
 async function fixVibelog() {
   const vibelogId = '3df7fbd2-a1d7-4eb4-9c4d-c79b015468a5';
   const userId = '72fc8fd0-5d64-4563-ba6c-a74c99dac695';
-  const audioPath = 'users/72fc8fd0-5d64-4563-ba6c-a74c99dac695/audio/session_1763223931546_yqy5u6-f8e73252.webm';
+  const audioPath =
+    'users/72fc8fd0-5d64-4563-ba6c-a74c99dac695/audio/session_1763223931546_yqy5u6-f8e73252.webm';
   const audioUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/vibelogs/${audioPath}`;
 
   console.log('🎵 Updating vibelog with audio...');

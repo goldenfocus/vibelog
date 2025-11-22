@@ -20,7 +20,12 @@ async function cleanupVoiceCloneColumns() {
   console.log('🧹 Removing voice clone columns from database...\n');
 
   // Read the migration SQL
-  const migrationPath = path.join(__dirname, 'supabase', 'migrations', '016_remove_voice_cloning_columns.sql');
+  const migrationPath = path.join(
+    __dirname,
+    'supabase',
+    'migrations',
+    '016_remove_voice_cloning_columns.sql'
+  );
   const sql = fs.readFileSync(migrationPath, 'utf-8');
 
   console.log('📄 Migration SQL:');
@@ -36,7 +41,9 @@ async function cleanupVoiceCloneColumns() {
     .filter(s => s && !s.startsWith('--'));
 
   for (const statement of statements) {
-    if (!statement) {continue;}
+    if (!statement) {
+      continue;
+    }
 
     try {
       console.log(`Executing: ${statement.substring(0, 60)}...`);
@@ -44,11 +51,11 @@ async function cleanupVoiceCloneColumns() {
       const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/exec`, {
         method: 'POST',
         headers: {
-          'apikey': SERVICE_ROLE_KEY,
-          'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+          apikey: SERVICE_ROLE_KEY,
+          Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ query: statement })
+        body: JSON.stringify({ query: statement }),
       });
 
       if (response.ok || response.status === 404) {
@@ -57,14 +64,15 @@ async function cleanupVoiceCloneColumns() {
         const text = await response.text();
         console.log(`⚠️  Response: ${response.status} - ${text}\n`);
       }
-
     } catch (err) {
       console.log(`⚠️  ${err.message}\n`);
     }
   }
 
   console.log('\n🎉 Voice clone column cleanup complete!');
-  console.log('\nℹ️  Note: If exec endpoint doesn\'t exist, run this SQL manually in Supabase Dashboard:');
+  console.log(
+    "\nℹ️  Note: If exec endpoint doesn't exist, run this SQL manually in Supabase Dashboard:"
+  );
   console.log('   https://supabase.com/dashboard/project/ogqcycqctxulcvhjeiii/sql/new');
 }
 
