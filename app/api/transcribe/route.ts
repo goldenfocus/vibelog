@@ -5,7 +5,6 @@ import { getCachedResponse, setCachedResponse } from '@/lib/ai-cache';
 import { trackAICost, calculateWhisperCost, isDailyLimitExceeded } from '@/lib/ai-cost-tracker';
 import { checkAndBlockBots } from '@/lib/botid-check';
 import { config } from '@/lib/config';
-import { isDev } from '@/lib/env';
 import { createApiLogger } from '@/lib/logger';
 import { normalizeVibeLog } from '@/lib/normalize-vibelog';
 import { rateLimit, tooManyResponse } from '@/lib/rateLimit';

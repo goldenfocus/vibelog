@@ -1,8 +1,7 @@
-import { useRef, useEffect, useState, useCallback } from "react";
+import { useRef, useEffect, useState, useCallback } from 'react';
 
-import { AudioEngine } from "@/components/mic/AudioEngine";
-import { RecordingState } from "@/components/mic/Controls";
-import { AudioEngineCallbacks } from "@/types/micRecorder";
+import { AudioEngine } from '@/components/mic/AudioEngine';
+import { AudioEngineCallbacks } from '@/types/micRecorder';
 
 export interface UseAudioEngineReturn {
   audioEngine: AudioEngine | null;
@@ -21,9 +20,7 @@ export function useAudioEngine(
 ): UseAudioEngineReturn {
   const audioEngineRef = useRef<AudioEngine | null>(null);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
-  const [audioLevels, setAudioLevels] = useState<number[]>(
-    Array.from({ length: 15 }, () => 0.1)
-  );
+  const [_audioLevels, setAudioLevels] = useState<number[]>(Array.from({ length: 15 }, () => 0.1));
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [duration, setDuration] = useState(0);
   const levelsRef = useRef<number[]>(Array.from({ length: 15 }, () => 0.1));
@@ -52,15 +49,18 @@ export function useAudioEngine(
     setAudioLevels([...levels]); // Create new array reference to trigger re-render
   }, []);
 
-  const onDataAvailableCallback = useCallback((blob: Blob, duration: number) => {
-    setDuration(duration);
-    setAudioBlob(blob);
+  const onDataAvailableCallback = useCallback(
+    (blob: Blob, duration: number) => {
+      setDuration(duration);
+      setAudioBlob(blob);
 
-    // Start processing animation now that audio blob is available
-    setTimeout(() => {
-      onProcessingStartCallback();
-    }, 100);
-  }, [onProcessingStartCallback]);
+      // Start processing animation now that audio blob is available
+      setTimeout(() => {
+        onProcessingStartCallback();
+      }, 100);
+    },
+    [onProcessingStartCallback]
+  );
 
   // Initialize AudioEngine
   useEffect(() => {
@@ -68,7 +68,7 @@ export function useAudioEngine(
       onPermissionChange: setHasPermission,
       onLevelsUpdate: onLevelsUpdateCallback,
       onDataAvailable: onDataAvailableCallback,
-      onError: onErrorCallback
+      onError: onErrorCallback,
     };
 
     audioEngineRef.current = new AudioEngine(callbacks);
@@ -79,8 +79,10 @@ export function useAudioEngine(
   }, []);
 
   const startRecording = async (): Promise<boolean> => {
-    if (!audioEngineRef.current) {return false;}
-    
+    if (!audioEngineRef.current) {
+      return false;
+    }
+
     const success = await audioEngineRef.current.startRecording();
     if (success) {
       // Reset previous audio data
@@ -91,7 +93,9 @@ export function useAudioEngine(
   };
 
   const stopRecording = () => {
-    if (!audioEngineRef.current) {return;}
+    if (!audioEngineRef.current) {
+      return;
+    }
     audioEngineRef.current.stopRecordingAndRelease();
   };
 

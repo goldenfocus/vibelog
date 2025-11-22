@@ -47,12 +47,13 @@ test.describe('Refactoring Safety Tests', () => {
     await page.waitForTimeout(2000);
 
     // Filter out expected/harmless errors
-    const criticalErrors = logs.filter(log =>
-      !log.includes('ERR_INTERNET_DISCONNECTED') &&
-      !log.includes('Failed to fetch') &&
-      !log.includes('NetworkError') &&
-      !log.includes('net::') &&
-      log.includes('useAuth')
+    const criticalErrors = logs.filter(
+      log =>
+        !log.includes('ERR_INTERNET_DISCONNECTED') &&
+        !log.includes('Failed to fetch') &&
+        !log.includes('NetworkError') &&
+        !log.includes('net::') &&
+        log.includes('useAuth')
     );
 
     expect(criticalErrors).toHaveLength(0);
@@ -102,10 +103,10 @@ test.describe('Refactoring Safety Tests', () => {
     const errorHandlerTest = await page.evaluate(() => {
       try {
         // This should not throw because ErrorHandler should be robust
-        const testError = new Error('test error');
+        const _testError = new Error('test error');
         // The error handler should be accessible globally
         return typeof window !== 'undefined';
-      } catch (e) {
+      } catch {
         return false;
       }
     });
@@ -115,16 +116,12 @@ test.describe('Refactoring Safety Tests', () => {
 
   test('Core UI components render without crashes', async ({ page }) => {
     // Test that main components render
-    const components = [
-      'mic-recorder',
-      'navigation',
-      'audio-controls'
-    ];
+    const components = ['mic-recorder', 'navigation', 'audio-controls'];
 
     for (const component of components) {
       const element = page.getByTestId(component);
       // Should exist (may not be visible depending on state)
-      const exists = await element.count() > 0;
+      const exists = (await element.count()) > 0;
       if (exists) {
         await expect(element).toBeDefined();
       }
@@ -152,7 +149,7 @@ test.describe('Refactoring Safety Tests', () => {
     // Get initial memory
     try {
       initialHeap = await page.evaluate(() => {
-        // @ts-ignore - performance.memory may not be available in all browsers
+        // @ts-expect-error - performance.memory may not be available in all browsers
         return performance.memory?.usedJSHeapSize || 0;
       });
     } catch {
@@ -171,7 +168,7 @@ test.describe('Refactoring Safety Tests', () => {
     // Get final memory
     try {
       finalHeap = await page.evaluate(() => {
-        // @ts-ignore
+        // @ts-expect-error - performance.memory may not be available in all browsers
         return performance.memory?.usedJSHeapSize || 0;
       });
     } catch {
@@ -204,7 +201,7 @@ test.describe('Critical User Flows Still Work', () => {
 
     // Test navigation to key pages
     const aboutLink = page.getByRole('link', { name: /about/i });
-    if (await aboutLink.count() > 0) {
+    if ((await aboutLink.count()) > 0) {
       await aboutLink.click();
       await expect(page).toHaveURL(/about/);
     }
