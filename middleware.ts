@@ -142,15 +142,36 @@ export function middleware(req: NextRequest) {
   const pathLocale = getLocaleFromPathname(pathname);
 
   // If no locale in URL and user prefers non-default locale, redirect
+  // BUT: Only redirect if this is a first visit (Accept-Language based detection)
+  // If user has explicitly navigated to a no-locale URL, respect that as English
   if (!hasLocale && detectedLocale !== DEFAULT_LOCALE) {
-    const url = req.nextUrl.clone();
-    url.pathname = `/${detectedLocale}${pathname}`;
-    const response = NextResponse.redirect(url);
-    response.cookies.set('NEXT_LOCALE', detectedLocale, {
-      maxAge: 31536000, // 1 year
-      path: '/',
-    });
-    return response;
+    const cookieLocale = req.cookies.get('NEXT_LOCALE')?.value;
+
+    // Only auto-redirect if preference comes from Accept-Language header, not cookie
+    // This prevents redirecting users who explicitly clicked "English" in language switcher
+    if (!cookieLocale) {
+      // First visit - redirect based on browser language
+      const url = req.nextUrl.clone();
+      url.pathname = `/${detectedLocale}${pathname}`;
+      const response = NextResponse.redirect(url);
+      response.cookies.set('NEXT_LOCALE', detectedLocale, {
+        maxAge: 31536000, // 1 year
+        path: '/',
+      });
+      return response;
+    }
+
+    // Cookie exists but user navigated to no-locale URL = intentional English selection
+    // Clear the non-English cookie and proceed with English
+    if (cookieLocale !== DEFAULT_LOCALE) {
+      // User explicitly chose English by navigating to clean URL
+      // Update cookie to reflect this choice
+      const response = NextResponse.rewrite(req.nextUrl.clone());
+      response.cookies.set('NEXT_LOCALE', DEFAULT_LOCALE, {
+        maxAge: 31536000,
+        path: '/',
+      });
+    }
   }
 
   // Get the clean pathname (without locale prefix)
