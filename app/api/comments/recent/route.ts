@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
         content,
         audio_url,
         video_url,
+        slug,
         created_at,
         profiles!comments_user_id_fkey (
           id,
@@ -33,6 +34,7 @@ export async function GET(request: NextRequest) {
         vibelogs!comments_vibelog_id_fkey (
           id,
           title,
+          public_slug,
           cover_image_url,
           video_url,
           profiles!vibelogs_user_id_fkey (
@@ -74,6 +76,7 @@ export async function GET(request: NextRequest) {
         content: comment.content,
         audioUrl: comment.audio_url,
         videoUrl: comment.video_url,
+        slug: comment.slug,
         createdAt: comment.created_at,
         commentator: {
           id: profile?.id,
@@ -84,6 +87,7 @@ export async function GET(request: NextRequest) {
         vibelog: {
           id: vibelog?.id,
           title: vibelog?.title || 'Untitled',
+          slug: vibelog?.public_slug,
           coverImageUrl: vibelog?.cover_image_url,
           videoUrl: vibelog?.video_url,
           author: {
