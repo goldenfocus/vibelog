@@ -43,9 +43,10 @@ interface Vibelog {
 interface VibelogCardProps {
   vibelog: Vibelog;
   onRemix?: (content: string) => void;
+  onDeleteSuccess?: (vibelogId: string) => void;
 }
 
-export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
+export default function VibelogCard({ vibelog, onRemix, onDeleteSuccess }: VibelogCardProps) {
   const router = useRouter();
   const { user } = useAuth(); // Check if user is logged in
   const { t } = useI18n();
@@ -166,8 +167,14 @@ export default function VibelogCard({ vibelog, onRemix }: VibelogCardProps) {
       }
 
       toast.success(t('toasts.vibelogs.deleted'));
-      // Refresh the page to update the list
-      router.refresh();
+
+      // Call parent callback to update list
+      if (onDeleteSuccess) {
+        onDeleteSuccess(vibelog.id);
+      } else {
+        // Fallback: redirect to dashboard if no callback provided
+        router.push('/dashboard');
+      }
     } catch (error) {
       console.error('Delete error:', error);
       toast.error(t('toasts.vibelogs.deleteFailed'));
