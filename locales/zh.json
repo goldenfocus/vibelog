@@ -60,6 +60,7 @@
   },
   "toast": {
     "copied": "✨ 已复制到剪贴板！",
+    "copiedWithImage": "✨ 已复制含封面图片！",
     "copyFailed": "❌ 复制失败",
     "copiedForSharing": "📋 已复制以供分享！",
     "signInToSave": "🔒 登录以保存您的 vibelogs！"
@@ -114,7 +115,9 @@
         "htmlTitle": "HTML",
         "htmlDesc": "生成用于网络发布的干净标记",
         "polishTitle": "润色",
-        "polishDesc": "最终质量检查和完美化处理"
+        "polishDesc": "最终质量检查和完美化处理",
+        "imageTitle": "封面图",
+        "imageDesc": "创建用于分享的封面图片"
       },
       "loginEditMessage": "请登录以编辑您的振动日志。编辑让您在与世界分享之前完善您的内容。",
       "signInToEdit": "登录以编辑",
@@ -130,7 +133,8 @@
       "createdBy": "创建者",
       "yourRecording": "您的录音",
       "freePlanLimit": "免费计划：最多 {{timeLimit}}",
-      "timeRemaining": "剩余 {{seconds}}秒"
+      "timeRemaining": "剩余 {{seconds}}秒",
+      "liveTranscript": "实时转录"
     },
     "vibelogCard": {
       "remix": "重新创作"

@@ -60,6 +60,7 @@
   },
   "toast": {
     "copied": "✨ In die Zwischenablage kopiert!",
+    "copiedWithImage": "✨ Mit Coverbild kopiert!",
     "copyFailed": "❌ Kopieren fehlgeschlagen",
     "copiedForSharing": "📋 Zum Teilen kopiert!",
     "signInToSave": "🔒 Melde dich an, um deine Vibelogs zu speichern!"
@@ -114,7 +115,9 @@
         "htmlTitle": "HTML",
         "htmlDesc": "Generiere sauberes Markup für Web-Publishing",
         "polishTitle": "POLIEREN",
-        "polishDesc": "Finale Qualitätsprüfungen und Perfektion"
+        "polishDesc": "Finale Qualitätsprüfungen und Perfektion",
+        "imageTitle": "BILD",
+        "imageDesc": "Erstellt ein Titelbild zum Teilen"
       },
       "unlockMessage": "um Ihren vollständigen Vibelog zu entsperren und überall zu teilen!",
       "createdBy": "Erstellt von",
@@ -130,7 +133,8 @@
       "speakLouder": "🤫 Sprechen Sie etwas lauter...",
       "loginRequired": "Anmeldung Erforderlich",
       "freePlanLimit": "Kostenloser Plan: {{timeLimit}} max",
-      "timeRemaining": "{{seconds}}s verbleibend"
+      "timeRemaining": "{{seconds}}s verbleibend",
+      "liveTranscript": "Live-Transkript"
     },
     "vibelogCard": {
       "remix": "Remixen"
