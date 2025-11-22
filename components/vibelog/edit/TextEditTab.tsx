@@ -4,6 +4,7 @@ import { Loader2, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { useI18n } from '@/components/providers/I18nProvider';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import {
@@ -34,6 +35,7 @@ export default function TextEditTab({
   onContentChange,
   onTeaserChange,
 }: TextEditTabProps) {
+  const { t } = useI18n();
   const [title, setTitle] = useState(initialTitle);
   const [content, setContent] = useState(initialContent);
   const [teaser, setTeaser] = useState(initialTeaser || '');
@@ -81,10 +83,10 @@ export default function TextEditTab({
       }
       setTone('');
       setPrompt('');
-      toast.success('Text regenerated successfully!');
+      toast.success(t('toasts.vibelogs.textRegenerated'));
     } catch (error) {
       console.error('Text regeneration error:', error);
-      toast.error('Failed to regenerate text');
+      toast.error(t('toasts.vibelogs.textRegenerateFailed'));
     } finally {
       setIsRegenerating(false);
     }
@@ -103,7 +105,7 @@ export default function TextEditTab({
           value={title}
           onChange={e => handleTitleChange(e.target.value)}
           className="w-full rounded-lg border border-border/30 bg-background/50 px-4 py-3 text-lg font-semibold text-foreground placeholder-muted-foreground transition-colors focus:border-electric focus:outline-none focus:ring-2 focus:ring-electric/20"
-          placeholder="Enter vibelog title..."
+          placeholder={t('placeholders.vibelogTitleEdit')}
         />
       </div>
 
@@ -117,7 +119,7 @@ export default function TextEditTab({
           value={content}
           onChange={e => handleContentChange(e.target.value)}
           className="min-h-[400px] font-mono text-sm"
-          placeholder="Edit your vibelog content..."
+          placeholder={t('placeholders.vibelogContentEdit')}
         />
       </div>
 
@@ -131,7 +133,7 @@ export default function TextEditTab({
           value={teaser}
           onChange={e => handleTeaserChange(e.target.value)}
           className="min-h-[100px]"
-          placeholder="Optional teaser text for previews..."
+          placeholder={t('placeholders.teaserText')}
         />
       </div>
 
@@ -148,7 +150,7 @@ export default function TextEditTab({
             </Label>
             <Select value={tone} onValueChange={setTone}>
               <SelectTrigger id="tone">
-                <SelectValue placeholder="Select tone (optional)" />
+                <SelectValue placeholder={t('placeholders.toneSelect')} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="professional">Professional</SelectItem>
@@ -168,7 +170,7 @@ export default function TextEditTab({
               id="prompt"
               value={prompt}
               onChange={e => setPrompt(e.target.value)}
-              placeholder="e.g., make this hilarious but don't talk about my mom"
+              placeholder={t('placeholders.tonePrompt')}
               className="min-h-[80px]"
             />
           </div>

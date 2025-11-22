@@ -14,6 +14,7 @@ import {
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 
+import { useI18n } from '@/components/providers/I18nProvider';
 import { cn } from '@/lib/utils';
 import { useVibeBrainStore } from '@/state/vibe-brain-store';
 
@@ -104,6 +105,7 @@ export function VibeBrainWidget() {
     clearConversation,
     loadConversation,
   } = useVibeBrainStore();
+  const { t } = useI18n();
 
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -138,7 +140,7 @@ export function VibeBrainWidget() {
       <button
         onClick={toggle}
         className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-lg transition-all hover:scale-110 hover:shadow-xl"
-        aria-label="Open Vibe Brain"
+        aria-label={t('ariaLabels.openVibeBrain')}
       >
         <Brain className="h-7 w-7" />
         {!hasSeenNotification && (
@@ -197,14 +199,14 @@ export function VibeBrainWidget() {
               <button
                 onClick={toggleHistory}
                 className="rounded-lg p-1.5 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
-                title="Past conversations"
+                title={t('titles.pastConversations')}
               >
                 <History className="h-4 w-4" />
               </button>
               <button
                 onClick={clearConversation}
                 className="rounded-lg p-1.5 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
-                title="New conversation"
+                title={t('titles.newConversation')}
               >
                 <Sparkles className="h-4 w-4" />
               </button>
@@ -213,14 +215,14 @@ export function VibeBrainWidget() {
           <button
             onClick={minimize}
             className="rounded-lg p-1.5 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
-            title="Minimize"
+            title={t('titles.minimize')}
           >
             <Minus className="h-4 w-4" />
           </button>
           <button
             onClick={close}
             className="rounded-lg p-1.5 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
-            title="Close"
+            title={t('titles.close')}
           >
             <X className="h-4 w-4" />
           </button>
@@ -368,7 +370,7 @@ export function VibeBrainWidget() {
                 type="text"
                 value={input}
                 onChange={e => setInput(e.target.value)}
-                placeholder="Ask Vibe Brain anything..."
+                placeholder={t('placeholders.vibeBrain')}
                 className="flex-1 rounded-full bg-white/10 px-4 py-2.5 text-sm text-white placeholder-white/40 outline-none focus:ring-2 focus:ring-purple-500/50"
                 disabled={isLoading}
               />

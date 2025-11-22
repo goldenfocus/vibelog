@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import NotificationItem from '@/components/notifications/NotificationItem';
+import { useI18n } from '@/components/providers/I18nProvider';
 import type { Notification } from '@/types/notifications';
 
 interface NotificationCenterProps {
@@ -15,6 +16,7 @@ interface NotificationCenterProps {
 type FilterType = 'all' | 'unread' | 'comment' | 'reply' | 'reaction';
 
 export default function NotificationCenter({ isOpen, onClose }: NotificationCenterProps) {
+  const { t } = useI18n();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -101,10 +103,10 @@ export default function NotificationCenter({ isOpen, onClose }: NotificationCent
         prev.map(n => ({ ...n, is_read: true, read_at: new Date().toISOString() }))
       );
       setUnreadCount(0);
-      toast.success('All notifications marked as read');
+      toast.success(t('toasts.notifications.allMarkedRead'));
     } catch (error) {
       console.error('Error marking all as read:', error);
-      toast.error('Failed to mark all as read');
+      toast.error(t('toasts.notifications.markReadFailed'));
     }
   };
 

@@ -119,13 +119,13 @@ export default function ImageEditTab({
       if (data.success && data.url) {
         setCoverImage(data.url);
         onImageChange(data.url);
-        toast.success('Image regenerated successfully!');
+        toast.success(t('toasts.vibelogs.imageRegenerated'));
       } else {
-        throw new Error(data.error || 'Failed to regenerate image');
+        throw new Error(data.error || t('toasts.vibelogs.imageRegenerateFailed'));
       }
     } catch (error) {
       console.error('Image regeneration error:', error);
-      toast.error('Failed to regenerate image');
+      toast.error(t('toasts.vibelogs.imageRegenerateFailed'));
     } finally {
       setIsRegeneratingImage(false);
     }

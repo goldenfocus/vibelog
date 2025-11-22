@@ -317,7 +317,7 @@ export default function VibelogActions({
 
   const handleLikeClick = useCallback(async () => {
     if (!user) {
-      toast.error('Please sign in to like vibelogs');
+      toast.error(t('toasts.vibelogs.signInToLike'));
       setTimeout(() => {
         window.location.href = '/auth/signin';
       }, 1000);

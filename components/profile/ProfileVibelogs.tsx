@@ -3,6 +3,7 @@
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
+import { useI18n } from '@/components/providers/I18nProvider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import VibelogCard from '@/components/VibelogCard';
@@ -40,6 +41,7 @@ export function ProfileVibelogs({
   displayName: string;
   avatarUrl?: string | null;
 }) {
+  const { t } = useI18n();
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('recent');
   const [showFilters, setShowFilters] = useState(false);
@@ -120,7 +122,7 @@ export function ProfileVibelogs({
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Search vibelogs..."
+              placeholder={t('placeholders.searchVibelogs')}
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               className="pl-10 pr-10"
