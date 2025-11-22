@@ -56,6 +56,20 @@ export default {
           elevated: "hsl(var(--surface-elevated))",
           subtle: "hsl(var(--surface-subtle))",
         },
+        // Messaging system metallic blue theme
+        'metallic-blue': {
+          50: '#E6F0FF',
+          100: '#CCE1FF',
+          200: '#99C3FF',
+          300: '#66A5FF',
+          400: '#3387FF',
+          500: '#1E74FF',  // Primary messaging blue
+          600: '#0052E0',
+          700: '#003DB3',
+          800: '#002880',
+          900: '#001A4D',
+        },
+        'electric-accent': '#00D9FF',  // Cyan highlight for messaging
       },
       backgroundImage: {
         "gradient-electric": "var(--gradient-electric)",

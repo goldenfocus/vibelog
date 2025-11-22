@@ -211,3 +211,188 @@ export function getAvailableLanguages(vibelog: Vibelog): LanguageCode[] {
 
   return languages;
 }
+
+// =====================================================
+// MESSAGING SYSTEM TYPES
+// =====================================================
+
+/**
+ * Conversation types
+ */
+export type ConversationType = 'dm' | 'group' | 'ai';
+
+/**
+ * Participant roles in conversations
+ */
+export type ParticipantRole = 'owner' | 'admin' | 'member';
+
+/**
+ * Message content types
+ */
+export type MessageContentType = 'text' | 'image' | 'file' | 'voice' | 'video';
+
+/**
+ * Message delivery status
+ */
+export type MessageStatus = 'sent' | 'delivered' | 'read';
+
+/**
+ * User relationship types
+ */
+export type RelationshipType = 'block' | 'mute' | 'follow';
+
+/**
+ * Message attachment structure
+ */
+export interface MessageAttachment {
+  type: string;
+  url: string;
+  name: string;
+  size: number;
+  mimeType?: string;
+}
+
+/**
+ * Message metadata structure (extensible)
+ */
+export interface MessageMetadata {
+  edited?: boolean;
+  edited_at?: string;
+  ai_generated?: boolean;
+  vibe_scores?: {
+    joy?: number;
+    sadness?: number;
+    anger?: number;
+    fear?: number;
+    surprise?: number;
+  };
+}
+
+/**
+ * Conversation table row
+ */
+export interface Conversation {
+  id: string;
+  type: ConversationType;
+  title: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  last_message_at: string | null;
+  ai_trainable: boolean;
+  deleted_at: string | null;
+}
+
+/**
+ * Conversation participant table row
+ */
+export interface ConversationParticipant {
+  id: string;
+  conversation_id: string;
+  user_id: string;
+  role: ParticipantRole;
+  is_muted: boolean;
+  is_archived: boolean;
+  is_pinned: boolean;
+  last_read_message_id: string | null;
+  last_read_at: string | null;
+  joined_at: string;
+  left_at: string | null;
+}
+
+/**
+ * Message table row
+ */
+export interface Message {
+  id: string;
+  conversation_id: string;
+  sender_id: string | null;
+  parent_message_id: string | null;
+  thread_message_count: number;
+  content: string;
+  content_type: MessageContentType;
+  attachments: MessageAttachment[];
+  metadata: MessageMetadata;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+  ai_trainable: boolean;
+}
+
+/**
+ * Message status table row (read receipts)
+ */
+export interface MessageStatusRow {
+  id: string;
+  message_id: string;
+  user_id: string;
+  status: MessageStatus;
+  updated_at: string;
+}
+
+/**
+ * Message reaction table row
+ */
+export interface MessageReaction {
+  id: string;
+  message_id: string;
+  user_id: string;
+  emoji: string;
+  created_at: string;
+}
+
+/**
+ * User relationship table row
+ */
+export interface UserRelationship {
+  id: string;
+  user_id: string;
+  target_user_id: string;
+  relationship_type: RelationshipType;
+  created_at: string;
+}
+
+/**
+ * Enriched message with sender info and reactions
+ */
+export interface MessageWithDetails extends Message {
+  sender: Profile | null;
+  reactions: Array<{
+    emoji: string;
+    count: number;
+    userIds: string[];
+    hasReacted: boolean; // Current user has reacted with this emoji
+  }>;
+  status?: MessageStatus; // Current user's read status
+}
+
+/**
+ * Enriched conversation with participants and last message
+ */
+export interface ConversationWithDetails extends Conversation {
+  participants: Profile[];
+  lastMessage: MessageWithDetails | null;
+  unreadCount: number;
+  isMuted: boolean;
+  isArchived: boolean;
+  isPinned: boolean;
+}
+
+/**
+ * Typing event payload (for realtime broadcasts)
+ */
+export interface TypingEvent {
+  conversationId: string;
+  userId: string;
+  isTyping: boolean;
+  timestamp: string;
+}
+
+/**
+ * Presence event payload (for online status)
+ */
+export interface PresenceEvent {
+  userId: string;
+  status: 'online' | 'offline';
+  lastSeenAt: string;
+}

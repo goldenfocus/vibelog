@@ -151,6 +151,21 @@ export function middleware(req: NextRequest) {
   const cleanPathname = stripLocalePrefix(pathname);
   const currentLocale = pathLocale || DEFAULT_LOCALE;
 
+  // If no locale in URL and user prefers default locale (English),
+  // rewrite to /en/path internally to match [locale] directory structure
+  // This keeps URL clean (no /en/) while routing to correct locale directory
+  if (!hasLocale && detectedLocale === DEFAULT_LOCALE) {
+    const url = req.nextUrl.clone();
+    url.pathname = `/en${pathname}`;
+    const response = NextResponse.rewrite(url);
+    response.cookies.set('NEXT_LOCALE', DEFAULT_LOCALE, {
+      maxAge: 31536000,
+      path: '/',
+    });
+    response.headers.set('x-pathname', pathname);
+    return response;
+  }
+
   // Handle /v/slug -> /@anonymous/slug redirect (preserve locale)
   if (cleanPathname.startsWith('/v/')) {
     const slug = cleanPathname.slice(3); // Remove '/v/'
