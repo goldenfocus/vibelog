@@ -134,6 +134,14 @@ pnpm db:reset         # Reset local database (dev only!)
 - **[API Design](./api.md)** — REST patterns, security, and error handling
 - **[Monitoring](./monitoring.md)** — SLOs, analytics, alerting, and observability
 - **[Deployment](./deployment.md)** — CI/CD, infrastructure, and disaster recovery
+- **[Evolution](./evolution.md)** — Platform evolution, features, architecture, and database schema
+
+### AI-Powered Documentation
+
+- **Ask Vibe Brain** — The AI assistant can answer questions about VibeLog using RAG (Retrieval Augmented Generation)
+  - Try: "What is VibeLog?", "How does it work?", "Show me examples"
+  - All platform documentation is embedded and searchable via vector similarity
+  - See [evolution.md](./evolution.md#documentation-embeddings--knowledge-base) for implementation details
 
 ### Workflow Guides
 

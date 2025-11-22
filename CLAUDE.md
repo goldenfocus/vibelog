@@ -10,6 +10,9 @@
 4. **Test what matters** - If it can break prod, it needs a test.
 5. **Delete > Comment** - Remove dead code, don't comment it out.
 6. **Update evolution.md** - When shipping significant features or architectural changes, update `evolution.md` to document the evolution. This file is embedded in Vibe Brain's RAG system for AI-powered documentation.
+   - **When to update**: New feature ships, architectural decision made, database migration added, integration added
+   - **How to update**: See "Maintenance Guidelines" section in evolution.md
+   - **After updating**: Re-embed documentation by calling `POST /api/admin/documentation/embed` (admin only) or run `node scripts/embed-all-docs.js`
 
 ## Tech Stack
 
@@ -215,13 +218,16 @@ The `--auto` flag queues merge for when checks pass. Don't wait manually.
 
 ## Key Files (Read These First)
 
-| File                            | Purpose                                |
-| ------------------------------- | -------------------------------------- |
-| `lib/ai-cost-tracker.ts`        | AI usage tracking + circuit breaker    |
-| `lib/supabase.ts`               | Supabase client factory                |
-| `app/api/save-vibelog/route.ts` | Main save endpoint (reference pattern) |
-| `app/api/transcribe/route.ts`   | Whisper integration                    |
-| `components/MicRecorder.tsx`    | Audio capture UI                       |
+| File                                         | Purpose                                    |
+| -------------------------------------------- | ------------------------------------------ |
+| `lib/ai-cost-tracker.ts`                     | AI usage tracking + circuit breaker        |
+| `lib/supabase.ts`                            | Supabase client factory                    |
+| `lib/vibe-brain/knowledge-base.ts`           | Documentation embedding & search           |
+| `app/api/save-vibelog/route.ts`              | Main save endpoint (reference pattern)     |
+| `app/api/transcribe/route.ts`                | Whisper integration                        |
+| `app/api/admin/documentation/embed/route.ts` | Re-embed documentation (admin)             |
+| `components/MicRecorder.tsx`                 | Audio capture UI                           |
+| `scripts/embed-all-docs.js`                  | CLI tool for batch documentation embedding |
 
 ## Environment Variables
 
