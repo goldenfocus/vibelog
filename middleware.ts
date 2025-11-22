@@ -194,14 +194,15 @@ export function middleware(req: NextRequest) {
     return response;
   }
 
-  // If no locale in URL, rewrite to /en/path internally to match [locale] directory structure
-  // This keeps URL clean (no /en/) while routing to correct locale directory
-  // This handles ALL clean URLs regardless of cookie state
+  // If no locale in URL, rewrite to /{detectedLocale}/path internally
+  // This respects user's language choice from cookie and keeps URL clean
+  // detectedLocale comes from: 1) URL > 2) Cookie > 3) Accept-Language > 4) Default
   if (!hasLocale) {
     const url = req.nextUrl.clone();
-    url.pathname = `/en${pathname}`;
+    url.pathname = `/${detectedLocale}${pathname}`;
     const response = NextResponse.rewrite(url);
-    response.cookies.set('NEXT_LOCALE', DEFAULT_LOCALE, {
+    // Keep the detected locale (don't force English)
+    response.cookies.set('NEXT_LOCALE', detectedLocale, {
       maxAge: 31536000,
       path: '/',
     });
