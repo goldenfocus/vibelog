@@ -21,8 +21,11 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Use admin client to check ownership and admin status
+    const adminClient = await createServerAdminClient();
+
     // Verify ownership and get all storage URLs + path info for cache revalidation
-    const { data: vibelog, error: fetchError } = await supabase
+    const { data: vibelog, error: fetchError } = await adminClient
       .from('vibelogs')
       .select(
         'user_id, slug, audio_url, cover_image_url, video_url, ai_audio_url, profiles!inner(username)'
@@ -34,12 +37,21 @@ export async function DELETE(
       return NextResponse.json({ error: 'Vibelog not found' }, { status: 404 });
     }
 
-    if (vibelog.user_id !== user.id) {
+    // Check if user is admin
+    const { data: userProfile } = await adminClient
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', user.id)
+      .single();
+
+    const isAdmin = userProfile?.is_admin === true;
+
+    // Verify user is vibelog author or admin
+    if (vibelog.user_id !== user.id && !isAdmin) {
       return NextResponse.json({ error: 'Forbidden - not your vibelog' }, { status: 403 });
     }
 
     // Clean up storage files before deleting database record
-    const adminClient = await createServerAdminClient();
     const storageErrors: string[] = [];
 
     // Helper function to extract storage path from public URL
