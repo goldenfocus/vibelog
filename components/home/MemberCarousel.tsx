@@ -21,6 +21,7 @@ export interface CarouselMember {
   username: string;
   display_name: string;
   avatar_url: string | null;
+  header_image?: string | null;
   bio?: string | null;
   total_vibelogs?: number | null;
   latest_vibelog?: MemberVibelog | null;
@@ -40,7 +41,7 @@ export function MemberCarousel({ members }: MemberCarouselProps) {
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
-  const cardWidth = 96; // Avatar size on md screens
+  const cardWidth = 288; // Matches w-72
   const gap = 16;
   const totalCardWidth = cardWidth + gap;
 

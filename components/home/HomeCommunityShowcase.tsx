@@ -31,6 +31,7 @@ interface HomeFeedMember {
   username: string;
   display_name: string;
   avatar_url: string | null;
+  header_image?: string | null;
   bio?: string | null;
   total_vibelogs?: number | null;
   created_at: string;
@@ -142,11 +143,8 @@ export default function HomeCommunityShowcase({
               {Array.from({ length: 12 }).map((_, index) => (
                 <div
                   key={`member-skeleton-${index}`}
-                  className="flex flex-shrink-0 flex-col items-center"
-                >
-                  <div className="h-20 w-20 animate-pulse rounded-full bg-card/60 md:h-24 md:w-24" />
-                  <div className="mt-2 h-3 w-16 animate-pulse rounded-full bg-card/40" />
-                </div>
+                  className="h-[300px] w-72 flex-shrink-0 animate-pulse rounded-3xl border border-border/40 bg-card/60 backdrop-blur"
+                />
               ))}
             </div>
           </div>
