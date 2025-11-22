@@ -212,6 +212,7 @@ export function middleware(req: NextRequest) {
     // All other URLs: Redirect to explicit locale prefix for SEO
     const url = req.nextUrl.clone();
     url.pathname = `/${detectedLocale}${pathname}`;
+    const response = NextResponse.redirect(url);
     response.cookies.set('NEXT_LOCALE', detectedLocale, {
       maxAge: 31536000,
       path: '/',
