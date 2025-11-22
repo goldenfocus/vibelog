@@ -4,6 +4,7 @@ import { Mic, Circle } from 'lucide-react';
 import React from 'react';
 
 import { useI18n } from '@/components/providers/I18nProvider';
+import { cn } from '@/lib/utils';
 
 export type RecordingState = 'idle' | 'recording' | 'processing' | 'complete';
 
@@ -15,6 +16,7 @@ export interface ControlsProps {
   onReset: () => void;
   disabled?: boolean;
   className?: string;
+  maxDuration?: number;
 }
 
 /**
@@ -29,6 +31,7 @@ export default function Controls({
   onReset,
   disabled = false,
   className = '',
+  maxDuration = 300, // Default to 5 minutes
 }: ControlsProps) {
   const { t } = useI18n();
 
@@ -39,19 +42,12 @@ export default function Controls({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Free plan: 5 minutes (300 seconds)
-  const getTimeLimit = () => {
-    // In a real app, this would be based on user's subscription
-    return 300; // 5 minutes for free plan
-  };
-
   const isNearTimeLimit = () => {
-    const limit = getTimeLimit();
-    return recordingTime >= limit - 30; // Warning 30 seconds before limit
+    return recordingTime >= maxDuration - 30; // Warning 30 seconds before limit
   };
 
   const hasReachedTimeLimit = () => {
-    return recordingTime >= getTimeLimit();
+    return recordingTime >= maxDuration;
   };
 
   const getMicButtonContent = () => {
@@ -102,23 +98,21 @@ export default function Controls({
   };
 
   return (
-    <div className={`w-full ${className}`}>
+    <div className={cn('w-full', className)}>
       <div className="mb-12 flex flex-col items-center">
         <button
           onClick={handleClick}
           disabled={disabled || recordingState === 'processing'}
-          className={[
-            'mic',
-            recordingState === 'recording' ? 'is-recording' : '',
+          className={cn(
+            'mic transition-electric flex items-center justify-center',
             'h-40 w-40 rounded-full sm:h-48 sm:w-48',
             'bg-gradient-electric text-primary-foreground',
-            'transition-electric flex items-center justify-center',
             'hover:shadow-[0_20px_40px_rgba(97,144,255,0.3)]',
             'disabled:cursor-not-allowed disabled:opacity-70',
-            recordingState === 'complete'
-              ? '!bg-secondary !text-secondary-foreground shadow-elevated'
-              : '',
-          ].join(' ')}
+            recordingState === 'recording' && 'is-recording',
+            recordingState === 'complete' &&
+              '!bg-secondary !text-secondary-foreground shadow-elevated'
+          )}
           data-testid={`mic-button-${recordingState}`}
           aria-label={getStatusText()}
         >
@@ -132,22 +126,23 @@ export default function Controls({
           {recordingState === 'recording' && (
             <div className="flex flex-col items-center space-y-2">
               <div
-                className={`font-mono text-2xl font-bold transition-colors ${
+                className={cn(
+                  'font-mono text-2xl font-bold transition-colors',
                   isNearTimeLimit() ? 'text-red-500' : 'text-foreground'
-                }`}
+                )}
                 data-testid="recording-timer"
               >
                 {formatTime(recordingTime)}
               </div>
               <div className="text-sm text-muted-foreground">
                 {t('components.micRecorder.freePlanLimit', {
-                  timeLimit: formatTime(getTimeLimit()),
+                  timeLimit: formatTime(maxDuration),
                 })}
                 {isNearTimeLimit() && !hasReachedTimeLimit() && (
                   <span className="ml-2 text-red-500" data-testid="time-warning">
                     ⚠️{' '}
                     {t('components.micRecorder.timeRemaining', {
-                      seconds: Math.floor(getTimeLimit() - recordingTime),
+                      seconds: Math.floor(maxDuration - recordingTime),
                     })}
                   </span>
                 )}
