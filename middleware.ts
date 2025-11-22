@@ -194,8 +194,6 @@ export function middleware(req: NextRequest) {
     return response;
   }
 
-  // If no locale in URL, redirect to localized URL for SEO
-  // Exception: Keep profile URLs clean for sharing (/@username only, not /@username/slug)
   if (!hasLocale) {
     const isProfileUrl = cleanPathname.match(/^\/@[^/]+$/);
 
@@ -214,7 +212,6 @@ export function middleware(req: NextRequest) {
     // All other URLs: Redirect to explicit locale prefix for SEO
     const url = req.nextUrl.clone();
     url.pathname = `/${detectedLocale}${pathname}`;
-    const response = NextResponse.redirect(url);
     response.cookies.set('NEXT_LOCALE', detectedLocale, {
       maxAge: 31536000,
       path: '/',
