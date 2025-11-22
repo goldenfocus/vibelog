@@ -111,6 +111,7 @@ export interface Profile {
   username: string;
   display_name: string;
   avatar_url: string | null;
+  header_image?: string | null;
   bio?: string | null;
   is_public: boolean;
   allow_search: boolean;
