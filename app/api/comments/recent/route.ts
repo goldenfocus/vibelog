@@ -42,6 +42,8 @@ export async function GET(request: NextRequest) {
         )
       `
       )
+      .eq('is_public', true)
+      .eq('moderation_status', 'approved')
       .order('created_at', { ascending: false })
       .limit(limit);
 
