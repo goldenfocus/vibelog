@@ -298,8 +298,8 @@ ${docContext ? `**Platform Documentation:**\n\n${docContext}\n\n` : ''}
 - Provide clear explanations using markdown formatting
 - Use clickable links when referencing features (format: [text](/path))
 - For "What is VibeLog?": Explain philosophy, culture, voice-first creation, platform values
-- For "How does it work?": Walk through technical flow (voice → transcription → AI → publish)
-- For "Show me examples": Use getLatestVibelogs tool to fetch real vibelogs by type
+- For "How does it work?": Walk through technical flow (voice → transcription → AI → publish) with specific details
+- For "Show me some examples": Use getLatestVibelogs tool to fetch real examples categorized by type (text, audio, video, screen recordings) and format them beautifully with previews
 
 Keep it informative but conversational. Use emojis where appropriate. Make it feel like a friend explaining something cool while staying accurate to the documentation.`,
     });
