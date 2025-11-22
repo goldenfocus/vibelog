@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { match } from '@formatjs/intl-localematcher';
 import Negotiator from 'negotiator';
+import { NextRequest, NextResponse } from 'next/server';
 
 // Supported locales for VibeLog
 const SUPPORTED_LOCALES = ['en', 'vi', 'es', 'fr', 'de', 'zh'] as const;
@@ -43,9 +43,11 @@ function getLocale(request: NextRequest): Locale {
 
   // 1. Check if URL already has a locale prefix
   const pathnameLocale = SUPPORTED_LOCALES.find(
-    (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
+    locale => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
   );
-  if (pathnameLocale) return pathnameLocale;
+  if (pathnameLocale) {
+    return pathnameLocale;
+  }
 
   // 2. Check cookie (user preference from language switcher)
   const cookieLocale = request.cookies.get('NEXT_LOCALE')?.value;
@@ -76,7 +78,7 @@ function getLocale(request: NextRequest): Locale {
  */
 function pathnameHasLocale(pathname: string): boolean {
   return SUPPORTED_LOCALES.some(
-    (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
+    locale => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
   );
 }
 
@@ -85,7 +87,7 @@ function pathnameHasLocale(pathname: string): boolean {
  */
 function getLocaleFromPathname(pathname: string): Locale | null {
   const locale = SUPPORTED_LOCALES.find(
-    (loc) => pathname.startsWith(`/${loc}/`) || pathname === `/${loc}`
+    loc => pathname.startsWith(`/${loc}/`) || pathname === `/${loc}`
   );
   return locale || null;
 }
@@ -95,9 +97,13 @@ function getLocaleFromPathname(pathname: string): Locale | null {
  */
 function stripLocalePrefix(pathname: string): string {
   const locale = getLocaleFromPathname(pathname);
-  if (!locale) return pathname;
+  if (!locale) {
+    return pathname;
+  }
 
-  if (pathname === `/${locale}`) return '/';
+  if (pathname === `/${locale}`) {
+    return '/';
+  }
   return pathname.slice(`/${locale}`.length);
 }
 
@@ -181,7 +187,8 @@ export function middleware(req: NextRequest) {
   if (cleanPathname.startsWith('/@')) {
     const url = req.nextUrl.clone();
     const internalPath = cleanPathname.replace(/^\/@/, '/');
-    url.pathname = currentLocale !== DEFAULT_LOCALE ? `/${currentLocale}${internalPath}` : internalPath;
+    // Always include locale in rewrite path to match [locale]/[username] structure
+    url.pathname = `/${currentLocale}${internalPath}`;
     const response = NextResponse.rewrite(url);
     response.cookies.set('NEXT_LOCALE', currentLocale, {
       maxAge: 31536000,
