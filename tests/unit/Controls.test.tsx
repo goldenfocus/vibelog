@@ -4,6 +4,23 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import Controls from '@/components/mic/Controls'
 import type { RecordingState } from '@/components/mic/Controls'
 
+// Mock I18n provider
+vi.mock('@/components/providers/I18nProvider', () => ({
+  useI18n: () => ({
+    t: (key: string) => {
+      const translations: Record<string, string> = {
+        'recorder.idle': 'Start vibelogging',
+        'recorder.recording': 'Speak naturally… click again when done',
+        'recorder.processing': 'Processing...',
+        'recorder.done': 'Done',
+        'components.micRecorder.freePlanLimit': 'Free plan: {timeLimit}',
+        'components.micRecorder.timeRemaining': '{seconds}s remaining',
+      };
+      return translations[key] || key;
+    },
+  }),
+}));
+
 describe('Controls Component', () => {
   const mockHandlers = {
     onStartRecording: vi.fn(),
@@ -26,7 +43,8 @@ describe('Controls Component', () => {
       )
 
       expect(screen.getByTestId('mic-button-idle')).toBeInTheDocument()
-      expect(screen.getByText('Tap to start recording')).toBeInTheDocument()
+      // Component shows status text only when not idle, so check button exists
+      expect(screen.getByTestId('mic-button-idle')).toBeInTheDocument()
     })
 
     it('renders recording state with timer', () => {
@@ -39,7 +57,7 @@ describe('Controls Component', () => {
       )
 
       expect(screen.getByTestId('mic-button-recording')).toBeInTheDocument()
-      expect(screen.getByText('Recording...')).toBeInTheDocument()
+      expect(screen.getByText('Speak naturally… click again when done')).toBeInTheDocument()
       expect(screen.getByTestId('recording-timer')).toHaveTextContent('1:05')
     })
 

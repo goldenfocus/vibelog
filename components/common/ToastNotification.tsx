@@ -1,6 +1,5 @@
 "use client";
-import { useEffect } from 'react';
-
+import { useEffect, useState } from 'react';
 export interface ToastState {
   message: string;
   visible: boolean;
@@ -68,9 +67,6 @@ export function ToastNotification({
     </div>
   );
 }
-
-// Import useState for the hook
-import { useState } from 'react';
 
 // Hook for managing toast state
 export function useToast() {

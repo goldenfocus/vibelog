@@ -5,8 +5,7 @@ import GlobalAudioPlayer from '@/components/GlobalAudioPlayer';
 import { AuthProvider } from '@/components/providers/AuthProvider';
 import { I18nProvider } from '@/components/providers/I18nProvider';
 import { ReactQueryProvider } from '@/components/providers/ReactQueryProvider';
-import { Toaster as Sonner } from '@/components/ui/sonner';
-import { Toaster } from '@/components/ui/toaster';
+import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { VibeBrainWidget } from '@/components/vibe-brain/VibeBrainWidget';
 import {
@@ -122,7 +121,6 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
             <GlobalAudioPlayer />
             <VibeBrainWidget />
             <Toaster />
-            <Sonner />
           </I18nProvider>
         </TooltipProvider>
       </AuthProvider>

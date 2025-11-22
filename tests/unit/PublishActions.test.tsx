@@ -108,7 +108,7 @@ vi.mock('lucide-react', () => ({
 describe('PublishActions', () => {
   const mockOnCopy = vi.fn();
   const mockOnEdit = vi.fn();
-  const mockOnSave = vi.fn();
+  // mockOnSave removed - save button functionality removed from component
   const mockOnShare = vi.fn();
 
   beforeEach(() => {
@@ -120,18 +120,18 @@ describe('PublishActions', () => {
     isLoggedIn: false,
     onCopy: mockOnCopy,
     onEdit: mockOnEdit,
-    onSave: mockOnSave,
     onShare: mockOnShare,
+    // Note: onSave prop removed - component no longer has save button
   };
 
   describe('Basic Rendering', () => {
-    it('should render all four action buttons', () => {
+    it('should render all action buttons', () => {
       render(<PublishActions {...defaultProps} />);
 
       expect(screen.getByTestId('edit-button')).toBeInTheDocument();
       expect(screen.getByTestId('copy-button')).toBeInTheDocument();
-      expect(screen.getByTestId('save-button')).toBeInTheDocument();
       expect(screen.getByTestId('share-button')).toBeInTheDocument();
+      // Save button removed from component
     });
 
     it('should render with correct button labels', () => {
@@ -140,8 +140,8 @@ describe('PublishActions', () => {
       // Check labels specifically within buttons
       expect(screen.getByTestId('edit-button')).toHaveTextContent('Edit');
       expect(screen.getByTestId('copy-button')).toHaveTextContent('Copy');
-      expect(screen.getByTestId('save-button')).toHaveTextContent('Save');
       expect(screen.getByTestId('share-button')).toHaveTextContent('Share');
+      // Save button removed from component
     });
 
     it('should render icons for all buttons', () => {
@@ -149,8 +149,8 @@ describe('PublishActions', () => {
 
       expect(screen.getByTestId('edit-icon')).toBeInTheDocument();
       expect(screen.getByTestId('copy-icon')).toBeInTheDocument();
-      expect(screen.getByTestId('save-icon')).toBeInTheDocument();
       expect(screen.getByTestId('share-icon')).toBeInTheDocument();
+      // Save button removed from component
     });
 
     it('should apply custom className', () => {
@@ -304,8 +304,9 @@ describe('PublishActions', () => {
     });
   });
 
-  describe('Save Functionality - Logged Out User', () => {
-    it('should show save popup when save button clicked and user not logged in', () => {
+  describe.skip('Save Functionality - Logged Out User', () => {
+    // Save button removed from component - tests skipped
+    it.skip('should show save popup when save button clicked and user not logged in', () => {
       render(<PublishActions {...defaultProps} isLoggedIn={false} />);
 
       const saveButton = screen.getByTestId('save-button');
@@ -355,8 +356,9 @@ describe('PublishActions', () => {
     });
   });
 
-  describe('Save Functionality - Logged In User', () => {
-    it('should call onSave when save button clicked and user is logged in', () => {
+  describe.skip('Save Functionality - Logged In User', () => {
+    // Save button removed from component - tests skipped
+    it.skip('should call onSave when save button clicked and user is logged in', () => {
       render(<PublishActions {...defaultProps} isLoggedIn={true} />);
 
       const saveButton = screen.getByTestId('save-button');
@@ -376,7 +378,8 @@ describe('PublishActions', () => {
   });
 
   describe('Multiple Popups Management', () => {
-    it('should handle both edit and save popups independently', () => {
+    it.skip('should handle both edit and save popups independently', () => {
+      // Save button removed - test skipped
       render(<PublishActions {...defaultProps} isLoggedIn={false} />);
 
       // Open edit popup
@@ -427,12 +430,11 @@ describe('PublishActions', () => {
 
       const editButton = screen.getByTestId('edit-button');
       const copyButton = screen.getByTestId('copy-button');
-      const saveButton = screen.getByTestId('save-button');
       const shareButton = screen.getByTestId('share-button');
+      // Save button removed from component
 
       expect(editButton.tagName).toBe('BUTTON');
       expect(copyButton.tagName).toBe('BUTTON');
-      expect(saveButton.tagName).toBe('BUTTON');
       expect(shareButton.tagName).toBe('BUTTON');
     });
 
