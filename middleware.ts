@@ -168,10 +168,10 @@ export function middleware(req: NextRequest) {
   const cleanPathname = stripLocalePrefix(pathname);
   const currentLocale = pathLocale || DEFAULT_LOCALE;
 
-  // If no locale in URL and user prefers default locale (English),
-  // rewrite to /en/path internally to match [locale] directory structure
+  // If no locale in URL, rewrite to /en/path internally to match [locale] directory structure
   // This keeps URL clean (no /en/) while routing to correct locale directory
-  if (!hasLocale && detectedLocale === DEFAULT_LOCALE) {
+  // This handles ALL clean URLs regardless of cookie state
+  if (!hasLocale) {
     const url = req.nextUrl.clone();
     url.pathname = `/en${pathname}`;
     const response = NextResponse.rewrite(url);
