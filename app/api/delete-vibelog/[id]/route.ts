@@ -1,3 +1,4 @@
+import { revalidatePath } from 'next/cache';
 import { NextRequest, NextResponse } from 'next/server';
 
 import { createServerSupabaseClient } from '@/lib/supabase';
@@ -20,10 +21,12 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Verify ownership and get all storage URLs
+    // Verify ownership and get all storage URLs + path info for cache revalidation
     const { data: vibelog, error: fetchError } = await supabase
       .from('vibelogs')
-      .select('user_id, audio_url, cover_image_url, video_url, ai_audio_url')
+      .select(
+        'user_id, slug, audio_url, cover_image_url, video_url, ai_audio_url, profiles!inner(username)'
+      )
       .eq('id', id)
       .single();
 
@@ -111,6 +114,19 @@ export async function DELETE(
     if (deleteError) {
       console.error('Failed to delete vibelog:', deleteError);
       return NextResponse.json({ error: 'Failed to delete vibelog' }, { status: 500 });
+    }
+
+    // Revalidate the vibelog page cache to remove it immediately
+    if (vibelog.profiles?.username && vibelog.slug) {
+      const vibelogPath = `/@${vibelog.profiles.username}/${vibelog.slug}`;
+      revalidatePath(vibelogPath);
+      console.log('✅ Revalidated cache for deleted vibelog:', vibelogPath);
+    }
+
+    // Also revalidate dashboard and profile pages
+    revalidatePath('/dashboard');
+    if (vibelog.profiles?.username) {
+      revalidatePath(`/@${vibelog.profiles.username}`);
     }
 
     // Return success with optional storage cleanup warnings
