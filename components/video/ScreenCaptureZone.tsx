@@ -115,6 +115,7 @@ export function ScreenCaptureZone({
   const chunksRef = useRef<Blob[]>([]);
   const hasRequestedScreen = useRef(false);
   const animationFrameRef = useRef<number | null>(null);
+  const videoBlobUrlRef = useRef<string | null>(null); // Track Blob URL for cleanup
 
   // Attach screen stream to preview video element
   const attachScreenPreview = useCallback((stream: MediaStream) => {
@@ -514,10 +515,56 @@ export function ScreenCaptureZone({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Cleanup on unmount
+  // Blob URL management - create and cleanup to prevent memory leaks
+  useEffect(() => {
+    if (videoBlob) {
+      // Revoke old URL if exists
+      if (videoBlobUrlRef.current) {
+        URL.revokeObjectURL(videoBlobUrlRef.current);
+      }
+      // Create new URL
+      videoBlobUrlRef.current = URL.createObjectURL(videoBlob);
+    }
+
+    return () => {
+      if (videoBlobUrlRef.current) {
+        URL.revokeObjectURL(videoBlobUrlRef.current);
+        videoBlobUrlRef.current = null;
+      }
+    };
+  }, [videoBlob]);
+
+  // beforeunload warning - prevent accidental data loss during recording
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (status === 'recording') {
+        e.preventDefault();
+        e.returnValue = ''; // Chrome requires returnValue to be set
+        return ''; // Some browsers use return value
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [status]);
+
+  // Cleanup on unmount - LEGENDARY edition with MediaRecorder handling
   useEffect(() => {
     return () => {
+      // CRITICAL: Stop MediaRecorder FIRST before cleanup to prevent errors
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        try {
+          mediaRecorderRef.current.stop();
+        } catch (err) {
+          console.error('[CLEANUP] Failed to stop MediaRecorder:', err);
+        }
+      }
+
       cleanup();
+
       if (recordingTimerRef.current) {
         clearInterval(recordingTimerRef.current);
       }
@@ -714,13 +761,13 @@ export function ScreenCaptureZone({
         )}
 
         {/* PREVIEW STATE - After recording */}
-        {status === 'preview' && videoBlob && (
+        {status === 'preview' && videoBlob && videoBlobUrlRef.current && (
           <motion.div
             key="preview"
             {...scaleIn}
             className="relative aspect-video overflow-hidden rounded-2xl bg-black shadow-2xl ring-1 ring-white/10"
           >
-            <video src={URL.createObjectURL(videoBlob)} controls className="h-full w-full" />
+            <video src={videoBlobUrlRef.current} controls className="h-full w-full" />
             <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-sm font-medium text-white backdrop-blur-sm">
               <Sparkles className="h-4 w-4" />
               <span>Preview</span>
