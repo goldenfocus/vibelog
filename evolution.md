@@ -2,9 +2,10 @@
 
 > **Living Document**: This file tracks VibeLog's technical evolution from inception to present. Update this file whenever significant features ship or architectural decisions are made.
 
-**Last Updated**: January 23, 2025
+**Last Updated**: November 22, 2025
 **Current Version**: v1.0 (Foundation)
 **Branch**: refactor/cleanup-and-fixes
+**Next Review**: December 22, 2025
 
 ---
 
@@ -140,6 +141,17 @@
 - ✅ Modular codebase with clear separation of concerns
 - ✅ Full TypeScript type safety
 - ✅ Vitest + Playwright testing infrastructure
+
+**Documentation Embeddings & Knowledge Base**
+
+- ✅ Database support for documentation content type (migration 20251123000000)
+- ✅ Nullable `content_id` for documentation embeddings (no specific content reference)
+- ✅ Markdown chunking strategy (sections split at ~2000 chars, preserving headings)
+- ✅ API endpoint `/api/admin/documentation/embed` for re-embedding (GET/POST)
+- ✅ CLI embedding script `scripts/embed-all-docs.js` for batch processing
+- ✅ 5 platform docs embedded: README.md, evolution.md, living-web-2026.md, branding.md, CLAUDE.md
+- ✅ Vector search with pgvector (cosine similarity, 60% threshold)
+- ✅ Vibe Brain can answer platform questions via RAG ("What is VibeLog?", "How does it work?")
 
 ### December 2024 - Pre-Launch
 
@@ -392,7 +404,9 @@ POST /api/vibe-brain/chat
 
 - **20251120000000**: AI cost tracking tables (simple version)
 - **20251120000001**: AI cost tracking (refined)
+- **20251121000000**: Vibe Brain RAG system with pgvector
 - **20251122000000**: Fix handle_new_user trigger (Google OAuth)
+- **20251123000000**: Add documentation embeddings (content_type='documentation', nullable content_id)
 
 ### Key Tables & Relationships
 
@@ -445,17 +459,23 @@ CREATE TABLE reactions (
 ```sql
 CREATE TABLE content_embeddings (
   id UUID PRIMARY KEY,
-  content_type TEXT NOT NULL,  -- 'vibelog', 'comment', 'profile'
-  content_id UUID NOT NULL,
+  content_type TEXT NOT NULL,  -- 'vibelog', 'comment', 'profile', 'documentation'
+  content_id UUID,  -- Nullable for documentation embeddings (no specific content reference)
+  user_id UUID REFERENCES auth.users(id),
   embedding VECTOR(1536),  -- OpenAI text-embedding-3-small
   text_chunk TEXT,
-  metadata JSONB,
+  metadata JSONB,  -- For docs: {source, category, section, chunk_index, total_chunks}
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE INDEX content_embeddings_vector_idx
   ON content_embeddings
   USING ivfflat (embedding vector_cosine_ops);
+
+-- Fast documentation lookups
+CREATE INDEX idx_content_embeddings_documentation
+  ON content_embeddings(content_type, created_at DESC)
+  WHERE content_type = 'documentation';
 ```
 
 ---
@@ -616,7 +636,6 @@ RATE_LIMITS = {
 - [ ] Push notification service (OneSignal/Firebase)
 - [ ] Following/followers system (social graph completion)
 - [ ] Public documentation page (/docs) with interactive AI assistant
-- [ ] Evolution.md embedding for AI-powered documentation search
 
 **Medium Priority**:
 
