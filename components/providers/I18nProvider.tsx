@@ -122,8 +122,12 @@ export function I18nProvider({ children, initialLocale = 'en' }: I18nProviderPro
     // Get current path without locale prefix
     const pathWithoutLocale = stripLocaleFromPath(pathname);
 
-    // Add new locale prefix (or keep clean if 'en')
-    const newPath = addLocaleToPath(pathWithoutLocale, newLocale);
+    // Add new locale prefix (ALL locales get explicit prefix for SEO)
+    // Exception: Keep profile URLs clean for sharing (/@username only)
+    const isProfileUrl = pathWithoutLocale.match(/^\/@[^/]+$/);
+    const newPath = addLocaleToPath(pathWithoutLocale, newLocale, {
+      keepProfileClean: isProfileUrl ? true : false,
+    });
 
     // Set cookie for persistence FIRST (before navigation)
     // This ensures middleware sees the new locale immediately

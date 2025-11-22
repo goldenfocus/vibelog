@@ -32,6 +32,7 @@ export const LOCALE_METADATA: Record<Locale, { name: string; nativeName: string;
  *
  * @param path - The path without locale prefix (e.g., '/community', '/@user/slug')
  * @param currentLocale - The current locale
+ * @param options - Options for special handling
  * @returns Object mapping locale codes to full URLs
  *
  * @example
@@ -39,29 +40,40 @@ export const LOCALE_METADATA: Record<Locale, { name: string; nativeName: string;
  * const links = generateHreflangLinks('/community', 'en');
  * // Returns:
  * // {
- * //   'en': 'https://vibelog.io/community',
+ * //   'en': 'https://vibelog.io/en/community',
  * //   'vi': 'https://vibelog.io/vi/community',
  * //   'es': 'https://vibelog.io/es/community',
  * //   ...
- * //   'x-default': 'https://vibelog.io/community'
+ * //   'x-default': 'https://vibelog.io/en/community'
  * // }
  * ```
  */
-export function generateHreflangLinks(path: string, currentLocale: Locale = DEFAULT_LOCALE): Record<string, string> {
+export function generateHreflangLinks(
+  path: string,
+  _currentLocale: Locale = DEFAULT_LOCALE,
+  options: { keepProfileClean?: boolean } = {}
+): Record<string, string> {
   const links: Record<string, string> = {};
 
   // Ensure path starts with /
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
 
+  // Check if this is a profile URL (/@username only, not /@username/slug)
+  const isProfileUrl = cleanPath.match(/^\/@[^/]+$/);
+
   // Generate URL for each locale
   SUPPORTED_LOCALES.forEach(locale => {
-    const localePath = locale === DEFAULT_LOCALE ? cleanPath : `/${locale}${cleanPath}`;
+    // Keep profile URLs clean for sharing, but add locale to vibelog pages
+    const localePath =
+      options.keepProfileClean && isProfileUrl ? cleanPath : `/${locale}${cleanPath}`;
     links[locale] = `${BASE_URL}${localePath}`;
   });
 
-  // Add x-default (typically points to default locale)
-  // This tells search engines which version to show when no specific language matches
-  links['x-default'] = `${BASE_URL}${cleanPath}`;
+  // Add x-default (points to English version with locale prefix, or clean profile URL)
+  links['x-default'] =
+    options.keepProfileClean && isProfileUrl
+      ? `${BASE_URL}${cleanPath}`
+      : `${BASE_URL}/en${cleanPath}`;
 
   return links;
 }
@@ -71,17 +83,30 @@ export function generateHreflangLinks(path: string, currentLocale: Locale = DEFA
  *
  * @param path - The path without locale prefix
  * @param locale - The locale
+ * @param options - Options for special handling
  * @returns Canonical URL
  *
  * @example
  * ```ts
  * generateCanonicalUrl('/community', 'vi'); // https://vibelog.io/vi/community
- * generateCanonicalUrl('/community', 'en'); // https://vibelog.io/community
+ * generateCanonicalUrl('/community', 'en'); // https://vibelog.io/en/community
+ * generateCanonicalUrl('/@user', 'en', { keepProfileClean: true }); // https://vibelog.io/@user
  * ```
  */
-export function generateCanonicalUrl(path: string, locale: Locale = DEFAULT_LOCALE): string {
+export function generateCanonicalUrl(
+  path: string,
+  locale: Locale = DEFAULT_LOCALE,
+  options: { keepProfileClean?: boolean } = {}
+): string {
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  const localePath = locale === DEFAULT_LOCALE ? cleanPath : `/${locale}${cleanPath}`;
+
+  // Special case: Keep profile URLs clean for sharing
+  if (options.keepProfileClean && cleanPath.match(/^\/@[^/]+$/)) {
+    return `${BASE_URL}${cleanPath}`;
+  }
+
+  // All other URLs get explicit locale prefix (including English)
+  const localePath = `/${locale}${cleanPath}`;
   return `${BASE_URL}${localePath}`;
 }
 
@@ -144,9 +169,13 @@ export function extractLocaleFromPath(path: string): Locale {
 export function stripLocaleFromPath(path: string): string {
   const locale = extractLocaleFromPath(path);
 
-  if (locale === DEFAULT_LOCALE) return path;
+  if (locale === DEFAULT_LOCALE) {
+    return path;
+  }
 
-  if (path === `/${locale}`) return '/';
+  if (path === `/${locale}`) {
+    return '/';
+  }
   if (path.startsWith(`/${locale}/`)) {
     return path.slice(`/${locale}`.length);
   }
@@ -159,11 +188,28 @@ export function stripLocaleFromPath(path: string): string {
  *
  * @param path - Path without locale prefix
  * @param locale - Locale to add
- * @returns Path with locale prefix (or unchanged if default locale)
+ * @param options - Options for special handling
+ * @returns Path with locale prefix
+ *
+ * @example
+ * ```ts
+ * addLocaleToPath('/community', 'en')  // '/en/community'
+ * addLocaleToPath('/@user', 'en', { keepProfileClean: true })  // '/@user' (clean for sharing)
+ * addLocaleToPath('/@user/slug', 'vi')  // '/vi/@user/slug' (vibelog pages need locale)
+ * ```
  */
-export function addLocaleToPath(path: string, locale: Locale): string {
-  if (locale === DEFAULT_LOCALE) return path;
-
+export function addLocaleToPath(
+  path: string,
+  locale: Locale,
+  options: { keepProfileClean?: boolean } = {}
+): string {
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
+
+  // Special case: Keep profile URLs clean for sharing (/@username only, not /@username/slug)
+  if (options.keepProfileClean && cleanPath.match(/^\/@[^/]+$/)) {
+    return cleanPath;
+  }
+
+  // All other URLs get explicit locale prefix (including English)
   return `/${locale}${cleanPath}`;
 }

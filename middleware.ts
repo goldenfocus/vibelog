@@ -194,19 +194,31 @@ export function middleware(req: NextRequest) {
     return response;
   }
 
-  // If no locale in URL, rewrite to /{detectedLocale}/path internally
-  // This respects user's language choice from cookie and keeps URL clean
-  // detectedLocale comes from: 1) URL > 2) Cookie > 3) Accept-Language > 4) Default
+  // If no locale in URL, redirect to localized URL for SEO
+  // Exception: Keep profile URLs clean for sharing (/@username only, not /@username/slug)
   if (!hasLocale) {
+    const isProfileUrl = cleanPathname.match(/^\/@[^/]+$/);
+
+    // Profile URLs: Keep clean for easy sharing (vibelog.io/@user)
+    if (isProfileUrl) {
+      const url = req.nextUrl.clone();
+      url.pathname = `/${detectedLocale}${pathname}`;
+      const response = NextResponse.rewrite(url);
+      response.cookies.set('NEXT_LOCALE', detectedLocale, {
+        maxAge: 31536000,
+        path: '/',
+      });
+      return response;
+    }
+
+    // All other URLs: Redirect to explicit locale prefix for SEO
     const url = req.nextUrl.clone();
     url.pathname = `/${detectedLocale}${pathname}`;
-    const response = NextResponse.rewrite(url);
-    // Keep the detected locale (don't force English)
+    const response = NextResponse.redirect(url);
     response.cookies.set('NEXT_LOCALE', detectedLocale, {
       maxAge: 31536000,
       path: '/',
     });
-    response.headers.set('x-pathname', pathname);
     return response;
   }
 

@@ -4,22 +4,34 @@ import Link from 'next/link';
 
 import Comments from '@/components/comments/Comments';
 import Navigation from '@/components/Navigation';
+import { generateCanonicalUrl, generateHreflangLinks, type Locale } from '@/lib/seo/hreflang';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
-export const metadata: Metadata = {
-  title: 'About VibeLog — Voice-First Content Creation',
-  description:
-    "Learn about VibeLog's mission to build a living web where creators focus on ideas, not tools. Voice-first AI publishing for the human internet.",
-  openGraph: {
+interface AboutPageProps {
+  params: Promise<{ locale: string }>;
+}
+
+export async function generateMetadata({ params }: AboutPageProps): Promise<Metadata> {
+  const { locale } = await params;
+  const canonicalUrl = generateCanonicalUrl('/about', locale as Locale);
+  const hreflangLinks = generateHreflangLinks('/about', locale as Locale);
+
+  return {
     title: 'About VibeLog — Voice-First Content Creation',
     description:
-      "Learn about VibeLog's mission to build a living web where creators focus on ideas, not tools.",
-    url: 'https://vibelog.io/about',
-  },
-  alternates: {
-    canonical: 'https://vibelog.io/about',
-  },
-};
+      "Learn about VibeLog's mission to build a living web where creators focus on ideas, not tools. Voice-first AI publishing for the human internet.",
+    openGraph: {
+      title: 'About VibeLog — Voice-First Content Creation',
+      description:
+        "Learn about VibeLog's mission to build a living web where creators focus on ideas, not tools.",
+      url: canonicalUrl,
+    },
+    alternates: {
+      canonical: canonicalUrl,
+      languages: hreflangLinks,
+    },
+  };
+}
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
