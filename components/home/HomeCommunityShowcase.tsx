@@ -87,86 +87,104 @@ export default function HomeCommunityShowcase({
   }, []); // Run once on mount - loadFeed is stable (empty deps in useCallback)
 
   return (
-    <section className="mx-auto max-w-6xl rounded-[32px] border border-border/40 bg-card/40 px-4 py-12 sm:px-8">
+    <div className="mx-auto max-w-6xl space-y-8">
       {error && (
-        <div className="mb-8 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-100">
+        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-100">
           {error}
         </div>
       )}
 
-      {/* Latest Vibelogs - Futuristic Carousel */}
-      {loading ? (
-        <div className="mb-12">
-          <div className="mb-6 px-4 md:px-6">
-            <div className="h-8 w-48 animate-pulse rounded-full bg-border/70" />
-          </div>
-          <div className="flex gap-5 overflow-hidden px-4 md:px-6">
-            {Array.from({ length: 4 }).map((_, index) => (
-              <div
-                key={`latest-skeleton-${index}`}
-                className="h-[480px] w-80 flex-shrink-0 animate-pulse rounded-3xl border border-border/40 bg-card/60 backdrop-blur"
-              />
-            ))}
-          </div>
+      {/* Latest Vibelogs Section */}
+      <section className="space-y-4">
+        {/* Title - OUTSIDE the box */}
+        <div className="px-4 md:px-6">
+          <h2 className="bg-gradient-to-r from-electric via-purple-400 to-pink-400 bg-clip-text text-2xl font-bold text-transparent md:text-3xl">
+            Latest vibelogs
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Discover the newest voices in the community
+          </p>
         </div>
-      ) : (
-        <FuturisticCarousel
-          vibelogs={latestVibelogs}
-          title="Latest vibelogs"
-          subtitle="Discover the newest voices in the community"
-        />
-      )}
 
-      {/* Newest members - Avatar-centric Carousel */}
-      {loading ? (
-        <div className="py-6">
-          <div className="mb-5 px-4 md:px-6">
-            <div className="h-6 w-36 animate-pulse rounded-full bg-border/70" />
+        {/* Carousel Box */}
+        {loading ? (
+          <div className="rounded-[32px] border border-border/40 bg-card/40 p-6">
+            <div className="flex gap-5 overflow-hidden">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <div
+                  key={`latest-skeleton-${index}`}
+                  className="h-[480px] w-80 flex-shrink-0 animate-pulse rounded-3xl border border-border/40 bg-card/60 backdrop-blur"
+                />
+              ))}
+            </div>
           </div>
-          <div className="flex gap-4 overflow-hidden px-4 md:px-6">
-            {Array.from({ length: 12 }).map((_, index) => (
-              <div
-                key={`member-skeleton-${index}`}
-                className="flex flex-shrink-0 flex-col items-center"
-              >
-                <div className="h-20 w-20 animate-pulse rounded-full bg-card/60 md:h-24 md:w-24" />
-                <div className="mt-2 h-3 w-16 animate-pulse rounded-full bg-card/40" />
-              </div>
-            ))}
+        ) : (
+          <div className="rounded-[32px] border border-border/40 bg-card/40 p-6">
+            <FuturisticCarousel vibelogs={latestVibelogs} />
           </div>
-        </div>
-      ) : (
-        <MemberCarousel
-          members={newMembers}
-          title="Newest members"
-          subtitle="Welcome to the community"
-        />
-      )}
+        )}
+      </section>
 
-      {/* Recent Comments - Carousel */}
-      {loading ? (
-        <div className="mt-8 py-6">
-          <div className="mb-4 px-4 md:px-6">
-            <div className="h-6 w-40 animate-pulse rounded-full bg-border/70" />
-          </div>
-          <div className="flex gap-4 overflow-hidden px-4 md:px-6">
-            {Array.from({ length: 5 }).map((_, index) => (
-              <div
-                key={`comment-skeleton-${index}`}
-                className="h-[280px] w-[260px] flex-shrink-0 animate-pulse rounded-2xl border border-border/40 bg-card/60 backdrop-blur"
-              />
-            ))}
-          </div>
+      {/* Newest Members Section */}
+      <section className="space-y-4">
+        {/* Title - OUTSIDE the box */}
+        <div className="px-4 md:px-6">
+          <h2 className="bg-gradient-to-r from-electric via-purple-400 to-pink-400 bg-clip-text text-2xl font-bold text-transparent md:text-3xl">
+            Newest members
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">Welcome to the community</p>
         </div>
-      ) : (
-        <div className="mt-8">
-          <CommentCarousel
-            comments={recentComments}
-            title="Recent Vibes"
-            subtitle="Join the conversation"
-          />
+
+        {/* Carousel Box */}
+        {loading ? (
+          <div className="rounded-[32px] border border-border/40 bg-card/40 p-6">
+            <div className="flex gap-4 overflow-hidden">
+              {Array.from({ length: 12 }).map((_, index) => (
+                <div
+                  key={`member-skeleton-${index}`}
+                  className="flex flex-shrink-0 flex-col items-center"
+                >
+                  <div className="h-20 w-20 animate-pulse rounded-full bg-card/60 md:h-24 md:w-24" />
+                  <div className="mt-2 h-3 w-16 animate-pulse rounded-full bg-card/40" />
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-[32px] border border-border/40 bg-card/40 p-6">
+            <MemberCarousel members={newMembers} />
+          </div>
+        )}
+      </section>
+
+      {/* Recent Vibes Section */}
+      <section className="space-y-4">
+        {/* Title - OUTSIDE the box */}
+        <div className="px-4 md:px-6">
+          <h2 className="bg-gradient-to-r from-electric via-purple-400 to-pink-400 bg-clip-text text-2xl font-bold text-transparent md:text-3xl">
+            Recent Vibes
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">Join the conversation</p>
         </div>
-      )}
-    </section>
+
+        {/* Carousel Box */}
+        {loading ? (
+          <div className="rounded-[32px] border border-border/40 bg-card/40 p-6">
+            <div className="flex gap-4 overflow-hidden">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <div
+                  key={`comment-skeleton-${index}`}
+                  className="h-[280px] w-[260px] flex-shrink-0 animate-pulse rounded-2xl border border-border/40 bg-card/60 backdrop-blur"
+                />
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-[32px] border border-border/40 bg-card/40 p-6">
+            <CommentCarousel comments={recentComments} />
+          </div>
+        )}
+      </section>
+    </div>
   );
 }

@@ -28,15 +28,13 @@ export interface CarouselMember {
 
 interface MemberCarouselProps {
   members: CarouselMember[];
-  title?: string;
-  subtitle?: string;
 }
 
 /**
  * Futuristic carousel for member profiles
  * Features smooth scroll, snap-to-card, and responsive design
  */
-export function MemberCarousel({ members, title, subtitle }: MemberCarouselProps) {
+export function MemberCarousel({ members }: MemberCarouselProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -120,24 +118,12 @@ export function MemberCarousel({ members, title, subtitle }: MemberCarouselProps
 
   return (
     <section
-      className="relative w-full py-6"
+      className="relative w-full"
       onKeyDown={handleKeyDown}
       tabIndex={0}
       role="region"
-      aria-label={title || 'Member carousel'}
+      aria-label="Member carousel"
     >
-      {/* Header */}
-      {(title || subtitle) && (
-        <div className="mb-5 px-4 md:px-6">
-          {title && (
-            <h2 className="bg-gradient-electric bg-clip-text text-xl font-bold text-transparent md:text-2xl">
-              {title}
-            </h2>
-          )}
-          {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
-        </div>
-      )}
-
       {/* Carousel container */}
       <div className="relative">
         {/* Scroll container */}
