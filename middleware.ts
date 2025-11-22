@@ -23,6 +23,7 @@ const APP_ROUTES = new Set([
   '/pricing',
   '/settings',
   '/v',
+  '/vibes',
   '/vibelogs',
   '/mic-lab',
   '/transcript-lab',
