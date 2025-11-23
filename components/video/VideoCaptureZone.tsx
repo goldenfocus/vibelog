@@ -17,12 +17,8 @@ import {
   RefreshCw,
   CheckCircle,
 } from 'lucide-react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import React, { useState, useRef, useEffect } from 'react';
 
-import VideoProcessingAnimation from '@/components/video/VideoProcessingAnimation';
-import { useVideoStateMachine } from '@/hooks/useVideoStateMachine';
 import { useVideoUpload } from '@/hooks/useVideoUpload';
 
 interface VideoCaptureZoneProps {
@@ -39,18 +35,8 @@ export function VideoCaptureZone({
   onVideoCaptured,
   maxDurationSeconds = DEFAULT_MAX_DURATION,
   isPremium = false,
-  onSaveSuccess,
-}: VideoCaptureZoneProps & { onSaveSuccess?: () => void }) {
+}: VideoCaptureZoneProps) {
   console.log('[VideoCaptureZone] Component rendering with vibelogId:', vibelogId);
-
-  const router = useRouter();
-
-  // Use video state machine for processing
-  const videoStateMachine = useVideoStateMachine({
-    vibelogId,
-    onComplete: onVideoCaptured,
-    onSaveSuccess,
-  });
 
   // Use video upload hook
   const { uploadVideo, uploadProgress: uploadProgressState } = useVideoUpload();
@@ -79,7 +65,6 @@ export function VideoCaptureZone({
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const hasRequestedCamera = useRef(false);
-  const streamTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const recordingTimeRef = useRef(0);
 
   // Request camera permission and start preview
@@ -280,16 +265,12 @@ export function VideoCaptureZone({
         const blob = new Blob(chunksRef.current, { type: mimeType });
         setVideoBlob(blob);
 
-        // Pass to state machine for processing
-        videoStateMachine.setVideoBlob(blob);
-        videoStateMachine.setRecordingTime(recordingTimeRef.current);
-
         // Stop camera preview
         stopCameraPreview();
 
-        // Go directly to processing - no preview needed
-        console.log('📹 [AUTO-PROCESS] Starting automatic processing...');
-        setStatus('processing');
+        // Go to preview state - user confirms before upload
+        console.log('📹 [RECORDING-COMPLETE] Going to preview...');
+        setStatus('preview');
       };
 
       mediaRecorder.start();
@@ -494,14 +475,6 @@ export function VideoCaptureZone({
     setError(null);
     setStatus('idle');
     stopCameraPreview();
-    videoStateMachine.reset();
-  };
-
-  // Handle processing completion - redirect to community page
-  const handleProcessingComplete = () => {
-    console.log('✅ [VideoCaptureZone] Processing complete! Redirecting to community...');
-    // Redirect to community page where user can see their vibelog on top
-    router.push('/community');
   };
 
   // Toggle camera (front/back)
@@ -546,11 +519,6 @@ export function VideoCaptureZone({
       if (recordingTimerRef.current) {
         clearInterval(recordingTimerRef.current);
       }
-      // Capture ref value for cleanup
-      const streamTimeout = streamTimeoutRef.current;
-      if (streamTimeout) {
-        clearTimeout(streamTimeout);
-      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run only on mount
@@ -571,77 +539,6 @@ export function VideoCaptureZone({
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
-
-  // Processing state - show the cool animation
-  if (status === 'processing' && videoBlob) {
-    return (
-      <div className="space-y-4">
-        <div className="relative overflow-hidden rounded-xl">
-          <video
-            src={URL.createObjectURL(videoBlob)}
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="w-full rounded-xl opacity-30"
-            style={{ maxHeight: '200px', objectFit: 'cover' }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent" />
-        </div>
-
-        <VideoProcessingAnimation
-          isVisible={true}
-          recordingTime={recordingTime}
-          onUploadComplete={videoStateMachine.processVideoUpload}
-          onTranscribeComplete={videoStateMachine.processTranscription}
-          onGenerateComplete={videoStateMachine.processVibelogGeneration}
-          onCoverComplete={videoStateMachine.processCoverImage}
-          onAnimationComplete={async () => {
-            await videoStateMachine.completeProcessing();
-            handleProcessingComplete();
-          }}
-        />
-      </div>
-    );
-  }
-
-  // Complete state
-  if (status === 'complete') {
-    return (
-      <div className="space-y-4 rounded-2xl border border-green-200 bg-green-50 p-6 dark:border-green-800 dark:bg-green-900/20">
-        <div className="flex items-center gap-3">
-          <div className="rounded-full bg-green-600 p-2 dark:bg-green-500">
-            <Check className="h-6 w-6 text-white" />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-green-900 dark:text-green-100">
-              Video vibelog published!
-            </h3>
-            <p className="text-sm text-green-700 dark:text-green-300">
-              Your video has been transcribed, enhanced, and published.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-2 pt-2 sm:flex-row">
-          {videoStateMachine.vibelogId && (
-            <Link
-              href={`/vibelogs/${videoStateMachine.vibelogId}`}
-              className="flex-1 rounded-lg bg-green-600 px-4 py-2.5 text-center text-sm font-medium text-white transition-colors hover:bg-green-700"
-            >
-              View your vibelog
-            </Link>
-          )}
-          <button
-            onClick={handleReset}
-            className="flex-1 rounded-lg border border-green-600 px-4 py-2.5 text-sm font-medium text-green-700 transition-colors hover:bg-green-100 dark:border-green-500 dark:text-green-300 dark:hover:bg-green-900/40"
-          >
-            Record another
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   // Success state (legacy)
   if (status === 'success') {
