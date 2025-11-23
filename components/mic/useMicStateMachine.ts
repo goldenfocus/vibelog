@@ -541,10 +541,26 @@ export function useMicStateMachine(
           fullVibelogContent;
 
         if (!contentToUse) {
+          console.warn('🖼️  [COVER-GEN] No content available for cover generation');
           return null;
         }
 
+        console.log(
+          '🖼️  [COVER-GEN] Starting cover generation, content length:',
+          contentToUse.length
+        );
         const image = await vibelogAPI.processCoverImage({ vibelogContent: contentToUse });
+
+        if (!image) {
+          console.error('🖼️  [COVER-GEN] API returned null image!');
+          return null;
+        }
+
+        console.log('🖼️  [COVER-GEN] Cover image received:', {
+          url: image.url,
+          hasRateLimitFlag: 'rateLimited' in image,
+          isFallback: image.url === '/og-image.png',
+        });
 
         // Show toast if rate limited (image will be fallback)
         if ('rateLimited' in image && image.rateLimited) {
@@ -552,12 +568,14 @@ export function useMicStateMachine(
             'message' in image && typeof image.message === 'string'
               ? image.message
               : 'Cover generation limit reached. Using default image.';
+          console.warn('🖼️  [COVER-GEN] Rate limited:', message);
           showToast(message);
         }
 
         setCoverImage(image);
         return image;
       } catch (error) {
+        console.error('🖼️  [COVER-GEN] Cover generation failed with error:', error);
         if (DEBUG_MODE) {
           console.warn('Cover generation failed', error);
         }
