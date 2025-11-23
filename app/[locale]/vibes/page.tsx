@@ -10,6 +10,10 @@ import { VibesFeedGrid } from '@/components/vibes/VibesFeedGrid';
 import { VibesFilterBar } from '@/components/vibes/VibesFilterBar';
 import type { CommentFilterType, CommentSortType } from '@/lib/comments';
 
+/**
+ * Public Vibes Feed Page
+ * Displays all public comments with filtering and sorting capabilities
+ */
 export default function VibesPage() {
   const [filter, setFilter] = useState<CommentFilterType>('all');
   const [sort, setSort] = useState<CommentSortType>('recent');
