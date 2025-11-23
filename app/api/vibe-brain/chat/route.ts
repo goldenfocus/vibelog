@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { isDailyLimitExceeded } from '@/lib/ai-cost-tracker';
-import { checkAndBlockBots } from '@/lib/botid-check';
+// import { checkAndBlockBots } from '@/lib/botid-check'; // DISABLED: Blocking legit users
 import { createServerSupabaseClient } from '@/lib/supabase';
 import { chat, getOrCreateConversation, getConversationHistory } from '@/lib/vibe-brain';
 
@@ -13,11 +13,11 @@ const requestSchema = z.object({
 
 export async function POST(request: Request) {
   try {
-    // 🛡️ BOT PROTECTION: Block automated bots
-    const botCheck = await checkAndBlockBots();
-    if (botCheck) {
-      return botCheck;
-    }
+    // 🛡️ BOT PROTECTION: DISABLED - was blocking legitimate users
+    // const botCheck = await checkAndBlockBots();
+    // if (botCheck) {
+    //   return botCheck;
+    // }
 
     // Auth check
     const supabase = await createServerSupabaseClient();

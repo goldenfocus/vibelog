@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
 import { trackAICost, calculateTTSCost, isDailyLimitExceeded } from '@/lib/ai-cost-tracker';
-import { checkAndBlockBots } from '@/lib/botid-check';
+// import { checkAndBlockBots } from '@/lib/botid-check'; // DISABLED: Blocking legit users
 import { config } from '@/lib/config';
 import { isDev } from '@/lib/env';
 import { rateLimit, tooManyResponse } from '@/lib/rateLimit';
@@ -13,11 +13,11 @@ export const maxDuration = 120; // TTS can take longer for long content
 
 export async function POST(request: NextRequest) {
   try {
-    // 🛡️ BOT PROTECTION: Block automated bots
-    const botCheck = await checkAndBlockBots();
-    if (botCheck) {
-      return botCheck;
-    }
+    // 🛡️ BOT PROTECTION: DISABLED - was blocking legitimate users
+    // const botCheck = await checkAndBlockBots();
+    // if (botCheck) {
+    //   return botCheck;
+    // }
 
     // 🛡️ CIRCUIT BREAKER: Check if daily cost limit exceeded
     if (await isDailyLimitExceeded()) {
