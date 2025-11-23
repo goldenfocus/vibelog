@@ -301,6 +301,37 @@ export async function handleAsyncTasks(
     .catch(err => {
       console.error('[CONTENT-EXTRACTION] Failed to extract metadata:', err);
     });
+
+  // 3. Auto-generate Cover Image (if not already present)
+  if (!data.cover_image_url) {
+    console.log('🎨 [AUTO-COVER] Generating AI cover for vibelog:', vibelogId);
+
+    // Trigger cover generation in background (fire-and-forget)
+    fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'https://vibelog.io'}/api/generate-cover`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        vibelogId,
+        title: data.title,
+        teaser: data.teaser,
+        transcript: data.transcription,
+        // Get username from user metadata if available
+        username: userId ? undefined : null, // Will be fetched server-side
+      }),
+    })
+      .then(async res => {
+        if (res.ok) {
+          const result = await res.json();
+          console.log('✅ [AUTO-COVER] Cover generated:', result.url);
+        } else {
+          const error = await res.json();
+          console.error('❌ [AUTO-COVER] Generation failed:', error);
+        }
+      })
+      .catch(err => {
+        console.error('❌ [AUTO-COVER] Request failed:', err);
+      });
+  }
 }
 
 export async function logVibelogFailure(data: any, error: any, supabase: any) {

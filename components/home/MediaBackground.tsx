@@ -3,11 +3,14 @@
 import Image from 'next/image';
 import { useState, useEffect, useRef } from 'react';
 
+import { getGradientStyle } from '@/lib/gradient-generator';
 import { isExpiredOpenAIUrl } from '@/lib/image-utils';
 
 interface MediaBackgroundProps {
   coverImage?: string | null;
   videoUrl?: string | null;
+  vibelogId?: string; // For deterministic gradient generation
+  title?: string; // For SEO-optimized alt text
   isActive?: boolean;
   className?: string;
   isPlaying?: boolean;
@@ -20,6 +23,8 @@ interface MediaBackgroundProps {
 export function MediaBackground({
   coverImage,
   videoUrl,
+  vibelogId,
+  title,
   isActive = false,
   className = '',
   isPlaying = false,
@@ -31,6 +36,12 @@ export function MediaBackground({
 
   // Skip expired OpenAI URLs entirely
   const validCoverImage = coverImage && !isExpiredOpenAIUrl(coverImage) ? coverImage : null;
+
+  // Generate unique gradient based on vibelog ID (only used as fallback)
+  const gradientStyle = vibelogId ? getGradientStyle(vibelogId) : undefined;
+
+  // SEO-optimized alt text
+  const altText = title ? `${title} - vibelog cover image` : 'Vibelog cover image';
 
   // Reset errors when URLs change
   useEffect(() => {
@@ -83,7 +94,7 @@ export function MediaBackground({
         <div className="relative h-full w-full">
           <Image
             src={validCoverImage}
-            alt="Card background"
+            alt={altText}
             fill
             className={`object-cover transition-opacity duration-500 ${
               isLoaded ? 'opacity-100' : 'opacity-0'
@@ -99,7 +110,14 @@ export function MediaBackground({
 
       {/* Gradient background (fallback if no media) */}
       {!hasImage && !hasVideo && (
-        <div className="absolute inset-0 bg-gradient-to-br from-electric/20 via-card to-card" />
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage:
+              gradientStyle ||
+              'linear-gradient(to bottom right, hsl(240, 60%, 45%), hsl(280, 55%, 50%))',
+          }}
+        />
       )}
 
       {/* Loading placeholder */}
