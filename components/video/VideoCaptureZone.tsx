@@ -65,6 +65,7 @@ export function VideoCaptureZone({
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const hasRequestedCamera = useRef(false);
+  const recordingTimeRef = useRef(0);
 
   // Request camera permission and start preview
   const startCameraPreview = async () => {
