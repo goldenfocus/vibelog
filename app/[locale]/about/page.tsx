@@ -1,76 +1,73 @@
+'use client';
+
 import { User } from 'lucide-react';
-import { Metadata } from 'next';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
 import Comments from '@/components/comments/Comments';
 import Navigation from '@/components/Navigation';
-import { generateCanonicalUrl, generateHreflangLinks, type Locale } from '@/lib/seo/hreflang';
-import { createServerSupabaseClient } from '@/lib/supabase';
+import { useI18n } from '@/components/providers/I18nProvider';
+import { createClient } from '@/lib/supabase';
 
-interface AboutPageProps {
-  params: Promise<{ locale: string }>;
+interface Profile {
+  id: string;
+  username: string;
+  display_name: string | null;
+  full_name: string | null;
+  avatar_url: string | null;
+  header_image: string | null;
+  bio: string | null;
 }
 
-export async function generateMetadata({ params }: AboutPageProps): Promise<Metadata> {
-  const { locale } = await params;
-  const canonicalUrl = generateCanonicalUrl('/about', locale as Locale);
-  const hreflangLinks = generateHreflangLinks('/about', locale as Locale);
+export default function About() {
+  const { t } = useI18n();
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [aboutVibelogId, setAboutVibelogId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  return {
-    title: 'About VibeLog — Voice-First Content Creation',
-    description:
-      "Learn about VibeLog's mission to build a living web where creators focus on ideas, not tools. Voice-first AI publishing for the human internet.",
-    openGraph: {
-      title: 'About VibeLog — Voice-First Content Creation',
-      description:
-        "Learn about VibeLog's mission to build a living web where creators focus on ideas, not tools.",
-      url: canonicalUrl,
-    },
-    alternates: {
-      canonical: canonicalUrl,
-      languages: hreflangLinks,
-    },
-  };
-}
+  useEffect(() => {
+    async function fetchData() {
+      const supabase = await createClient();
 
-// Force dynamic rendering
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+      // Fetch @vibeyang profile
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('id, username, display_name, full_name, avatar_url, header_image, bio')
+        .eq('username', 'vibeyang')
+        .single();
 
-// Fetch @vibeyang profile
-async function getVibeYangProfile() {
-  const supabase = await createServerSupabaseClient();
+      setProfile(profileData);
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id, username, display_name, full_name, avatar_url, header_image, bio')
-    .eq('username', 'vibeyang')
-    .single();
+      // Fetch or create the About page vibelog for comments
+      const { data: vibelog } = await supabase
+        .from('vibelogs')
+        .select('id')
+        .eq('slug', 'about-page-comments')
+        .eq('is_published', true)
+        .single();
 
-  return profile;
-}
+      setAboutVibelogId(vibelog?.id || null);
+      setLoading(false);
+    }
 
-// Fetch or create the About page vibelog for comments
-async function getAboutPageVibelog() {
-  const supabase = await createServerSupabaseClient();
+    fetchData();
+  }, []);
 
-  // Try to find existing about-page vibelog
-  const { data: vibelog } = await supabase
-    .from('vibelogs')
-    .select('id')
-    .eq('slug', 'about-page-comments')
-    .eq('is_published', true)
-    .single();
-
-  return vibelog?.id || null;
-}
-
-export default async function About() {
-  const profile = await getVibeYangProfile();
-  const aboutVibelogId = await getAboutPageVibelog();
-
-  const displayName = profile?.display_name || profile?.full_name || 'Yang';
+  const displayName = profile?.display_name || profile?.full_name || t('pages.about.founder.name');
   const username = profile?.username || 'vibeyang';
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navigation />
+        <main className="px-4 pb-16 pt-24 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-4xl text-center">
+            <p className="text-muted-foreground">{t('common.loading')}</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -79,7 +76,7 @@ export default async function About() {
       <main className="px-4 pb-16 pt-24 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-4xl">
           <div className="mb-16 text-center">
-            <h1 className="mb-6 text-4xl font-bold sm:text-5xl">About VibeLog</h1>
+            <h1 className="mb-6 text-4xl font-bold sm:text-5xl">{t('pages.about.title')}</h1>
           </div>
 
           {/* Founder Video Placeholder */}
@@ -90,9 +87,11 @@ export default async function About() {
                   <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-electric">
                     <span className="text-2xl">▶️</span>
                   </div>
-                  <p className="text-muted-foreground">Founder Video Coming Soon</p>
+                  <p className="text-muted-foreground">
+                    {t('pages.about.founderVideo.placeholder')}
+                  </p>
                   <p className="text-sm text-muted-foreground">
-                    A personal message from Yang about the journey
+                    {t('pages.about.founderVideo.subtitle')}
                   </p>
                 </div>
               </div>
@@ -101,60 +100,41 @@ export default async function About() {
 
           {/* The Problem */}
           <section className="mb-16">
-            <h2 className="mb-6 text-3xl font-bold">The Problem</h2>
+            <h2 className="mb-6 text-3xl font-bold">{t('pages.about.problem.title')}</h2>
             <div className="prose prose-lg max-w-none space-y-4 text-muted-foreground">
-              <p>
-                Content creation is broken. We have amazing thoughts to share, but the tools make it
-                feel like work.
-              </p>
-              <p>
-                You need to open an app, stare at a blank page, fight with formatting, upload images
-                manually, and then copy-paste to every platform.
-              </p>
-              <p>By the time you&apos;re done, the inspiration is gone.</p>
+              <p>{t('pages.about.problem.paragraphs.0')}</p>
+              <p>{t('pages.about.problem.paragraphs.1')}</p>
+              <p>{t('pages.about.problem.paragraphs.2')}</p>
             </div>
           </section>
 
           {/* The Spark */}
           <section className="mb-16">
-            <h2 className="mb-6 text-3xl font-bold">The Spark</h2>
+            <h2 className="mb-6 text-3xl font-bold">{t('pages.about.spark.title')}</h2>
             <div className="prose prose-lg max-w-none space-y-4 text-muted-foreground">
-              <p>What if you could just... speak? No typing, no formatting, no endless clicking.</p>
-              <p>
-                Just press record, share your thoughts, and let AI turn it into beautiful content —
-                complete with images, formatting, and everything ready to publish.
-              </p>
-              <p>That&apos;s the dream behind VibeLog.</p>
+              <p>{t('pages.about.spark.paragraphs.0')}</p>
+              <p>{t('pages.about.spark.paragraphs.1')}</p>
+              <p>{t('pages.about.spark.paragraphs.2')}</p>
             </div>
           </section>
 
           {/* The Solution */}
           <section className="mb-16">
-            <h2 className="mb-6 text-3xl font-bold">The Solution</h2>
+            <h2 className="mb-6 text-3xl font-bold">{t('pages.about.solution.title')}</h2>
             <div className="prose prose-lg max-w-none space-y-4 text-muted-foreground">
-              <p>VibeLog is your AI publishing assistant that speaks your language — literally.</p>
-              <p>
-                Record your thoughts by voice. Our AI transforms them into polished content with
-                images, formatting, and style. Then publish everywhere with one command.
-              </p>
-              <p>Voice-first. Conversation-native. Built for humans, not robots.</p>
+              <p>{t('pages.about.solution.paragraphs.0')}</p>
+              <p>{t('pages.about.solution.paragraphs.1')}</p>
             </div>
           </section>
 
           {/* The Mission */}
           <section className="mb-16">
-            <h2 className="mb-6 text-3xl font-bold">The Mission</h2>
+            <h2 className="mb-6 text-3xl font-bold">{t('pages.about.mission.title')}</h2>
             <div className="prose prose-lg max-w-none space-y-4 text-muted-foreground">
-              <p>
-                We&apos;re building a living web — where content isn&apos;t static, but
-                conversational and alive.
+              <p>{t('pages.about.mission.paragraphs.0')}</p>
+              <p className="text-xl font-semibold text-foreground">
+                {t('pages.about.mission.tagline')}
               </p>
-              <p>
-                Where creators can focus on ideas, not tools. Where AI amplifies your voice instead
-                of replacing it.
-              </p>
-              <p>Where the internet feels human again.</p>
-              <p className="text-xl font-semibold text-foreground">Let&apos;s vibe it. 🌌</p>
             </div>
           </section>
 
@@ -181,12 +161,12 @@ export default async function About() {
                 </div>
               )}
               <h3 className="mb-1 text-xl font-bold">{displayName}</h3>
-              <p className="mb-2 text-muted-foreground">Founder</p>
+              <p className="mb-2 text-muted-foreground">{t('pages.about.founder.role')}</p>
               <Link
                 href={`/@${username}`}
                 className="text-electric transition-colors hover:text-electric-glow"
               >
-                @{username}
+                {t('pages.about.founder.handle')}
               </Link>
             </div>
 
@@ -199,7 +179,7 @@ export default async function About() {
 
             {!aboutVibelogId && (
               <div className="mt-8 text-center text-muted-foreground">
-                <p>Comments will be available soon!</p>
+                <p>{t('common.comingSoon')}</p>
               </div>
             )}
           </div>
