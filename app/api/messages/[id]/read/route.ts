@@ -66,12 +66,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       throw readError;
     }
 
-    // Update conversation_participants.last_read_message_id
-    // Use the helper function for efficiency
+    // Update conversation_participants.last_read_at
+    // The trigger on message_reads will handle updating last_read_message_id
+    // Note: mark_conversation_read function only takes conversation_id and user_id
     await supabase.rpc('mark_conversation_read', {
       p_conversation_id: message.conversation_id,
       p_user_id: user.id,
-      p_message_id: messageId,
     });
 
     return NextResponse.json({ success: true });
