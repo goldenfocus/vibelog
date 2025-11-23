@@ -36,7 +36,19 @@ export async function POST(request: NextRequest) {
     console.log(`Uploading image for user ${user.id}`);
 
     // Parse multipart form data
-    const formData = await request.formData();
+    let formData: FormData;
+    try {
+      formData = await request.formData();
+    } catch (error) {
+      console.error('Failed to parse form data:', error);
+      return NextResponse.json(
+        {
+          error: 'Invalid request',
+          message: 'Request must be multipart/form-data',
+        },
+        { status: 400 }
+      );
+    }
     const file = formData.get('image') as File;
     const imageType = formData.get('type') as string; // 'avatar' or 'header'
     const cropDataString = formData.get('cropData') as string | null;
