@@ -13,7 +13,6 @@ interface VibesFilterBarProps {
   currentSort: CommentSortType;
   onFilterChange: (filter: CommentFilterType) => void;
   onSortChange: (sort: CommentSortType) => void;
-  totalCount?: number;
 }
 
 const FILTER_OPTIONS: Array<{
@@ -48,89 +47,14 @@ export function VibesFilterBar({
   currentSort,
   onFilterChange,
   onSortChange,
-  totalCount,
 }: VibesFilterBarProps) {
   const { t } = useI18n();
   const { bottom } = useSafeArea();
 
   return (
-    <div className="space-y-4">
-      {/* Header with count */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t('pages.vibes.title')}</h1>
-          <p className="text-sm text-muted-foreground">
-            {totalCount !== undefined
-              ? t('pages.vibes.countWithSubtitle', { count: totalCount.toLocaleString() })
-              : t('pages.vibes.subtitle')}
-          </p>
-        </div>
-
-        {/* Sort dropdown (desktop) */}
-        <div className="hidden items-center gap-2 sm:flex">
-          {SORT_OPTIONS.map(option => {
-            const Icon = option.icon;
-            const isActive = currentSort === option.value;
-
-            return (
-              <button
-                key={option.value}
-                onClick={() => {
-                  triggerHaptic('LIGHT');
-                  onSortChange(option.value);
-                }}
-                className={cn(
-                  'flex min-h-[56px] touch-manipulation items-center gap-2 rounded-lg px-4 py-3 text-base font-medium transition-all',
-                  'active:scale-[0.98]',
-                  isActive
-                    ? 'bg-electric/20 text-electric shadow-sm'
-                    : 'text-muted-foreground hover:bg-accent hover:text-foreground active:bg-accent/80'
-                )}
-              >
-                <Icon className="h-4 w-4" />
-                {t(option.labelKey)}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Filter chips */}
-      <div className="flex flex-wrap gap-2">
-        {FILTER_OPTIONS.map(option => {
-          const Icon = option.icon;
-          const isActive = currentFilter === option.value;
-
-          return (
-            <button
-              key={option.value}
-              onClick={() => {
-                triggerHaptic('LIGHT');
-                onFilterChange(option.value);
-              }}
-              className={cn(
-                'flex min-h-[56px] touch-manipulation items-center gap-2 rounded-full border px-5 py-3 text-base font-medium transition-all',
-                'active:scale-[0.98]',
-                isActive
-                  ? 'border-electric/50 bg-electric/10 text-electric shadow-sm shadow-electric/20'
-                  : 'border-border/40 bg-card/60 text-foreground/70 hover:border-electric/30 hover:bg-card hover:text-foreground active:bg-card/80'
-              )}
-            >
-              <Icon className={cn('h-4 w-4', isActive ? option.color : 'text-muted-foreground')} />
-              {t(option.labelKey)}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Sort dropdown (mobile) */}
-      <div
-        className="flex items-center gap-2 sm:hidden"
-        style={{ paddingBottom: `calc(0.5rem + ${bottom}px)` }}
-      >
-        <span className="text-sm font-medium text-muted-foreground">
-          {t('pages.vibes.sort.sortBy')}
-        </span>
+    <div className="space-y-6">
+      {/* Sort controls (desktop) - centered */}
+      <div className="hidden items-center justify-center gap-2 sm:flex">
         {SORT_OPTIONS.map(option => {
           const Icon = option.icon;
           const isActive = currentSort === option.value;
@@ -143,11 +67,11 @@ export function VibesFilterBar({
                 onSortChange(option.value);
               }}
               className={cn(
-                'flex min-h-[56px] touch-manipulation items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium transition-all',
+                'flex min-h-[56px] touch-manipulation items-center gap-2 rounded-lg px-5 py-3 text-base font-medium transition-all duration-300',
                 'active:scale-[0.98]',
                 isActive
-                  ? 'bg-electric/20 text-electric shadow-sm'
-                  : 'text-muted-foreground hover:bg-accent hover:text-foreground active:bg-accent/80'
+                  ? 'bg-electric/20 text-electric shadow-sm hover:scale-105'
+                  : 'text-muted-foreground hover:scale-105 hover:bg-accent hover:text-foreground active:bg-accent/80'
               )}
             >
               <Icon className="h-4 w-4" />
@@ -155,6 +79,70 @@ export function VibesFilterBar({
             </button>
           );
         })}
+      </div>
+
+      {/* Filter chips - centered */}
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        {FILTER_OPTIONS.map(option => {
+          const Icon = option.icon;
+          const isActive = currentFilter === option.value;
+
+          return (
+            <button
+              key={option.value}
+              onClick={() => {
+                triggerHaptic('LIGHT');
+                onFilterChange(option.value);
+              }}
+              className={cn(
+                'flex min-h-[56px] touch-manipulation items-center gap-2 rounded-full border px-5 py-3 text-base font-medium transition-all duration-300',
+                'active:scale-[0.98]',
+                isActive
+                  ? 'border-electric/50 bg-electric/10 text-electric shadow-sm shadow-electric/20 hover:scale-105'
+                  : 'border-border/40 bg-card/60 text-foreground/70 hover:scale-105 hover:border-electric/30 hover:bg-card hover:text-foreground active:bg-card/80'
+              )}
+            >
+              <Icon className={cn('h-4 w-4', isActive ? option.color : 'text-muted-foreground')} />
+              {t(option.labelKey)}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Sort controls (mobile) - centered */}
+      <div
+        className="flex flex-col items-center gap-3 sm:hidden"
+        style={{ paddingBottom: `calc(0.5rem + ${bottom}px)` }}
+      >
+        <span className="text-sm font-medium text-muted-foreground">
+          {t('pages.vibes.sort.sortBy')}
+        </span>
+        <div className="flex items-center gap-2">
+          {SORT_OPTIONS.map(option => {
+            const Icon = option.icon;
+            const isActive = currentSort === option.value;
+
+            return (
+              <button
+                key={option.value}
+                onClick={() => {
+                  triggerHaptic('LIGHT');
+                  onSortChange(option.value);
+                }}
+                className={cn(
+                  'flex min-h-[56px] touch-manipulation items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-300',
+                  'active:scale-[0.98]',
+                  isActive
+                    ? 'bg-electric/20 text-electric shadow-sm hover:scale-105'
+                    : 'text-muted-foreground hover:scale-105 hover:bg-accent hover:text-foreground active:bg-accent/80'
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                {t(option.labelKey)}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

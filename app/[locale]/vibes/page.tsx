@@ -19,7 +19,7 @@ export default async function VibesPage() {
   const supabase = await createServerSupabaseClient();
 
   // Fetch recent comments with related vibelog and profile data
-  const { data: comments } = await supabase
+  const { data: comments, error } = await supabase
     .from('comments')
     .select(
       `
@@ -52,6 +52,25 @@ export default async function VibesPage() {
     .eq('moderation_status', 'approved')
     .order('created_at', { ascending: false })
     .limit(100);
+
+  // DEBUG: Log query results server-side
+  console.log('🔍 [VIBES PAGE DEBUG]', {
+    timestamp: new Date().toISOString(),
+    commentCount: comments?.length || 0,
+    hasError: !!error,
+    errorMessage: error?.message,
+    errorCode: error?.code,
+    errorDetails: error?.details,
+    errorHint: error?.hint,
+    firstCommentId: comments?.[0]?.id,
+    sampleComment: comments?.[0]
+      ? {
+          id: comments[0].id,
+          hasProfile: !!comments[0].profiles,
+          hasVibelog: !!comments[0].vibelogs,
+        }
+      : null,
+  });
 
   // Transform the data for easier consumption
   const transformedComments: CommentCardData[] = (comments || []).map(comment => {
@@ -91,10 +110,13 @@ export default async function VibesPage() {
   });
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="relative min-h-screen bg-background">
+      {/* Subtle background gradient */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-electric/5 via-transparent to-transparent" />
+
       <Navigation />
-      <main className="container mx-auto px-4 py-8 md:px-6 md:py-12">
-        <div className="mx-auto max-w-7xl space-y-8">
+      <main className="relative z-10 px-4 pb-16 pt-24 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-5xl">
           <VibesPageClient initialComments={transformedComments} />
         </div>
       </main>
