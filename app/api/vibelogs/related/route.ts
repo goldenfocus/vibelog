@@ -38,18 +38,25 @@ export async function GET(request: NextRequest) {
       .filter(Boolean)
       .join(' ');
 
-    // Search for similar vibelogs using embeddings
-    const similarResults = await searchSimilarContent(searchQuery, {
-      contentTypes: ['vibelog'],
-      limit: limit + 1, // Get extra to filter out current vibelog
-      threshold: 0.5, // Lower threshold for more results
-    });
+    let relatedIds: string[] = [];
 
-    // Filter out the current vibelog and get IDs
-    const relatedIds = similarResults
-      .filter(r => r.content_id !== vibelogId)
-      .slice(0, limit)
-      .map(r => r.content_id);
+    // Try semantic search, fallback to tag-based if it fails
+    try {
+      const similarResults = await searchSimilarContent(searchQuery, {
+        contentTypes: ['vibelog'],
+        limit: limit + 1, // Get extra to filter out current vibelog
+        threshold: 0.5, // Lower threshold for more results
+      });
+
+      // Filter out the current vibelog and get IDs
+      relatedIds = similarResults
+        .filter(r => r.content_id !== vibelogId)
+        .slice(0, limit)
+        .map(r => r.content_id);
+    } catch (embeddingError) {
+      console.error('[RELATED-VIBELOGS] Embedding search failed:', embeddingError);
+      // Continue to fallback below
+    }
 
     if (relatedIds.length === 0) {
       // Fallback: return recent vibelogs from the same tags
