@@ -188,31 +188,45 @@ export function MessageInput({
   };
 
   return (
-    <div className="border-t border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-      {/* Reply indicator */}
+    <div className="border-t border-metallic-blue-200/30 bg-gradient-to-b from-white/95 to-white backdrop-blur-xl dark:border-metallic-blue-800/30 dark:from-zinc-900/95 dark:to-zinc-900">
+      {/* Premium Reply indicator */}
       <AnimatePresence>
         {replyTo && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="border-b border-zinc-200 px-4 py-2 dark:border-zinc-800"
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            className="dark:from-metallic-blue-950/30 relative overflow-hidden border-b border-metallic-blue-200/30 bg-gradient-to-r from-metallic-blue-50/50 to-transparent px-4 py-3 dark:border-metallic-blue-800/30"
           >
+            {/* Accent bar */}
+            <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-metallic-blue-500 to-metallic-blue-600" />
+
             <div className="flex items-center justify-between">
-              <div className="min-w-0 flex-1">
-                <div className="text-xs font-medium text-metallic-blue-500">
-                  Replying to {replyTo.sender}
+              <div className="min-w-0 flex-1 pl-3">
+                <div className="mb-0.5 flex items-center gap-1.5 text-xs font-bold text-metallic-blue-600 dark:text-metallic-blue-400">
+                  <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+                    />
+                  </svg>
+                  <span>Replying to {replyTo.sender}</span>
                 </div>
-                <div className="truncate text-sm text-zinc-600 dark:text-zinc-400">
+                <div className="truncate text-sm text-zinc-700 dark:text-zinc-300">
                   {replyTo.content}
                 </div>
               </div>
-              <button
+              <motion.button
+                whileHover={{ scale: 1.1, rotate: 90 }}
+                whileTap={{ scale: 0.9 }}
                 onClick={onClearReply}
-                className="rounded-full p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                className="rounded-full p-2 transition-colors hover:bg-metallic-blue-100 dark:hover:bg-metallic-blue-900/50"
               >
-                <X size={16} />
-              </button>
+                <X size={16} className="text-metallic-blue-600 dark:text-metallic-blue-400" />
+              </motion.button>
             </div>
           </motion.div>
         )}
@@ -221,8 +235,8 @@ export function MessageInput({
       {/* Input area */}
       <div className="p-4">
         {inputMode === 'text' ? (
-          <div className="flex items-end gap-2">
-            {/* Text input */}
+          <div className="flex items-end gap-3">
+            {/* Premium Text input with glass effect */}
             <div className="relative flex-1">
               <textarea
                 ref={textareaRef}
@@ -231,108 +245,206 @@ export function MessageInput({
                 onKeyDown={handleKeyDown}
                 placeholder="Type a message..."
                 className={cn(
-                  'w-full rounded-3xl px-4 py-3 pr-12',
-                  'bg-zinc-100 dark:bg-zinc-800',
+                  'w-full rounded-3xl border-2 px-5 py-3.5 pr-12',
+                  'bg-white/80 backdrop-blur-sm dark:bg-zinc-800/80',
                   'text-zinc-900 dark:text-white',
-                  'placeholder:text-zinc-500',
-                  'border border-transparent focus:border-metallic-blue-500',
-                  'resize-none outline-none',
+                  'placeholder:text-zinc-400 dark:placeholder:text-zinc-500',
+                  'border-zinc-200/50 focus:border-metallic-blue-500 dark:border-zinc-700/50 dark:focus:border-metallic-blue-400',
+                  'shadow-sm focus:shadow-md focus:shadow-metallic-blue-500/20',
+                  'resize-none outline-none transition-all duration-200',
                   'max-h-32 overflow-y-auto'
                 )}
                 rows={1}
               />
             </div>
 
-            {/* Send/Voice button */}
+            {/* Premium Send/Voice button */}
             {textContent.trim() ? (
               <motion.button
+                whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={handleSendTextMessage}
                 disabled={isSending}
                 className={cn(
-                  'h-12 w-12 flex-shrink-0 rounded-full',
+                  'group relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-full',
                   'bg-gradient-to-br from-metallic-blue-500 to-metallic-blue-600',
                   'flex items-center justify-center text-white',
-                  'transition-shadow hover:shadow-lg',
+                  'shadow-lg shadow-metallic-blue-500/40 transition-all duration-300',
+                  'hover:shadow-xl hover:shadow-metallic-blue-500/50',
                   'disabled:cursor-not-allowed disabled:opacity-50'
                 )}
               >
+                {/* Shimmer effect */}
+                <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+
                 {isSending ? (
-                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                    className="relative h-5 w-5 rounded-full border-2 border-white/30 border-t-white"
+                  />
                 ) : (
-                  <Send size={20} />
+                  <motion.div
+                    whileHover={{ x: 2, y: -2 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+                    className="relative"
+                  >
+                    <Send size={20} />
+                  </motion.div>
                 )}
               </motion.button>
             ) : (
               <motion.button
+                whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onMouseDown={handleStartVoiceRecording}
                 onMouseUp={handleStopVoiceRecording}
                 onTouchStart={handleStartVoiceRecording}
                 onTouchEnd={handleStopVoiceRecording}
                 className={cn(
-                  'h-12 w-12 flex-shrink-0 rounded-full',
+                  'group relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-full',
                   'bg-gradient-to-br from-metallic-blue-500 to-metallic-blue-600',
                   'flex items-center justify-center text-white',
-                  'transition-shadow hover:shadow-lg',
-                  'active:scale-95'
+                  'shadow-lg shadow-metallic-blue-500/40 transition-all duration-300',
+                  'hover:shadow-xl hover:shadow-metallic-blue-500/50'
                 )}
               >
-                <Mic size={20} />
+                {/* Pulse effect on hover */}
+                <motion.div
+                  animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0, 0.5] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="absolute inset-0 rounded-full bg-white opacity-0 group-hover:opacity-100"
+                />
+
+                <motion.div
+                  whileHover={{ scale: 1.2 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+                  className="relative"
+                >
+                  <Mic size={20} />
+                </motion.div>
               </motion.button>
             )}
           </div>
         ) : inputMode === 'voice' ? (
-          <div className="space-y-3">
-            {/* Recording UI */}
-            <div className="flex items-center justify-between rounded-2xl bg-zinc-100 px-4 py-3 dark:bg-zinc-800">
-              <div className="flex items-center gap-3">
-                <div className="h-3 w-3 animate-pulse rounded-full bg-red-500" />
-                <span className="font-mono text-sm text-zinc-700 dark:text-zinc-300">
-                  {formatTime(recordingTime)}
-                </span>
-              </div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-4"
+          >
+            {/* Premium Recording UI */}
+            <div className="dark:to-metallic-blue-950/30 relative overflow-hidden rounded-3xl border-2 border-metallic-blue-200/50 bg-gradient-to-br from-white/90 to-metallic-blue-50/30 p-4 shadow-lg backdrop-blur-sm dark:border-metallic-blue-800/50 dark:from-zinc-800/90">
+              {/* Animated gradient background */}
+              <motion.div
+                animate={{
+                  background: [
+                    'linear-gradient(45deg, rgba(30, 116, 255, 0.1) 0%, transparent 100%)',
+                    'linear-gradient(225deg, rgba(30, 116, 255, 0.1) 0%, transparent 100%)',
+                    'linear-gradient(45deg, rgba(30, 116, 255, 0.1) 0%, transparent 100%)',
+                  ],
+                }}
+                transition={{ duration: 3, repeat: Infinity }}
+                className="absolute inset-0"
+              />
 
-              <div className="flex gap-2">
-                {/* Cancel */}
-                <button
-                  onClick={handleCancelRecording}
-                  className="px-4 py-2 text-sm text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
-                >
-                  Cancel
-                </button>
+              <div className="relative flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {/* Pulsing red dot */}
+                  <motion.div
+                    animate={{ scale: [1, 1.3, 1], opacity: [1, 0.6, 1] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                    className="relative flex h-4 w-4 items-center justify-center"
+                  >
+                    <div className="absolute inset-0 rounded-full bg-red-500 opacity-30 blur-sm" />
+                    <div className="relative h-3 w-3 rounded-full bg-red-500" />
+                  </motion.div>
 
-                {/* Stop & Send */}
-                {isRecording ? (
-                  <button
-                    onClick={handleStopVoiceRecording}
-                    className="rounded-full bg-metallic-blue-500 px-4 py-2 text-sm font-medium text-white"
+                  {/* Timer with gradient */}
+                  <span className="bg-gradient-to-r from-metallic-blue-600 to-metallic-blue-500 bg-clip-text font-mono text-lg font-bold text-transparent dark:from-metallic-blue-400 dark:to-metallic-blue-300">
+                    {formatTime(recordingTime)}
+                  </span>
+                </div>
+
+                <div className="flex gap-2">
+                  {/* Cancel button */}
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleCancelRecording}
+                    className="rounded-full px-4 py-2 text-sm font-semibold text-zinc-600 transition-all hover:bg-zinc-200/50 dark:text-zinc-400 dark:hover:bg-zinc-700/50"
                   >
-                    Stop
-                  </button>
-                ) : audioBlob ? (
-                  <button
-                    onClick={handleSendVoiceMessage}
-                    disabled={isSending}
-                    className="rounded-full bg-metallic-blue-500 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-                  >
-                    {isSending ? 'Sending...' : 'Send'}
-                  </button>
-                ) : null}
+                    Cancel
+                  </motion.button>
+
+                  {/* Stop & Send buttons */}
+                  {isRecording ? (
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={handleStopVoiceRecording}
+                      className="group relative overflow-hidden rounded-full bg-gradient-to-br from-metallic-blue-500 to-metallic-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-md shadow-metallic-blue-500/40 transition-all hover:shadow-lg hover:shadow-metallic-blue-500/50"
+                    >
+                      <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+                      <span className="relative">Stop</span>
+                    </motion.button>
+                  ) : audioBlob ? (
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={handleSendVoiceMessage}
+                      disabled={isSending}
+                      className="group relative overflow-hidden rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 px-5 py-2 text-sm font-semibold text-white shadow-md shadow-emerald-500/40 transition-all hover:shadow-lg hover:shadow-emerald-500/50 disabled:opacity-50"
+                    >
+                      <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+                      <span className="relative flex items-center gap-2">
+                        {isSending ? (
+                          <>
+                            <motion.div
+                              animate={{ rotate: 360 }}
+                              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                              className="h-3 w-3 rounded-full border-2 border-white/30 border-t-white"
+                            />
+                            Sending...
+                          </>
+                        ) : (
+                          'Send'
+                        )}
+                      </span>
+                    </motion.button>
+                  ) : null}
+                </div>
               </div>
             </div>
 
-            {/* Waveform */}
-            {isRecording && <Waveform levels={audioLevels} isActive variant="recording" />}
-          </div>
+            {/* Premium Waveform with glass container */}
+            {isRecording && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="overflow-hidden rounded-3xl border border-metallic-blue-200/30 bg-white/50 p-4 backdrop-blur-sm dark:border-metallic-blue-800/30 dark:bg-zinc-900/50"
+              >
+                <Waveform levels={audioLevels} isActive variant="recording" />
+              </motion.div>
+            )}
+          </motion.div>
         ) : null}
       </div>
 
-      {/* Instructions */}
+      {/* Premium Instructions */}
       {inputMode === 'text' && !textContent && (
-        <div className="px-4 pb-3 text-center text-xs text-zinc-500">
-          Hold to record voice • Tap to type
-        </div>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex items-center justify-center gap-2 px-4 pb-3 text-xs font-medium"
+        >
+          <span className="text-zinc-400 dark:text-zinc-500">Hold</span>
+          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-metallic-blue-500 to-metallic-blue-600">
+            <Mic size={12} className="text-white" />
+          </div>
+          <span className="text-zinc-400 dark:text-zinc-500">
+            to record voice or type a message
+          </span>
+        </motion.div>
       )}
     </div>
   );

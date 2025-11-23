@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { Menu, X } from 'lucide-react';
+import { Menu, X, MessageCircle } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
@@ -257,6 +257,15 @@ export default function Navigation() {
                     >
                       <Menu className="h-5 w-5" />
                     </button>
+
+                    {/* Desktop: Messages Link */}
+                    <Link
+                      href="/messages"
+                      className="hidden items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-muted lg:flex"
+                      title="Messages"
+                    >
+                      <MessageCircle className="h-5 w-5" />
+                    </Link>
 
                     {/* Notification Bell (Desktop and Mobile) */}
                     <NotificationBell />
