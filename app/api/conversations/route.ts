@@ -9,7 +9,11 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { createClient } from '@/lib/supabase';
 import type { Profile } from '@/types/database';
-import type { ConversationWithDetails, CreateConversationRequest } from '@/types/messaging';
+import type {
+  ConversationWithDetails,
+  CreateConversationRequest,
+  ConversationType,
+} from '@/types/messaging';
 
 /**
  * GET /api/conversations
@@ -97,7 +101,7 @@ export async function GET() {
       .map(p => (p.conversations as { last_message_id?: string }).last_message_id)
       .filter(Boolean);
 
-    let lastMessages: unknown[] = [];
+    let lastMessages: Array<{ id: string; [key: string]: any }> = [];
     if (lastMessageIds.length > 0) {
       const { data, error: messagesError } = await supabase
         .from('messages')
@@ -129,7 +133,7 @@ export async function GET() {
     const conversations: ConversationWithDetails[] = participations.map(p => {
       const conversation = p.conversations as unknown as {
         id: string;
-        type: string;
+        type: ConversationType;
         title: string | null;
         description: string | null;
         avatar_url: string | null;
@@ -164,12 +168,12 @@ export async function GET() {
         ...conversation,
         participants,
         last_message: lastMessage
-          ? {
-              ...lastMessage,
+          ? ({
+              ...(lastMessage as any),
               reads: [],
               is_read: false,
               read_by_count: 0,
-            }
+            } as any)
           : null,
         unread_count: Number(unreadCount),
         is_muted: p.is_muted,
