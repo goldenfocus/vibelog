@@ -162,6 +162,8 @@ export function FloatingCard({ vibelog, index, isActive = false, onCardClick }: 
         <MediaBackground
           coverImage={vibelog.cover_image_url}
           videoUrl={vibelog.video_url}
+          vibelogId={vibelog.id}
+          title={vibelog.title}
           isActive={isActive || isHovered}
           isPlaying={isVideoPlaying}
         />
