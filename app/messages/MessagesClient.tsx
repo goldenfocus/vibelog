@@ -194,7 +194,7 @@ export default function MessagesClient() {
               {/* Animated Empty State */}
               <motion.div
                 animate={{ y: [0, -10, 0] }}
-                transition={{ duration: 3, repeat: Infinity, easeInOut: true }}
+                transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
                 className="relative mx-auto inline-block"
               >
                 <div className="absolute inset-0 rounded-full bg-gradient-to-br from-metallic-blue-500/20 to-metallic-blue-600/20 blur-2xl" />
