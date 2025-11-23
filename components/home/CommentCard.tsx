@@ -73,26 +73,44 @@ export function CommentCard({ comment, index, isActive = false }: CommentCardPro
   const isVoice = !!comment.audioUrl;
   const isVideo = !!comment.videoUrl;
   const hasMedia = isVoice || isVideo;
+
+  // Support both /c/[slug] and fallback to vibelog URL
+  const commentSlug = comment.slug;
   const vibelogSlug = comment.vibelog.slug || comment.vibelog.id;
+  const commentHref = commentSlug ? `/c/${commentSlug}` : `/v/${vibelogSlug}#comment-${comment.id}`;
 
   const TypeIcon = isVideo ? Video : isVoice ? Mic : MessageCircle;
   const typeColor = isVideo ? 'text-purple-400' : isVoice ? 'text-blue-400' : 'text-electric';
   const typeBgColor = isVideo ? 'bg-purple-500/20' : isVoice ? 'bg-blue-500/20' : 'bg-electric/20';
+  const borderGlow = isVideo
+    ? 'hover:border-purple-400/50 hover:shadow-purple-400/10'
+    : isVoice
+      ? 'hover:border-blue-400/50 hover:shadow-blue-400/10'
+      : 'hover:border-electric/50 hover:shadow-electric/10';
 
   return (
     <Link
-      href={`/v/${vibelogSlug}#comment-${comment.id}`}
+      href={commentHref}
       className={cn(
         'group relative flex h-[280px] w-[260px] flex-shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm transition-all duration-300',
-        'hover:scale-[1.02] hover:border-electric/50 hover:shadow-lg hover:shadow-electric/10',
+        'hover:scale-[1.02] hover:shadow-lg',
+        borderGlow,
         isActive && 'border-electric/60 shadow-lg shadow-electric/20'
       )}
       style={{ animationDelay: `${index * 50}ms` }}
     >
+      {/* Background cover image from parent vibelog (if available) */}
+      {comment.vibelog.coverImageUrl && (
+        <div className="absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-10">
+          <img src={comment.vibelog.coverImageUrl} alt="" className="h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-card via-card/80 to-transparent" />
+        </div>
+      )}
+
       {hasMedia && (
         <div
           className={cn(
-            'absolute right-3 top-3 z-10 flex items-center gap-1.5 rounded-full px-2.5 py-1',
+            'absolute right-3 top-3 z-10 flex items-center gap-1.5 rounded-full px-2.5 py-1 backdrop-blur-sm',
             typeBgColor
           )}
         >
@@ -103,7 +121,7 @@ export function CommentCard({ comment, index, isActive = false }: CommentCardPro
         </div>
       )}
 
-      <div className="flex flex-1 flex-col p-4">
+      <div className="relative z-10 flex flex-1 flex-col p-4">
         <div className="mb-3 flex-1">
           <div className="mb-2 flex items-start gap-2">
             <TypeIcon className={cn('mt-0.5 h-4 w-4 flex-shrink-0', typeColor)} />
@@ -155,8 +173,15 @@ export function CommentCard({ comment, index, isActive = false }: CommentCardPro
         </div>
       </div>
 
+      {/* Enhanced gradient overlay on hover - matches vibelog card energy */}
       <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-        <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-electric/5 to-transparent" />
+        <div
+          className={cn(
+            'absolute inset-0 rounded-2xl bg-gradient-to-t to-transparent',
+            isVideo ? 'from-purple-400/10' : isVoice ? 'from-blue-400/10' : 'from-electric/10'
+          )}
+        />
+        <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/5" />
       </div>
     </Link>
   );

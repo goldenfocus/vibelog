@@ -68,23 +68,35 @@
 
 ## Evolution Timeline
 
-### November 2025 - Recent Vibes Fix (v1.0.1)
+### November 2025 - Recent Vibes Fix + Comment Enhancement (v1.0.1)
 
 **Bug Fixes**
 
 - ✅ Fixed RLS policy for comments to allow anonymous users to view public comments
 - ✅ Comments now appear in "Recent Vibes" section on home page
-- ✅ Updated migration: `20251123100000_fix_comments_rls_for_anon.sql`
-  - Dropped old `comments select public or own` policy (no explicit anon role)
-  - Created new `comments_select_public_or_own` policy with `TO authenticated, anon`
-  - Updated existing comments to mark public ones as `is_public = true`
-  - Ensures Notion-like comment pages (/c/[slug]) are discoverable
+- ✅ Backfilled slugs for all existing comments (migration `20251123110000_backfill_comment_slugs.sql`)
+- ✅ Enhanced CommentCard styling to match vibelog card energy
+- ✅ Updated migrations:
+  - `20251123100000_fix_comments_rls_for_anon.sql` - RLS fix for anonymous access
+  - `20251123110000_backfill_comment_slugs.sql` - Generated unique slugs for all existing comments
+- ✅ Comment cards now have:
+  - Individual /c/[slug] URLs (Notion-like pages)
+  - Vibelog cover image backgrounds (subtle on hover)
+  - Media-type-specific color themes (purple/video, blue/voice, electric/text)
+  - Enhanced hover effects with gradients and glows
+  - Same visual polish as vibelog cards
 
-**Issue**: Comments on public vibelogs were not showing on home page for anonymous users due to missing RLS role grants.
+**Issue #1**: Comments on public vibelogs were not showing on home page for anonymous users due to missing RLS role grants.
 
-**Root Cause**: RLS policy `comments select public or own` didn't explicitly grant SELECT to `anon` role, defaulting to `authenticated` only.
+**Root Cause #1**: RLS policy `comments select public or own` didn't explicitly grant SELECT to `anon` role, defaulting to `authenticated` only.
 
-**Solution**: Recreated policy with explicit `TO authenticated, anon` grant and OR condition for `comments.is_public = true`.
+**Solution #1**: Recreated policy with explicit `TO authenticated, anon` grant and OR condition for `comments.is_public = true`.
+
+**Issue #2**: Existing comments created before `slug` column was added had NULL slugs, preventing individual comment pages from working.
+
+**Root Cause #2**: Migration `20251118073934_enhanced_comments_video_and_tiers.sql` added `slug` column but didn't backfill existing data.
+
+**Solution #2**: Created PL/pgSQL migration to generate unique 8-character slugs for all comments, with collision handling and UUID fallback.
 
 ### January 2025 - Foundation (v1.0)
 
@@ -426,6 +438,7 @@ POST /api/vibe-brain/chat
 - **20251122000000**: Fix handle_new_user trigger (Google OAuth)
 - **20251123000000**: Add documentation embeddings (content_type='documentation', nullable content_id)
 - **20251123100000**: Fix comments RLS for anonymous access - allow anon users to view public comments
+- **20251123110000**: Backfill comment slugs - generate unique slugs for all existing comments
 
 ### Key Tables & Relationships
 
