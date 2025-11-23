@@ -1,6 +1,7 @@
 'use client';
 
 import { MessageCircle, Mic, Sparkles, TrendingUp, Video } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 import { useI18n } from '@/components/providers/I18nProvider';
 import { useSafeArea } from '@/hooks/useSafeArea';
@@ -50,9 +51,26 @@ export function VibesFilterBar({
 }: VibesFilterBarProps) {
   const { t } = useI18n();
   const { bottom } = useSafeArea();
+  const [isSticky, setIsSticky] = useState(false);
+
+  // Sticky behavior on scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsSticky(window.scrollY > 200);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
-    <div className="space-y-6">
+    <div
+      className={cn(
+        'space-y-6 transition-all duration-300',
+        isSticky &&
+          'sticky top-16 z-30 -mx-4 bg-background/95 px-4 py-4 shadow-sm backdrop-blur-sm sm:-mx-6 sm:px-6'
+      )}
+    >
       {/* Sort controls (desktop) - centered */}
       <div className="hidden items-center justify-center gap-2 sm:flex">
         {SORT_OPTIONS.map(option => {
