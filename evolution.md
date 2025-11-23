@@ -2,9 +2,9 @@
 
 > **Living Document**: This file tracks VibeLog's technical evolution from inception to present. Update this file whenever significant features ship or architectural decisions are made.
 
-**Last Updated**: November 22, 2025
+**Last Updated**: November 23, 2025
 **Current Version**: v1.0 (Foundation)
-**Branch**: refactor/cleanup-and-fixes
+**Branch**: fix/recent-vibes-rls-anonymous-access
 **Next Review**: December 22, 2025
 
 ---
@@ -67,6 +67,24 @@
 ---
 
 ## Evolution Timeline
+
+### November 2025 - Recent Vibes Fix (v1.0.1)
+
+**Bug Fixes**
+
+- ✅ Fixed RLS policy for comments to allow anonymous users to view public comments
+- ✅ Comments now appear in "Recent Vibes" section on home page
+- ✅ Updated migration: `20251123100000_fix_comments_rls_for_anon.sql`
+  - Dropped old `comments select public or own` policy (no explicit anon role)
+  - Created new `comments_select_public_or_own` policy with `TO authenticated, anon`
+  - Updated existing comments to mark public ones as `is_public = true`
+  - Ensures Notion-like comment pages (/c/[slug]) are discoverable
+
+**Issue**: Comments on public vibelogs were not showing on home page for anonymous users due to missing RLS role grants.
+
+**Root Cause**: RLS policy `comments select public or own` didn't explicitly grant SELECT to `anon` role, defaulting to `authenticated` only.
+
+**Solution**: Recreated policy with explicit `TO authenticated, anon` grant and OR condition for `comments.is_public = true`.
 
 ### January 2025 - Foundation (v1.0)
 
