@@ -4,7 +4,6 @@ import { LogOut, Loader2, Settings, Shield } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 
-import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useI18n } from '@/components/providers/I18nProvider';
 import { AppSheet } from '@/components/ui/AppSheet';
@@ -31,7 +30,7 @@ export function AccountSheet({
   renderAvatarContent,
   getAvatarContainerStyle,
 }: AccountSheetProps) {
-  const { t, locale, setLocale } = useI18n();
+  const { t } = useI18n();
   const { signOut, user } = useAuth();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -126,18 +125,6 @@ export function AccountSheet({
           <Settings className="h-5 w-5" />
           Profile Settings
         </Link>
-
-        {/* Language Selector */}
-        <div className="flex items-center gap-3 rounded-lg px-4 py-3">
-          <span className="text-xl">🌐</span>
-          <div className="flex-1">
-            <LanguageSwitcher
-              currentLanguage={locale}
-              onLanguageChange={setLocale}
-              compact={true}
-            />
-          </div>
-        </div>
 
         {isAdmin && (
           <Link

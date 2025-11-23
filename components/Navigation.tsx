@@ -194,15 +194,6 @@ export default function Navigation() {
                 </Link>
               ))}
             </div>
-
-            {/* Language Switcher at bottom */}
-            <div className="shrink-0 border-t border-border px-5 py-4">
-              <LanguageSwitcher
-                currentLanguage={locale}
-                onLanguageChange={setLocale}
-                compact={false}
-              />
-            </div>
           </div>
         </div>
       )}
@@ -246,15 +237,12 @@ export default function Navigation() {
               </>
             ) : (
               <>
-                {!user && (
-                  <div className="hidden lg:block">
-                    <LanguageSwitcher
-                      currentLanguage={locale}
-                      onLanguageChange={setLocale}
-                      compact={true}
-                    />
-                  </div>
-                )}
+                {/* Language Switcher - Always visible for all users */}
+                <LanguageSwitcher
+                  currentLanguage={locale}
+                  onLanguageChange={setLocale}
+                  compact={true}
+                />
 
                 {user ? (
                   <>
