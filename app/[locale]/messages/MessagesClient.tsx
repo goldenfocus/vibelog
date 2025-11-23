@@ -17,7 +17,6 @@ export default function MessagesClient() {
   const { user, loading: authLoading } = useAuth();
   const [conversations, setConversations] = useState<ConversationWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -38,14 +37,18 @@ export default function MessagesClient() {
         const response = await fetch('/api/conversations');
 
         if (!response.ok) {
-          throw new Error('Failed to fetch conversations');
+          // If API fails, just show empty state instead of error
+          console.warn('Failed to fetch conversations:', response.status);
+          setConversations([]);
+          return;
         }
 
         const data = await response.json();
         setConversations(data.conversations || []);
       } catch (err) {
         console.error('Error fetching conversations:', err);
-        setError('Failed to load conversations');
+        // Show empty state instead of error - more welcoming
+        setConversations([]);
       } finally {
         setLoading(false);
       }
@@ -167,23 +170,6 @@ export default function MessagesClient() {
                 <div className="relative h-12 w-12 rounded-full border-2 border-metallic-blue-500/20 border-t-metallic-blue-500" />
               </motion.div>
             </div>
-          ) : error ? (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="px-4 py-20 text-center"
-            >
-              <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-red-500/10 to-red-600/10">
-                <p className="text-3xl">😞</p>
-              </div>
-              <p className="mt-4 text-red-500">{error}</p>
-              <button
-                onClick={() => window.location.reload()}
-                className="mt-4 text-sm font-medium text-metallic-blue-500 hover:underline"
-              >
-                Try again
-              </button>
-            </motion.div>
           ) : conversations.length === 0 ? (
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
