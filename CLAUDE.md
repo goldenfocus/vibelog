@@ -82,6 +82,48 @@ export async function POST(req: Request) {
 - Log errors server-side, show user-friendly messages client-side
 - AI failures: graceful degradation, never crash the request
 
+### Cover Image Storage
+
+**CRITICAL: All cover images use the standardized `lib/cover-storage.ts` module.**
+
+**Storage Structure:**
+
+```
+vibelog-covers/           # Bucket name
+  covers/                 # All covers in this directory
+    {vibelogId}.png       # AI-generated covers (DALL-E)
+    {vibelogId}.jpg       # User-uploaded covers
+```
+
+**One file per vibelog** - Uploading a new cover automatically replaces the old one.
+
+**Usage Pattern:**
+
+```typescript
+import { uploadCover, deleteCover, getCoverUrl } from '@/lib/cover-storage';
+
+// Upload a cover (AI-generated or user-uploaded)
+const { url, error } = await uploadCover(vibelogId, buffer, 'image/png');
+
+// Get cover URL
+const url = await getCoverUrl(vibelogId, 'png'); // or 'jpg'
+
+// Delete a cover
+const { success, error } = await deleteCover(vibelogId);
+```
+
+**Rules:**
+
+- ✅ ALWAYS use `lib/cover-storage.ts` functions
+- ❌ NEVER construct storage paths manually
+- ❌ NEVER use old storage utilities (`lib/storage.ts` is for audio only)
+- ✅ Cover operations are modular and reusable across endpoints
+
+**Endpoints using cover storage:**
+
+- `/api/generate-cover` - AI-generated covers (DALL-E)
+- `/api/vibelog/upload-cover` - User-uploaded covers
+
 ## Terminology (Strict)
 
 | Wrong             | Right                        |
@@ -218,16 +260,19 @@ The `--auto` flag queues merge for when checks pass. Don't wait manually.
 
 ## Key Files (Read These First)
 
-| File                                         | Purpose                                    |
-| -------------------------------------------- | ------------------------------------------ |
-| `lib/ai-cost-tracker.ts`                     | AI usage tracking + circuit breaker        |
-| `lib/supabase.ts`                            | Supabase client factory                    |
-| `lib/vibe-brain/knowledge-base.ts`           | Documentation embedding & search           |
-| `app/api/save-vibelog/route.ts`              | Main save endpoint (reference pattern)     |
-| `app/api/transcribe/route.ts`                | Whisper integration                        |
-| `app/api/admin/documentation/embed/route.ts` | Re-embed documentation (admin)             |
-| `components/MicRecorder.tsx`                 | Audio capture UI                           |
-| `scripts/embed-all-docs.js`                  | CLI tool for batch documentation embedding |
+| File                                         | Purpose                                      |
+| -------------------------------------------- | -------------------------------------------- |
+| `lib/ai-cost-tracker.ts`                     | AI usage tracking + circuit breaker          |
+| `lib/cover-storage.ts`                       | Cover image storage utilities (ALWAYS use)   |
+| `lib/supabase.ts`                            | Supabase client factory                      |
+| `lib/vibe-brain/knowledge-base.ts`           | Documentation embedding & search             |
+| `app/api/save-vibelog/route.ts`              | Main save endpoint (reference pattern)       |
+| `app/api/transcribe/route.ts`                | Whisper integration                          |
+| `app/api/generate-cover/route.ts`            | DALL-E cover generation (uses cover-storage) |
+| `app/api/admin/documentation/embed/route.ts` | Re-embed documentation (admin)               |
+| `components/MicRecorder.tsx`                 | Audio capture UI                             |
+| `scripts/embed-all-docs.js`                  | CLI tool for batch documentation embedding   |
+| `scripts/migrate-cover-paths.ts`             | Migrate covers to standardized paths         |
 
 ## Environment Variables
 
