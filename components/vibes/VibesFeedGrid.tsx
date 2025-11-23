@@ -136,10 +136,17 @@ export function VibesFeedGrid({ initialComments, filter, sort }: VibesFeedGridPr
       {/* Grid */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {displayedComments.map((comment, index) => (
-          <div key={comment.id} className="relative">
+          <div
+            key={comment.id}
+            className="animate-fade-in relative"
+            style={{
+              animationDelay: `${(index % COMMENTS_PER_PAGE) * 30}ms`,
+              animationFillMode: 'backwards',
+            }}
+          >
             {/* Hot badge */}
             {isHotComment(comment) && (
-              <div className="absolute -right-2 -top-2 z-10 flex items-center gap-1 rounded-full bg-gradient-to-r from-orange-500 to-red-500 px-2 py-1 text-xs font-bold text-white shadow-lg">
+              <div className="absolute -right-2 -top-2 z-10 flex animate-pulse items-center gap-1 rounded-full bg-gradient-to-r from-orange-500 to-red-500 px-2 py-1 text-xs font-bold text-white shadow-lg">
                 <Flame className="h-3 w-3" />
                 {t('pages.vibes.hot')}
               </div>

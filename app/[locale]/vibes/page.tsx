@@ -91,10 +91,13 @@ export default async function VibesPage() {
   });
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="relative min-h-screen bg-background">
+      {/* Subtle background gradient */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-electric/5 via-transparent to-transparent" />
+
       <Navigation />
-      <main className="container mx-auto px-4 py-8 md:px-6 md:py-12">
-        <div className="mx-auto max-w-7xl space-y-8">
+      <main className="relative z-10 px-4 pb-16 pt-24 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-5xl">
           <VibesPageClient initialComments={transformedComments} />
         </div>
       </main>
