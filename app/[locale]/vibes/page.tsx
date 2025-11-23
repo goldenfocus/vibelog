@@ -19,7 +19,7 @@ export default async function VibesPage() {
   const supabase = await createServerSupabaseClient();
 
   // Fetch recent comments with related vibelog and profile data
-  const { data: comments, error } = await supabase
+  const { data: comments } = await supabase
     .from('comments')
     .select(
       `
@@ -52,18 +52,6 @@ export default async function VibesPage() {
     .eq('moderation_status', 'approved')
     .order('created_at', { ascending: false })
     .limit(100);
-
-  // Debug logging
-  console.log('🔍 [Vibes Page] Server-side query results:', {
-    commentCount: comments?.length || 0,
-    hasError: !!error,
-    errorMessage: error?.message,
-    errorCode: error?.code,
-    errorDetails: error?.details,
-    hasComments: !!comments,
-    firstCommentId: comments?.[0]?.id,
-    timestamp: new Date().toISOString(),
-  });
 
   // Transform the data for easier consumption
   const transformedComments: CommentCardData[] = (comments || []).map(comment => {
