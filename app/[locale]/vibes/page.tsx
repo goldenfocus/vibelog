@@ -115,7 +115,7 @@ export default async function VibesPage() {
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-electric/5 via-transparent to-transparent" />
 
       <Navigation />
-      <main className="relative z-10 px-4 pb-16 pt-24 sm:px-6 lg:px-8">
+      <main className="px-4 pb-16 pt-24 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-5xl">
           <VibesPageClient initialComments={transformedComments} />
         </div>

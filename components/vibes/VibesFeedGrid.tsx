@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowDown, Flame, Loader2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, Flame, Loader2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import { CommentCard, type CommentCardData } from '@/components/home/CommentCard';
@@ -20,12 +20,30 @@ interface VibesFeedGridProps {
 
 const COMMENTS_PER_PAGE = 24;
 
+// Skeleton loading card
+function SkeletonCard() {
+  return (
+    <div className="h-[280px] w-full animate-pulse rounded-2xl border border-border/40 bg-card/40 p-4">
+      <div className="mb-3 h-4 w-3/4 rounded bg-muted" />
+      <div className="mb-2 h-3 w-full rounded bg-muted" />
+      <div className="mb-2 h-3 w-5/6 rounded bg-muted" />
+      <div className="mt-4 h-20 w-full rounded bg-muted" />
+      <div className="mt-auto flex items-center gap-2 pt-4">
+        <div className="h-8 w-8 rounded-full bg-muted" />
+        <div className="h-3 w-24 rounded bg-muted" />
+      </div>
+    </div>
+  );
+}
+
 export function VibesFeedGrid({ initialComments, filter, sort }: VibesFeedGridProps) {
   const { t } = useI18n();
   const { bottom } = useSafeArea();
   const [displayedComments, setDisplayedComments] = useState<CommentCardData[]>([]);
   const [page, setPage] = useState(1);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isFilterChanging, setIsFilterChanging] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
   const observerRef = useRef<HTMLDivElement>(null);
 
   // Pull to refresh
@@ -43,10 +61,26 @@ export function VibesFeedGrid({ initialComments, filter, sort }: VibesFeedGridPr
   // Filter and sort comments
   const processedComments = sortComments(filterCommentsByType(initialComments, filter), sort);
 
+  // Scroll to top button visibility
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 400);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   // Reset pagination when filter/sort changes
   useEffect(() => {
-    setPage(1);
-    setDisplayedComments(processedComments.slice(0, COMMENTS_PER_PAGE));
+    setIsFilterChanging(true);
+    const timer = setTimeout(() => {
+      setPage(1);
+      setDisplayedComments(processedComments.slice(0, COMMENTS_PER_PAGE));
+      setIsFilterChanging(false);
+    }, 200);
+
+    return () => clearTimeout(timer);
   }, [filter, sort, processedComments]);
 
   // Infinite scroll observer
@@ -113,10 +147,11 @@ export function VibesFeedGrid({ initialComments, filter, sort }: VibesFeedGridPr
       {/* Pull to refresh indicator */}
       {(isRefreshing || pullDistance > 0) && (
         <div
-          className="fixed left-0 right-0 top-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm transition-all"
+          className="fixed left-0 right-0 top-16 z-40 flex items-center justify-center bg-background/80 backdrop-blur-sm transition-all"
           style={{
             height: isRefreshing ? '60px' : `${pullDistance}px`,
             opacity: isRefreshing ? 1 : progress,
+            pointerEvents: pullDistance > 20 || isRefreshing ? 'auto' : 'none',
           }}
         >
           {isRefreshing ? (
@@ -134,26 +169,31 @@ export function VibesFeedGrid({ initialComments, filter, sort }: VibesFeedGridPr
       )}
 
       {/* Grid */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {displayedComments.map((comment, index) => (
-          <div
-            key={comment.id}
-            className="animate-fade-in relative"
-            style={{
-              animationDelay: `${(index % COMMENTS_PER_PAGE) * 30}ms`,
-              animationFillMode: 'backwards',
-            }}
-          >
-            {/* Hot badge */}
-            {isHotComment(comment) && (
-              <div className="absolute -right-2 -top-2 z-10 flex animate-pulse items-center gap-1 rounded-full bg-gradient-to-r from-orange-500 to-red-500 px-2 py-1 text-xs font-bold text-white shadow-lg">
-                <Flame className="h-3 w-3" />
-                {t('pages.vibes.hot')}
+      <div
+        key={`${filter}-${sort}`}
+        className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+      >
+        {isFilterChanging
+          ? Array.from({ length: 8 }).map((_, index) => <SkeletonCard key={`skeleton-${index}`} />)
+          : displayedComments.map((comment, index) => (
+              <div
+                key={comment.id}
+                className="animate-fade-in relative"
+                style={{
+                  animationDelay: `${(index % COMMENTS_PER_PAGE) * 30}ms`,
+                  animationFillMode: 'backwards',
+                }}
+              >
+                {/* Hot badge */}
+                {isHotComment(comment) && (
+                  <div className="absolute -right-2 -top-2 z-10 flex animate-pulse items-center gap-1 rounded-full bg-gradient-to-r from-orange-500 to-red-500 px-2 py-1 text-xs font-bold text-white shadow-lg">
+                    <Flame className="h-3 w-3" />
+                    {t('pages.vibes.hot')}
+                  </div>
+                )}
+                <CommentCard comment={comment} index={index} />
               </div>
-            )}
-            <CommentCard comment={comment} index={index} />
-          </div>
-        ))}
+            ))}
       </div>
 
       {/* Loading indicator */}
@@ -182,6 +222,20 @@ export function VibesFeedGrid({ initialComments, filter, sort }: VibesFeedGridPr
             {t('pages.vibes.end.count', { count: displayedComments.length })}
           </p>
         </div>
+      )}
+
+      {/* Scroll to top FAB */}
+      {showScrollTop && (
+        <button
+          onClick={() => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            triggerHaptic('LIGHT');
+          }}
+          className="fixed bottom-24 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-electric shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl active:scale-95 sm:bottom-8"
+          aria-label="Scroll to top"
+        >
+          <ArrowUp className="h-6 w-6 text-white" />
+        </button>
       )}
     </div>
   );
