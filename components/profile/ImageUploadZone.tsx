@@ -7,6 +7,7 @@ import { Area } from 'react-easy-crop';
 
 import { ImageCropModal } from '@/components/profile/ImageCropModal';
 import { Button } from '@/components/ui/button';
+import { compressImage } from '@/lib/image-compression';
 import { getOrientedImageUrl } from '@/lib/image-orientation';
 import { cn } from '@/lib/utils';
 
@@ -52,7 +53,7 @@ export function ImageUploadZone({
       return;
     }
 
-    // Validate file size (10MB)
+    // Validate file size (10MB - will be compressed before upload)
     const maxSize = 10 * 1024 * 1024;
     if (file.size > maxSize) {
       setError('Image must be less than 10MB');
@@ -84,9 +85,22 @@ export function ImageUploadZone({
       setUploadSuccess(false);
 
       try {
+        // Compress image before upload to avoid Vercel's 4.5MB payload limit
+        let fileToUpload = selectedFile;
+        try {
+          fileToUpload = await compressImage(selectedFile, {
+            maxWidth: 2400,
+            maxHeight: 2400,
+            maxSizeMB: 3.5, // Leave headroom under Vercel's 4.5MB limit
+          });
+        } catch (compressionError) {
+          console.warn('Image compression failed, uploading original:', compressionError);
+          // Continue with original file if compression fails
+        }
+
         // Upload to API with crop data and filter
         const formData = new FormData();
-        formData.append('image', selectedFile);
+        formData.append('image', fileToUpload);
         formData.append('type', type);
         formData.append('cropData', JSON.stringify(croppedAreaPixels));
         formData.append('filterId', filterId);
