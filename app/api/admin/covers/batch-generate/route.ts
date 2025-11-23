@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
         teaser,
         transcription,
         user_id,
-        profiles!inner(username)
+        profiles!vibelogs_user_id_fkey(username)
       `
       )
       .is('cover_image_url', null)
