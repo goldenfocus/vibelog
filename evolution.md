@@ -407,6 +407,7 @@ POST /api/vibe-brain/chat
 - **20251121000000**: Vibe Brain RAG system with pgvector
 - **20251122000000**: Fix handle_new_user trigger (Google OAuth)
 - **20251123000000**: Add documentation embeddings (content_type='documentation', nullable content_id)
+- **20251123100000**: Fix comments RLS for anonymous access - allow anon users to view public comments
 
 ### Key Tables & Relationships
 
