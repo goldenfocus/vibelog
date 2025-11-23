@@ -19,6 +19,7 @@ const APP_ROUTES = new Set([
   '/community',
   '/dashboard',
   '/faq',
+  '/messages',
   '/people',
   '/pricing',
   '/settings',
