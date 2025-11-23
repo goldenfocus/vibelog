@@ -56,20 +56,18 @@ export function ProfileActions({ profileUserId }: ProfileActionsProps) {
   };
 
   return (
-    <div className="animate-fadeInUp flex gap-3" style={{ animationDelay: '250ms' }}>
+    <div className="animate-fadeInUp" style={{ animationDelay: '250ms' }}>
       <button
         onClick={handleMessage}
         disabled={sending}
         className={cn(
-          'flex items-center gap-2 rounded-full px-6 py-2.5',
-          'bg-gradient-to-br from-metallic-blue-500 to-metallic-blue-600',
-          'text-sm font-medium text-white',
-          'transition-all duration-200 hover:shadow-lg',
+          'flex items-center gap-2 rounded-lg px-3 py-2',
+          'transition-colors hover:bg-muted',
           'disabled:cursor-not-allowed disabled:opacity-50'
         )}
+        title={sending ? 'Opening conversation...' : 'Send message'}
       >
-        <MessageCircle size={16} />
-        <span>{sending ? 'Opening...' : 'Message'}</span>
+        <MessageCircle className="h-5 w-5" />
       </button>
     </div>
   );
