@@ -108,9 +108,9 @@ export function MobileWaveform({
       role="presentation"
       aria-label={isRecording ? 'Recording waveform visualization' : 'Waveform visualization'}
     >
-      {bars.map(bar => (
+      {bars.map((bar, index) => (
         <div
-          key={bar.id}
+          key={`bar-${index}`}
           className={cn(
             'w-1.5 rounded-full transition-all duration-75',
             themeStyles[theme],

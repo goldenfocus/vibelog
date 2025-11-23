@@ -1,9 +1,11 @@
 'use client';
 
 import { X } from 'lucide-react';
+import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
-import { useFullscreenRecording } from '@/hooks/useFullscreenRecording';
+import { useIsLandscape } from '@/hooks/useIsLandscape';
+import { useAutoOrientationLock } from '@/hooks/useOrientationLock';
 import { triggerHaptic } from '@/lib/mobile/haptics';
 import { cn } from '@/lib/utils';
 
@@ -12,8 +14,6 @@ import { MobileControls } from './MobileControls';
 import { MobileTranscription } from './MobileTranscription';
 import { MobileWaveform } from './MobileWaveform';
 import { PortraitLayout } from './PortraitLayout';
-
-import { useIsLandscape } from '@/hooks/useIsLandscape';
 
 export interface FullscreenRecorderProps {
   /**
@@ -106,13 +106,98 @@ export function FullscreenRecorder({
 }: FullscreenRecorderProps) {
   const isLandscape = useIsLandscape();
 
-  // Handle fullscreen state, orientation lock, scroll lock
-  useFullscreenRecording({
-    isActive,
-    onExit,
-    lockOrientation: orientation !== 'any' ? orientation : undefined,
-    preventAccidentalExit: preventAccidentalExit && recordingState === 'recording',
-  });
+  // Lock orientation when active
+  useAutoOrientationLock(isActive, orientation !== 'any' ? orientation : 'portrait');
+
+  // Lock body scroll when active
+  useEffect(() => {
+    if (!isActive) {
+      return;
+    }
+
+    const originalOverflow = document.body.style.overflow;
+    const originalPosition = document.body.style.position;
+
+    // Lock scroll
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+    document.body.style.height = '100%';
+
+    return () => {
+      // Restore scroll
+      document.body.style.overflow = originalOverflow;
+      document.body.style.position = originalPosition;
+      document.body.style.width = '';
+      document.body.style.height = '';
+    };
+  }, [isActive]);
+
+  // Handle Escape key
+  useEffect(() => {
+    if (!isActive) {
+      return;
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+
+        if (preventAccidentalExit && recordingState === 'recording') {
+          // eslint-disable-next-line no-alert
+          const confirmed = window.confirm(
+            'Exit fullscreen mode? Your recording will continue in the background.'
+          );
+          if (!confirmed) {
+            return;
+          }
+        }
+
+        onExit();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isActive, onExit, preventAccidentalExit, recordingState]);
+
+  // Handle Android back button
+  useEffect(() => {
+    if (!isActive || typeof window === 'undefined') {
+      return;
+    }
+
+    const handlePopState = (e: PopStateEvent) => {
+      e.preventDefault();
+
+      if (preventAccidentalExit && recordingState === 'recording') {
+        // eslint-disable-next-line no-alert
+        const confirmed = window.confirm(
+          'Exit fullscreen mode? Your recording will continue in the background.'
+        );
+        if (!confirmed) {
+          // Push state back
+          window.history.pushState({ fullscreen: true }, '');
+          return;
+        }
+      }
+
+      onExit();
+    };
+
+    // Push a state to capture back button
+    window.history.pushState({ fullscreen: true }, '');
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+
+      // Clean up history state
+      if (window.history.state?.fullscreen) {
+        window.history.back();
+      }
+    };
+  }, [isActive, onExit, preventAccidentalExit, recordingState]);
 
   // Don't render if not active or on server
   if (!isActive || typeof window === 'undefined') {
