@@ -11,7 +11,7 @@ import { OnboardingModal } from '@/components/OnboardingModal';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useI18n } from '@/components/providers/I18nProvider';
 import { Button } from '@/components/ui/button';
-import { ScreenCaptureZone } from '@/components/video/ScreenCaptureZone';
+import { ScreenCaptureZone } from '@/components/video';
 import { createClient } from '@/lib/supabase';
 
 export default function DashboardPage() {

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
 
 import { useAuth } from '@/components/providers/AuthProvider';
-import { ScreenCaptureZone } from '@/components/video/ScreenCaptureZone';
+import { ScreenCaptureZone } from '@/components/video';
 import { useBulletproofSave } from '@/hooks/useBulletproofSave';
 
 interface ScreenShareCreatorProps {
