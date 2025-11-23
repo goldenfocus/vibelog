@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Pause } from 'lucide-react';
 import { useState, useRef } from 'react';
 
@@ -78,113 +78,179 @@ export function VoiceMessagePlayer({
   const progress = totalDuration > 0 ? (currentTime / totalDuration) * 100 : 0;
 
   return (
-    <div className="mb-2 space-y-2">
-      {/* Voice message player */}
+    <div className="mb-2 space-y-3">
+      {/* Premium Voice message player */}
       <div className="flex items-center gap-3">
-        {/* Play/Pause button */}
+        {/* Premium Play/Pause button */}
         <motion.button
+          whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.95 }}
           onClick={handlePlayPause}
           className={cn(
-            'flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full',
-            'transition-colors duration-200',
+            'group relative flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-full',
+            'shadow-md transition-all duration-300',
             isCurrentUser
-              ? 'bg-white/20 text-white hover:bg-white/30'
-              : 'bg-metallic-blue-500/20 text-metallic-blue-600 hover:bg-metallic-blue-500/30 dark:text-metallic-blue-400'
+              ? 'bg-white/20 text-white shadow-white/10 hover:bg-white/30 hover:shadow-lg hover:shadow-white/20'
+              : 'bg-metallic-blue-500/20 text-metallic-blue-600 shadow-metallic-blue-500/20 hover:bg-metallic-blue-500/30 hover:shadow-lg hover:shadow-metallic-blue-500/30 dark:text-metallic-blue-400'
           )}
         >
-          {isPlaying ? (
-            <Pause size={18} fill="currentColor" />
-          ) : (
-            <Play size={18} fill="currentColor" />
+          {/* Ripple effect on click */}
+          {isPlaying && (
+            <motion.div
+              animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+              className={cn(
+                'absolute inset-0 rounded-full',
+                isCurrentUser ? 'bg-white' : 'bg-metallic-blue-500'
+              )}
+            />
           )}
+
+          <motion.div
+            animate={isPlaying ? { scale: [1, 1.1, 1] } : {}}
+            transition={{ duration: 0.8, repeat: Infinity }}
+            className="relative"
+          >
+            {isPlaying ? (
+              <Pause size={20} fill="currentColor" />
+            ) : (
+              <Play size={20} fill="currentColor" className="ml-0.5" />
+            )}
+          </motion.div>
         </motion.button>
 
-        {/* Waveform / Progress bar */}
+        {/* Premium Waveform / Progress bar */}
         <div className="min-w-0 flex-1">
-          <div className="relative flex h-8 items-center">
-            {/* Background track */}
+          <div className="relative flex h-10 items-center">
+            {/* Background track with glow */}
             <div
               className={cn(
-                'absolute inset-0 h-1 rounded-full',
-                isCurrentUser ? 'bg-white/20' : 'bg-metallic-blue-500/20'
+                'absolute inset-0 h-1.5 rounded-full',
+                isCurrentUser
+                  ? 'bg-white/15 shadow-inner'
+                  : 'bg-metallic-blue-500/15 shadow-inner dark:bg-metallic-blue-500/20'
               )}
             />
 
-            {/* Progress fill */}
+            {/* Progress fill with gradient */}
             <motion.div
               className={cn(
-                'absolute h-1 rounded-full',
-                isCurrentUser ? 'bg-white' : 'bg-metallic-blue-500'
+                'absolute h-1.5 rounded-full',
+                isCurrentUser
+                  ? 'bg-gradient-to-r from-white to-white/80 shadow-sm shadow-white/50'
+                  : 'bg-gradient-to-r from-metallic-blue-500 to-metallic-blue-400 shadow-sm shadow-metallic-blue-500/50'
               )}
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}
               transition={{ duration: 0.1 }}
             />
 
-            {/* Playhead dot */}
+            {/* Premium Playhead dot with glow */}
             {progress > 0 && (
               <motion.div
-                className={cn(
-                  'absolute -ml-1.5 h-3 w-3 rounded-full',
-                  isCurrentUser ? 'bg-white' : 'bg-metallic-blue-500'
-                )}
+                className="absolute -ml-2"
                 style={{ left: `${progress}%` }}
-              />
+                whileHover={{ scale: 1.3 }}
+              >
+                <div
+                  className={cn(
+                    'h-4 w-4 rounded-full shadow-lg',
+                    isCurrentUser
+                      ? 'bg-white shadow-white/50'
+                      : 'bg-metallic-blue-500 shadow-metallic-blue-500/50'
+                  )}
+                />
+                {/* Glow effect */}
+                <div
+                  className={cn(
+                    'absolute inset-0 rounded-full blur-sm',
+                    isCurrentUser ? 'bg-white opacity-50' : 'bg-metallic-blue-500 opacity-50'
+                  )}
+                />
+              </motion.div>
             )}
           </div>
         </div>
 
-        {/* Duration */}
-        <div className={cn('font-mono text-xs', isCurrentUser ? 'text-white/70' : 'text-zinc-500')}>
+        {/* Duration with better typography */}
+        <div
+          className={cn(
+            'min-w-[45px] text-right font-mono text-xs font-semibold tabular-nums',
+            isCurrentUser ? 'text-white/80' : 'text-zinc-600 dark:text-zinc-400'
+          )}
+        >
           {isPlaying || currentTime > 0
             ? formatAudioDuration(currentTime * 1000)
             : formatAudioDuration(duration)}
         </div>
 
-        {/* Playback speed */}
-        <button
+        {/* Premium Playback speed button */}
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
           onClick={handleSpeedChange}
           className={cn(
-            'rounded-full px-2 py-1 text-xs font-medium',
-            'transition-colors duration-200',
+            'relative overflow-hidden rounded-full px-2.5 py-1.5 text-xs font-bold',
+            'shadow-sm transition-all duration-300',
             isCurrentUser
-              ? 'bg-white/20 text-white hover:bg-white/30'
-              : 'bg-metallic-blue-500/20 text-metallic-blue-600 hover:bg-metallic-blue-500/30 dark:text-metallic-blue-400'
+              ? 'bg-white/20 text-white shadow-white/10 hover:bg-white/30 hover:shadow-md hover:shadow-white/20'
+              : 'bg-metallic-blue-500/20 text-metallic-blue-600 shadow-metallic-blue-500/20 hover:bg-metallic-blue-500/30 hover:shadow-md hover:shadow-metallic-blue-500/30 dark:text-metallic-blue-400'
           )}
         >
-          {playbackSpeed}x
-        </button>
+          <span className="relative">{playbackSpeed}x</span>
+        </motion.button>
       </div>
 
-      {/* Transcript toggle (if available) */}
+      {/* Premium Transcript toggle (if available) */}
       {transcript && (
         <div>
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => setShowTranscript(!showTranscript)}
             className={cn(
-              'text-xs underline',
-              isCurrentUser ? 'text-white/70 hover:text-white' : 'text-zinc-500 hover:text-zinc-700'
+              'group flex items-center gap-1.5 text-xs font-semibold underline decoration-dotted underline-offset-2 transition-all',
+              isCurrentUser
+                ? 'text-white/70 hover:text-white'
+                : 'text-metallic-blue-600 hover:text-metallic-blue-500 dark:text-metallic-blue-400 dark:hover:text-metallic-blue-300'
             )}
           >
-            {showTranscript ? 'Hide transcript' : 'Show transcript'}
-          </button>
-
-          {showTranscript && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className={cn(
-                'mt-2 rounded-lg p-3 text-sm',
-                isCurrentUser
-                  ? 'bg-white/10 text-white/90'
-                  : 'bg-metallic-blue-500/10 text-zinc-700 dark:text-zinc-300'
-              )}
+            <motion.svg
+              animate={{ rotate: showTranscript ? 180 : 0 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+              className="h-3 w-3"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
             >
-              {transcript}
-            </motion.div>
-          )}
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
+            </motion.svg>
+            {showTranscript ? 'Hide transcript' : 'Show transcript'}
+          </motion.button>
+
+          <AnimatePresence>
+            {showTranscript && (
+              <motion.div
+                initial={{ opacity: 0, height: 0, y: -10 }}
+                animate={{ opacity: 1, height: 'auto', y: 0 }}
+                exit={{ opacity: 0, height: 0, y: -10 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                className={cn(
+                  'mt-3 overflow-hidden rounded-2xl border p-3 text-sm leading-relaxed backdrop-blur-sm',
+                  isCurrentUser
+                    ? 'border-white/20 bg-white/10 text-white/90'
+                    : 'border-metallic-blue-500/20 bg-metallic-blue-500/10 text-zinc-700 dark:border-metallic-blue-500/30 dark:bg-metallic-blue-500/10 dark:text-zinc-300'
+                )}
+              >
+                {transcript}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       )}
 
