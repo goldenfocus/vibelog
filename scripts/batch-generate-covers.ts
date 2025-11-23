@@ -29,7 +29,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 // Configuration
 const BATCH_SIZE = parseInt(process.env.BATCH_SIZE || '10'); // Generate 10 at a time to stay under rate limits
 const DRY_RUN = process.env.DRY_RUN === 'true';
-const APP_URL = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://vibelog.io';
 
 interface BatchResult {
   total: number;
