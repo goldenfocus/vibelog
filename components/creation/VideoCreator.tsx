@@ -3,19 +3,8 @@
 import { useAuth } from '@/components/providers/AuthProvider';
 import { VideoCaptureZone } from '@/components/video/VideoCaptureZone';
 
-interface VideoCreatorProps {
-  remixContent?: string | null;
-  onSaveSuccess?: (() => void) | null;
-}
-
-export function VideoCreator({ onSaveSuccess }: VideoCreatorProps) {
+export function VideoCreator() {
   const { user } = useAuth();
-
-  // Handle save success - trigger feed refresh
-  const handleSaveSuccess = () => {
-    console.log('🔄 [VIDEO-CREATOR] Triggering feed refresh');
-    onSaveSuccess?.();
-  };
 
   if (!user) {
     return (
@@ -32,7 +21,7 @@ export function VideoCreator({ onSaveSuccess }: VideoCreatorProps) {
   // VideoCaptureZone handles vibelog creation, video recording, and auto-processing
   return (
     <div className="mx-auto w-full max-w-2xl">
-      <VideoCaptureZone isPremium={false} onSaveSuccess={handleSaveSuccess} />
+      <VideoCaptureZone isPremium={false} />
     </div>
   );
 }
