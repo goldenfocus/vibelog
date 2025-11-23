@@ -97,8 +97,21 @@ export function ImageUploadZone({
         });
 
         if (!response.ok) {
-          const data = await response.json();
-          throw new Error(data.message || 'Upload failed');
+          let errorMessage = 'Upload failed';
+          try {
+            const contentType = response.headers.get('content-type');
+            if (contentType?.includes('application/json')) {
+              const data = await response.json();
+              errorMessage = data.message || data.error || 'Upload failed';
+            } else {
+              const text = await response.text();
+              console.error('Non-JSON error response:', text);
+              errorMessage = `Upload failed (${response.status})`;
+            }
+          } catch (parseError) {
+            console.error('Failed to parse error response:', parseError);
+          }
+          throw new Error(errorMessage);
         }
 
         const data = await response.json();
