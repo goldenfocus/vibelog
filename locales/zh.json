@@ -448,7 +448,7 @@
       },
       "empty": {
         "title": "未找到创作者",
-        "filtered": "没有创作者匹配“{{query}}”",
+        "filtered": "没有创作者匹配「{{query}}」",
         "default": "成为第一个创建 vibelog 的人吧！"
       },
       "topCreator": "优秀创作者",
@@ -481,7 +481,7 @@
     "viewAll": "查看全部",
     "loadingVibelogs": "正在加载您的 vibelogs...",
     "noVibelogsTitle": "您还没有创建 vibelog",
-    "noVibelogsDescription": "点击上方“新建Vibelog”来录制第一个吧 🎤"
+    "noVibelogsDescription": "点击上方「新建Vibelog」来录制第一个吧 🎤"
   },
   "buttons": {
     "cancel": "取消",
