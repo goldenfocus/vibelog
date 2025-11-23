@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 
 import {
   isLocaleSupported,
@@ -112,35 +112,41 @@ export function I18nProvider({ children, initialLocale = 'en' }: I18nProviderPro
   /**
    * Change locale and navigate to the new URL
    * This is the key function that makes language switching work with URLs
+   *
+   * Updated: Removed router.refresh() to fix race condition bug
+   * Middleware handles redirect automatically after router.push()
    */
-  const setLocale = (newLocale: Locale) => {
-    if (!isLocaleSupported(newLocale)) {
-      console.warn(`Unsupported locale: ${newLocale}`);
-      return;
-    }
+  const setLocale = useCallback(
+    (newLocale: Locale) => {
+      if (!isLocaleSupported(newLocale)) {
+        console.warn(`Unsupported locale: ${newLocale}`);
+        return;
+      }
 
-    // Get current path without locale prefix
-    const pathWithoutLocale = stripLocaleFromPath(pathname);
+      // Get current path without locale prefix
+      const pathWithoutLocale = stripLocaleFromPath(pathname);
 
-    // Add new locale prefix (ALL locales get explicit prefix for SEO)
-    // Exception: Keep profile URLs clean for sharing (/@username only)
-    const isProfileUrl = pathWithoutLocale.match(/^\/@[^/]+$/);
-    const newPath = addLocaleToPath(pathWithoutLocale, newLocale, {
-      keepProfileClean: isProfileUrl ? true : false,
-    });
+      // Add new locale prefix (ALL locales get explicit prefix for SEO)
+      // Exception: Keep profile URLs clean for sharing (/@username only)
+      const isProfileUrl = pathWithoutLocale.match(/^\/@[^/]+$/);
+      const newPath = addLocaleToPath(pathWithoutLocale, newLocale, {
+        keepProfileClean: isProfileUrl ? true : false,
+      });
 
-    // Set cookie for persistence FIRST (before navigation)
-    // This ensures middleware sees the new locale immediately
-    document.cookie = `NEXT_LOCALE=${newLocale}; path=/; max-age=31536000`;
+      // Set cookie for persistence FIRST (before navigation)
+      // This ensures middleware sees the new locale immediately
+      document.cookie = `NEXT_LOCALE=${newLocale}; path=/; max-age=31536000`;
 
-    // Update state immediately for instant UI feedback
-    setLocaleState(newLocale as SupportedLocale);
+      // Update state immediately for instant UI feedback
+      setLocaleState(newLocale as SupportedLocale);
 
-    // Navigate to new URL and force server refresh
-    // router.refresh() ensures middleware re-runs with fresh cookie state
-    router.push(newPath);
-    router.refresh();
-  };
+      // Navigate to new URL
+      // Middleware will handle the redirect and locale detection
+      // No need for router.refresh() which can cause race conditions
+      router.push(newPath);
+    },
+    [pathname, router]
+  );
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const t = (key: string, variables?: Record<string, any>): string => {
