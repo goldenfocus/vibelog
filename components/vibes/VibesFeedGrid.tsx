@@ -1,12 +1,15 @@
 'use client';
 
-import { Flame, Loader2 } from 'lucide-react';
+import { ArrowDown, Flame, Loader2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import { CommentCard, type CommentCardData } from '@/components/home/CommentCard';
 import { useI18n } from '@/components/providers/I18nProvider';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import { useSafeArea } from '@/hooks/useSafeArea';
 import { filterCommentsByType, isHotComment, sortComments } from '@/lib/comments';
 import type { CommentFilterType, CommentSortType } from '@/lib/comments';
+import { triggerHaptic } from '@/lib/mobile/haptics';
 import { cn } from '@/lib/utils';
 
 interface VibesFeedGridProps {
@@ -19,10 +22,23 @@ const COMMENTS_PER_PAGE = 24;
 
 export function VibesFeedGrid({ initialComments, filter, sort }: VibesFeedGridProps) {
   const { t } = useI18n();
+  const { bottom } = useSafeArea();
   const [displayedComments, setDisplayedComments] = useState<CommentCardData[]>([]);
   const [page, setPage] = useState(1);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const observerRef = useRef<HTMLDivElement>(null);
+
+  // Pull to refresh
+  const { isRefreshing, pullDistance, progress } = usePullToRefresh({
+    onRefresh: async () => {
+      triggerHaptic('MEDIUM');
+      // Reset to first page
+      setPage(1);
+      setDisplayedComments(processedComments.slice(0, COMMENTS_PER_PAGE));
+      // Simulate refresh delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+    },
+  });
 
   // Filter and sort comments
   const processedComments = sortComments(filterCommentsByType(initialComments, filter), sort);
@@ -93,7 +109,30 @@ export function VibesFeedGrid({ initialComments, filter, sort }: VibesFeedGridPr
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" style={{ paddingBottom: `calc(1rem + ${bottom}px)` }}>
+      {/* Pull to refresh indicator */}
+      {(isRefreshing || pullDistance > 0) && (
+        <div
+          className="fixed left-0 right-0 top-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm transition-all"
+          style={{
+            height: isRefreshing ? '60px' : `${pullDistance}px`,
+            opacity: isRefreshing ? 1 : progress,
+          }}
+        >
+          {isRefreshing ? (
+            <div className="flex items-center gap-2 text-sm font-medium text-electric">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              {t('pages.vibes.refreshing')}
+            </div>
+          ) : (
+            <ArrowDown
+              className="h-5 w-5 text-electric transition-transform"
+              style={{ transform: `rotate(${progress * 180}deg)` }}
+            />
+          )}
+        </div>
+      )}
+
       {/* Grid */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {displayedComments.map((comment, index) => (

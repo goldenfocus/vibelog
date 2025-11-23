@@ -3,7 +3,9 @@
 import { MessageCircle, Mic, Sparkles, TrendingUp, Video } from 'lucide-react';
 
 import { useI18n } from '@/components/providers/I18nProvider';
+import { useSafeArea } from '@/hooks/useSafeArea';
 import type { CommentFilterType, CommentSortType } from '@/lib/comments';
+import { triggerHaptic } from '@/lib/mobile/haptics';
 import { cn } from '@/lib/utils';
 
 interface VibesFilterBarProps {
@@ -23,7 +25,12 @@ const FILTER_OPTIONS: Array<{
   { value: 'all', labelKey: 'pages.vibes.filters.all', icon: Sparkles, color: 'text-electric' },
   { value: 'voice', labelKey: 'pages.vibes.filters.voice', icon: Mic, color: 'text-blue-400' },
   { value: 'video', labelKey: 'pages.vibes.filters.video', icon: Video, color: 'text-purple-400' },
-  { value: 'text', labelKey: 'pages.vibes.filters.text', icon: MessageCircle, color: 'text-green-400' },
+  {
+    value: 'text',
+    labelKey: 'pages.vibes.filters.text',
+    icon: MessageCircle,
+    color: 'text-green-400',
+  },
 ];
 
 const SORT_OPTIONS: Array<{
@@ -44,6 +51,7 @@ export function VibesFilterBar({
   totalCount,
 }: VibesFilterBarProps) {
   const { t } = useI18n();
+  const { bottom } = useSafeArea();
 
   return (
     <div className="space-y-4">
@@ -67,15 +75,19 @@ export function VibesFilterBar({
             return (
               <button
                 key={option.value}
-                onClick={() => onSortChange(option.value)}
+                onClick={() => {
+                  triggerHaptic('LIGHT');
+                  onSortChange(option.value);
+                }}
                 className={cn(
-                  'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-all',
+                  'flex min-h-[56px] touch-manipulation items-center gap-2 rounded-lg px-4 py-3 text-base font-medium transition-all',
+                  'active:scale-[0.98]',
                   isActive
                     ? 'bg-electric/20 text-electric shadow-sm'
-                    : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                    : 'text-muted-foreground hover:bg-accent hover:text-foreground active:bg-accent/80'
                 )}
               >
-                <Icon className="h-3.5 w-3.5" />
+                <Icon className="h-4 w-4" />
                 {t(option.labelKey)}
               </button>
             );
@@ -92,12 +104,16 @@ export function VibesFilterBar({
           return (
             <button
               key={option.value}
-              onClick={() => onFilterChange(option.value)}
+              onClick={() => {
+                triggerHaptic('LIGHT');
+                onFilterChange(option.value);
+              }}
               className={cn(
-                'flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-all',
+                'flex min-h-[56px] touch-manipulation items-center gap-2 rounded-full border px-5 py-3 text-base font-medium transition-all',
+                'active:scale-[0.98]',
                 isActive
                   ? 'border-electric/50 bg-electric/10 text-electric shadow-sm shadow-electric/20'
-                  : 'border-border/40 bg-card/60 text-foreground/70 hover:border-electric/30 hover:bg-card hover:text-foreground'
+                  : 'border-border/40 bg-card/60 text-foreground/70 hover:border-electric/30 hover:bg-card hover:text-foreground active:bg-card/80'
               )}
             >
               <Icon className={cn('h-4 w-4', isActive ? option.color : 'text-muted-foreground')} />
@@ -108,8 +124,13 @@ export function VibesFilterBar({
       </div>
 
       {/* Sort dropdown (mobile) */}
-      <div className="flex items-center gap-2 sm:hidden">
-        <span className="text-xs font-medium text-muted-foreground">{t('pages.vibes.sort.sortBy')}</span>
+      <div
+        className="flex items-center gap-2 sm:hidden"
+        style={{ paddingBottom: `calc(0.5rem + ${bottom}px)` }}
+      >
+        <span className="text-sm font-medium text-muted-foreground">
+          {t('pages.vibes.sort.sortBy')}
+        </span>
         {SORT_OPTIONS.map(option => {
           const Icon = option.icon;
           const isActive = currentSort === option.value;
@@ -117,15 +138,19 @@ export function VibesFilterBar({
           return (
             <button
               key={option.value}
-              onClick={() => onSortChange(option.value)}
+              onClick={() => {
+                triggerHaptic('LIGHT');
+                onSortChange(option.value);
+              }}
               className={cn(
-                'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all',
+                'flex min-h-[56px] touch-manipulation items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium transition-all',
+                'active:scale-[0.98]',
                 isActive
                   ? 'bg-electric/20 text-electric shadow-sm'
-                  : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                  : 'text-muted-foreground hover:bg-accent hover:text-foreground active:bg-accent/80'
               )}
             >
-              <Icon className="h-3 w-3" />
+              <Icon className="h-4 w-4" />
               {t(option.labelKey)}
             </button>
           );
