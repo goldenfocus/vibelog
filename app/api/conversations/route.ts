@@ -64,9 +64,7 @@ export async function GET() {
       return NextResponse.json({ conversations: [] });
     }
 
-    const conversationIds = participations.map(
-      p => (p.conversations as Record<string, unknown>).id
-    );
+    const conversationIds = participations.map(p => (p.conversations as { id: string }).id);
 
     // Get all participants for these conversations
     const { data: allParticipants, error: participantsError } = await supabase
@@ -93,7 +91,7 @@ export async function GET() {
 
     // Get last messages
     const lastMessageIds = participations
-      .map(p => (p.conversations as Record<string, unknown>).last_message_id)
+      .map(p => (p.conversations as { last_message_id?: string }).last_message_id)
       .filter(Boolean);
 
     let lastMessages: unknown[] = [];
@@ -126,17 +124,17 @@ export async function GET() {
 
     // Build enriched conversations
     const conversations: ConversationWithDetails[] = participations.map(p => {
-      const conversation = p.conversations as Record<string, unknown>;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const conversation = p.conversations as any;
       const participants =
         allParticipants
           ?.filter(ap => ap.conversation_id === conversation.id)
-          .map(ap => ap.profiles as Record<string, unknown>) || [];
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .map(ap => ap.profiles as any) || [];
 
       const lastMessage = lastMessages.find(m => m.id === conversation.last_message_id) || null;
 
-      const unreadData = unreadCounts?.find(
-        (uc: Record<string, unknown>) => uc.conversation_id === conversation.id
-      );
+      const unreadData = unreadCounts?.find((uc: any) => uc.conversation_id === conversation.id);
       const unreadCount = unreadData?.unread_count || 0;
 
       // Check if anyone is typing
