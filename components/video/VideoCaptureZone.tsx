@@ -26,7 +26,7 @@ import { useVideoStateMachine } from '@/hooks/useVideoStateMachine';
 import { useVideoUpload } from '@/hooks/useVideoUpload';
 
 interface VideoCaptureZoneProps {
-  vibelogId: string;
+  vibelogId?: string; // Optional - will be created during upload if not provided
   onVideoCaptured?: (videoUrl: string) => void;
   maxDurationSeconds?: number; // Free tier limit
   isPremium?: boolean;
@@ -373,32 +373,54 @@ export function VideoCaptureZone({
     }
 
     try {
-      // Step 1: Upload video
       setStatus('uploading');
       setError(null);
 
+      // Step 1: Create vibelog if not provided
+      let currentVibelogId = vibelogId;
+      if (!currentVibelogId) {
+        console.log('📝 [UPLOAD] Creating vibelog for video...');
+        const createResponse = await fetch('/api/save-vibelog', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content: 'Video vibelog (processing...)',
+            isPublished: false,
+          }),
+        });
+
+        if (!createResponse.ok) {
+          throw new Error('Failed to create vibelog');
+        }
+
+        const createResult = await createResponse.json();
+        currentVibelogId = createResult.vibelogId;
+        console.log('✅ [UPLOAD] Vibelog created:', currentVibelogId);
+      }
+
+      // Step 2: Upload video
       console.log('📹 [UPLOAD] Uploading video...', {
         blobSize: videoBlob.size,
-        vibelogId,
+        vibelogId: currentVibelogId,
       });
 
       const result = await uploadVideo({
         videoBlob,
-        vibelogId,
+        vibelogId: currentVibelogId!,
         source: 'captured',
         captureMode: 'camera',
       });
 
       console.log('✅ [UPLOAD] Upload successful:', result.url);
 
-      // Step 2: Analyze video to generate title & description
+      // Step 3: Analyze video to generate title & description
       setStatus('analyzing');
       console.log('🔍 [ANALYZE] Analyzing video content...');
 
       const analyzeResponse = await fetch('/api/video/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ vibelogId }),
+        body: JSON.stringify({ vibelogId: currentVibelogId }),
       });
 
       if (!analyzeResponse.ok) {
@@ -417,12 +439,12 @@ export function VideoCaptureZone({
         descriptionLength: analysisResult.description?.length,
       });
 
-      // Step 3: Update vibelog with generated content AND auto-publish
+      // Step 4: Update vibelog with generated content AND auto-publish
       const updateResponse = await fetch('/api/save-vibelog', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          vibelogId,
+          vibelogId: currentVibelogId,
           title: analysisResult.title,
           content: `# ${analysisResult.title}\n\n${analysisResult.description}`,
           teaser: analysisResult.teaser,
