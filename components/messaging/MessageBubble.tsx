@@ -89,39 +89,59 @@ export function MessageBubble({
         </motion.div>
       )}
 
-      {/* Message bubble with swipe gesture */}
+      {/* Message bubble with swipe gesture and premium effects */}
       <motion.div
         drag={onReply ? 'x' : false}
         dragConstraints={{ left: 0, right: isCurrentUser ? 0 : 100, top: 0, bottom: 0 }}
         dragElastic={0.2}
         onDragEnd={handleDragEnd}
         style={{ x }}
+        whileHover={{ scale: 1.02 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 20 }}
         className={cn(
-          'max-w-[80%] rounded-3xl px-4 py-2.5 shadow-sm',
-          'transition-all duration-200',
+          'group relative max-w-[80%] overflow-hidden rounded-3xl px-4 py-3 shadow-md',
+          'transition-all duration-300',
           isCurrentUser
-            ? 'bg-gradient-to-br from-metallic-blue-500 to-metallic-blue-600 text-white'
-            : 'bg-white text-zinc-900 dark:bg-zinc-800 dark:text-white'
+            ? 'bg-gradient-to-br from-metallic-blue-500 to-metallic-blue-600 text-white shadow-metallic-blue-500/30 hover:shadow-lg hover:shadow-metallic-blue-500/40'
+            : 'bg-white/90 text-zinc-900 shadow-zinc-200/50 backdrop-blur-sm hover:bg-white hover:shadow-lg dark:bg-zinc-800/90 dark:text-white dark:shadow-zinc-900/50 dark:hover:bg-zinc-800'
         )}
       >
-        {/* Reply indicator */}
+        {/* Shimmer effect on hover */}
+        {isCurrentUser && (
+          <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 transition-all duration-700 group-hover:translate-x-full group-hover:opacity-100" />
+        )}
+        {/* Reply indicator with premium styling */}
         {message.reply_to && (
-          <div
+          <motion.div
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
             className={cn(
-              'mb-2 border-l-2 pb-2 pl-2 text-xs opacity-70',
-              isCurrentUser ? 'border-white/30' : 'border-metallic-blue-500/30'
+              'border-l-3 relative mb-2 overflow-hidden rounded-xl bg-black/5 pb-2 pl-3 pr-2 pt-1 text-xs backdrop-blur-sm',
+              isCurrentUser
+                ? 'border-white/40 bg-white/10'
+                : 'border-metallic-blue-500/50 bg-metallic-blue-500/5 dark:bg-metallic-blue-500/10'
             )}
           >
-            <div className="font-medium">{message.reply_to.sender?.display_name || 'Unknown'}</div>
-            <div className="truncate">{message.reply_to.content || '🎤 Voice message'}</div>
-          </div>
+            <div className="font-semibold">
+              {message.reply_to.sender?.display_name || 'Unknown'}
+            </div>
+            <div className="truncate opacity-80">
+              {message.reply_to.content || '🎤 Voice message'}
+            </div>
+          </motion.div>
         )}
 
-        {/* Sender name (for group chats, non-current user) */}
+        {/* Sender name (for group chats, non-current user) with animation */}
         {!isCurrentUser && (
-          <div className="mb-1 text-xs font-medium text-metallic-blue-600 dark:text-metallic-blue-400">
-            {message.sender?.display_name || 'Unknown'}
-          </div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="relative mb-1.5 text-xs font-bold"
+          >
+            <span className="bg-gradient-to-r from-metallic-blue-600 to-metallic-blue-500 bg-clip-text text-transparent dark:from-metallic-blue-400 dark:to-metallic-blue-300">
+              {message.sender?.display_name || 'Unknown'}
+            </span>
+          </motion.div>
         )}
 
         {/* Voice message */}
@@ -146,9 +166,9 @@ export function MessageBubble({
           </div>
         )}
 
-        {/* Text content */}
+        {/* Text content with better typography */}
         {message.content && (
-          <div className="whitespace-pre-wrap break-words text-[15px] leading-relaxed">
+          <div className="relative whitespace-pre-wrap break-words text-[15px] leading-relaxed">
             {message.content}
           </div>
         )}
@@ -195,55 +215,77 @@ export function MessageBubble({
           </div>
         )}
 
-        {/* Timestamp and read receipts */}
+        {/* Timestamp and read receipts with premium styling */}
         <div
           className={cn(
-            'mt-1 flex items-center gap-1 text-[11px]',
-            isCurrentUser ? 'justify-end text-white/70' : 'justify-start text-zinc-500'
+            'relative mt-2 flex items-center gap-1.5 text-[11px] font-medium',
+            isCurrentUser
+              ? 'justify-end text-white/80'
+              : 'justify-start text-zinc-500 dark:text-zinc-400'
           )}
         >
-          <span>{formatMessageTime(message.created_at)}</span>
+          <span className="tracking-wide">{formatMessageTime(message.created_at)}</span>
 
-          {/* Read receipts (WhatsApp-style checkmarks) */}
+          {/* Read receipts (Premium double-check animation) */}
           {isCurrentUser && (
-            <div className="flex items-center">
+            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="flex items-center">
               {message.read_by_count > 0 ? (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="text-electric-accent"
+                <motion.div
+                  initial={{ rotate: -180, opacity: 0 }}
+                  animate={{ rotate: 0, opacity: 1 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 20 }}
                 >
-                  <polyline points="20 6 9 17 4 12" />
-                  <polyline points="20 6 9 17 4 12" transform="translate(4, 0)" />
-                </svg>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="text-electric-accent drop-shadow-[0_0_4px_rgba(0,217,255,0.6)]"
+                  >
+                    <polyline points="20 6 9 17 4 12" />
+                    <polyline points="20 6 9 17 4 12" transform="translate(4, 0)" />
+                  </svg>
+                </motion.div>
               ) : (
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  width="14"
-                  height="14"
+                  width="15"
+                  height="15"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="2.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
+                  className="text-white/70"
                 >
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
               )}
-            </div>
+            </motion.div>
           )}
         </div>
 
-        {/* Edited indicator */}
-        {message.edited_at && <div className="mt-0.5 text-[10px] opacity-50">edited</div>}
+        {/* Edited indicator with subtle badge */}
+        {message.edited_at && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className={cn(
+              'mt-1 inline-block rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider',
+              isCurrentUser
+                ? 'bg-white/10 text-white/60'
+                : 'bg-metallic-blue-500/10 text-metallic-blue-600 dark:text-metallic-blue-400'
+            )}
+          >
+            edited
+          </motion.div>
+        )}
       </motion.div>
     </div>
   );

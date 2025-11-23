@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 
 import Navigation from '@/components/Navigation';
 import { LikedVibelogs } from '@/components/profile/LikedVibelogs';
+import { ProfileActions } from '@/components/profile/ProfileActions';
 import { ProfileVibelogsWrapper } from '@/components/profile/ProfileVibelogsWrapper';
 import { SocialLinks } from '@/components/profile/SocialLinks';
 import { ZoomableImage } from '@/components/profile/ZoomableImage';
@@ -308,6 +309,9 @@ export default async function ProfilePage({ params }: PageProps) {
                       {profile.bio}
                     </p>
                   )}
+
+                  {/* Message Button */}
+                  <ProfileActions profileUserId={profile.id} username={profile.username} />
 
                   {/* Stats and Social Links */}
                   <div
