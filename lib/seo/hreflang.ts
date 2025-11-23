@@ -167,17 +167,18 @@ export function extractLocaleFromPath(path: string): Locale {
  * @returns Path without locale prefix
  */
 export function stripLocaleFromPath(path: string): string {
-  const locale = extractLocaleFromPath(path);
+  const segments = path.split('/').filter(Boolean);
+  const firstSegment = segments[0];
 
-  if (locale === DEFAULT_LOCALE) {
-    return path;
-  }
-
-  if (path === `/${locale}`) {
-    return '/';
-  }
-  if (path.startsWith(`/${locale}/`)) {
-    return path.slice(`/${locale}`.length);
+  // Check if first segment is a locale (including default locale 'en')
+  if (firstSegment && isLocaleSupported(firstSegment)) {
+    // Remove the locale prefix
+    if (path === `/${firstSegment}`) {
+      return '/';
+    }
+    if (path.startsWith(`/${firstSegment}/`)) {
+      return path.slice(`/${firstSegment}`.length);
+    }
   }
 
   return path;
