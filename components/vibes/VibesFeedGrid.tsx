@@ -4,6 +4,7 @@ import { Flame, Loader2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import { CommentCard, type CommentCardData } from '@/components/home/CommentCard';
+import { useI18n } from '@/components/providers/I18nProvider';
 import { filterCommentsByType, isHotComment, sortComments } from '@/lib/comments';
 import type { CommentFilterType, CommentSortType } from '@/lib/comments';
 import { cn } from '@/lib/utils';
@@ -17,6 +18,7 @@ interface VibesFeedGridProps {
 const COMMENTS_PER_PAGE = 24;
 
 export function VibesFeedGrid({ initialComments, filter, sort }: VibesFeedGridProps) {
+  const { t } = useI18n();
   const [displayedComments, setDisplayedComments] = useState<CommentCardData[]>([]);
   const [page, setPage] = useState(1);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -80,11 +82,11 @@ export function VibesFeedGrid({ initialComments, filter, sort }: VibesFeedGridPr
         <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-electric/10">
           <Flame className="h-8 w-8 text-electric" />
         </div>
-        <h3 className="mb-2 text-lg font-semibold">No vibes found</h3>
+        <h3 className="mb-2 text-lg font-semibold">{t('pages.vibes.empty.title')}</h3>
         <p className="max-w-md text-sm text-muted-foreground">
           {filter !== 'all'
-            ? `No ${filter} vibes to show. Try selecting a different filter.`
-            : 'Be the first to drop a vibe on a vibelog!'}
+            ? t('pages.vibes.empty.specificFilter', { filter })
+            : t('pages.vibes.empty.allFilter')}
         </p>
       </div>
     );
@@ -100,7 +102,7 @@ export function VibesFeedGrid({ initialComments, filter, sort }: VibesFeedGridPr
             {isHotComment(comment) && (
               <div className="absolute -right-2 -top-2 z-10 flex items-center gap-1 rounded-full bg-gradient-to-r from-orange-500 to-red-500 px-2 py-1 text-xs font-bold text-white shadow-lg">
                 <Flame className="h-3 w-3" />
-                HOT
+                {t('pages.vibes.hot')}
               </div>
             )}
             <CommentCard comment={comment} index={index} />
@@ -117,10 +119,10 @@ export function VibesFeedGrid({ initialComments, filter, sort }: VibesFeedGridPr
           {isLoadingMore ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Loading more vibes...
+              {t('pages.vibes.loading.more')}
             </div>
           ) : (
-            <div className="text-sm text-muted-foreground">Scroll for more vibes</div>
+            <div className="text-sm text-muted-foreground">{t('pages.vibes.loading.scroll')}</div>
           )}
         </div>
       )}
@@ -129,9 +131,9 @@ export function VibesFeedGrid({ initialComments, filter, sort }: VibesFeedGridPr
       {!hasMore && displayedComments.length > 0 && (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <div className="mb-3 text-4xl">✨</div>
-          <p className="text-sm font-medium text-foreground">You&apos;ve reached the end!</p>
+          <p className="text-sm font-medium text-foreground">{t('pages.vibes.end.title')}</p>
           <p className="text-xs text-muted-foreground">
-            {displayedComments.length} vibe{displayedComments.length !== 1 ? 's' : ''} shown
+            {t('pages.vibes.end.count', { count: displayedComments.length })}
           </p>
         </div>
       )}

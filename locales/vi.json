@@ -459,6 +459,39 @@
         "months": "{{count}} tháng trước",
         "years": "{{count}} năm trước"
       }
+    },
+    "vibes": {
+      "title": "Vibe Gần Đây",
+      "subtitle": "Tham gia cuộc trò chuyện",
+      "countWithSubtitle": "{{count}} vibe • Tham gia cuộc trò chuyện",
+      "filters": {
+        "all": "Tất Cả Vibe",
+        "voice": "Giọng Nói",
+        "video": "Video",
+        "text": "Văn Bản"
+      },
+      "sort": {
+        "recent": "Gần Đây",
+        "trending": "Xu Hướng",
+        "popular": "Phổ Biến",
+        "sortBy": "Sắp xếp theo:"
+      },
+      "empty": {
+        "title": "Không tìm thấy vibe",
+        "allFilter": "Hãy là người đầu tiên thả vibe trên một vibelog!",
+        "specificFilter": "Không có vibe {{filter}} để hiển thị. Thử chọn bộ lọc khác."
+      },
+      "loading": {
+        "initial": "Đang tải vibe...",
+        "more": "Đang tải thêm vibe...",
+        "scroll": "Cuộn để xem thêm vibe"
+      },
+      "end": {
+        "title": "Bạn đã đến cuối rồi!",
+        "count": "{{count}} vibe được hiển thị",
+        "count_other": "{{count}} vibe được hiển thị"
+      },
+      "hot": "HOT"
     }
   },
   "auth": {

@@ -459,6 +459,39 @@
         "months": "{{count}} months ago",
         "years": "{{count}} years ago"
       }
+    },
+    "vibes": {
+      "title": "Recent Vibes",
+      "subtitle": "Join the conversation",
+      "countWithSubtitle": "{{count}} vibes • Join the conversation",
+      "filters": {
+        "all": "All Vibes",
+        "voice": "Voice",
+        "video": "Video",
+        "text": "Text"
+      },
+      "sort": {
+        "recent": "Recent",
+        "trending": "Trending",
+        "popular": "Popular",
+        "sortBy": "Sort by:"
+      },
+      "empty": {
+        "title": "No vibes found",
+        "allFilter": "Be the first to drop a vibe on a vibelog!",
+        "specificFilter": "No {{filter}} vibes to show. Try selecting a different filter."
+      },
+      "loading": {
+        "initial": "Loading vibes...",
+        "more": "Loading more vibes...",
+        "scroll": "Scroll for more vibes"
+      },
+      "end": {
+        "title": "You've reached the end!",
+        "count": "{{count}} vibe shown",
+        "count_other": "{{count}} vibes shown"
+      },
+      "hot": "HOT"
     }
   },
   "auth": {

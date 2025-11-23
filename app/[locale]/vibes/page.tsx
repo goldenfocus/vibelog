@@ -6,6 +6,7 @@ import { useState } from 'react';
 
 import type { CommentCardData } from '@/components/home/CommentCard';
 import Navigation from '@/components/Navigation';
+import { useI18n } from '@/components/providers/I18nProvider';
 import { VibesFeedGrid } from '@/components/vibes/VibesFeedGrid';
 import { VibesFilterBar } from '@/components/vibes/VibesFilterBar';
 import type { CommentFilterType, CommentSortType } from '@/lib/comments';
@@ -15,6 +16,7 @@ import type { CommentFilterType, CommentSortType } from '@/lib/comments';
  * Displays all public comments with filtering and sorting capabilities
  */
 export default function VibesPage() {
+  const { t } = useI18n();
   const [filter, setFilter] = useState<CommentFilterType>('all');
   const [sort, setSort] = useState<CommentSortType>('recent');
 
@@ -51,7 +53,7 @@ export default function VibesPage() {
             <div className="flex min-h-[400px] items-center justify-center">
               <div className="text-center">
                 <Loader2 className="mx-auto mb-4 h-8 w-8 animate-spin text-electric" />
-                <p className="text-sm text-muted-foreground">Loading vibes...</p>
+                <p className="text-sm text-muted-foreground">{t('pages.vibes.loading.initial')}</p>
               </div>
             </div>
           )}
@@ -60,9 +62,9 @@ export default function VibesPage() {
           {error && (
             <div className="flex min-h-[400px] items-center justify-center">
               <div className="text-center">
-                <p className="mb-2 text-lg font-semibold text-destructive">Failed to load vibes</p>
+                <p className="mb-2 text-lg font-semibold text-destructive">{t('common.error')}</p>
                 <p className="text-sm text-muted-foreground">
-                  {error instanceof Error ? error.message : 'Something went wrong'}
+                  {error instanceof Error ? error.message : t('common.errorMessage')}
                 </p>
               </div>
             </div>
