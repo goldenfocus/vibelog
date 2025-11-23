@@ -158,9 +158,7 @@ export default function Home() {
             {creationMode === 'audio' && (
               <MicRecorder remixContent={remixContent} onSaveSuccess={refreshFeed} />
             )}
-            {creationMode === 'video' && (
-              <VideoCreator remixContent={remixContent} onSaveSuccess={refreshFeed} />
-            )}
+            {creationMode === 'video' && <VideoCreator />}
             {creationMode === 'screen' && (
               <ScreenShareCreator remixContent={remixContent} onSaveSuccess={refreshFeed} />
             )}
