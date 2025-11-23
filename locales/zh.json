@@ -459,6 +459,39 @@
         "months": "{{count}} 个月前",
         "years": "{{count}} 年前"
       }
+    },
+    "vibes": {
+      "title": "最新 Vibe",
+      "subtitle": "加入对话",
+      "countWithSubtitle": "{{count}} 条 vibe • 加入对话",
+      "filters": {
+        "all": "全部 Vibe",
+        "voice": "语音",
+        "video": "视频",
+        "text": "文字"
+      },
+      "sort": {
+        "recent": "最新",
+        "trending": "趋势",
+        "popular": "热门",
+        "sortBy": "排序方式："
+      },
+      "empty": {
+        "title": "未找到 vibe",
+        "allFilter": "成为第一个在 vibelog 上留下 vibe 的人吧！",
+        "specificFilter": "没有{{filter}} vibe 可显示。尝试选择其他筛选器。"
+      },
+      "loading": {
+        "initial": "正在加载 vibe...",
+        "more": "正在加载更多 vibe...",
+        "scroll": "滚动查看更多 vibe"
+      },
+      "end": {
+        "title": "已到达底部！",
+        "count": "已显示 {{count}} 条 vibe",
+        "count_other": "已显示 {{count}} 条 vibe"
+      },
+      "hot": "HOT"
     }
   },
   "auth": {

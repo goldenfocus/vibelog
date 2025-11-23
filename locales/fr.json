@@ -459,6 +459,39 @@
         "months": "{{count}} mois",
         "years": "{{count}} ans"
       }
+    },
+    "vibes": {
+      "title": "Vibes Récentes",
+      "subtitle": "Rejoignez la conversation",
+      "countWithSubtitle": "{{count}} vibes • Rejoignez la conversation",
+      "filters": {
+        "all": "Toutes les Vibes",
+        "voice": "Voix",
+        "video": "Vidéo",
+        "text": "Texte"
+      },
+      "sort": {
+        "recent": "Récentes",
+        "trending": "Tendances",
+        "popular": "Populaire",
+        "sortBy": "Trier par :"
+      },
+      "empty": {
+        "title": "Aucune vibe trouvée",
+        "allFilter": "Soyez le premier à déposer une vibe sur un vibelog !",
+        "specificFilter": "Aucune vibe {{filter}} à afficher. Essayez de sélectionner un filtre différent."
+      },
+      "loading": {
+        "initial": "Chargement des vibes...",
+        "more": "Chargement de plus de vibes...",
+        "scroll": "Faites défiler pour plus de vibes"
+      },
+      "end": {
+        "title": "Vous avez atteint la fin !",
+        "count": "{{count}} vibe affichée",
+        "count_other": "{{count}} vibes affichées"
+      },
+      "hot": "HOT"
     }
   },
   "auth": {

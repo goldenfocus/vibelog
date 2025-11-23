@@ -2,6 +2,7 @@
 
 import { MessageCircle, Mic, Sparkles, TrendingUp, Video } from 'lucide-react';
 
+import { useI18n } from '@/components/providers/I18nProvider';
 import type { CommentFilterType, CommentSortType } from '@/lib/comments';
 import { cn } from '@/lib/utils';
 
@@ -15,24 +16,24 @@ interface VibesFilterBarProps {
 
 const FILTER_OPTIONS: Array<{
   value: CommentFilterType;
-  label: string;
+  labelKey: string;
   icon: React.ElementType;
   color: string;
 }> = [
-  { value: 'all', label: 'All Vibes', icon: Sparkles, color: 'text-electric' },
-  { value: 'voice', label: 'Voice', icon: Mic, color: 'text-blue-400' },
-  { value: 'video', label: 'Video', icon: Video, color: 'text-purple-400' },
-  { value: 'text', label: 'Text', icon: MessageCircle, color: 'text-green-400' },
+  { value: 'all', labelKey: 'pages.vibes.filters.all', icon: Sparkles, color: 'text-electric' },
+  { value: 'voice', labelKey: 'pages.vibes.filters.voice', icon: Mic, color: 'text-blue-400' },
+  { value: 'video', labelKey: 'pages.vibes.filters.video', icon: Video, color: 'text-purple-400' },
+  { value: 'text', labelKey: 'pages.vibes.filters.text', icon: MessageCircle, color: 'text-green-400' },
 ];
 
 const SORT_OPTIONS: Array<{
   value: CommentSortType;
-  label: string;
+  labelKey: string;
   icon: React.ElementType;
 }> = [
-  { value: 'recent', label: 'Recent', icon: Sparkles },
-  { value: 'trending', label: 'Trending', icon: TrendingUp },
-  { value: 'popular', label: 'Popular', icon: Sparkles },
+  { value: 'recent', labelKey: 'pages.vibes.sort.recent', icon: Sparkles },
+  { value: 'trending', labelKey: 'pages.vibes.sort.trending', icon: TrendingUp },
+  { value: 'popular', labelKey: 'pages.vibes.sort.popular', icon: Sparkles },
 ];
 
 export function VibesFilterBar({
@@ -42,15 +43,18 @@ export function VibesFilterBar({
   onSortChange,
   totalCount,
 }: VibesFilterBarProps) {
+  const { t } = useI18n();
+
   return (
     <div className="space-y-4">
       {/* Header with count */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Recent Vibes</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t('pages.vibes.title')}</h1>
           <p className="text-sm text-muted-foreground">
-            {totalCount !== undefined && `${totalCount.toLocaleString()} vibes • `}
-            Join the conversation
+            {totalCount !== undefined
+              ? t('pages.vibes.countWithSubtitle', { count: totalCount.toLocaleString() })
+              : t('pages.vibes.subtitle')}
           </p>
         </div>
 
@@ -72,7 +76,7 @@ export function VibesFilterBar({
                 )}
               >
                 <Icon className="h-3.5 w-3.5" />
-                {option.label}
+                {t(option.labelKey)}
               </button>
             );
           })}
@@ -97,7 +101,7 @@ export function VibesFilterBar({
               )}
             >
               <Icon className={cn('h-4 w-4', isActive ? option.color : 'text-muted-foreground')} />
-              {option.label}
+              {t(option.labelKey)}
             </button>
           );
         })}
@@ -105,7 +109,7 @@ export function VibesFilterBar({
 
       {/* Sort dropdown (mobile) */}
       <div className="flex items-center gap-2 sm:hidden">
-        <span className="text-xs font-medium text-muted-foreground">Sort by:</span>
+        <span className="text-xs font-medium text-muted-foreground">{t('pages.vibes.sort.sortBy')}</span>
         {SORT_OPTIONS.map(option => {
           const Icon = option.icon;
           const isActive = currentSort === option.value;
@@ -122,7 +126,7 @@ export function VibesFilterBar({
               )}
             >
               <Icon className="h-3 w-3" />
-              {option.label}
+              {t(option.labelKey)}
             </button>
           );
         })}
