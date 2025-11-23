@@ -8,6 +8,7 @@ import { Area } from 'react-easy-crop';
 import { ImageCropModal } from '@/components/profile/ImageCropModal';
 import { Button } from '@/components/ui/button';
 import { compressImage } from '@/lib/image-compression';
+import { getImageDimensions } from '@/lib/image-dimensions';
 import { getOrientedImageUrl } from '@/lib/image-orientation';
 import { cn } from '@/lib/utils';
 
@@ -85,24 +86,48 @@ export function ImageUploadZone({
       setUploadSuccess(false);
 
       try {
+        // Get original image dimensions before compression
+        const originalDimensions = await getImageDimensions(selectedFile);
+
         // Compress image before upload to avoid Vercel's 4.5MB payload limit
         let fileToUpload = selectedFile;
+        let scaledCropData = croppedAreaPixels;
+
         try {
           fileToUpload = await compressImage(selectedFile, {
             maxWidth: 2400,
             maxHeight: 2400,
             maxSizeMB: 3.5, // Leave headroom under Vercel's 4.5MB limit
           });
+
+          // Get compressed image dimensions
+          const compressedDimensions = await getImageDimensions(fileToUpload);
+
+          // Calculate scale ratio
+          const scaleX = compressedDimensions.width / originalDimensions.width;
+          const scaleY = compressedDimensions.height / originalDimensions.height;
+
+          // Scale crop coordinates to match compressed image
+          scaledCropData = {
+            x: Math.round(croppedAreaPixels.x * scaleX),
+            y: Math.round(croppedAreaPixels.y * scaleY),
+            width: Math.round(croppedAreaPixels.width * scaleX),
+            height: Math.round(croppedAreaPixels.height * scaleY),
+          };
+
+          console.log(
+            `📐 Scaled crop coords: ${originalDimensions.width}x${originalDimensions.height} → ${compressedDimensions.width}x${compressedDimensions.height} (${(scaleX * 100).toFixed(0)}% scale)`
+          );
         } catch (compressionError) {
           console.warn('Image compression failed, uploading original:', compressionError);
-          // Continue with original file if compression fails
+          // Continue with original file and crop coords if compression fails
         }
 
         // Upload to API with crop data and filter
         const formData = new FormData();
         formData.append('image', fileToUpload);
         formData.append('type', type);
-        formData.append('cropData', JSON.stringify(croppedAreaPixels));
+        formData.append('cropData', JSON.stringify(scaledCropData));
         formData.append('filterId', filterId);
 
         const response = await fetch('/api/profile/upload-image', {
