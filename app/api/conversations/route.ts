@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { createClient } from '@/lib/supabase';
+import type { Profile } from '@/types/database';
 import type { ConversationWithDetails, CreateConversationRequest } from '@/types/messaging';
 
 /**
@@ -64,7 +65,9 @@ export async function GET() {
       return NextResponse.json({ conversations: [] });
     }
 
-    const conversationIds = participations.map(p => (p.conversations as { id: string }).id);
+    const conversationIds = participations.map(
+      p => (p.conversations as unknown as { id: string }).id
+    );
 
     // Get all participants for these conversations
     const { data: allParticipants, error: participantsError } = await supabase
@@ -124,13 +127,23 @@ export async function GET() {
 
     // Build enriched conversations
     const conversations: ConversationWithDetails[] = participations.map(p => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const conversation = p.conversations as any;
+      const conversation = p.conversations as unknown as {
+        id: string;
+        type: string;
+        title: string | null;
+        description: string | null;
+        avatar_url: string | null;
+        created_by: string | null;
+        ai_summary: string | null;
+        last_message_id: string | null;
+        last_message_at: string | null;
+        created_at: string;
+        updated_at: string;
+      };
       const participants =
         allParticipants
           ?.filter(ap => ap.conversation_id === conversation.id)
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .map(ap => ap.profiles as any) || [];
+          .map(ap => ap.profiles as unknown as Profile) || [];
 
       const lastMessage = lastMessages.find(m => m.id === conversation.last_message_id) || null;
 
