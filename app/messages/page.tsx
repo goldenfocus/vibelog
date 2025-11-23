@@ -12,6 +12,9 @@ import { cn } from '@/lib/utils';
 import type { ConversationWithDetails } from '@/types/messaging';
 import { formatMessageTime, getMessagePreview } from '@/types/messaging';
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 export default function MessagesPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();

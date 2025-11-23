@@ -11,6 +11,9 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { createClient } from '@/lib/supabase';
 import type { ConversationWithDetails, MessageWithDetails } from '@/types/messaging';
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 export default function ConversationPage() {
   const params = useParams();
   const conversationId = params?.id as string;
