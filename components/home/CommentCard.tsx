@@ -51,8 +51,9 @@ export function CommentCard({ comment, index, isActive = false }: CommentCardPro
     <Link
       href={`/v/${vibelogSlug}#comment-${comment.id}`}
       className={cn(
-        'group relative flex h-[280px] w-[260px] flex-shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm transition-all duration-300',
-        'hover:scale-[1.02] hover:border-electric/50 hover:shadow-lg hover:shadow-electric/10',
+        'group relative flex h-[280px] w-full max-w-[260px] flex-shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm transition-all duration-300',
+        'touch-manipulation hover:scale-[1.02] hover:border-electric/50 hover:shadow-lg hover:shadow-electric/10',
+        'active:scale-[0.99] active:border-electric/60',
         isActive && 'border-electric/60 shadow-lg shadow-electric/20'
       )}
       style={{ animationDelay: `${index * 50}ms` }}
