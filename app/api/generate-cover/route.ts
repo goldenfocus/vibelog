@@ -5,6 +5,7 @@ import { trackAICost, calculateImageCost, isDailyLimitExceeded } from '@/lib/ai-
 // import { checkAndBlockBots } from '@/lib/botid-check'; // DISABLED: Blocking legit users
 import { config } from '@/lib/config';
 import { generateCoverPrompt } from '@/lib/cover-prompt-generator';
+import { uploadCover } from '@/lib/cover-storage';
 import { isDev } from '@/lib/env';
 import { rateLimit, tooManyResponse } from '@/lib/rateLimit';
 import { createServerSupabaseClient } from '@/lib/supabase';
@@ -158,6 +159,15 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ Cover image generated successfully');
 
+    // Require vibelogId for cover storage (covers are stored by vibelog ID)
+    if (!vibelogId) {
+      console.error('❌ No vibelogId provided - cannot save cover');
+      return NextResponse.json(
+        { error: 'vibelogId is required to save cover image' },
+        { status: 400 }
+      );
+    }
+
     // Fallback OG image if storage fails (NEVER return temporary OpenAI URLs)
     const FALLBACK_OG_IMAGE = 'https://www.vibelog.io/og-image.png';
 
@@ -171,37 +181,26 @@ export async function POST(request: NextRequest) {
       }
       const imageBuffer = await imageResponse.arrayBuffer();
 
-      // Upload to Supabase Storage with unique filename
-      const uniqueId = vibelogId || `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      const fileName = `cover-${uniqueId}.png`;
-      const { error: uploadError } = await supa.storage
-        .from('vibelog-covers')
-        .upload(fileName, Buffer.from(imageBuffer), {
-          contentType: 'image/png',
-          cacheControl: '31536000', // 1 year cache
-        });
+      // Upload using modular cover storage utility
+      const { url, error: uploadError } = await uploadCover(
+        vibelogId,
+        Buffer.from(imageBuffer),
+        'image/png'
+      );
 
-      if (uploadError) {
-        console.error('❌ Failed to save cover to storage:', uploadError.message);
-        // Use fallback instead of expired OpenAI URL
+      if (uploadError || !url) {
+        console.error('❌ Failed to save cover to storage:', uploadError);
         storedUrl = FALLBACK_OG_IMAGE;
         console.log('🔄 Using fallback OG image');
       } else {
-        // Get public URL
-        const {
-          data: { publicUrl },
-        } = supa.storage.from('vibelog-covers').getPublicUrl(fileName);
-        storedUrl = publicUrl;
+        storedUrl = url;
         console.log('💾 Cover saved to storage:', storedUrl);
 
-        // Update vibelog with cover URL if vibelogId provided
-        if (vibelogId) {
-          await supa.from('vibelogs').update({ cover_image_url: storedUrl }).eq('id', vibelogId);
-        }
+        // Update vibelog with cover URL
+        await supa.from('vibelogs').update({ cover_image_url: storedUrl }).eq('id', vibelogId);
       }
     } catch (storageErr) {
       console.error('❌ Storage error:', storageErr);
-      // Use fallback instead of expired OpenAI URL
       storedUrl = FALLBACK_OG_IMAGE;
       console.log('🔄 Using fallback OG image');
     }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import sharp from 'sharp';
 
-import { storage } from '@/lib/storage';
+import { uploadCover } from '@/lib/cover-storage';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
@@ -52,15 +52,17 @@ export async function POST(request: NextRequest) {
       .jpeg({ quality: 90 })
       .toBuffer();
 
-    // Upload to storage using vibelog-covers bucket
-    const fileName = `posts/${vibelogId}/cover-${Date.now()}.jpg`;
-    const uploaded = await storage.put(fileName, processed, 'image/jpeg');
+    // Upload using modular cover storage utility
+    const { url: imageUrl, error: uploadError } = await uploadCover(
+      vibelogId,
+      processed,
+      'image/jpeg'
+    );
 
-    if (!uploaded?.url) {
+    if (uploadError || !imageUrl) {
+      console.error('Failed to upload cover:', uploadError);
       return NextResponse.json({ error: 'Failed to upload image' }, { status: 500 });
     }
-
-    const imageUrl = uploaded.url;
 
     // Update vibelog with new cover image
     await supabase
