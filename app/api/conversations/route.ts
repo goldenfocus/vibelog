@@ -26,13 +26,10 @@ import type {
  */
 export async function GET() {
   try {
-    console.log('[GET /api/conversations] Creating supabase client...');
     const supabase = await createServerSupabaseClient();
-    console.log('[GET /api/conversations] Getting user...');
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    console.log('[GET /api/conversations] User:', user?.id || 'none');
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -187,15 +184,8 @@ export async function GET() {
     });
 
     return NextResponse.json({ conversations });
-  } catch (error) {
-    console.error('[GET /api/conversations] Error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    const errorStack = error instanceof Error ? error.stack : '';
-    console.error('[GET /api/conversations] Error details:', { errorMessage, errorStack });
-    return NextResponse.json(
-      { error: 'Internal server error', details: errorMessage },
-      { status: 500 }
-    );
+  } catch {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -311,8 +301,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ error: 'Invalid conversation type' }, { status: 400 });
-  } catch (error) {
-    console.error('[POST /api/conversations] Error:', error);
+  } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
