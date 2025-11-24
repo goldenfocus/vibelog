@@ -21,10 +21,13 @@ import type { SendMessageRequest, GetMessagesResponse } from '@/types/messaging'
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: conversationId } = await params;
+    console.log('[GET /api/conversations/[id]/messages] Creating supabase client...');
     const supabase = await createServerSupabaseClient();
+    console.log('[GET /api/conversations/[id]/messages] Getting user...');
     const {
       data: { user },
     } = await supabase.auth.getUser();
+    console.log('[GET /api/conversations/[id]/messages] User:', user?.id || 'none');
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -111,7 +114,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json(response);
   } catch (error) {
     console.error('[GET /api/conversations/[id]/messages] Error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : '';
+    console.error('[GET /api/conversations/[id]/messages] Error details:', {
+      errorMessage,
+      errorStack,
+    });
+    return NextResponse.json(
+      { error: 'Internal server error', details: errorMessage },
+      { status: 500 }
+    );
   }
 }
 

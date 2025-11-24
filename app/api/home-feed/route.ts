@@ -239,32 +239,53 @@ export async function GET(request: NextRequest) {
     }> = [];
 
     try {
+      // Fetch comments first (without joins, as there's no FK between comments and profiles)
       const { data: comments, error: commentsError } = await supabase
         .from('comments')
-        .select(
-          `
-          id, content, audio_url, video_url, slug, created_at,
-          profiles!comments_user_id_fkey (id, username, full_name, avatar_url),
-          vibelogs!comments_vibelog_id_fkey (
-            id, title, public_slug, cover_image_url, video_url,
-            profiles!vibelogs_user_id_fkey (username, full_name)
-          )
-        `
-        )
+        .select('id, content, audio_url, video_url, slug, created_at, user_id, vibelog_id')
         .eq('is_public', true)
         .eq('moderation_status', 'approved')
         .order('created_at', { ascending: false })
         .limit(commentLimit);
 
-      if (!commentsError && comments) {
+      if (!commentsError && comments && comments.length > 0) {
+        // Get unique user IDs and vibelog IDs
+        const commentUserIds = [...new Set(comments.map(c => c.user_id).filter(Boolean))];
+        const vibelogIds = [...new Set(comments.map(c => c.vibelog_id).filter(Boolean))];
+
+        // Fetch commentator profiles
+        const { data: commentProfiles } = await supabase
+          .from('profiles')
+          .select('id, username, full_name, avatar_url')
+          .in('id', commentUserIds);
+
+        // Fetch vibelogs with their authors
+        const { data: commentVibelogs } = await supabase
+          .from('vibelogs')
+          .select('id, title, public_slug, cover_image_url, video_url, user_id')
+          .in('id', vibelogIds);
+
+        // Get vibelog author IDs
+        const vibelogAuthorIds = [
+          ...new Set((commentVibelogs || []).map(v => v.user_id).filter(Boolean) as string[]),
+        ];
+
+        // Fetch vibelog author profiles
+        const { data: vibelogAuthorProfiles } = await supabase
+          .from('profiles')
+          .select('id, username, full_name')
+          .in('id', vibelogAuthorIds);
+
+        // Create lookup maps
+        const profileMap = new Map((commentProfiles || []).map(p => [p.id, p]));
+        const vibelogMap = new Map((commentVibelogs || []).map(v => [v.id, v]));
+        const authorMap = new Map((vibelogAuthorProfiles || []).map(a => [a.id, a]));
+
+        // Transform comments
         recentComments = comments.map(comment => {
-          const profile = Array.isArray(comment.profiles) ? comment.profiles[0] : comment.profiles;
-          const vibelog = Array.isArray(comment.vibelogs) ? comment.vibelogs[0] : comment.vibelogs;
-          const vibelogAuthor = vibelog?.profiles
-            ? Array.isArray(vibelog.profiles)
-              ? vibelog.profiles[0]
-              : vibelog.profiles
-            : null;
+          const profile = profileMap.get(comment.user_id);
+          const vibelog = vibelogMap.get(comment.vibelog_id);
+          const author = vibelog?.user_id ? authorMap.get(vibelog.user_id) : null;
 
           return {
             id: comment.id,
@@ -286,15 +307,16 @@ export async function GET(request: NextRequest) {
               coverImageUrl: vibelog?.cover_image_url || null,
               videoUrl: vibelog?.video_url || null,
               author: {
-                username: vibelogAuthor?.username || 'anonymous',
-                displayName: vibelogAuthor?.full_name || vibelogAuthor?.username || 'Anonymous',
+                username: author?.username || 'anonymous',
+                displayName: author?.full_name || author?.username || 'Anonymous',
               },
             },
           };
         });
       }
-    } catch {
+    } catch (error) {
       // Comments table might not exist - gracefully handle
+      console.error('[home-feed] Error fetching comments:', error);
     }
 
     // 4. Quick stats for hero chips

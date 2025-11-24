@@ -14,36 +14,10 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const limit = parseInt(searchParams.get('limit') || '20', 10);
 
-    // Fetch recent comments with related vibelog and profile data
+    // Fetch recent comments (without joins, as there's no FK between comments and profiles)
     const { data: comments, error } = await supabase
       .from('comments')
-      .select(
-        `
-        id,
-        content,
-        audio_url,
-        video_url,
-        slug,
-        created_at,
-        profiles!comments_user_id_fkey (
-          id,
-          username,
-          full_name,
-          avatar_url
-        ),
-        vibelogs!comments_vibelog_id_fkey (
-          id,
-          title,
-          public_slug,
-          cover_image_url,
-          video_url,
-          profiles!vibelogs_user_id_fkey (
-            username,
-            full_name
-          )
-        )
-      `
-      )
+      .select('id, content, audio_url, video_url, slug, created_at, user_id, vibelog_id')
       .eq('is_public', true)
       .eq('moderation_status', 'approved')
       .order('created_at', { ascending: false })
@@ -61,15 +35,47 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch recent comments' }, { status: 500 });
     }
 
+    if (!comments || comments.length === 0) {
+      return NextResponse.json({ comments: [] });
+    }
+
+    // Get unique user IDs and vibelog IDs
+    const commentUserIds = [...new Set(comments.map(c => c.user_id).filter(Boolean))];
+    const vibelogIds = [...new Set(comments.map(c => c.vibelog_id).filter(Boolean))];
+
+    // Fetch commentator profiles
+    const { data: commentProfiles } = await supabase
+      .from('profiles')
+      .select('id, username, full_name, avatar_url')
+      .in('id', commentUserIds);
+
+    // Fetch vibelogs with their authors
+    const { data: commentVibelogs } = await supabase
+      .from('vibelogs')
+      .select('id, title, public_slug, cover_image_url, video_url, user_id')
+      .in('id', vibelogIds);
+
+    // Get vibelog author IDs
+    const vibelogAuthorIds = [
+      ...new Set((commentVibelogs || []).map(v => v.user_id).filter(Boolean) as string[]),
+    ];
+
+    // Fetch vibelog author profiles
+    const { data: vibelogAuthorProfiles } = await supabase
+      .from('profiles')
+      .select('id, username, full_name')
+      .in('id', vibelogAuthorIds);
+
+    // Create lookup maps
+    const profileMap = new Map((commentProfiles || []).map(p => [p.id, p]));
+    const vibelogMap = new Map((commentVibelogs || []).map(v => [v.id, v]));
+    const authorMap = new Map((vibelogAuthorProfiles || []).map(a => [a.id, a]));
+
     // Transform the data for easier consumption
-    const transformedComments = comments?.map(comment => {
-      const profile = Array.isArray(comment.profiles) ? comment.profiles[0] : comment.profiles;
-      const vibelog = Array.isArray(comment.vibelogs) ? comment.vibelogs[0] : comment.vibelogs;
-      const author = vibelog?.profiles
-        ? Array.isArray(vibelog.profiles)
-          ? vibelog.profiles[0]
-          : vibelog.profiles
-        : null;
+    const transformedComments = comments.map(comment => {
+      const profile = profileMap.get(comment.user_id);
+      const vibelog = vibelogMap.get(comment.vibelog_id);
+      const author = vibelog?.user_id ? authorMap.get(vibelog.user_id) : null;
 
       return {
         id: comment.id,
