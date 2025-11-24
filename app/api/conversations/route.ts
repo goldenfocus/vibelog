@@ -226,10 +226,6 @@ export async function POST(request: NextRequest) {
       }
 
       // Use helper function to get or create DM
-      console.log('[POST /api/conversations] Calling get_or_create_dm:', {
-        user1_id: user.id,
-        user2_id: participant_id,
-      });
 
       const { data: conversationId, error: rpcError } = await supabase.rpc('get_or_create_dm', {
         user1_id: user.id,
@@ -237,11 +233,8 @@ export async function POST(request: NextRequest) {
       });
 
       if (rpcError) {
-        console.error('[POST /api/conversations] RPC error:', rpcError);
         return NextResponse.json({ error: `Database error: ${rpcError.message}` }, { status: 500 });
       }
-
-      console.log('[POST /api/conversations] Got conversation ID:', conversationId);
 
       // Fetch the full conversation
       const { data: conversation, error: fetchError } = await supabase
@@ -251,14 +244,12 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (fetchError) {
-        console.error('[POST /api/conversations] Fetch error:', fetchError);
         return NextResponse.json(
           { error: `Failed to fetch conversation: ${fetchError.message}` },
           { status: 500 }
         );
       }
 
-      console.log('[POST /api/conversations] Returning conversation:', conversation);
       return NextResponse.json({ conversation }, { status: 201 });
     }
 

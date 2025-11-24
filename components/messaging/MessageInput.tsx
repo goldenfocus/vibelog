@@ -30,6 +30,8 @@ export function MessageInput({
   const [isSending, setIsSending] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isTypingRef = useRef(false);
 
   // Audio engine integration
   const {
@@ -52,15 +54,41 @@ export function MessageInput({
     }
   }, [textContent]);
 
-  // Typing indicator
+  // Typing indicator - debounced to reduce database writes
   useEffect(() => {
     if (textContent.length > 0) {
-      onTyping?.(true);
-      const timeout = setTimeout(() => onTyping?.(false), 1000);
-      return () => clearTimeout(timeout);
+      // Only send "typing" signal once at the start of typing
+      if (!isTypingRef.current) {
+        isTypingRef.current = true;
+        onTyping?.(true);
+      }
+
+      // Clear existing timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+
+      // Set new timeout to stop typing indicator after 3 seconds of inactivity
+      typingTimeoutRef.current = setTimeout(() => {
+        isTypingRef.current = false;
+        onTyping?.(false);
+        typingTimeoutRef.current = null;
+      }, 3000);
     } else {
+      // User cleared input - stop typing immediately
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = null;
+      }
+      isTypingRef.current = false;
       onTyping?.(false);
     }
+
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
   }, [textContent, onTyping]);
 
   // Recording timer

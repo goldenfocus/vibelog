@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { MessageCircle, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { useAuth } from '@/components/providers/AuthProvider';
 import { createClient } from '@/lib/supabase';
@@ -17,6 +17,7 @@ export default function MessagesClient() {
   const { user, loading: authLoading } = useAuth();
   const [conversations, setConversations] = useState<ConversationWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
+  const isSubscribedRef = useRef(false);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -59,11 +60,12 @@ export default function MessagesClient() {
 
   // Real-time updates for new messages
   useEffect(() => {
-    if (!user) {
+    if (!user || isSubscribedRef.current) {
       return;
     }
 
     const supabase = createClient();
+    isSubscribedRef.current = true;
 
     // Subscribe to new messages
     const channel = supabase
@@ -86,6 +88,7 @@ export default function MessagesClient() {
       .subscribe();
 
     return () => {
+      isSubscribedRef.current = false;
       supabase.removeChannel(channel);
     };
   }, [user]);
