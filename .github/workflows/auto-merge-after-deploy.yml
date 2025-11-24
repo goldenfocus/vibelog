@@ -198,3 +198,20 @@ jobs:
             } else {
               console.log(`PR #${prNumber} is already ${pr.data.state}`);
             }
+
+      - name: Trigger wiki sync if needed
+        if: steps.find-pr.outputs.pr_number != '' && steps.check-deploy.outputs.deploy_success == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              await github.rest.actions.createWorkflowDispatch({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'wiki-sync.yml',
+                ref: 'main'
+              });
+              console.log('✅ Triggered wiki sync workflow');
+            } catch (error) {
+              console.log('⚠️  Could not trigger wiki sync:', error.message);
+            }

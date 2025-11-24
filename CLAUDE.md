@@ -13,6 +13,136 @@
    - **When to update**: New feature ships, architectural decision made, database migration added, integration added
    - **How to update**: See "Maintenance Guidelines" section in evolution.md
    - **After updating**: Re-embed documentation by calling `POST /api/admin/documentation/embed` (admin only) or run `node scripts/embed-all-docs.js`
+7. **Update GitHub Wiki** - When shipping changes that affect external documentation, API, or developer experience, sync the GitHub Wiki.
+   - **When to update**: New API endpoint, database schema change, feature affecting docs, breaking changes
+   - **How to update**: Run `pnpm wiki:sync` (automated) or follow wiki checklist below
+   - **After updating**: Verify wiki at https://github.com/goldenfocus/vibelog/wiki
+
+## Wiki Maintenance (AI Agent Responsibility)
+
+**AI agents MUST proactively detect when GitHub Wiki updates are needed and either execute them or guide the user.**
+
+### When Wiki Update is Required
+
+✅ **Always update wiki when:**
+
+- New API endpoint added/changed/removed
+- Database schema significantly changed (new tables, major columns)
+- New feature shipped that affects external developers
+- Breaking changes in any public API
+- New integration added (OAuth provider, AI service, etc.)
+- Major architectural decision documented
+- User-facing terminology or branding changes
+- README.md, evolution.md, api.md, or branding.md modified
+
+### How to Update Wiki
+
+**Option 1: Automated (Preferred)**
+
+```bash
+pnpm wiki:sync
+```
+
+This will:
+
+1. Detect which documentation files changed
+2. Regenerate affected wiki pages
+3. Push to GitHub Wiki automatically
+
+**Option 2: Manual (Fallback)**
+
+```bash
+# 1. Generate wiki pages
+pnpm wiki:generate
+
+# 2. Review changes in /tmp/vibelog-wiki/
+
+# 3. Upload
+cd /tmp/vibelog-wiki
+git clone https://github.com/goldenfocus/vibelog.wiki.git wiki-repo
+cp *.md wiki-repo/
+cd wiki-repo
+git add . && git commit -m "docs: sync wiki with codebase changes"
+git push origin master
+```
+
+### Wiki Update Checklist
+
+Before completing documentation work:
+
+- [ ] Codebase docs updated (README, evolution.md, api.md, etc.)
+- [ ] Wiki pages regenerated (`pnpm wiki:generate`)
+- [ ] Wiki changes reviewed in `/tmp/vibelog-wiki/`
+- [ ] Wiki pushed to GitHub (`pnpm wiki:sync` or manual)
+- [ ] Documentation re-embedded for Vibe Brain (`pnpm docs:embed`)
+- [ ] Wiki links tested at https://github.com/goldenfocus/vibelog/wiki
+- [ ] Cross-references between pages verified
+
+### Wiki-Codebase Mapping
+
+| Codebase File              | Generates Wiki Page                | Update Trigger              |
+| -------------------------- | ---------------------------------- | --------------------------- |
+| README.md                  | Home.md, Getting-Started.md        | Any README change           |
+| evolution.md               | Database-Schema.md, Vibe-Engine.md | Architecture/schema changes |
+| api.md                     | API-Reference.md                   | API endpoint changes        |
+| branding.md                | Branding-Guidelines.md             | Terminology/voice changes   |
+| CLAUDE.md + engineering.md | Engineering-Standards.md           | Dev standards changes       |
+| living-web-2026.md         | Product-Vision.md                  | Vision/philosophy updates   |
+| supabase/migrations/\*.sql | Database-Schema.md                 | New migrations              |
+
+### Auto-Detection Signals for AI Agents
+
+**Commit Message Patterns:**
+
+- `feat:` + mentions API, user-facing feature, or integration → Update wiki
+- `breaking:` + any change → Update wiki
+- `api:` + endpoint mention → Update wiki
+- `docs:` + major documentation → Update wiki
+- Contains `[wiki]` flag → Force wiki update
+
+**File Change Patterns:**
+
+- Any `DOCUMENTATION_SOURCES` file modified → Update wiki
+- `supabase/migrations/*.sql` added → Update Database-Schema.md
+- `app/api/*/route.ts` with new exports → Update API-Reference.md
+
+**PR Label Patterns:**
+
+- `documentation` → Review wiki need
+- `breaking-change` → Always update wiki
+- `public-api` → Update API-Reference.md
+
+### AI Agent Response Pattern
+
+When detecting wiki update needed:
+
+```
+🤖 Wiki Update Detected
+
+I've identified changes that require GitHub Wiki synchronization:
+- Modified: README.md, api.md
+- Wiki pages affected: Home.md, API-Reference.md
+
+Running wiki sync...
+[Execute: pnpm wiki:sync]
+
+✅ Wiki updated successfully!
+📖 View changes: https://github.com/goldenfocus/vibelog/wiki
+```
+
+### Manual Reminder (If Automation Unavailable)
+
+If `pnpm wiki:sync` fails or is unavailable:
+
+```
+⚠️  Wiki Update Required (Manual)
+
+Please update the GitHub Wiki manually:
+1. Generate: pnpm wiki:generate
+2. Review: Check /tmp/vibelog-wiki/
+3. Upload: Follow Option 2 steps above
+4. Verify: https://github.com/goldenfocus/vibelog/wiki
+```
 
 ## Tech Stack
 
