@@ -12,6 +12,7 @@ import VibelogActions from '@/components/VibelogActions';
 import VibelogContentRenderer from '@/components/VibelogContentRenderer';
 import VibelogEditModalFull from '@/components/VibelogEditModalFull';
 import { VideoPlayer } from '@/components/video';
+import { getSafeImageUrl } from '@/lib/image-utils';
 
 interface VibelogAuthor {
   username: string;
@@ -53,6 +54,9 @@ export default function VibelogCard({ vibelog, onRemix, onDeleteSuccess }: Vibel
   const isLoggedIn = !!user;
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const videoUrl = vibelog.video_url || null;
+
+  // Use safe image URL (filters out expired OpenAI URLs)
+  const safeCoverUrl = getSafeImageUrl(vibelog.cover_image_url);
 
   // Defer date formatting to client side to avoid hydration mismatch
   const [formattedDate, setFormattedDate] = useState<string>('');
@@ -225,15 +229,15 @@ export default function VibelogCard({ vibelog, onRemix, onDeleteSuccess }: Vibel
       {/* Video (if available) */}
       {videoUrl && (
         <div className="mb-4">
-          <VideoPlayer videoUrl={videoUrl} poster={vibelog.cover_image_url || undefined} />
+          <VideoPlayer videoUrl={videoUrl} poster={safeCoverUrl || undefined} />
         </div>
       )}
 
       {/* Cover Image (shown if no video) */}
-      {!videoUrl && vibelog.cover_image_url && (
+      {!videoUrl && safeCoverUrl && (
         <div className="mb-4 overflow-hidden rounded-xl">
           <img
-            src={vibelog.cover_image_url}
+            src={safeCoverUrl}
             alt={vibelog.title}
             className="h-48 w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
