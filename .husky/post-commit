@@ -1,0 +1,11 @@
+#!/bin/sh
+
+# Post-commit hook - checks if wiki update is recommended
+
+# Check if wiki update is needed
+if node scripts/detect-wiki-updates.js 2>/dev/null; then
+  echo ""
+  echo "📚 Wiki update recommended!"
+  echo "   Run: pnpm wiki:sync"
+  echo ""
+fi

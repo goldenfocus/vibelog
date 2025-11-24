@@ -1,0 +1,128 @@
+name: Sync GitHub Wiki
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'README.md'
+      - 'evolution.md'
+      - 'api.md'
+      - 'branding.md'
+      - 'CLAUDE.md'
+      - 'engineering.md'
+      - 'living-web-2026.md'
+      - 'docs/vibe-engine.md'
+      - 'supabase/migrations/**'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Force wiki update even if no triggers detected'
+        required: false
+        default: 'false'
+
+jobs:
+  sync-wiki:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout main repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2 # Need 2 commits to detect changes
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Detect wiki update needed
+        id: detect
+        run: |
+          if [[ "${{ github.event.inputs.force }}" == "true" ]]; then
+            echo "update_needed=true" >> $GITHUB_OUTPUT
+            echo "✅ Wiki update forced by workflow_dispatch"
+          elif node scripts/detect-wiki-updates.js; then
+            echo "update_needed=true" >> $GITHUB_OUTPUT
+            echo "✅ Wiki update needed based on changes"
+          else
+            echo "update_needed=false" >> $GITHUB_OUTPUT
+            echo "ℹ️  No wiki update needed"
+          fi
+
+      - name: Generate wiki pages
+        if: steps.detect.outputs.update_needed == 'true'
+        run: node scripts/generate-wiki-pages.js
+
+      - name: Checkout wiki repository
+        if: steps.detect.outputs.update_needed == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: goldenfocus/vibelog.wiki
+          path: wiki
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Copy wiki pages
+        if: steps.detect.outputs.update_needed == 'true'
+        run: |
+          cp /tmp/vibelog-wiki/*.md wiki/
+          cd wiki
+          rm -f UPLOAD_INSTRUCTIONS.md README.md upload-wiki.sh || true
+
+      - name: Commit and push wiki changes
+        if: steps.detect.outputs.update_needed == 'true'
+        run: |
+          cd wiki
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add .
+
+          if git diff-index --quiet HEAD --; then
+            echo "ℹ️  No changes to commit"
+            exit 0
+          fi
+
+          git commit -m "docs: Sync wiki with main branch
+
+          Auto-synced from commit: ${{ github.sha }}
+          Triggered by: ${{ github.event_name }}
+
+          🤖 Generated with GitHub Actions"
+
+          git push origin master
+
+      - name: Update documentation embeddings
+        if: steps.detect.outputs.update_needed == 'true'
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          if [ -f "scripts/embed-all-docs.js" ]; then
+            node scripts/embed-all-docs.js
+            echo "✅ Documentation embeddings updated"
+          else
+            echo "ℹ️  Embed script not found, skipping"
+          fi
+
+      - name: Summary
+        if: steps.detect.outputs.update_needed == 'true'
+        run: |
+          echo "✅ Wiki synchronized successfully!"
+          echo "📖 View at: https://github.com/goldenfocus/vibelog/wiki"
+          echo ""
+          echo "Updated pages:"
+          ls -1 /tmp/vibelog-wiki/*.md | xargs -n 1 basename
+
+      - name: No update needed
+        if: steps.detect.outputs.update_needed != 'true'
+        run: |
+          echo "ℹ️  No wiki update needed for this commit"
+          echo "📖 Wiki is already up to date"

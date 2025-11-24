@@ -688,8 +688,9 @@ RATE_LIMITS = {
 2. Update Technical Capabilities Matrix
 3. Update Database Schema Evolution if applicable
 4. Update Integration Points if new service added
-5. Re-embed documentation for AI assistant (run `/api/admin/documentation/embed`)
-6. Commit with message: `docs: Update evolution.md - [brief description]`
+5. **Update GitHub Wiki** (run `pnpm wiki:sync`)
+6. Re-embed documentation for AI assistant (run `pnpm docs:embed` or `/api/admin/documentation/embed`)
+7. Commit with message: `docs: Update evolution.md - [brief description]`
 
 **Review Cycle**: Monthly review to ensure accuracy
 

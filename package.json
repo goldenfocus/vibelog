@@ -20,7 +20,12 @@
     "prepare": "husky",
     "db:migrate": "supabase db push --linked",
     "db:status": "supabase migration list --linked",
-    "db:reset": "supabase db reset --linked"
+    "db:reset": "supabase db reset --linked",
+    "wiki:detect": "node scripts/detect-wiki-updates.js",
+    "wiki:generate": "node scripts/generate-wiki-pages.js",
+    "wiki:sync": "node scripts/sync-wiki.js",
+    "docs:embed": "node scripts/embed-all-docs.js",
+    "docs:full-update": "npm run wiki:sync && npm run docs:embed"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [
