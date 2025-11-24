@@ -168,6 +168,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               console.log('🔄 [AUTH] Session updated in another tab, syncing...');
               setUser(cachedUser);
               setLoading(false);
+              // Refresh the page to ensure cookies are in sync
+              // This prevents 401 errors from stale cookies
+              setTimeout(() => {
+                if (mounted) {
+                  window.location.reload();
+                }
+              }, 100);
             }
           }
         } else if (e.oldValue && !e.newValue) {
@@ -175,6 +182,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.log('🚪 [AUTH] Signed out in another tab, syncing...');
           setUser(null);
           setLoading(false);
+          // Redirect to community page
+          router.replace('/community');
         }
       }
     };
