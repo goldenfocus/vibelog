@@ -12,6 +12,7 @@ type AuthContextType = {
   user: User | null;
   loading: boolean;
   isSigningOut: boolean;
+  isAdmin: boolean;
   signIn: (provider: 'google' | 'apple') => Promise<void>;
   signOut: () => Promise<void>;
   refreshSession: () => Promise<void>;
@@ -40,6 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const [error, setError] = useState<string | null>(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const isSigningOutRef = useRef(false);
   const hasMountedRef = useRef(false);
   const supabase = createClient();
@@ -49,11 +51,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let mounted = true;
     hasMountedRef.current = true;
 
+    // ====== ADMIN CHECK HELPER ======
+    const checkAdminStatus = async (_userId: string) => {
+      try {
+        const response = await fetch('/api/admin/check', {
+          credentials: 'include',
+        });
+
+        if (response.ok && mounted) {
+          const data = await response.json();
+          setIsAdmin(data.isAdmin === true);
+        }
+      } catch {
+        // Silent fail - admin check is not critical
+        if (mounted) {
+          setIsAdmin(false);
+        }
+      }
+    };
+
     // ====== CHECK CACHE FIRST (SYNCHRONOUS) ======
     const cachedUser = getCachedSession();
     if (cachedUser) {
       setUser(cachedUser);
       setLoading(false); // Show UI immediately with cached user
+      // Check admin status for cached user
+      checkAdminStatus(cachedUser.id);
     }
 
     // ====== BACKGROUND VALIDATION ======
@@ -94,10 +117,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Update cache if session is valid
           setCachedSession(session.user);
           setUser(session.user);
+
+          // Check admin status once per session
+          checkAdminStatus(session.user.id);
         } else {
           // No session, clear cache
           clearCachedSession();
           setUser(null);
+          setIsAdmin(false);
         }
 
         setLoading(false);
@@ -132,8 +159,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session.user);
         setError(null);
 
-        // CRITICAL: Ensure profile exists (catches users whose profiles failed to create)
+        // Check admin status on sign in
         if (event === 'SIGNED_IN') {
+          checkAdminStatus(session.user.id);
+
+          // CRITICAL: Ensure profile exists (catches users whose profiles failed to create)
           ensureProfileExists(supabase, session.user.id)
             .then(result => {
               if (result.created) {
@@ -149,6 +179,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         clearCachedSession();
         setUser(null);
+        setIsAdmin(false);
       }
 
       setLoading(false);
@@ -271,6 +302,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clearCachedSession();
       setError(null);
       setLoading(false);
+      setIsAdmin(false);
 
       // PHASE 2: Navigate to community page (keep users engaged!)
       router.replace('/community');
@@ -291,6 +323,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       clearCachedSession();
       setLoading(false);
+      setIsAdmin(false);
       router.replace('/community');
       isSigningOutRef.current = false;
       setIsSigningOut(false);
@@ -339,6 +372,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     loading,
     isSigningOut,
+    isAdmin,
     signIn,
     signOut,
     refreshSession,

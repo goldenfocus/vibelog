@@ -32,37 +32,10 @@ interface CommentsProps {
 }
 
 export default function Comments({ vibelogId }: CommentsProps) {
-  const { user } = useAuth();
+  const { isAdmin: userIsAdmin } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [userIsAdmin, setUserIsAdmin] = useState(false);
-
-  // Check if current user is admin
-  useEffect(() => {
-    async function checkAdmin() {
-      if (!user) {
-        setUserIsAdmin(false);
-        return;
-      }
-
-      try {
-        const response = await fetch(`/api/admin/check`, {
-          credentials: 'include',
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setUserIsAdmin(data.isAdmin === true);
-        }
-      } catch (err) {
-        console.error('Error checking admin status:', err);
-        setUserIsAdmin(false);
-      }
-    }
-
-    checkAdmin();
-  }, [user]);
 
   const fetchComments = async () => {
     try {

@@ -74,7 +74,7 @@ export default function VibelogActions({
   variant = 'default',
   className = '',
 }: VibelogActionsProps) {
-  const { user } = useAuth();
+  const { user, isAdmin: userIsAdmin } = useAuth();
   const { t } = useI18n();
   const [copySuccess, setCopySuccess] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -83,7 +83,6 @@ export default function VibelogActions({
   const [likeCount, setLikeCount] = useState(initialLikeCount);
   const [isLiking, setIsLiking] = useState(false);
   const [isGeneratingShareUrl, setIsGeneratingShareUrl] = useState(false);
-  const [userIsAdmin, setUserIsAdmin] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const lastLikeRequestRef = useRef<Promise<void> | null>(null);
   const previewLimiterRef = useRef<AudioPreviewLimiter | null>(null);
@@ -105,32 +104,6 @@ export default function VibelogActions({
 
   // Determine if this is user's own vibelog
   const isOwnVibelog = user?.id && authorId && user.id === authorId;
-
-  // Check if current user is admin
-  useEffect(() => {
-    async function checkAdmin() {
-      if (!user) {
-        setUserIsAdmin(false);
-        return;
-      }
-
-      try {
-        const response = await fetch(`/api/admin/check`, {
-          credentials: 'include',
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setUserIsAdmin(data.isAdmin === true);
-        }
-      } catch (err) {
-        console.error('Error checking admin status:', err);
-        setUserIsAdmin(false);
-      }
-    }
-
-    checkAdmin();
-  }, [user]);
 
   // Sync like count and liked state when props change (e.g., when parent re-fetches data)
   // Parent components already fetch like data via /api/get-vibelogs, so no need to fetch here
