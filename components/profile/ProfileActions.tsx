@@ -75,12 +75,13 @@ export function ProfileActions({ profileUserId }: ProfileActionsProps) {
         disabled={sending}
         className={cn(
           'flex items-center gap-2 rounded-lg px-3 py-2',
-          'transition-colors hover:bg-muted',
-          'disabled:cursor-not-allowed disabled:opacity-50'
+          'transition-all hover:bg-muted',
+          'disabled:cursor-not-allowed disabled:opacity-50',
+          sending && 'animate-pulse bg-muted'
         )}
         title={sending ? 'Opening conversation...' : 'Send message'}
       >
-        <MessageCircle className="h-5 w-5" />
+        <MessageCircle className={cn('h-5 w-5 transition-transform', sending && 'animate-spin')} />
       </button>
     </div>
   );
