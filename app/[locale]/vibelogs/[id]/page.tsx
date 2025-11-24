@@ -3,12 +3,14 @@
 import { Clock, Heart, User, ArrowLeft } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 import Comments from '@/components/comments/Comments';
 import Navigation from '@/components/Navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import VibelogActions from '@/components/VibelogActions';
 import VibelogContentRenderer from '@/components/VibelogContentRenderer';
+import VibelogEditModalFull from '@/components/VibelogEditModalFull';
 import { useAutoPlayVibelogAudio } from '@/hooks/useAutoPlayVibelogAudio';
 import { formatFullDate } from '@/lib/date-utils';
 import type { ExportFormat } from '@/lib/export';
@@ -57,6 +59,7 @@ export default function VibelogDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [likeCount, setLikeCount] = useState(0);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   useEffect(() => {
     async function fetchVibelog() {
@@ -105,6 +108,39 @@ export default function VibelogDetailPage() {
     author: vibelog?.author?.display_name,
     enabled: !!vibelog?.audio_url,
   });
+
+  const handleEdit = () => {
+    setIsEditModalOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!vibelog) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/delete-vibelog/${vibelog.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('Delete failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData,
+        });
+        toast.error(errorData.error || `Failed to delete (${response.status})`);
+        return;
+      }
+
+      toast.success('Vibelog deleted successfully');
+      router.push('/community');
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to delete vibelog');
+    }
+  };
 
   if (loading || authLoading) {
     return (
@@ -259,6 +295,8 @@ export default function VibelogDetailPage() {
               teaserOnly={!user}
               likeCount={likeCount}
               onLikeCountChange={setLikeCount}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
               onShare={async () => {
                 const url = `${window.location.origin}/vibelogs/${vibelog.id}`;
                 if (navigator.share) {
@@ -282,6 +320,38 @@ export default function VibelogDetailPage() {
           <Comments vibelogId={vibelog.id} />
         </div>
       </main>
+
+      {/* Edit Modal */}
+      {isEditModalOpen && vibelog && (
+        <VibelogEditModalFull
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            // Refresh the vibelog data after edit
+            const refreshVibelog = async () => {
+              try {
+                const response = await fetch(`/api/get-vibelog/${vibelogId}`);
+                if (response.ok) {
+                  const data = await response.json();
+                  setVibelog(data.vibelog);
+                }
+              } catch (err) {
+                console.error('Error refreshing vibelog:', err);
+              }
+            };
+            refreshVibelog();
+          }}
+          vibelog={{
+            id: vibelog.id,
+            title: vibelog.title,
+            content: vibelog.content,
+            teaser: vibelog.teaser,
+            slug: vibelog.user_id ? undefined : vibelog.id, // Use id as fallback if no slug
+            cover_image_url: vibelog.cover_image_url,
+            cover_image_alt: vibelog.title,
+          }}
+        />
+      )}
     </div>
   );
 }

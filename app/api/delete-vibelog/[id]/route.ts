@@ -38,18 +38,37 @@ export async function DELETE(
     }
 
     // Check if user is admin
-    const { data: userProfile } = await adminClient
+    const { data: userProfile, error: profileError } = await adminClient
       .from('profiles')
       .select('is_admin')
       .eq('id', user.id)
       .single();
 
+    console.log('🔍 Admin check debug:', {
+      userId: user.id,
+      vibelogOwnerId: vibelog.user_id,
+      userProfile,
+      profileError,
+      isOwner: vibelog.user_id === user.id,
+    });
+
     const isAdmin = userProfile?.is_admin === true;
 
     // Verify user is vibelog author or admin
     if (vibelog.user_id !== user.id && !isAdmin) {
+      console.log('❌ Delete forbidden:', {
+        userId: user.id,
+        vibelogOwnerId: vibelog.user_id,
+        isAdmin,
+      });
       return NextResponse.json({ error: 'Forbidden - not your vibelog' }, { status: 403 });
     }
+
+    console.log('✅ Delete authorized:', {
+      userId: user.id,
+      isAdmin,
+      isOwner: vibelog.user_id === user.id,
+    });
 
     // Clean up storage files before deleting database record
     const storageErrors: string[] = [];
@@ -121,12 +140,15 @@ export async function DELETE(
     }
 
     // Delete vibelog from database (use admin client to bypass RLS)
+    console.log('🗑️ Attempting database delete for vibelog:', id);
     const { error: deleteError } = await adminClient.from('vibelogs').delete().eq('id', id);
 
     if (deleteError) {
-      console.error('Failed to delete vibelog:', deleteError);
+      console.error('❌ Failed to delete vibelog from database:', deleteError);
       return NextResponse.json({ error: 'Failed to delete vibelog' }, { status: 500 });
     }
+
+    console.log('✅ Vibelog successfully deleted from database');
 
     // Revalidate the vibelog page cache to remove it immediately
     const profile = Array.isArray(vibelog.profiles) ? vibelog.profiles[0] : vibelog.profiles;
