@@ -37,19 +37,32 @@ export function ProfileActions({ profileUserId }: ProfileActionsProps) {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create conversation');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('❌ API Error:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData,
+          url: response.url,
+        });
+        throw new Error(
+          `API returned ${response.status}: ${errorData.error || response.statusText}`
+        );
       }
 
       const data = await response.json();
+      console.log('✅ API Response:', data);
+
       const conversationId = data.conversation?.id;
 
       if (conversationId) {
+        console.log('✅ Redirecting to:', `/messages/${conversationId}`);
         router.push(`/messages/${conversationId}`);
       } else {
-        throw new Error('No conversation ID returned');
+        console.error('❌ No conversation ID in response:', data);
+        throw new Error('No conversation ID returned from server');
       }
     } catch (error) {
-      console.error('Error creating conversation:', error);
+      console.error('❌ Error creating conversation:', error);
     } finally {
       setSending(false);
     }
