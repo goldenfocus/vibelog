@@ -109,8 +109,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     };
 
     return NextResponse.json(response);
-  } catch (error) {
-    console.error('[GET /api/conversations/[id]/messages] Error:', error);
+  } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -208,8 +207,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     return NextResponse.json({ message }, { status: 201 });
-  } catch (error) {
-    console.error('[POST /api/conversations/[id]/messages] Error:', error);
+  } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -120,8 +120,8 @@ export async function DELETE(
       }
     }
 
-    // Delete vibelog from database
-    const { error: deleteError } = await supabase.from('vibelogs').delete().eq('id', id);
+    // Delete vibelog from database (use admin client to bypass RLS)
+    const { error: deleteError } = await adminClient.from('vibelogs').delete().eq('id', id);
 
     if (deleteError) {
       console.error('Failed to delete vibelog:', deleteError);

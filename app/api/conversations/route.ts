@@ -184,8 +184,7 @@ export async function GET() {
     });
 
     return NextResponse.json({ conversations });
-  } catch (error) {
-    console.error('[GET /api/conversations] Error:', error);
+  } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -302,8 +301,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ error: 'Invalid conversation type' }, { status: 400 });
-  } catch (error) {
-    console.error('[POST /api/conversations] Error:', error);
+  } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
