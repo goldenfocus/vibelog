@@ -107,7 +107,7 @@ export function I18nProvider({ children, initialLocale = 'en' }: I18nProviderPro
         setLocaleState(targetLocale);
       }
     }
-  }, [pathname, locale]);
+  }, [pathname]); // Fixed: Removed 'locale' from dependencies to prevent infinite refresh loop
 
   /**
    * Change locale and navigate to the new URL
