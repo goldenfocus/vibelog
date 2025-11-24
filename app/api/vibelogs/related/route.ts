@@ -71,22 +71,7 @@ export async function GET(request: NextRequest) {
       const { data: fallbackVibelogs } = await supabase
         .from('vibelogs')
         .select(
-          `
-          id,
-          title,
-          teaser,
-          slug,
-          public_slug,
-          cover_image_url,
-          created_at,
-          read_time,
-          user_id,
-          profiles!vibelogs_user_id_fkey (
-            username,
-            display_name,
-            avatar_url
-          )
-        `
+          'id, title, teaser, slug, public_slug, cover_image_url, created_at, read_time, user_id'
         )
         .neq('id', vibelogId)
         .eq('is_published', true)
@@ -94,46 +79,47 @@ export async function GET(request: NextRequest) {
         .order('created_at', { ascending: false })
         .limit(limit);
 
-      const relatedVibelogs = (fallbackVibelogs || []).map((v: any) => ({
-        id: v.id,
-        title: v.title,
-        teaser: v.teaser?.substring(0, 150) || '',
-        slug: v.slug,
-        public_slug: v.public_slug,
-        cover_image_url: v.cover_image_url,
-        read_time: v.read_time,
-        author: v.profiles
-          ? {
-              username: v.profiles.username,
-              display_name: v.profiles.display_name,
-              avatar_url: v.profiles.avatar_url,
-            }
-          : { username: 'anonymous', display_name: 'Anonymous', avatar_url: null },
-      }));
+      if (fallbackVibelogs && fallbackVibelogs.length > 0) {
+        // Fetch author profiles separately
+        const authorIds = [...new Set(fallbackVibelogs.map(v => v.user_id).filter(Boolean))];
+        const { data: authorProfiles } = await supabase
+          .from('profiles')
+          .select('id, username, display_name, avatar_url')
+          .in('id', authorIds);
 
-      return NextResponse.json({ vibelogs: relatedVibelogs, source: 'recent' });
+        const profileMap = new Map((authorProfiles || []).map(p => [p.id, p]));
+
+        const relatedVibelogs = fallbackVibelogs.map((v: any) => {
+          const author = profileMap.get(v.user_id);
+          return {
+            id: v.id,
+            title: v.title,
+            teaser: v.teaser?.substring(0, 150) || '',
+            slug: v.slug,
+            public_slug: v.public_slug,
+            cover_image_url: v.cover_image_url,
+            read_time: v.read_time,
+            author: author
+              ? {
+                  username: author.username,
+                  display_name: author.display_name,
+                  avatar_url: author.avatar_url,
+                }
+              : { username: 'anonymous', display_name: 'Anonymous', avatar_url: null },
+          };
+        });
+
+        return NextResponse.json({ vibelogs: relatedVibelogs, source: 'recent' });
+      }
+
+      return NextResponse.json({ vibelogs: [], source: 'recent' });
     }
 
     // Fetch full vibelog data for the related IDs
     const { data: relatedVibelogs, error: relatedError } = await supabase
       .from('vibelogs')
       .select(
-        `
-        id,
-        title,
-        teaser,
-        slug,
-        public_slug,
-        cover_image_url,
-        created_at,
-        read_time,
-        user_id,
-        profiles!vibelogs_user_id_fkey (
-          username,
-          display_name,
-          avatar_url
-        )
-      `
+        'id, title, teaser, slug, public_slug, cover_image_url, created_at, read_time, user_id'
       )
       .in('id', relatedIds)
       .eq('is_published', true)
@@ -144,9 +130,23 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch related vibelogs' }, { status: 500 });
     }
 
+    if (!relatedVibelogs || relatedVibelogs.length === 0) {
+      return NextResponse.json({ vibelogs: [], source: 'semantic' });
+    }
+
+    // Fetch author profiles separately
+    const authorIds = [...new Set(relatedVibelogs.map(v => v.user_id).filter(Boolean))];
+    const { data: authorProfiles } = await supabase
+      .from('profiles')
+      .select('id, username, display_name, avatar_url')
+      .in('id', authorIds);
+
+    const profileMap = new Map((authorProfiles || []).map(p => [p.id, p]));
+
     // Format response with similarity scores
-    const formattedVibelogs = (relatedVibelogs || []).map((v: any) => {
+    const formattedVibelogs = relatedVibelogs.map((v: any) => {
       const similarity = similarResults.find(r => r.content_id === v.id)?.similarity || 0;
+      const author = profileMap.get(v.user_id);
       return {
         id: v.id,
         title: v.title,
@@ -156,11 +156,11 @@ export async function GET(request: NextRequest) {
         cover_image_url: v.cover_image_url,
         read_time: v.read_time,
         similarity: Math.round(similarity * 100),
-        author: v.profiles
+        author: author
           ? {
-              username: v.profiles.username,
-              display_name: v.profiles.display_name,
-              avatar_url: v.profiles.avatar_url,
+              username: author.username,
+              display_name: author.display_name,
+              avatar_url: author.avatar_url,
             }
           : { username: 'anonymous', display_name: 'Anonymous', avatar_url: null },
       };
