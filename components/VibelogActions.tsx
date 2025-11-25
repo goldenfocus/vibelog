@@ -480,7 +480,10 @@ export default function VibelogActions({
             {(isOwnVibelog || userIsAdmin) && onEdit && onDelete && (
               <div className="relative" ref={menuRef}>
                 <button
-                  onClick={() => setIsMenuOpen(!isMenuOpen)}
+                  onClick={e => {
+                    e.stopPropagation();
+                    setIsMenuOpen(!isMenuOpen);
+                  }}
                   className={baseButtonClass}
                   title={t('titles.moreOptions')}
                   data-testid="owner-menu-button"
@@ -493,7 +496,10 @@ export default function VibelogActions({
                   <div className="absolute left-0 top-full z-[60] mt-2 w-40 rounded-lg border border-border/50 bg-card/95 shadow-xl backdrop-blur-sm">
                     <div className="p-1">
                       <button
-                        onClick={handleEditClick}
+                        onClick={e => {
+                          e.stopPropagation();
+                          handleEditClick();
+                        }}
                         className="flex w-full touch-manipulation items-center gap-2 rounded-md px-3 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted/50 active:bg-muted/70"
                         data-testid="menu-edit-button"
                       >
@@ -501,7 +507,10 @@ export default function VibelogActions({
                         <span>{t('actions.edit')}</span>
                       </button>
                       <button
-                        onClick={handleDeleteClick}
+                        onClick={e => {
+                          e.stopPropagation();
+                          handleDeleteClick();
+                        }}
                         className="flex w-full touch-manipulation items-center gap-2 rounded-md px-3 py-3 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10 active:bg-destructive/20"
                         data-testid="menu-delete-button"
                       >
