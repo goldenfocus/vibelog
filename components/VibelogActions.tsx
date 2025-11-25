@@ -478,10 +478,11 @@ export default function VibelogActions({
           <>
             {/* Owner Menu Dropdown (Edit/Delete) - Show for owners or admins */}
             {(isOwnVibelog || userIsAdmin) && onEdit && onDelete && (
-              <div className="relative" ref={menuRef}>
+              <div className="relative" ref={menuRef} onClick={e => e.stopPropagation()}>
                 <button
                   onClick={e => {
                     e.stopPropagation();
+                    e.preventDefault();
                     setIsMenuOpen(!isMenuOpen);
                   }}
                   className={baseButtonClass}
@@ -493,11 +494,15 @@ export default function VibelogActions({
                 </button>
 
                 {isMenuOpen && (
-                  <div className="absolute left-0 top-full z-[60] mt-2 w-40 rounded-lg border border-border/50 bg-card/95 shadow-xl backdrop-blur-sm">
+                  <div
+                    className="absolute left-0 top-full z-[60] mt-2 w-40 rounded-lg border border-border/50 bg-card/95 shadow-xl backdrop-blur-sm"
+                    onClick={e => e.stopPropagation()}
+                  >
                     <div className="p-1">
                       <button
                         onClick={e => {
                           e.stopPropagation();
+                          e.preventDefault();
                           handleEditClick();
                         }}
                         className="flex w-full touch-manipulation items-center gap-2 rounded-md px-3 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted/50 active:bg-muted/70"
@@ -509,6 +514,7 @@ export default function VibelogActions({
                       <button
                         onClick={e => {
                           e.stopPropagation();
+                          e.preventDefault();
                           handleDeleteClick();
                         }}
                         className="flex w-full touch-manipulation items-center gap-2 rounded-md px-3 py-3 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10 active:bg-destructive/20"
