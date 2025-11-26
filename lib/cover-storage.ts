@@ -11,7 +11,7 @@
  * - Future-proof for new features
  */
 
-import { createServerSupabaseClient } from './supabase';
+import { createServerAdminClient } from './supabaseAdmin';
 
 const BUCKET_NAME = 'vibelog-covers';
 const COVERS_DIR = 'covers';
@@ -33,7 +33,7 @@ export function getCoverPath(vibelogId: string, extension: string = 'png'): stri
  * @returns Full public URL to the cover image
  */
 export async function getCoverUrl(vibelogId: string, extension: string = 'png'): Promise<string> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createServerAdminClient();
   const path = getCoverPath(vibelogId, extension);
 
   const {
@@ -56,7 +56,7 @@ export async function uploadCover(
   contentType: string
 ): Promise<{ url: string | null; error: string | null }> {
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = await createServerAdminClient();
 
     // Determine extension from content type
     const extension = contentType.includes('jpeg') || contentType.includes('jpg') ? 'jpg' : 'png';
@@ -99,7 +99,7 @@ export async function deleteCover(
   vibelogId: string
 ): Promise<{ success: boolean; error: string | null }> {
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = await createServerAdminClient();
 
     // Try deleting both .png and .jpg versions (cover might exist in either format)
     const pathPng = getCoverPath(vibelogId, 'png');
@@ -133,7 +133,7 @@ export async function deleteCover(
  */
 export async function coverExists(vibelogId: string): Promise<boolean> {
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = await createServerAdminClient();
 
     // Check both .png and .jpg
     const { data: dataPng } = await supabase.storage.from(BUCKET_NAME).list(COVERS_DIR, {
