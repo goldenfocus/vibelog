@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useRef, useState, useEffect } from 'react';
 
 import { useDominantColor } from '@/hooks/useDominantColor';
+import { getSafeImageUrl } from '@/lib/image-utils';
 import { cn } from '@/lib/utils';
 import { useAudioPlayerStore } from '@/state/audio-player-store';
 
@@ -32,8 +33,11 @@ export function FloatingCard({ vibelog, index, isActive = false, onCardClick }: 
   const [isVisible, setIsVisible] = useState(false);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
 
+  // Use safe image URL (filters out expired OpenAI URLs)
+  const safeCoverUrl = getSafeImageUrl(vibelog.cover_image_url);
+
   // Extract dominant color from cover image
-  const dominantColor = useDominantColor(vibelog.cover_image_url);
+  const dominantColor = useDominantColor(safeCoverUrl);
 
   // Audio player integration
   const { setTrack, currentTrack, play } = useAudioPlayerStore();
@@ -160,7 +164,7 @@ export function FloatingCard({ vibelog, index, isActive = false, onCardClick }: 
       >
         {/* Media background with parallax */}
         <MediaBackground
-          coverImage={vibelog.cover_image_url}
+          coverImage={safeCoverUrl}
           videoUrl={vibelog.video_url}
           vibelogId={vibelog.id}
           title={vibelog.title}
