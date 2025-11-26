@@ -3,7 +3,6 @@ import { GoogleGenAI } from '@google/genai';
 import { config } from '@/lib/config';
 
 // Initialize the Google GenAI client
-// We use a singleton pattern to reuse the client
 let client: GoogleGenAI | null = null;
 
 function getClient() {
@@ -11,7 +10,7 @@ function getClient() {
     return client;
   }
 
-  const apiKey = config.ai.google.apiKey;
+  const apiKey = config.ai.google?.apiKey;
   if (!apiKey) {
     throw new Error('GOOGLE_API_KEY is not configured');
   }
@@ -29,54 +28,56 @@ export interface GenerateImageOptions {
 }
 
 /**
- * Generate an image using Google's Imagen 3 model
+ * Generate an image using Gemini 2.5 Flash (Nano Banana)
+ *
+ * IMPORTANT: Imagen 3 (imagen-3.0-generate-002) requires Google Cloud billing.
+ * The FREE tier uses Gemini 2.5 Flash with image generation capability.
  */
 export async function generateImage(options: GenerateImageOptions): Promise<string> {
-  const { prompt, numberOfImages = 1, aspectRatio = '16:9' } = options;
+  const { prompt } = options;
 
   const ai = getClient();
-  // Use Imagen 3 model - CORRECT model name is -002 (not -001!)
-  const model = 'imagen-3.0-generate-002';
+
+  // Use Gemini 2.5 Flash for image generation (FREE tier)
+  // Imagen 3 requires Google Cloud billing and is NOT available on free Gemini API
+  const model = 'gemini-2.5-flash-preview-05-20';
 
   try {
-    console.log(`🍌 Generating image with Google Imagen 3 (${model})...`);
+    console.log(`🍌 Generating image with Gemini 2.5 Flash (${model})...`);
 
-    // Using the unified SDK's generateImages method
-    const response = await ai.models.generateImages({
+    // Gemini image generation uses generateContent, not generateImages
+    const response = await ai.models.generateContent({
       model,
-      prompt,
+      contents: `Generate a beautiful, artistic cover image for this content. Create a visually striking image that captures the mood and theme. Do NOT include any text in the image. Style: Modern, clean, professional blog cover art.\n\nContent: ${prompt}`,
       config: {
-        numberOfImages,
-        aspectRatio,
+        responseModalities: ['image', 'text'],
       },
     });
 
-    // Check for generated images
-    const generatedImages = response.generatedImages;
-
-    if (!generatedImages || generatedImages.length === 0) {
-      throw new Error('No image generated');
+    // Extract image from response
+    const candidates = response.candidates;
+    if (!candidates || candidates.length === 0) {
+      throw new Error('No response candidates');
     }
 
-    const image = generatedImages[0];
-
-    // The image should have base64 encoded bytes
-    if (image.image?.imageBytes) {
-      return `data:image/png;base64,${image.image.imageBytes}`;
+    const parts = candidates[0].content?.parts;
+    if (!parts || parts.length === 0) {
+      throw new Error('No content parts in response');
     }
 
-    // Fallback for different response structures
-    // @ts-expect-error - handling potential API variations
-    if (image.imageBytes) {
-      // @ts-expect-error - handling potential API variations
-      return `data:image/png;base64,${image.imageBytes}`;
+    // Find image part in response
+    for (const part of parts) {
+      if (part.inlineData?.data) {
+        const mimeType = part.inlineData.mimeType || 'image/png';
+        console.log('✅ Image generated successfully');
+        return `data:${mimeType};base64,${part.inlineData.data}`;
+      }
     }
 
-    throw new Error('Unknown image response format from Imagen');
+    throw new Error('No image data in response');
   } catch (error) {
     const err = error as Error & { response?: unknown; message?: string };
-    console.error('❌ Google Imagen generation failed:', err);
-    // Log more details for debugging
+    console.error('❌ Gemini image generation failed:', err);
     if (err.message) {
       console.error('Error message:', err.message);
     }
