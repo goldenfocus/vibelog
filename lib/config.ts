@@ -35,6 +35,10 @@ export const config = {
       apiKey: (isServer ? (env as any).ELEVENLABS_API_KEY : undefined) as string | undefined,
       apiUrl: 'https://api.elevenlabs.io/v1',
     },
+    google: {
+      apiKey: (isServer ? (env as any).GOOGLE_API_KEY : undefined) as string | undefined,
+      model: 'gemini-2.5-flash-image', // Nano Banana
+    },
   },
 
   // Rate limiting - AGGRESSIVE COST PROTECTION

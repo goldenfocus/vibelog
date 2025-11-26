@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import OpenAI from 'openai';
+// import OpenAI from 'openai'; // Replaced by Nano Banana
 
 import { trackAICost, calculateImageCost, isDailyLimitExceeded } from '@/lib/ai-cost-tracker';
 // import { checkAndBlockBots } from '@/lib/botid-check'; // DISABLED: Blocking legit users
@@ -9,9 +9,10 @@ import { uploadCover } from '@/lib/cover-storage';
 import { isDev } from '@/lib/env';
 import { rateLimit, tooManyResponse } from '@/lib/rateLimit';
 import { createServerSupabaseClient } from '@/lib/supabase';
+import { generateImage } from '@/lib/google-ai';
 
 export const runtime = 'nodejs';
-export const maxDuration = 60; // DALL-E can take up to 60 seconds (cover images)
+export const maxDuration = 60; // Image generation can take time
 
 export async function POST(request: NextRequest) {
   try {
@@ -80,17 +81,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check for real API key
+    // Check for real API key (Google)
     if (
-      !config.ai.openai.apiKey ||
-      config.ai.openai.apiKey === 'dummy_key' ||
-      config.ai.openai.apiKey === 'your_openai_api_key_here'
+      !config.ai.google.apiKey ||
+      config.ai.google.apiKey === 'dummy_key'
     ) {
-      console.warn('🧪 Cover generation - no API key configured');
+      console.warn('🧪 Cover generation - no Google API key configured');
       return NextResponse.json(
         {
           error: 'Cover generation is not configured',
-          message: 'The OpenAI API key is missing.',
+          message: 'The Google API key is missing for Nano Banana.',
         },
         { status: 503 }
       );
@@ -105,34 +105,35 @@ export async function POST(request: NextRequest) {
     });
 
     console.log(
-      '🎨 Generating cover image for:',
+      '🎨 Generating cover image with Nano Banana for:',
       title?.substring(0, 50) || teaser?.substring(0, 50)
     );
     console.log(`   Style: ${styleName}`);
     console.log(`   Detected tones: ${analysis.detectedTones.join(', ') || 'neutral'}`);
 
-    const openai = new OpenAI({
-      apiKey: config.ai.openai.apiKey,
-      timeout: 60_000,
-    });
+    // Generate image with Nano Banana (Gemini)
+    let imageUrl: string;
+    try {
+      imageUrl = await generateImage({
+        prompt,
+        width: 1792,
+        height: 1024,
+        aspectRatio: '16:9'
+      });
+    } catch (genError: any) {
+      console.error('❌ Nano Banana generation error:', genError);
+      throw new Error(`Nano Banana generation failed: ${genError.message}`);
+    }
 
-    // Generate image with DALL-E 3 using intelligent prompt
-    const response = await openai.images.generate({
-      model: 'dall-e-3',
-      prompt,
-      n: 1,
-      size: '1792x1024', // Wide format for blog covers
-      quality: 'standard', // Use standard to save costs ($0.04 vs $0.08 for HD)
-      style: 'vivid',
-    });
-
-    // 💰 COST TRACKING (DALL-E 3 Standard 1792x1024: $0.080)
-    const cost = calculateImageCost();
-    const { allowed } = await trackAICost(userId || null, 'dall-e-3', cost, {
+    // 💰 COST TRACKING (Estimate for Nano Banana / Gemini Flash Image)
+    // Assuming it's cheaper than DALL-E 3, maybe $0.04 or less?
+    // For now, we'll track it as 'nano-banana' with a lower cost
+    const cost = 0.04; // Placeholder cost
+    const { allowed } = await trackAICost(userId || null, 'nano-banana', cost, {
       endpoint: '/api/generate-cover',
       vibelog_id: vibelogId,
       size: '1792x1024',
-      quality: 'standard',
+      provider: 'google'
     });
 
     if (!allowed) {
@@ -149,11 +150,8 @@ export async function POST(request: NextRequest) {
       console.log(`💰 Cover generation cost: $${cost.toFixed(4)}`);
     }
 
-    const imageUrl = response.data[0]?.url;
-    const revisedPrompt = response.data[0]?.revised_prompt;
-
     if (!imageUrl) {
-      console.error('❌ No image URL in DALL-E response');
+      console.error('❌ No image URL returned');
       return NextResponse.json({ error: 'Failed to generate cover image' }, { status: 500 });
     }
 
@@ -166,20 +164,30 @@ export async function POST(request: NextRequest) {
     // Generate a temporary ID for storage if vibelogId not provided
     const storageId = vibelogId || `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
-    // ALWAYS download and save to Supabase Storage (OpenAI URLs expire in ~1 hour)
+    // ALWAYS download and save to Supabase Storage
     let storedUrl: string;
     try {
-      // Download the image from OpenAI
-      const imageResponse = await fetch(imageUrl);
-      if (!imageResponse.ok) {
-        throw new Error(`Failed to download image: ${imageResponse.status}`);
+      let imageBuffer: Buffer;
+
+      // Handle Data URI (Base64) or URL
+      if (imageUrl.startsWith('data:')) {
+        // Extract base64 data
+        const base64Data = imageUrl.split(',')[1];
+        imageBuffer = Buffer.from(base64Data, 'base64');
+      } else {
+        // Download the image from URL
+        const imageResponse = await fetch(imageUrl);
+        if (!imageResponse.ok) {
+          throw new Error(`Failed to download image: ${imageResponse.status}`);
+        }
+        const arrayBuffer = await imageResponse.arrayBuffer();
+        imageBuffer = Buffer.from(arrayBuffer);
       }
-      const imageBuffer = await imageResponse.arrayBuffer();
 
       // Upload using modular cover storage utility
       const { url, error: uploadError } = await uploadCover(
         storageId,
-        Buffer.from(imageBuffer),
+        imageBuffer,
         'image/png'
       );
 
@@ -210,9 +218,10 @@ export async function POST(request: NextRequest) {
       alt: `${contentForImage.substring(0, 100)} - cover image`,
       width: 1792,
       height: 1024,
-      revisedPrompt, // DALL-E's interpretation of the prompt
+      revisedPrompt: prompt, // We don't get revised prompt from Gemini usually
       style: styleName, // The art style selected for this cover
       isTemporary: !vibelogId, // Flag if this was a temporary generation
+      provider: 'nano-banana'
     });
   } catch (error) {
     console.error('❌ Error generating cover:', error);
@@ -220,8 +229,8 @@ export async function POST(request: NextRequest) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     const isContentPolicy =
       errorMessage.includes('content_policy') ||
-      errorMessage.includes('safety system') ||
-      errorMessage.includes('rejected');
+      errorMessage.includes('safety') ||
+      errorMessage.includes('blocked');
 
     // For content policy violations, return fallback image instead of error
     // This allows the vibelog to be saved with a default cover
@@ -244,14 +253,14 @@ export async function POST(request: NextRequest) {
     let responseMessage = 'Failed to generate cover image';
     let statusCode = 500;
 
-    if (errorMessage.includes('Invalid API key') || errorMessage.includes('invalid_api_key')) {
+    if (errorMessage.includes('API key') || errorMessage.includes('configured')) {
       responseMessage = 'API configuration error';
       statusCode = 401;
-    } else if (errorMessage.includes('rate limit')) {
-      responseMessage = 'OpenAI API rate limit exceeded';
+    } else if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
+      responseMessage = 'AI API rate limit exceeded';
       statusCode = 429;
     } else if (errorMessage.includes('quota') || errorMessage.includes('insufficient')) {
-      responseMessage = 'OpenAI API quota exceeded';
+      responseMessage = 'AI API quota exceeded';
       statusCode = 402;
     }
 
