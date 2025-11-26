@@ -37,7 +37,7 @@ export const config = {
     },
     google: {
       apiKey: (isServer ? (env as any).GOOGLE_API_KEY : undefined) as string | undefined,
-      model: 'gemini-2.5-flash-image', // Nano Banana
+      model: 'imagen-3.0-generate-001', // Google Imagen 3
     },
   },
 
