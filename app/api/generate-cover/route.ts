@@ -273,15 +273,17 @@ export async function POST(request: NextRequest) {
       } else {
         storedUrl = url;
         console.log('💾 Cover saved to storage:', storedUrl);
-
-        if (vibelogId) {
-          await supa.from('vibelogs').update({ cover_image_url: storedUrl }).eq('id', vibelogId);
-        }
       }
     } catch (storageErr) {
       console.error('❌ Storage error:', storageErr);
       storedUrl = FALLBACK_OG_IMAGE;
       console.log('🔄 Using fallback OG image');
+    }
+
+    // Always update the database with the cover URL (even if fallback)
+    if (vibelogId) {
+      await supa.from('vibelogs').update({ cover_image_url: storedUrl }).eq('id', vibelogId);
+      console.log('📝 Database updated with cover URL:', storedUrl);
     }
 
     return NextResponse.json({
