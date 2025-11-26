@@ -533,7 +533,7 @@ export function useMicStateMachine(
   }, [vibelogAPI, tone, keepFillerWords, detectedLanguage]);
 
   const processCoverImage = useCallback(
-    async (vibelogContentOverride?: string) => {
+    async (vibelogContentOverride?: string, vibelogId?: string) => {
       try {
         const contentToUse =
           vibelogContentOverride ||
@@ -547,9 +547,13 @@ export function useMicStateMachine(
 
         console.log(
           '🖼️  [COVER-GEN] Starting cover generation, content length:',
-          contentToUse.length
+          contentToUse.length,
+          vibelogId ? `with vibelogId: ${vibelogId}` : 'without vibelogId'
         );
-        const image = await vibelogAPI.processCoverImage({ vibelogContent: contentToUse });
+        const image = await vibelogAPI.processCoverImage({
+          vibelogContent: contentToUse,
+          vibelogId,
+        });
 
         if (!image) {
           console.error('🖼️  [COVER-GEN] API returned null image!');
@@ -654,28 +658,6 @@ export function useMicStateMachine(
     try {
       const fullContent = vibelogAPI.processingData.current.vibelogContentData || contentToSave;
 
-      // CRITICAL: Wait for cover image generation to complete before saving
-      let finalCoverImage = coverImage;
-      if (!finalCoverImage) {
-        console.log('⏳ [COMPLETE-PROCESSING] Cover image not ready, generating now...');
-        try {
-          const generatedCover = await processCoverImage(fullContent);
-          if (generatedCover) {
-            finalCoverImage = generatedCover;
-            console.log('✅ [COMPLETE-PROCESSING] Cover image generated successfully!');
-          } else {
-            console.log('⚠️  [COMPLETE-PROCESSING] Cover image generation returned null');
-          }
-        } catch (error) {
-          console.error('❌ [COMPLETE-PROCESSING] Cover image generation failed:', error);
-          // Continue without cover image - don't block the save
-        }
-      } else {
-        console.log(
-          '✅ [COMPLETE-PROCESSING] Cover image already available from background generation'
-        );
-      }
-
       // CRITICAL: Use ref as fallback for audio data (React state may not be updated yet)
       const finalAudioData = audioData || vibelogAPI.processingData.current.audioData;
 
@@ -683,7 +665,7 @@ export function useMicStateMachine(
         contentLength: contentToSave.length,
         fullContentLength: fullContent.length,
         hasTranscription: !!transcription,
-        hasCoverImage: !!finalCoverImage,
+        hasCoverImage: !!coverImage,
         hasAudioData: !!finalAudioData,
         audioDataSource: audioData ? 'state' : 'ref',
         audioUrl: finalAudioData?.url || '(none)',
@@ -694,7 +676,7 @@ export function useMicStateMachine(
         content: contentToSave,
         fullContent,
         transcription: transcription || '',
-        coverImage: finalCoverImage || undefined,
+        coverImage: coverImage || undefined,
         audioData: finalAudioData || undefined,
         userId: user?.id,
         isTeaser: isTeaserContent,
@@ -711,6 +693,20 @@ export function useMicStateMachine(
         if (result.vibelogId) {
           setVibelogId(result.vibelogId);
           console.log('✅ [COMPLETE-PROCESSING] Stored vibelog ID:', result.vibelogId);
+
+          // Generate cover image with vibelogId if not already generated
+          if (!coverImage) {
+            console.log('🖼️  [POST-SAVE] Generating cover with vibelogId:', result.vibelogId);
+            try {
+              const generatedCover = await processCoverImage(fullContent, result.vibelogId);
+              if (generatedCover) {
+                console.log('✅ [POST-SAVE] Cover generated and saved to storage');
+              }
+            } catch (error) {
+              console.error('❌ [POST-SAVE] Cover generation failed:', error);
+              // Non-blocking - vibelog already saved successfully
+            }
+          }
         }
 
         // Trigger homepage feed refresh if callback is provided
