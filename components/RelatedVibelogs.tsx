@@ -4,6 +4,8 @@ import { Clock, User } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
+import { getSafeImageUrl } from '@/lib/image-utils';
+
 interface RelatedVibelog {
   id: string;
   title: string;
@@ -82,6 +84,9 @@ export default function RelatedVibelogs({ vibelogId, limit = 4 }: RelatedVibelog
               ? `/v/${vibelog.public_slug || vibelog.slug}`
               : `/@${vibelog.author.username}/${vibelog.slug || vibelog.public_slug}`;
 
+          // Use safe image URL (filters out expired OpenAI URLs)
+          const safeCoverUrl = getSafeImageUrl(vibelog.cover_image_url);
+
           return (
             <Link
               key={vibelog.id}
@@ -89,10 +94,10 @@ export default function RelatedVibelogs({ vibelogId, limit = 4 }: RelatedVibelog
               className="group flex flex-col overflow-hidden rounded-lg border border-border/30 bg-background/50 transition-all hover:border-electric/30 hover:shadow-lg"
             >
               {/* Cover Image */}
-              {vibelog.cover_image_url ? (
+              {safeCoverUrl ? (
                 <div className="aspect-video w-full overflow-hidden bg-muted/20">
                   <img
-                    src={vibelog.cover_image_url}
+                    src={safeCoverUrl}
                     alt={vibelog.title}
                     className="h-full w-full object-cover transition-transform group-hover:scale-105"
                   />
