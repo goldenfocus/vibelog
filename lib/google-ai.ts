@@ -35,8 +35,8 @@ export async function generateImage(options: GenerateImageOptions): Promise<stri
   const { prompt, numberOfImages = 1, aspectRatio = '16:9' } = options;
 
   const ai = getClient();
-  // Use Imagen 3 model - this is the correct model name for image generation
-  const model = 'imagen-3.0-generate-001';
+  // Use Imagen 3 model - CORRECT model name is -002 (not -001!)
+  const model = 'imagen-3.0-generate-002';
 
   try {
     console.log(`🍌 Generating image with Google Imagen 3 (${model})...`);
