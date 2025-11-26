@@ -37,7 +37,7 @@ export const config = {
     },
     google: {
       apiKey: (isServer ? (env as any).GOOGLE_API_KEY : undefined) as string | undefined,
-      model: 'gemini-2.5-flash-preview-05-20', // Gemini 2.5 Flash (FREE tier - Imagen 3 requires billing)
+      model: 'gemini-2.5-flash-image', // Gemini 2.5 Flash Image (FREE tier - Imagen requires billing)
     },
   },
 

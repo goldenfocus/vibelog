@@ -38,9 +38,9 @@ export async function generateImage(options: GenerateImageOptions): Promise<stri
 
   const ai = getClient();
 
-  // Use Gemini 2.5 Flash for image generation (FREE tier)
-  // Imagen 3 requires Google Cloud billing and is NOT available on free Gemini API
-  const model = 'gemini-2.5-flash-preview-05-20';
+  // Use Gemini 2.5 Flash Image model (FREE tier)
+  // Imagen 3/4 requires Google Cloud billing and is NOT available on free Gemini API
+  const model = 'gemini-2.5-flash-image';
 
   try {
     console.log(`🍌 Generating image with Gemini 2.5 Flash (${model})...`);
