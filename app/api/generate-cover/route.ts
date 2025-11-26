@@ -159,17 +159,12 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ Cover image generated successfully');
 
-    // Require vibelogId for cover storage (covers are stored by vibelog ID)
-    if (!vibelogId) {
-      console.error('❌ No vibelogId provided - cannot save cover');
-      return NextResponse.json(
-        { error: 'vibelogId is required to save cover image' },
-        { status: 400 }
-      );
-    }
-
     // Fallback OG image if storage fails (NEVER return temporary OpenAI URLs)
     const FALLBACK_OG_IMAGE = 'https://www.vibelog.io/og-image.png';
+
+    // If no vibelogId, we can still generate but need to save somewhere
+    // Generate a temporary ID for storage if vibelogId not provided
+    const storageId = vibelogId || `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
     // ALWAYS download and save to Supabase Storage (OpenAI URLs expire in ~1 hour)
     let storedUrl: string;
@@ -183,7 +178,7 @@ export async function POST(request: NextRequest) {
 
       // Upload using modular cover storage utility
       const { url, error: uploadError } = await uploadCover(
-        vibelogId,
+        storageId,
         Buffer.from(imageBuffer),
         'image/png'
       );
@@ -196,8 +191,10 @@ export async function POST(request: NextRequest) {
         storedUrl = url;
         console.log('💾 Cover saved to storage:', storedUrl);
 
-        // Update vibelog with cover URL
-        await supa.from('vibelogs').update({ cover_image_url: storedUrl }).eq('id', vibelogId);
+        // Only update vibelog if we have a real vibelogId
+        if (vibelogId) {
+          await supa.from('vibelogs').update({ cover_image_url: storedUrl }).eq('id', vibelogId);
+        }
       }
     } catch (storageErr) {
       console.error('❌ Storage error:', storageErr);
@@ -215,6 +212,7 @@ export async function POST(request: NextRequest) {
       height: 1024,
       revisedPrompt, // DALL-E's interpretation of the prompt
       style: styleName, // The art style selected for this cover
+      isTemporary: !vibelogId, // Flag if this was a temporary generation
     });
   } catch (error) {
     console.error('❌ Error generating cover:', error);
