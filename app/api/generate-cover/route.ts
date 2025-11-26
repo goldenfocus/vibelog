@@ -9,6 +9,7 @@ import { isDev } from '@/lib/env';
 import { generateImage } from '@/lib/google-ai';
 import { rateLimit, tooManyResponse } from '@/lib/rateLimit';
 import { createServerSupabaseClient } from '@/lib/supabase';
+import { createServerAdminClient } from '@/lib/supabaseAdmin';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -281,9 +282,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Always update the database with the cover URL (even if fallback)
+    // Use admin client to bypass RLS for anonymous users
     if (vibelogId) {
-      await supa.from('vibelogs').update({ cover_image_url: storedUrl }).eq('id', vibelogId);
-      console.log('📝 Database updated with cover URL:', storedUrl);
+      const adminClient = await createServerAdminClient();
+      const { error: updateError } = await adminClient
+        .from('vibelogs')
+        .update({ cover_image_url: storedUrl })
+        .eq('id', vibelogId);
+
+      if (updateError) {
+        console.error('❌ Failed to update cover_image_url in database:', updateError);
+      } else {
+        console.log('📝 Database updated with cover URL:', storedUrl);
+      }
     }
 
     return NextResponse.json({
