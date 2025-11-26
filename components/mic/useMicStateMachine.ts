@@ -661,10 +661,16 @@ export function useMicStateMachine(
       // CRITICAL: Use ref as fallback for audio data (React state may not be updated yet)
       const finalAudioData = audioData || vibelogAPI.processingData.current.audioData;
 
+      // CRITICAL: Use ref as fallback for transcription (React state may not be updated yet)
+      const finalTranscription =
+        transcription || vibelogAPI.processingData.current.transcriptionData || '';
+
       console.log('💾 [COMPLETE-PROCESSING] Calling saveVibelog with:', {
         contentLength: contentToSave.length,
         fullContentLength: fullContent.length,
-        hasTranscription: !!transcription,
+        hasTranscription: !!finalTranscription,
+        transcriptionLength: finalTranscription.length,
+        transcriptionSource: transcription ? 'state' : 'ref',
         hasCoverImage: !!coverImage,
         hasAudioData: !!finalAudioData,
         audioDataSource: audioData ? 'state' : 'ref',
@@ -675,7 +681,7 @@ export function useMicStateMachine(
       const result = await saveVibelog({
         content: contentToSave,
         fullContent,
-        transcription: transcription || '',
+        transcription: finalTranscription,
         coverImage: coverImage || undefined,
         audioData: finalAudioData || undefined,
         userId: user?.id,
