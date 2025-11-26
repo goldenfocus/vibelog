@@ -34,6 +34,7 @@ export interface NormalizedVibelogData {
   teaser: string;
   content: string;
   transcription: string;
+  transcript: string; // Original transcript for "Original" tab display
   cover_image_url: string | null;
   cover_image_alt: string | null;
   cover_image_width: number | null;
@@ -133,6 +134,7 @@ export async function normalizeVibelogData(
     teaser: teaserContent,
     content: fullContent,
     transcription: transcription,
+    transcript: transcription, // Save to 'transcript' column for "Original" tab display
     cover_image_url: requestBody.coverImage?.url || null,
     cover_image_alt: requestBody.coverImage?.alt || null,
     cover_image_width: requestBody.coverImage?.width || null,
@@ -185,6 +187,7 @@ export async function updateVibelog(
     teaser: data.teaser,
     content: data.content,
     transcription: data.transcription,
+    transcript: data.transcript, // Also update 'transcript' column for "Original" tab
     cover_image_url: data.cover_image_url || undefined,
     cover_image_alt: data.cover_image_alt || undefined,
     cover_image_width: data.cover_image_width || undefined,
