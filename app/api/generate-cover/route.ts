@@ -159,8 +159,8 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ Cover image generated successfully');
 
-    // Fallback OG image if storage fails (NEVER return temporary OpenAI URLs)
-    const FALLBACK_OG_IMAGE = 'https://www.vibelog.io/og-image.png';
+    // Fallback OG image if storage fails (use relative path to avoid CORS issues)
+    const FALLBACK_OG_IMAGE = '/og-image.png';
 
     // If no vibelogId, we can still generate but need to save somewhere
     // Generate a temporary ID for storage if vibelogId not provided
@@ -217,32 +217,48 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('❌ Error generating cover:', error);
 
-    let errorMessage = 'Failed to generate cover image';
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const isContentPolicy =
+      errorMessage.includes('content_policy') ||
+      errorMessage.includes('safety system') ||
+      errorMessage.includes('rejected');
+
+    // For content policy violations, return fallback image instead of error
+    // This allows the vibelog to be saved with a default cover
+    if (isContentPolicy) {
+      console.log('⚠️ Content policy rejection - returning fallback image');
+      return NextResponse.json({
+        success: true,
+        message: 'Using default cover (content policy)',
+        url: '/og-image.png',
+        imageUrl: '/og-image.png',
+        alt: 'Default cover image',
+        width: 1200,
+        height: 630,
+        isFallback: true,
+        contentPolicyRejection: true,
+      });
+    }
+
+    // For other errors, determine appropriate response
+    let responseMessage = 'Failed to generate cover image';
     let statusCode = 500;
-    let errorDetails = '';
 
-    if (error instanceof Error) {
-      errorDetails = error.message;
-
-      if (error.message.includes('Invalid API key') || error.message.includes('invalid_api_key')) {
-        errorMessage = 'API configuration error';
-        statusCode = 401;
-      } else if (error.message.includes('rate limit')) {
-        errorMessage = 'OpenAI API rate limit exceeded';
-        statusCode = 429;
-      } else if (error.message.includes('quota') || error.message.includes('insufficient')) {
-        errorMessage = 'OpenAI API quota exceeded';
-        statusCode = 402;
-      } else if (error.message.includes('content_policy')) {
-        errorMessage = 'Content policy violation - please try different content';
-        statusCode = 400;
-      }
+    if (errorMessage.includes('Invalid API key') || errorMessage.includes('invalid_api_key')) {
+      responseMessage = 'API configuration error';
+      statusCode = 401;
+    } else if (errorMessage.includes('rate limit')) {
+      responseMessage = 'OpenAI API rate limit exceeded';
+      statusCode = 429;
+    } else if (errorMessage.includes('quota') || errorMessage.includes('insufficient')) {
+      responseMessage = 'OpenAI API quota exceeded';
+      statusCode = 402;
     }
 
     return NextResponse.json(
       {
-        error: errorMessage,
-        details: errorDetails || 'Unknown error',
+        error: responseMessage,
+        details: errorMessage,
       },
       { status: statusCode }
     );
