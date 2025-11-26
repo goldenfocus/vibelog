@@ -27,6 +27,7 @@ const serverEnvSchema = clientEnvSchema.extend({
   OPENAI_API_KEY: z.string().min(1, 'OPENAI_API_KEY is required'),
   ANTHROPIC_API_KEY: z.string().optional(),
   ELEVENLABS_API_KEY: z.string().optional(),
+  GOOGLE_API_KEY: z.string().optional(),
 
   // External Services
   RESEND_API_KEY: z.string().optional(),
@@ -54,11 +55,11 @@ function validateEnv() {
     const source = isServer
       ? process.env
       : {
-          NODE_ENV: process.env.NODE_ENV as any,
-          NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
-          NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-        };
+        NODE_ENV: process.env.NODE_ENV as any,
+        NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+        NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      };
 
     const parsed = envSchema.parse(source);
     return parsed as any;

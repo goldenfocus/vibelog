@@ -28,6 +28,7 @@ export interface UseVibelogAPIReturn {
   ) => Promise<TeaserResult>;
   processCoverImage: (args: {
     vibelogContent: string;
+    vibelogId?: string;
     username?: string;
     tags?: string[];
   }) => Promise<{ url: string; alt: string; width: number; height: number }>;
@@ -400,10 +401,10 @@ export function useVibelogAPI(
       // Use AI-generated teaser if available, otherwise fall back to client-side teaser logic
       const teaserResult: TeaserResult = vibelogTeaser
         ? {
-            content: vibelogTeaser,
-            isTeaser: true,
-            fullContent: vibelogContent,
-          }
+          content: vibelogTeaser,
+          isTeaser: true,
+          fullContent: vibelogContent,
+        }
         : createTeaserContent(vibelogContent);
 
       // Store the FULL content for cover generation, not the teaser

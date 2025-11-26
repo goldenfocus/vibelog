@@ -13,6 +13,7 @@ const COST_RATES = {
   },
   'tts-1-hd': 0.03, // per 1K characters
   'dall-e-3': 0.08, // per image (1792x1024 wide format)
+  'nano-banana': 0.04, // per image (Gemini 2.5 Flash Image)
 };
 
 const DAILY_COST_LIMIT = 50; // $50 per day circuit breaker
@@ -22,7 +23,7 @@ const DAILY_COST_LIMIT = 50; // $50 per day circuit breaker
  */
 export async function trackAICost(
   userId: string | null,
-  service: 'whisper' | 'gpt-4o-mini' | 'gpt-4o' | 'tts-1-hd' | 'dall-e-3',
+  service: 'whisper' | 'gpt-4o-mini' | 'gpt-4o' | 'tts-1-hd' | 'dall-e-3' | 'nano-banana',
   cost: number,
   metadata?: {
     endpoint?: string;
