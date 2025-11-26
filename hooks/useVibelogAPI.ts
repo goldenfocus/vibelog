@@ -549,13 +549,20 @@ export function useVibelogAPI(
 
   const processCoverImage = async (args: {
     vibelogContent: string;
+    vibelogId?: string;
     username?: string;
     tags?: string[];
   }) => {
     const { title, summary } = parseMarkdown(args.vibelogContent);
 
     try {
-      const requestBody = { title, summary, username: args.username, tags: args.tags };
+      const requestBody = {
+        title,
+        summary,
+        vibelogId: args.vibelogId,
+        username: args.username,
+        tags: args.tags,
+      };
 
       const res = await fetch('/api/generate-cover', {
         method: 'POST',
