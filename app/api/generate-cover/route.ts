@@ -1,28 +1,127 @@
 import { NextRequest, NextResponse } from 'next/server';
-// import OpenAI from 'openai'; // Replaced by Nano Banana
+import OpenAI from 'openai';
 
 import { trackAICost, calculateImageCost, isDailyLimitExceeded } from '@/lib/ai-cost-tracker';
-// import { checkAndBlockBots } from '@/lib/botid-check'; // DISABLED: Blocking legit users
 import { config } from '@/lib/config';
 import { generateCoverPrompt } from '@/lib/cover-prompt-generator';
 import { uploadCover } from '@/lib/cover-storage';
 import { isDev } from '@/lib/env';
+import { generateImage } from '@/lib/google-ai';
 import { rateLimit, tooManyResponse } from '@/lib/rateLimit';
 import { createServerSupabaseClient } from '@/lib/supabase';
-import { generateImage } from '@/lib/google-ai';
 
 export const runtime = 'nodejs';
-export const maxDuration = 60; // Image generation can take time
+export const maxDuration = 60;
+
+const FALLBACK_OG_IMAGE = '/og-image.png';
+
+interface GenerationResult {
+  imageData: Buffer | string;
+  provider: 'nano-banana' | 'dall-e-3';
+  cost: number;
+  isBase64: boolean;
+}
+
+/**
+ * Try Nano Banana (Google Imagen) first
+ */
+async function tryNanoBanana(prompt: string): Promise<GenerationResult | null> {
+  if (!config.ai.google?.apiKey) {
+    console.log('⏭️ Skipping Nano Banana: No Google API key configured');
+    return null;
+  }
+
+  try {
+    console.log('🍌 Attempting Nano Banana (Google Imagen)...');
+    const imageUrl = await generateImage({
+      prompt,
+      aspectRatio: '16:9',
+    });
+
+    if (!imageUrl) {
+      throw new Error('No image returned');
+    }
+
+    // Nano Banana returns base64 data URI
+    if (imageUrl.startsWith('data:')) {
+      const base64Data = imageUrl.split(',')[1];
+      console.log('✅ Nano Banana succeeded!');
+      return {
+        imageData: base64Data,
+        provider: 'nano-banana',
+        cost: 0.04,
+        isBase64: true,
+      };
+    }
+
+    // If it's a URL, we'll fetch it
+    console.log('✅ Nano Banana succeeded (URL format)!');
+    return {
+      imageData: imageUrl,
+      provider: 'nano-banana',
+      cost: 0.04,
+      isBase64: false,
+    };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Unknown error';
+    console.error('❌ Nano Banana failed:', msg);
+    return null;
+  }
+}
+
+/**
+ * Fallback to DALL-E 3
+ */
+async function tryDallE(prompt: string): Promise<GenerationResult | null> {
+  if (!config.ai.openai?.apiKey || config.ai.openai.apiKey === 'dummy_key') {
+    console.log('⏭️ Skipping DALL-E: No OpenAI API key configured');
+    return null;
+  }
+
+  try {
+    console.log('🎨 Attempting DALL-E 3 fallback...');
+    const openai = new OpenAI({
+      apiKey: config.ai.openai.apiKey,
+      timeout: 60_000,
+    });
+
+    const response = await openai.images.generate({
+      model: 'dall-e-3',
+      prompt,
+      n: 1,
+      size: '1792x1024',
+      quality: 'standard',
+      style: 'vivid',
+    });
+
+    const imageUrl = response.data[0]?.url;
+    if (!imageUrl) {
+      throw new Error('No image URL in DALL-E response');
+    }
+
+    console.log('✅ DALL-E 3 succeeded!');
+    return {
+      imageData: imageUrl,
+      provider: 'dall-e-3',
+      cost: calculateImageCost(),
+      isBase64: false,
+    };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Unknown error';
+    console.error('❌ DALL-E failed:', msg);
+
+    // Check for content policy - this is expected for some prompts
+    if (msg.includes('content_policy') || msg.includes('safety') || msg.includes('rejected')) {
+      console.log('⚠️ DALL-E content policy rejection');
+    }
+
+    return null;
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
-    // 🛡️ BOT PROTECTION: DISABLED - was blocking legitimate users
-    // const botCheck = await checkAndBlockBots();
-    // if (botCheck) {
-    //   return botCheck;
-    // }
-
-    // 🛡️ CIRCUIT BREAKER: Check if daily cost limit exceeded
+    // Circuit breaker check
     if (await isDailyLimitExceeded()) {
       return NextResponse.json(
         {
@@ -34,12 +133,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Rate limit per user if logged in; otherwise per IP
+    // Rate limiting
     const supa = await createServerSupabaseClient();
     const { data: auth } = await supa.auth.getUser();
     const userId = auth?.user?.id;
 
-    // Use rate limits from config (COST PROTECTION - Images are expensive!)
     const limits = config.rateLimits.images;
     const opts = userId ? limits.authenticated : limits.anonymous;
     const rl = await rateLimit(request, 'generate-cover', opts, userId || undefined);
@@ -72,7 +170,6 @@ export async function POST(request: NextRequest) {
 
     const { title, teaser, summary, transcript, vibelogId, username } = await request.json();
 
-    // Accept title, teaser, or summary - any content to describe the image
     const contentForImage = title || teaser || summary;
     if (!contentForImage) {
       return NextResponse.json(
@@ -81,22 +178,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check for real API key (Google)
-    if (
-      !config.ai.google.apiKey ||
-      config.ai.google.apiKey === 'dummy_key'
-    ) {
-      console.warn('🧪 Cover generation - no Google API key configured');
-      return NextResponse.json(
-        {
-          error: 'Cover generation is not configured',
-          message: 'The Google API key is missing for Nano Banana.',
-        },
-        { status: 503 }
-      );
-    }
-
-    // Generate intelligent prompt based on content analysis
+    // Generate prompt
     const { prompt, styleName, analysis } = generateCoverPrompt({
       title: title || contentForImage,
       teaser: teaser || summary,
@@ -105,35 +187,47 @@ export async function POST(request: NextRequest) {
     });
 
     console.log(
-      '🎨 Generating cover image with Nano Banana for:',
+      '🎨 Generating cover image for:',
       title?.substring(0, 50) || teaser?.substring(0, 50)
     );
     console.log(`   Style: ${styleName}`);
     console.log(`   Detected tones: ${analysis.detectedTones.join(', ') || 'neutral'}`);
 
-    // Generate image with Nano Banana (Gemini)
-    let imageUrl: string;
-    try {
-      imageUrl = await generateImage({
-        prompt,
-        width: 1792,
-        height: 1024,
-        aspectRatio: '16:9'
-      });
-    } catch (genError: any) {
-      console.error('❌ Nano Banana generation error:', genError);
-      throw new Error(`Nano Banana generation failed: ${genError.message}`);
+    // ============================================
+    // FALLBACK CHAIN: Nano Banana → DALL-E → og-image
+    // ============================================
+    let result: GenerationResult | null = null;
+
+    // 1. Try Nano Banana (Google Imagen) first
+    result = await tryNanoBanana(prompt);
+
+    // 2. If Nano Banana failed, try DALL-E
+    if (!result) {
+      result = await tryDallE(prompt);
     }
 
-    // 💰 COST TRACKING (Estimate for Nano Banana / Gemini Flash Image)
-    // Assuming it's cheaper than DALL-E 3, maybe $0.04 or less?
-    // For now, we'll track it as 'nano-banana' with a lower cost
-    const cost = 0.04; // Placeholder cost
-    const { allowed } = await trackAICost(userId || null, 'nano-banana', cost, {
+    // 3. If all AI generation failed, use og-image fallback
+    if (!result) {
+      console.log('🔄 All AI providers failed, using og-image.png fallback');
+      return NextResponse.json({
+        success: true,
+        message: 'Using default cover (AI unavailable)',
+        url: FALLBACK_OG_IMAGE,
+        imageUrl: FALLBACK_OG_IMAGE,
+        alt: 'Default cover image',
+        width: 1200,
+        height: 630,
+        isFallback: true,
+        provider: 'fallback',
+      });
+    }
+
+    // Track cost
+    const { allowed } = await trackAICost(userId || null, result.provider, result.cost, {
       endpoint: '/api/generate-cover',
       vibelog_id: vibelogId,
       size: '1792x1024',
-      provider: 'google'
+      provider: result.provider,
     });
 
     if (!allowed) {
@@ -147,36 +241,22 @@ export async function POST(request: NextRequest) {
     }
 
     if (isDev) {
-      console.log(`💰 Cover generation cost: $${cost.toFixed(4)}`);
+      console.log(`💰 Cover generation cost: $${result.cost.toFixed(4)} (${result.provider})`);
     }
 
-    if (!imageUrl) {
-      console.error('❌ No image URL returned');
-      return NextResponse.json({ error: 'Failed to generate cover image' }, { status: 500 });
-    }
-
-    console.log('✅ Cover image generated successfully');
-
-    // Fallback OG image if storage fails (use relative path to avoid CORS issues)
-    const FALLBACK_OG_IMAGE = '/og-image.png';
-
-    // If no vibelogId, we can still generate but need to save somewhere
-    // Generate a temporary ID for storage if vibelogId not provided
+    // Store the image
     const storageId = vibelogId || `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
-    // ALWAYS download and save to Supabase Storage
     let storedUrl: string;
     try {
       let imageBuffer: Buffer;
 
-      // Handle Data URI (Base64) or URL
-      if (imageUrl.startsWith('data:')) {
-        // Extract base64 data
-        const base64Data = imageUrl.split(',')[1];
-        imageBuffer = Buffer.from(base64Data, 'base64');
+      if (result.isBase64) {
+        // Base64 data
+        imageBuffer = Buffer.from(result.imageData as string, 'base64');
       } else {
-        // Download the image from URL
-        const imageResponse = await fetch(imageUrl);
+        // URL - download it
+        const imageResponse = await fetch(result.imageData as string);
         if (!imageResponse.ok) {
           throw new Error(`Failed to download image: ${imageResponse.status}`);
         }
@@ -184,22 +264,16 @@ export async function POST(request: NextRequest) {
         imageBuffer = Buffer.from(arrayBuffer);
       }
 
-      // Upload using modular cover storage utility
-      const { url, error: uploadError } = await uploadCover(
-        storageId,
-        imageBuffer,
-        'image/png'
-      );
+      const { url, error: uploadError } = await uploadCover(storageId, imageBuffer, 'image/png');
 
       if (uploadError || !url) {
         console.error('❌ Failed to save cover to storage:', uploadError);
         storedUrl = FALLBACK_OG_IMAGE;
-        console.log('🔄 Using fallback OG image');
+        console.log('🔄 Storage failed, using fallback OG image');
       } else {
         storedUrl = url;
         console.log('💾 Cover saved to storage:', storedUrl);
 
-        // Only update vibelog if we have a real vibelogId
         if (vibelogId) {
           await supa.from('vibelogs').update({ cover_image_url: storedUrl }).eq('id', vibelogId);
         }
@@ -213,15 +287,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Cover image generated successfully',
-      url: storedUrl, // Client expects 'url' not 'imageUrl'
-      imageUrl: storedUrl, // Keep for backwards compatibility
+      url: storedUrl,
+      imageUrl: storedUrl,
       alt: `${contentForImage.substring(0, 100)} - cover image`,
       width: 1792,
       height: 1024,
-      revisedPrompt: prompt, // We don't get revised prompt from Gemini usually
-      style: styleName, // The art style selected for this cover
-      isTemporary: !vibelogId, // Flag if this was a temporary generation
-      provider: 'nano-banana'
+      revisedPrompt: prompt,
+      style: styleName,
+      isTemporary: !vibelogId,
+      provider: result.provider,
+      isFallback: storedUrl === FALLBACK_OG_IMAGE,
     });
   } catch (error) {
     console.error('❌ Error generating cover:', error);
@@ -232,15 +307,13 @@ export async function POST(request: NextRequest) {
       errorMessage.includes('safety') ||
       errorMessage.includes('blocked');
 
-    // For content policy violations, return fallback image instead of error
-    // This allows the vibelog to be saved with a default cover
     if (isContentPolicy) {
       console.log('⚠️ Content policy rejection - returning fallback image');
       return NextResponse.json({
         success: true,
         message: 'Using default cover (content policy)',
-        url: '/og-image.png',
-        imageUrl: '/og-image.png',
+        url: FALLBACK_OG_IMAGE,
+        imageUrl: FALLBACK_OG_IMAGE,
         alt: 'Default cover image',
         width: 1200,
         height: 630,
@@ -249,27 +322,18 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // For other errors, determine appropriate response
-    let responseMessage = 'Failed to generate cover image';
-    let statusCode = 500;
-
-    if (errorMessage.includes('API key') || errorMessage.includes('configured')) {
-      responseMessage = 'API configuration error';
-      statusCode = 401;
-    } else if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
-      responseMessage = 'AI API rate limit exceeded';
-      statusCode = 429;
-    } else if (errorMessage.includes('quota') || errorMessage.includes('insufficient')) {
-      responseMessage = 'AI API quota exceeded';
-      statusCode = 402;
-    }
-
-    return NextResponse.json(
-      {
-        error: responseMessage,
-        details: errorMessage,
-      },
-      { status: statusCode }
-    );
+    // Always return fallback on error rather than 500
+    console.log('⚠️ Unexpected error - returning fallback image');
+    return NextResponse.json({
+      success: true,
+      message: 'Using default cover (generation error)',
+      url: FALLBACK_OG_IMAGE,
+      imageUrl: FALLBACK_OG_IMAGE,
+      alt: 'Default cover image',
+      width: 1200,
+      height: 630,
+      isFallback: true,
+      error: errorMessage,
+    });
   }
 }
