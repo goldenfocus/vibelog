@@ -473,6 +473,9 @@ export function useMicStateMachine(
     setTranscription(transcriptionResult);
     setDetectedLanguage(detectedLang);
 
+    // FIX: Store in ref so processVibelogGeneration can access it immediately (before React state updates)
+    vibelogAPI.processingData.current.detectedLanguage = detectedLang;
+
     // CRITICAL: Upload audio BEFORE saving vibelog to ensure audio_url is available
     try {
       console.log('🎵 [AUDIO-UPLOAD] Uploading audio before saving vibelog...');
@@ -497,17 +500,20 @@ export function useMicStateMachine(
       throw new Error('No transcription data available');
     }
 
+    // FIX: Use ref instead of state to avoid React async state timing issues
+    const languageFromRef = vibelogAPI.processingData.current.detectedLanguage;
+
     console.log('🚀 [VIBELOG-GEN] Starting generation...');
     console.log('🎨 [VIBELOG-GEN] Using tone:', tone);
     console.log('🗣️ [VIBELOG-GEN] Keep filler words:', keepFillerWords);
-    console.log('🌐 [VIBELOG-GEN] Detected language:', detectedLanguage);
+    console.log('🌐 [VIBELOG-GEN] Detected language:', languageFromRef);
 
     // OPTIMIZATION 2: Enable streaming for real-time content delivery
     const teaserResult = await vibelogAPI.processVibelogGeneration(transcriptionData, {
       enableStreaming: false,
       tone,
       keepFillerWords,
-      detectedLanguage,
+      detectedLanguage: languageFromRef,
       onStreamChunk: (_chunk: string) => {
         // Optional: Update UI with streaming chunks in real-time
         // Streaming logs disabled to reduce console noise
@@ -530,7 +536,7 @@ export function useMicStateMachine(
     });
 
     return teaserResult.fullContent || teaserResult.content;
-  }, [vibelogAPI, tone, keepFillerWords, detectedLanguage]);
+  }, [vibelogAPI, tone, keepFillerWords]);
 
   const processCoverImage = useCallback(
     async (vibelogContentOverride?: string, vibelogId?: string) => {

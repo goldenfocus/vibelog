@@ -87,7 +87,7 @@ export function useVideoStateMachine(options: {
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [transcription, setTranscription] = useState('');
-  const [detectedLanguage, setDetectedLanguage] = useState<string | undefined>();
+  const [_detectedLanguage, setDetectedLanguage] = useState<string | undefined>();
   const [vibelogContent, setVibelogContent] = useState('');
   const [fullVibelogContent, setFullVibelogContent] = useState('');
   const [vibelogId, _setVibelogId] = useState<string | null>(initialVibelogId);
@@ -174,6 +174,8 @@ export function useVideoStateMachine(options: {
 
     // Store in vibelogAPI for generation step
     vibelogAPI.processingData.current.transcriptionData = transcriptionResult;
+    // FIX: Store language in ref so processVibelogGeneration can access it immediately
+    vibelogAPI.processingData.current.detectedLanguage = detectedLang;
 
     return transcriptionResult;
   }, [videoBlob, vibelogAPI]);
@@ -188,14 +190,18 @@ export function useVideoStateMachine(options: {
       throw new Error('No transcription data available');
     }
 
+    // FIX: Use ref instead of state to avoid React async state timing issues
+    const languageFromRef = vibelogAPI.processingData.current.detectedLanguage;
+
     console.log('🚀 [VIDEO-STATE] Generating vibelog content...');
     console.log('🎨 [VIDEO-STATE] Using tone:', tone);
+    console.log('🌐 [VIDEO-STATE] Detected language:', languageFromRef);
 
     const teaserResult = await vibelogAPI.processVibelogGeneration(transcriptionData, {
       enableStreaming: false,
       tone,
       keepFillerWords,
-      detectedLanguage,
+      detectedLanguage: languageFromRef,
     });
 
     console.log('✅ [VIDEO-STATE] Vibelog generated');
@@ -207,7 +213,7 @@ export function useVideoStateMachine(options: {
       teaserResult.fullContent || teaserResult.content;
 
     return teaserResult.fullContent || teaserResult.content;
-  }, [vibelogAPI, tone, keepFillerWords, detectedLanguage]);
+  }, [vibelogAPI, tone, keepFillerWords]);
 
   // Step 4: Generate cover image
   const processCoverImage = useCallback(

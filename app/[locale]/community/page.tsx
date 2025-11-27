@@ -32,6 +32,10 @@ interface Vibelog {
   read_time: number;
   user_id?: string;
   author: VibelogAuthor;
+  // Translation fields
+  original_language?: string | null;
+  available_languages?: string[] | null;
+  translations?: Record<string, { title?: string; teaser?: string; content?: string }> | null;
 }
 
 export default function Community() {

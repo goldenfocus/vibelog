@@ -23,6 +23,7 @@ export interface ProcessingData {
   transcriptionData: string;
   vibelogContentData: string;
   audioData: { url: string; duration: number } | null;
+  detectedLanguage?: string;
 }
 
 export interface TeaserResult {
