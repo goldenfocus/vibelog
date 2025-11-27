@@ -120,6 +120,9 @@ async function tryDallE(prompt: string): Promise<GenerationResult | null> {
   }
 }
 
+// Track in-progress generations to prevent duplicate concurrent calls
+const generationInProgress = new Map<string, Promise<Response>>();
+
 export async function POST(request: NextRequest) {
   try {
     // Circuit breaker check
@@ -170,6 +173,48 @@ export async function POST(request: NextRequest) {
     }
 
     const { title, teaser, summary, transcript, vibelogId, username } = await request.json();
+
+    // IDEMPOTENCY CHECK: If vibelogId provided, check if cover already exists
+    if (vibelogId) {
+      // Check for in-progress generation (prevents concurrent duplicate calls)
+      if (generationInProgress.has(vibelogId)) {
+        console.log('🔒 [COVER-GEN] Generation already in progress for:', vibelogId);
+        // Wait for existing generation to complete and return its result
+        try {
+          const existingPromise = generationInProgress.get(vibelogId);
+          if (existingPromise) {
+            return existingPromise;
+          }
+        } catch {
+          // If existing promise fails, continue with new generation
+        }
+      }
+
+      // Check database for existing cover
+      const adminClient = await createServerAdminClient();
+      const { data: existing } = await adminClient
+        .from('vibelogs')
+        .select('cover_image_url')
+        .eq('id', vibelogId)
+        .single();
+
+      // Skip if cover already exists (and not the fallback og-image)
+      if (
+        existing?.cover_image_url &&
+        !existing.cover_image_url.includes('og-image') &&
+        !existing.cover_image_url.includes('placeholder')
+      ) {
+        console.log('⏭️ [COVER-GEN] Cover already exists, skipping generation:', vibelogId);
+        return NextResponse.json({
+          success: true,
+          message: 'Cover already exists',
+          url: existing.cover_image_url,
+          imageUrl: existing.cover_image_url,
+          skipped: true,
+          provider: 'existing',
+        });
+      }
+    }
 
     const contentForImage = title || teaser || summary;
     if (!contentForImage) {

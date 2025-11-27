@@ -144,7 +144,6 @@ export default function ProcessingAnimation({
 
     let generatePromise: Promise<any> | null = null;
     let generateStarted = false;
-    let generatedVibelogContent: string = '';
     const startGenerate = () => {
       if (generateStarted) {
         return; // Prevent duplicate calls
@@ -152,19 +151,10 @@ export default function ProcessingAnimation({
       generateStarted = true;
       const g0 = performance.now();
       generatePromise = onGenerateComplete()
-        .then(result => {
+        .then(() => {
           _generateOk = true;
-          // Capture the vibelog content for cover generation
-          generatedVibelogContent = typeof result === 'string' ? result : '';
-
-          // Start cover generation in background (performance optimization)
-          // The save function will ensure it's complete before persisting
-          if (typeof onCoverComplete === 'function' && generatedVibelogContent) {
-            console.log('🖼️ [PROCESSING-ANIMATION] Starting cover generation in background...');
-            onCoverComplete(generatedVibelogContent).catch(error => {
-              console.error('Background cover generation failed:', error);
-            });
-          }
+          // FIXED: Don't start cover generation here - let completeProcessing handle it
+          // This was causing duplicate image generation
         })
         .catch(error => {
           console.error('Vibelog generation failed:', error);
@@ -223,8 +213,11 @@ export default function ProcessingAnimation({
         // Short dwell only; text already prepared at STRUCTURE
         await new Promise(res => setTimeout(res, 350));
       } else if (step.id === 'image') {
-        // Just show UX animation - actual cover generation handled by save function
-        await new Promise(res => setTimeout(res, 500));
+        // FIXED: Don't start cover generation here - let completeProcessing handle it
+        // This prevents duplicate generation (ProcessingAnimation + completeProcessing)
+        // The save function will generate cover with vibelogId for proper storage
+        console.log('🖼️ [PROCESSING-ANIMATION] Image step - generation deferred to save');
+        await new Promise(res => setTimeout(res, 400));
       } else {
         // Post steps: scale by generation time, keep UX snappy
         const base = Math.min(
