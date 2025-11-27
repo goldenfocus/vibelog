@@ -156,37 +156,33 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     } catch (directInsertError) {
       console.error('❌ [VIBELOG-SAVE] Direct insert failed:', directInsertError);
 
-      // Fallback: Log to failures
+      // Log to failures table for recovery
       await logVibelogFailure(vibelogData, directInsertError, supabase);
 
-      return NextResponse.json({
-        success: true, // Still return success because we captured the data
-        message: 'Vibelog captured for manual recovery',
-        warnings: [
-          ...warnings,
-          'Stored in failures table - will be recovered manually',
-          `DB Error: ${directInsertError instanceof Error ? directInsertError.message : JSON.stringify(directInsertError)}`,
-        ],
-      });
+      // Return error to client so they can handle it properly
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Failed to create vibelog',
+          error: directInsertError instanceof Error ? directInsertError.message : 'Database error',
+        },
+        { status: 500 }
+      );
     }
   } catch (uncaughtError) {
     console.error('💥 [VIBELOG-SAVE] UNCAUGHT ERROR:', uncaughtError);
 
+    // Try to log for recovery if possible
     if (supabase && requestBody) {
       await logVibelogFailure(requestBody, uncaughtError, supabase);
-      return NextResponse.json({
-        success: true,
-        message: 'Emergency data capture successful - will be recovered',
-        warnings: ['Uncaught error occurred but data was preserved'],
-      });
     }
 
+    // Always return error to client
     return NextResponse.json(
       {
         success: false,
-        message: 'Catastrophic failure occurred',
+        message: 'Failed to save vibelog',
         error: uncaughtError instanceof Error ? uncaughtError.message : 'Unknown error',
-        data: requestBody || null,
       },
       { status: 500 }
     );

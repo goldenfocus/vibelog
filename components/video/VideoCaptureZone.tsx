@@ -370,11 +370,13 @@ export function VideoCaptureZone({
           }),
         });
 
-        if (!createResponse.ok) {
-          throw new Error('Failed to create vibelog');
+        const createResult = await createResponse.json();
+
+        // Check both response.ok AND result.vibelogId exists
+        if (!createResponse.ok || !createResult.vibelogId) {
+          throw new Error(createResult.message || createResult.error || 'Failed to create vibelog');
         }
 
-        const createResult = await createResponse.json();
         currentVibelogId = createResult.vibelogId;
         console.log('✅ [UPLOAD] Vibelog created:', currentVibelogId);
       }
@@ -532,6 +534,23 @@ export function VideoCaptureZone({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [facingMode]);
+
+  // Ensure stream is attached when status becomes 'ready' or 'recording'
+  useEffect(() => {
+    if (
+      (status === 'ready' || status === 'recording') &&
+      videoRef.current &&
+      mediaStreamRef.current
+    ) {
+      if (videoRef.current.srcObject !== mediaStreamRef.current) {
+        console.log('[VideoCaptureZone] useEffect: Attaching stream to video element');
+        videoRef.current.srcObject = mediaStreamRef.current;
+        videoRef.current.play().catch(err => {
+          console.error('[VideoCaptureZone] useEffect: Play error:', err);
+        });
+      }
+    }
+  }, [status]);
 
   // Format time as MM:SS
   const formatTime = (seconds: number): string => {
