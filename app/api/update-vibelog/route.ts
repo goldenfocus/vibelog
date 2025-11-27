@@ -14,7 +14,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { vibelogId, title, content, teaser, coverImage } = body;
+    const { vibelogId, title, content, teaser, transcript, coverImage } = body;
 
     if (!vibelogId) {
       return NextResponse.json({ error: 'Vibelog ID is required' }, { status: 400 });
@@ -24,7 +24,7 @@ export async function PATCH(request: NextRequest) {
     const { data: vibelog, error: fetchError } = await supabase
       .from('vibelogs')
       .select(
-        'user_id, title, content, teaser, cover_image_url, cover_image_alt, cover_image_width, cover_image_height'
+        'user_id, title, content, teaser, transcript, cover_image_url, cover_image_alt, cover_image_width, cover_image_height'
       )
       .eq('id', vibelogId)
       .single();
@@ -56,6 +56,11 @@ export async function PATCH(request: NextRequest) {
 
     if (teaser !== undefined) {
       updates.teaser = teaser;
+    }
+
+    // Update transcript (original content) if provided
+    if (transcript !== undefined) {
+      updates.transcript = transcript;
     }
 
     if (coverImage) {

@@ -13,6 +13,7 @@ interface VibelogEditButtonProps {
     title: string;
     content: string;
     teaser?: string;
+    transcript?: string;
     slug: string;
     cover_image_url?: string;
     cover_image_alt?: string;

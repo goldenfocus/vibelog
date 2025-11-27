@@ -20,8 +20,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         slug,
         teaser,
         content,
+        transcript,
         cover_image_url,
         audio_url,
+        ai_audio_url,
+        video_url,
         created_at,
         published_at,
         view_count,
@@ -92,8 +95,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             display_name: 'Anonymous',
             avatar_url: null,
           },
-      // Remove internal fields
-      user_id: undefined, // Don't expose user_id to client
+      // Keep user_id for ownership checks (needed for edit/delete buttons)
+      // Remove internal visibility fields
       is_published: undefined,
       is_public: undefined,
     };
