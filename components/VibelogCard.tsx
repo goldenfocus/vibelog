@@ -2,7 +2,7 @@
 
 import { Clock, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -39,6 +39,10 @@ interface Vibelog {
   read_time: number;
   user_id?: string; // Author's user ID for Edit/Remix logic
   author: VibelogAuthor;
+  // Translation fields
+  original_language?: string | null;
+  available_languages?: string[] | null;
+  translations?: Record<string, { title?: string; teaser?: string; content?: string }> | null;
 }
 
 interface VibelogCardProps {
@@ -50,13 +54,44 @@ interface VibelogCardProps {
 export default function VibelogCard({ vibelog, onRemix, onDeleteSuccess }: VibelogCardProps) {
   const router = useRouter();
   const { user } = useAuth(); // Check if user is logged in
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const isLoggedIn = !!user;
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const videoUrl = vibelog.video_url || null;
 
   // Use safe image URL (filters out expired OpenAI URLs)
   const safeCoverUrl = getSafeImageUrl(vibelog.cover_image_url);
+
+  // Apply translations based on current locale (same pattern as FloatingCard)
+  const translatedContent = useMemo(() => {
+    const originalLanguage = vibelog.original_language || 'en';
+
+    // If locale matches original language, return original content
+    if (locale === originalLanguage) {
+      return {
+        title: vibelog.title,
+        teaser: vibelog.teaser,
+        content: vibelog.content,
+      };
+    }
+
+    // Try to get translation for current locale
+    const translation = vibelog.translations?.[locale];
+    if (translation) {
+      return {
+        title: translation.title || vibelog.title,
+        teaser: translation.teaser || vibelog.teaser,
+        content: translation.content || vibelog.content,
+      };
+    }
+
+    // Fallback to original content
+    return {
+      title: vibelog.title,
+      teaser: vibelog.teaser,
+      content: vibelog.content,
+    };
+  }, [vibelog, locale]);
 
   // Defer date formatting to client side to avoid hydration mismatch
   const [formattedDate, setFormattedDate] = useState<string>('');
@@ -87,14 +122,15 @@ export default function VibelogCard({ vibelog, onRemix, onDeleteSuccess }: Vibel
 
   // Use AI-generated teaser (already optimized for engagement with proper tone)
   // If no teaser exists, fallback to truncated content
+  // Use translated content based on locale
   let displayContent: string;
 
-  if (vibelog.teaser) {
+  if (translatedContent.teaser) {
     // Use the full AI-generated teaser as-is (already crafted as a hook with correct tone)
-    displayContent = vibelog.teaser.trim();
+    displayContent = translatedContent.teaser.trim();
   } else {
     // Fallback: create a preview from content (remove title, truncate to 200 chars)
-    const contentWithoutTitle = vibelog.content
+    const contentWithoutTitle = translatedContent.content
       .split('\n')
       .filter(line => !line.startsWith('# ')) // Remove H1 titles
       .join('\n')
@@ -272,9 +308,9 @@ export default function VibelogCard({ vibelog, onRemix, onDeleteSuccess }: Vibel
         </div>
       </div>
 
-      {/* Title */}
+      {/* Title - Use translated title */}
       <h2 className="mb-4 bg-gradient-electric bg-clip-text text-2xl font-bold leading-tight text-transparent">
-        {vibelog.title}
+        {translatedContent.title}
       </h2>
 
       {/* Content */}

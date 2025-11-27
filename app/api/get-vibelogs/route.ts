@@ -32,7 +32,10 @@ export async function GET(request: NextRequest) {
         like_count,
         share_count,
         read_time,
-        user_id
+        user_id,
+        original_language,
+        available_languages,
+        translations
       `
       )
       .eq('is_published', true)
