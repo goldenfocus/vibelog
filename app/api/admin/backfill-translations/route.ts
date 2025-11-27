@@ -65,95 +65,89 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       });
     }
 
-    console.log(`[BACKFILL] Processing ${vibelogs.length} vibelogs...`);
+    console.log(`[BACKFILL] Processing ${vibelogs.length} vibelogs IN PARALLEL...`);
 
-    const results: Array<{
-      vibelogId: string;
-      success: boolean;
-      languages?: string[];
-      error?: string;
-    }> = [];
+    // Process all vibelogs in parallel for speed
+    const results = await Promise.all(
+      vibelogs.map(async vibelog => {
+        try {
+          // Determine source language
+          const sourceLanguage = (vibelog.original_language ||
+            detectLanguage(vibelog.content) ||
+            'en') as SupportedLanguage;
 
-    for (const vibelog of vibelogs) {
-      try {
-        // Determine source language
-        const sourceLanguage = (vibelog.original_language ||
-          detectLanguage(vibelog.content) ||
-          'en') as SupportedLanguage;
+          // Get target languages
+          const targetLanguages = getTargetLanguages(sourceLanguage);
 
-        // Get target languages
-        const targetLanguages = getTargetLanguages(sourceLanguage);
-
-        if (targetLanguages.length === 0) {
-          results.push({
-            vibelogId: vibelog.id,
-            success: true,
-            languages: [sourceLanguage],
-          });
-          continue;
-        }
-
-        console.log(
-          `[BACKFILL] Translating ${vibelog.id} from ${sourceLanguage} to:`,
-          targetLanguages
-        );
-
-        // Translate
-        const result = await translateVibelog(
-          {
-            vibelogId: vibelog.id,
-            title: vibelog.title,
-            teaser: vibelog.teaser || '',
-            content: vibelog.content,
-            seo_title: vibelog.seo_title || vibelog.title,
-            seo_description: vibelog.seo_description || vibelog.teaser || '',
-            sourceLanguage,
-            targetLanguages,
-          },
-          vibelog.user_id
-        );
-
-        if (result.translations && Object.keys(result.translations).length > 0) {
-          // Save translations
-          const availableLanguages = [sourceLanguage, ...Object.keys(result.translations)];
-
-          const { error: updateError } = await supabaseAdmin
-            .from('vibelogs')
-            .update({
-              translations: result.translations,
-              available_languages: availableLanguages,
-              original_language: sourceLanguage,
-            })
-            .eq('id', vibelog.id);
-
-          if (updateError) {
-            throw new Error(`Failed to save: ${updateError.message}`);
+          if (targetLanguages.length === 0) {
+            return {
+              vibelogId: vibelog.id,
+              success: true,
+              languages: [sourceLanguage],
+            };
           }
 
-          results.push({
-            vibelogId: vibelog.id,
-            success: true,
-            languages: availableLanguages,
-          });
+          console.log(
+            `[BACKFILL] Translating ${vibelog.id} from ${sourceLanguage} to:`,
+            targetLanguages
+          );
 
-          console.log(`[BACKFILL] ✅ Translated ${vibelog.id}:`, availableLanguages);
-        } else {
-          results.push({
+          // Translate
+          const result = await translateVibelog(
+            {
+              vibelogId: vibelog.id,
+              title: vibelog.title,
+              teaser: vibelog.teaser || '',
+              content: vibelog.content,
+              seo_title: vibelog.seo_title || vibelog.title,
+              seo_description: vibelog.seo_description || vibelog.teaser || '',
+              sourceLanguage,
+              targetLanguages,
+            },
+            vibelog.user_id
+          );
+
+          if (result.translations && Object.keys(result.translations).length > 0) {
+            // Save translations
+            const availableLanguages = [sourceLanguage, ...Object.keys(result.translations)];
+
+            const { error: updateError } = await supabaseAdmin
+              .from('vibelogs')
+              .update({
+                translations: result.translations,
+                available_languages: availableLanguages,
+                original_language: sourceLanguage,
+              })
+              .eq('id', vibelog.id);
+
+            if (updateError) {
+              throw new Error(`Failed to save: ${updateError.message}`);
+            }
+
+            console.log(`[BACKFILL] ✅ Translated ${vibelog.id}:`, availableLanguages);
+            return {
+              vibelogId: vibelog.id,
+              success: true,
+              languages: availableLanguages,
+            };
+          } else {
+            return {
+              vibelogId: vibelog.id,
+              success: false,
+              error: 'No translations generated',
+            };
+          }
+        } catch (err) {
+          const error = err instanceof Error ? err.message : 'Unknown error';
+          console.error(`[BACKFILL] ❌ Failed ${vibelog.id}:`, error);
+          return {
             vibelogId: vibelog.id,
             success: false,
-            error: 'No translations generated',
-          });
+            error,
+          };
         }
-      } catch (err) {
-        const error = err instanceof Error ? err.message : 'Unknown error';
-        console.error(`[BACKFILL] ❌ Failed ${vibelog.id}:`, error);
-        results.push({
-          vibelogId: vibelog.id,
-          success: false,
-          error,
-        });
-      }
-    }
+      })
+    );
 
     const successCount = results.filter(r => r.success).length;
 
