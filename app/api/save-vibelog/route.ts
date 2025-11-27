@@ -10,6 +10,7 @@ import {
   updateVibelog,
 } from '@/lib/services/vibelog-service';
 import { createServerSupabaseClient } from '@/lib/supabase';
+import { createServerAdminClient } from '@/lib/supabaseAdmin';
 
 export const runtime = 'nodejs';
 
@@ -124,7 +125,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // === STEP 3B: TRY DIRECT INSERT (new vibelog) ===
     console.log('💾 [VIBELOG-SAVE] Attempting direct insert...');
     try {
-      const result = await createVibelog(vibelogData, userId, supabase);
+      // Use admin client to bypass RLS for inserts (auth already verified above)
+      const supabaseAdmin = await createServerAdminClient();
+      const result = await createVibelog(vibelogData, userId, supabaseAdmin);
 
       // Async tasks
       handleAsyncTasks(result.vibelogId, vibelogData, userId, supabase);
