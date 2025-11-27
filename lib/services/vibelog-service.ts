@@ -33,7 +33,6 @@ export interface NormalizedVibelogData {
   public_slug: string | null;
   teaser: string;
   content: string;
-  transcription: string;
   transcript: string; // Original transcript for "Original" tab display
   cover_image_url: string | null;
   cover_image_alt: string | null;
@@ -133,7 +132,6 @@ export async function normalizeVibelogData(
     public_slug: publicSlug,
     teaser: teaserContent,
     content: fullContent,
-    transcription: transcription,
     transcript: transcription, // Save to 'transcript' column for "Original" tab display
     cover_image_url: requestBody.coverImage?.url || null,
     cover_image_alt: requestBody.coverImage?.alt || null,
@@ -186,8 +184,7 @@ export async function updateVibelog(
     title: data.title,
     teaser: data.teaser,
     content: data.content,
-    transcription: data.transcription,
-    transcript: data.transcript, // Also update 'transcript' column for "Original" tab
+    transcript: data.transcript, // Original transcript for "Original" tab
     cover_image_url: data.cover_image_url || undefined,
     cover_image_alt: data.cover_image_alt || undefined,
     cover_image_width: data.cover_image_width || undefined,
@@ -285,7 +282,7 @@ export async function handleAsyncTasks(
     title: data.title,
     teaser: data.teaser,
     content: data.content,
-    transcript: data.transcription,
+    transcript: data.transcript,
   }).catch(err => {
     console.error('[VIBE BRAIN] Failed to embed vibelog:', err);
   });
