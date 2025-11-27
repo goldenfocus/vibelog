@@ -51,6 +51,15 @@
       "audio": "Create with audio",
       "video": "Create with video",
       "screen": "Record screen share"
+    },
+    "showcase": {
+      "latestVibelogs": "Latest vibelogs",
+      "discoverNewest": "Discover the newest voices in the community",
+      "newestMembers": "Newest members",
+      "welcomeToCommunity": "Welcome to the community",
+      "recentVibes": "Recent Vibes",
+      "joinConversation": "Join the conversation",
+      "viewAll": "View All"
     }
   },
   "editor": {
