@@ -682,6 +682,7 @@ export function useMicStateMachine(
         content: contentToSave,
         fullContent,
         transcription: finalTranscription,
+        originalLanguage: detectedLanguage || 'en',
         coverImage: coverImage || undefined,
         audioData: finalAudioData || undefined,
         userId: user?.id,
