@@ -80,6 +80,15 @@
       "audio": "Mit Audio erstellen",
       "video": "Mit Video erstellen",
       "screen": "Bildschirm aufnehmen"
+    },
+    "showcase": {
+      "latestVibelogs": "Neueste Vibelogs",
+      "discoverNewest": "Entdecke die neuesten Stimmen der Community",
+      "newestMembers": "Neueste Mitglieder",
+      "welcomeToCommunity": "Willkommen in der Community",
+      "recentVibes": "Neueste Vibes",
+      "joinConversation": "An der Unterhaltung teilnehmen",
+      "viewAll": "Alle anzeigen"
     }
   },
   "features": {

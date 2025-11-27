@@ -488,10 +488,19 @@
   },
   "home": {
     "modes": {
-      "text": "Create with text",
-      "audio": "Create with audio",
-      "video": "Create with video",
-      "screen": "Record screen share"
+      "text": "Crear con texto",
+      "audio": "Crear con audio",
+      "video": "Crear con video",
+      "screen": "Grabar pantalla"
+    },
+    "showcase": {
+      "latestVibelogs": "Últimos vibelogs",
+      "discoverNewest": "Descubre las voces más nuevas de la comunidad",
+      "newestMembers": "Miembros más nuevos",
+      "welcomeToCommunity": "Bienvenido a la comunidad",
+      "recentVibes": "Vibes recientes",
+      "joinConversation": "Únete a la conversación",
+      "viewAll": "Ver todo"
     }
   },
   "editor": {

@@ -80,6 +80,15 @@
       "audio": "Tạo bằng âm thanh",
       "video": "Tạo bằng video",
       "screen": "Ghi màn hình"
+    },
+    "showcase": {
+      "latestVibelogs": "Vibelogs mới nhất",
+      "discoverNewest": "Khám phá những giọng nói mới nhất trong cộng đồng",
+      "newestMembers": "Thành viên mới nhất",
+      "welcomeToCommunity": "Chào mừng đến với cộng đồng",
+      "recentVibes": "Vibes gần đây",
+      "joinConversation": "Tham gia cuộc trò chuyện",
+      "viewAll": "Xem tất cả"
     }
   },
   "features": {

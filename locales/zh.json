@@ -80,6 +80,15 @@
       "audio": "使用音频创建",
       "video": "使用视频创建",
       "screen": "录制屏幕"
+    },
+    "showcase": {
+      "latestVibelogs": "最新vibelogs",
+      "discoverNewest": "发现社区中最新的声音",
+      "newestMembers": "最新成员",
+      "welcomeToCommunity": "欢迎加入社区",
+      "recentVibes": "最近的Vibes",
+      "joinConversation": "加入对话",
+      "viewAll": "查看全部"
     }
   },
   "features": {

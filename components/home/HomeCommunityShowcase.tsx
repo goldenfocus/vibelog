@@ -4,6 +4,7 @@ import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 
+import { useI18n } from '@/components/providers/I18nProvider';
 import { cn } from '@/lib/utils';
 
 import type { CommentCardData } from './CommentCard';
@@ -59,6 +60,7 @@ export default function HomeCommunityShowcase({
   onRefreshRequest,
   onRemix: _onRemix,
 }: HomeCommunityShowcaseProps) {
+  const { t } = useI18n();
   const [latestVibelogs, setLatestVibelogs] = useState<HomeFeedVibelog[]>([]);
   const [newMembers, setNewMembers] = useState<HomeFeedMember[]>([]);
   const [recentComments, setRecentComments] = useState<CommentCardData[]>([]);
@@ -104,11 +106,9 @@ export default function HomeCommunityShowcase({
         {/* Title - OUTSIDE the box */}
         <div className="px-4 md:px-6">
           <h2 className="bg-gradient-to-r from-electric via-purple-400 to-pink-400 bg-clip-text text-2xl font-bold text-transparent md:text-3xl">
-            Latest vibelogs
+            {t('home.showcase.latestVibelogs')}
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Discover the newest voices in the community
-          </p>
+          <p className="mt-1 text-sm text-muted-foreground">{t('home.showcase.discoverNewest')}</p>
         </div>
 
         {/* Carousel Box */}
@@ -135,9 +135,11 @@ export default function HomeCommunityShowcase({
         {/* Title - OUTSIDE the box */}
         <div className="px-4 md:px-6">
           <h2 className="bg-gradient-to-r from-electric via-purple-400 to-pink-400 bg-clip-text text-2xl font-bold text-transparent md:text-3xl">
-            Newest members
+            {t('home.showcase.newestMembers')}
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">Welcome to the community</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {t('home.showcase.welcomeToCommunity')}
+          </p>
         </div>
 
         {/* Carousel Box */}
@@ -165,9 +167,11 @@ export default function HomeCommunityShowcase({
         <div className="flex items-center justify-between px-4 md:px-6">
           <div>
             <h2 className="bg-gradient-to-r from-electric via-purple-400 to-pink-400 bg-clip-text text-2xl font-bold text-transparent md:text-3xl">
-              Recent Vibes
+              {t('home.showcase.recentVibes')}
             </h2>
-            <p className="mt-1 text-sm text-muted-foreground">Join the conversation</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {t('home.showcase.joinConversation')}
+            </p>
           </div>
           <Link
             href="/vibes"
@@ -175,7 +179,7 @@ export default function HomeCommunityShowcase({
               'group flex items-center gap-1.5 rounded-full bg-electric/10 px-4 py-2 text-sm font-medium text-electric transition-all hover:bg-electric/20 hover:shadow-lg hover:shadow-electric/20'
             )}
           >
-            View All
+            {t('home.showcase.viewAll')}
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
           </Link>
         </div>
