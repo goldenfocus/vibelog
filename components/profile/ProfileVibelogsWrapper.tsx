@@ -22,6 +22,10 @@ interface Vibelog {
   read_time: number;
   word_count: number;
   tags?: string[];
+  // Translation fields
+  original_language?: string | null;
+  available_languages?: string[] | null;
+  translations?: Record<string, { title?: string; teaser?: string; content?: string }> | null;
 }
 
 export function ProfileVibelogsWrapper({

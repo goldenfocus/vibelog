@@ -137,7 +137,10 @@ async function getVibelogs(userId: string) {
         read_time,
         word_count,
         tags,
-        public_slug
+        public_slug,
+        original_language,
+        available_languages,
+        translations
       `
       )
       .is('user_id', null)
@@ -176,7 +179,10 @@ async function getVibelogs(userId: string) {
       comment_count,
       read_time,
       word_count,
-      tags
+      tags,
+      original_language,
+      available_languages,
+      translations
     `
     )
     .eq('user_id', userId)
