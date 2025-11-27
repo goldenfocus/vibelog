@@ -239,6 +239,8 @@ export async function createVibelog(
   userId: string | null,
   supabase: any
 ) {
+  console.log('📝 [CREATE-VIBELOG] Inserting with user_id:', userId);
+
   const { data: directResult, error: directError } = await supabase
     .from('vibelogs')
     .insert([data])
@@ -246,7 +248,13 @@ export async function createVibelog(
     .single();
 
   if (directError) {
-    throw directError;
+    console.error('❌ [CREATE-VIBELOG] Insert failed:', {
+      code: directError.code,
+      message: directError.message,
+      details: directError.details,
+      hint: directError.hint,
+    });
+    throw new Error(`Database insert failed: ${directError.message}`);
   }
 
   const vibelogId = directResult.id;
