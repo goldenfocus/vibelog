@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { logger } from '@/lib/logger';
 import { rateLimit } from '@/lib/rateLimit';
 import { createServerSupabaseClient } from '@/lib/supabase';
-import { createServerAdminClient } from '@/lib/supabaseAdmin';
 import type { MediaAttachment } from '@/types/comments';
 
 // Generate a unique slug for comments (8 chars alphanumeric)
@@ -100,8 +100,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify vibelog exists and user can comment on it
-    const adminSupabase = await createServerAdminClient();
-    const { data: vibelog, error: vibelogError } = await adminSupabase
+    // Use regular client - RLS allows authenticated users to view published vibelogs
+    const { data: vibelog, error: vibelogError } = await supabase
       .from('vibelogs')
       .select('id, user_id, is_published, is_public')
       .eq('id', vibelogId)
@@ -126,8 +126,8 @@ export async function POST(request: NextRequest) {
     // Determine comment type for SEO
     const commentType = videoUrl ? 'Video' : audioUrl ? 'Voice' : 'Text';
 
-    // Create comment
-    const { data: comment, error: commentError } = await adminSupabase
+    // Create comment - RLS policy allows authenticated users to insert their own comments
+    const { data: comment, error: commentError } = await supabase
       .from('comments')
       .insert({
         vibelog_id: vibelogId,
@@ -160,15 +160,15 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (commentError) {
-      console.error('Error creating comment:', commentError);
+      logger.error('Error creating comment', { error: commentError });
       return NextResponse.json(
         { error: 'Failed to create comment', details: commentError.message },
         { status: 500 }
       );
     }
 
-    // Fetch author profile for response
-    const { data: profile } = await adminSupabase
+    // Fetch author profile for response - profiles are publicly readable
+    const { data: profile } = await supabase
       .from('profiles')
       .select('username, display_name, avatar_url')
       .eq('id', user.id)
@@ -188,7 +188,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Create comment error:', error);
+    logger.error('Create comment error', error instanceof Error ? error : { error });
     return NextResponse.json(
       {
         error: 'Internal server error',

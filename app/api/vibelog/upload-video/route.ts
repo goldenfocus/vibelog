@@ -7,10 +7,10 @@
 
 import crypto from 'crypto';
 
-import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
+import { logger } from '@/lib/logger';
 import { VIBELOGS_BUCKET } from '@/lib/storage';
 import { createServerSupabaseClient } from '@/lib/supabase';
 import { createServerAdminClient } from '@/lib/supabaseAdmin';
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
-    console.log('🎬 [VIDEO-UPLOAD] Uploading video:', {
+    logger.info('Uploading video', {
       fileName: videoFile.name,
       fileSize: videoFile.size,
       fileType: videoFile.type,
@@ -93,10 +93,8 @@ export async function POST(request: NextRequest) {
       source: videoSource,
     });
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    // Use admin client for storage operations (requires service role to bypass storage RLS)
+    const supabase = await createServerAdminClient();
 
     // Validate file size
     if (videoFile.size > MAX_VIDEO_SIZE) {
@@ -146,9 +144,8 @@ export async function POST(request: NextRequest) {
     // Generate storage path
     const path = generateVideoPath(vibelogId, user.id, videoFile.name);
 
-    // Upload to Supabase Storage
-    const supabaseAdmin = await createServerAdminClient();
-    const { error: uploadError } = await supabaseAdmin.storage
+    // Upload to Supabase Storage (using admin client already created above)
+    const { error: uploadError } = await supabase.storage
       .from(VIBELOGS_BUCKET)
       .upload(path, buffer, {
         contentType,
@@ -156,7 +153,7 @@ export async function POST(request: NextRequest) {
       });
 
     if (uploadError) {
-      console.error('❌ [VIDEO-UPLOAD] Storage upload failed:', uploadError);
+      logger.error('Storage upload failed', { error: uploadError, vibelogId });
       throw uploadError;
     }
 
@@ -177,13 +174,13 @@ export async function POST(request: NextRequest) {
       .eq('id', vibelogId);
 
     if (updateError) {
-      console.error('❌ [VIDEO-UPLOAD] Database update failed:', updateError);
+      logger.error('Database update failed', { error: updateError, vibelogId });
       // Try to clean up the uploaded file
-      await supabaseAdmin.storage.from(VIBELOGS_BUCKET).remove([path]);
+      await supabase.storage.from(VIBELOGS_BUCKET).remove([path]);
       throw updateError;
     }
 
-    console.log('✅ [VIDEO-UPLOAD] Upload successful:', {
+    logger.info('Video upload successful', {
       url,
       path,
       bucket: VIBELOGS_BUCKET,
@@ -199,13 +196,10 @@ export async function POST(request: NextRequest) {
       vibelogId,
     });
   } catch (error: unknown) {
-    console.error('❌ [VIDEO-UPLOAD] Upload failed:', error);
-
-    // Note: We don't update the database on error since video_url will remain NULL
-    // The absence of video_url indicates no video has been uploaded
-    if (vibelogId) {
-      console.error('❌ [VIDEO-UPLOAD] Upload failed for vibelog:', vibelogId);
-    }
+    logger.error('Video upload failed', {
+      error: error instanceof Error ? error.message : String(error),
+      vibelogId,
+    });
 
     const errorMessage = error instanceof Error ? error.message : 'Failed to upload video';
     return NextResponse.json(
