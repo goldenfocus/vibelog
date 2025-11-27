@@ -10,12 +10,18 @@ import PublicVibelogContent from '@/components/PublicVibelogContent';
 import RelatedVibelogs from '@/components/RelatedVibelogs';
 import VibelogEditButton from '@/components/VibelogEditButton';
 import { formatFullDate } from '@/lib/date-utils';
-import { extractLocaleFromPath } from '@/lib/seo/hreflang';
+import { extractLocaleFromPath, isLocaleSupported } from '@/lib/seo/hreflang';
 import { generateVibelogMetadata } from '@/lib/seo/metadata';
 import { createServerSupabaseClient } from '@/lib/supabase';
+import {
+  getTranslatedContent,
+  type SupportedLanguage,
+  type TranslationsMap,
+} from '@/lib/translation';
 
 interface PageProps {
   params: Promise<{
+    locale: string;
     username: string;
     slug: string;
   }>;
@@ -87,7 +93,12 @@ async function getVibelog(username: string, slug: string) {
         word_count,
         tags,
         user_id,
-        public_slug
+        public_slug,
+        seo_title,
+        seo_description,
+        original_language,
+        available_languages,
+        translations
       `
       )
       .eq('public_slug', slug)
@@ -124,7 +135,12 @@ async function getVibelog(username: string, slug: string) {
           word_count,
           tags,
           user_id,
-          public_slug
+          public_slug,
+          seo_title,
+          seo_description,
+          original_language,
+          available_languages,
+          translations
         `
         )
         .eq('slug', slug)
@@ -213,7 +229,12 @@ async function getVibelog(username: string, slug: string) {
       word_count,
       tags,
       user_id,
-      public_slug
+      public_slug,
+      seo_title,
+      seo_description,
+      original_language,
+      available_languages,
+      translations
     `
     )
     .eq('slug', slug)
@@ -248,7 +269,12 @@ async function getVibelog(username: string, slug: string) {
         word_count,
         tags,
         user_id,
-        public_slug
+        public_slug,
+        seo_title,
+        seo_description,
+        original_language,
+        available_languages,
+        translations
       `
       )
       .eq('public_slug', slug)
@@ -323,12 +349,35 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function VibelogPage({ params }: PageProps) {
-  const { username, slug } = await params;
+  const { locale, username, slug } = await params;
   const vibelog = await getVibelog(username, slug);
 
   if (!vibelog) {
     notFound();
   }
+
+  // Apply translations based on locale
+  const preferredLocale = isLocaleSupported(locale) ? (locale as SupportedLanguage) : 'en';
+  const translatedContent = getTranslatedContent(
+    {
+      title: vibelog.title,
+      teaser: vibelog.teaser,
+      content: vibelog.content,
+      seo_title: vibelog.seo_title || vibelog.title,
+      seo_description: vibelog.seo_description || vibelog.teaser,
+      original_language: vibelog.original_language,
+      translations: vibelog.translations as TranslationsMap,
+    },
+    preferredLocale
+  );
+
+  // Use translated content
+  const displayVibelog = {
+    ...vibelog,
+    title: translatedContent.title,
+    teaser: translatedContent.teaser,
+    content: translatedContent.content,
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -370,7 +419,7 @@ export default async function VibelogPage({ params }: PageProps) {
             <div className="mb-8 overflow-hidden rounded-xl">
               <img
                 src={vibelog.cover_image_url}
-                alt={vibelog.title}
+                alt={displayVibelog.title}
                 className="h-auto w-full object-cover"
               />
             </div>
@@ -378,7 +427,7 @@ export default async function VibelogPage({ params }: PageProps) {
 
           {/* Title */}
           <h1 className="mb-6 bg-gradient-electric bg-clip-text text-3xl font-bold leading-tight text-transparent sm:text-4xl lg:text-5xl">
-            {vibelog.title}
+            {displayVibelog.title}
           </h1>
 
           {/* Author & Meta */}
@@ -411,13 +460,13 @@ export default async function VibelogPage({ params }: PageProps) {
               <VibelogEditButton
                 vibelog={{
                   id: vibelog.id,
-                  title: vibelog.title,
-                  content: vibelog.content,
-                  teaser: vibelog.teaser,
+                  title: vibelog.title, // Use original for editing
+                  content: vibelog.content, // Use original for editing
+                  teaser: vibelog.teaser, // Use original for editing
                   transcript: vibelog.transcript || undefined,
                   slug: vibelog.slug,
                   cover_image_url: vibelog.cover_image_url,
-                  cover_image_alt: vibelog.title,
+                  cover_image_alt: displayVibelog.title,
                   user_id: vibelog.user_id,
                 }}
               />
@@ -428,9 +477,9 @@ export default async function VibelogPage({ params }: PageProps) {
           <PublicVibelogContent
             vibelog={{
               id: vibelog.id,
-              title: vibelog.title,
-              content: vibelog.content,
-              teaser: vibelog.teaser,
+              title: displayVibelog.title,
+              content: displayVibelog.content,
+              teaser: displayVibelog.teaser,
               slug: vibelog.slug,
               cover_image_url: vibelog.cover_image_url,
               user_id: vibelog.user_id,
@@ -442,7 +491,7 @@ export default async function VibelogPage({ params }: PageProps) {
               read_time: vibelog.read_time,
               like_count: vibelog.like_count,
               share_count: vibelog.share_count,
-              transcript: vibelog.transcript,
+              transcript: vibelog.transcript, // Keep original transcript
               author: vibelog.author,
             }}
           />
@@ -508,16 +557,17 @@ export default async function VibelogPage({ params }: PageProps) {
         className="sr-only"
         aria-label="Content summary for AI assistants"
         data-ai-summary="true"
+        data-language={translatedContent.language}
       >
         <h2>Quick Summary</h2>
         <p>
-          &quot;{vibelog.title}&quot; is a vibelog by {vibelog.author.display_name} (@
+          &quot;{displayVibelog.title}&quot; is a vibelog by {vibelog.author.display_name} (@
           {vibelog.author.username}).
         </p>
-        {vibelog.teaser && (
+        {displayVibelog.teaser && (
           <>
             <h3>Summary</h3>
-            <p>{vibelog.teaser}</p>
+            <p>{displayVibelog.teaser}</p>
           </>
         )}
         <h3>Key Information</h3>
@@ -548,10 +598,11 @@ export default async function VibelogPage({ params }: PageProps) {
           __html: JSON.stringify({
             '@context': 'https://schema.org',
             '@type': 'BlogPosting',
-            headline: vibelog.title,
+            headline: displayVibelog.title,
             image: vibelog.cover_image_url || 'https://vibelog.io/og-image.png',
             datePublished: vibelog.published_at,
             dateModified: vibelog.published_at,
+            inLanguage: translatedContent.language,
             author: {
               '@type': 'Person',
               name: vibelog.author.display_name || username,
@@ -566,15 +617,15 @@ export default async function VibelogPage({ params }: PageProps) {
               },
             },
             description:
-              vibelog.teaser ||
-              vibelog.content
+              displayVibelog.teaser ||
+              displayVibelog.content
                 .split('\n\n')
                 .find(p => p.trim() && !p.startsWith('#'))
                 ?.substring(0, 160) ||
               '',
             mainEntityOfPage: {
               '@type': 'WebPage',
-              '@id': `https://vibelog.io/@${vibelog.author.username}/${slug}`,
+              '@id': `https://vibelog.io/${locale}/@${vibelog.author.username}/${slug}`,
             },
             wordCount: vibelog.word_count,
             keywords: vibelog.tags?.join(', '),

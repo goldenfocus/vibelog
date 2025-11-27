@@ -1,5 +1,6 @@
 import { extractBasicTags, extractContentMetadata } from '@/lib/content-extraction';
 import { generatePublicSlug, generateUserSlug, generateVibelogSEO } from '@/lib/seo';
+import { getTargetLanguages, type SupportedLanguage, translateVibelog } from '@/lib/translation';
 import { embedVibelog } from '@/lib/vibe-brain';
 
 // Types
@@ -21,6 +22,7 @@ export interface SaveVibelogRequest {
   };
   sessionId?: string;
   isTeaser?: boolean;
+  originalLanguage?: string; // ISO 639-1 code from Whisper detection
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   metadata?: Record<string, any>;
 }
@@ -54,6 +56,7 @@ export interface NormalizedVibelogData {
   like_count: number;
   primary_topic?: string;
   seo_keywords?: string[];
+  original_language: string; // ISO 639-1 code of spoken language
 }
 
 // Utility Functions
@@ -141,7 +144,8 @@ export async function normalizeVibelogData(
     audio_duration: requestBody.audioData?.duration
       ? Math.round(requestBody.audioData.duration)
       : null,
-    language: 'en',
+    language: requestBody.originalLanguage || 'en',
+    original_language: requestBody.originalLanguage || 'en',
     word_count: wordCount,
     read_time: readTime,
     tags: extractBasicTags(title, fullContent),
@@ -320,6 +324,54 @@ export async function handleAsyncTasks(
   // with the vibelogId after save completes.
   if (!data.cover_image_url) {
     console.log('ℹ️ [AUTO-COVER] Skipping server-side generation (handled by client):', vibelogId);
+  }
+
+  // 4. Auto-translate to all supported languages (fire-and-forget)
+  const sourceLanguage = (data.original_language || 'en') as SupportedLanguage;
+  const targetLanguages = getTargetLanguages(sourceLanguage);
+
+  if (targetLanguages.length > 0) {
+    console.log(
+      `🌍 [TRANSLATION] Starting batch translation from ${sourceLanguage} to:`,
+      targetLanguages
+    );
+
+    translateVibelog(
+      {
+        vibelogId,
+        title: data.title,
+        teaser: data.teaser,
+        content: data.content,
+        seo_title: data.seo_title,
+        seo_description: data.seo_description,
+        sourceLanguage,
+        targetLanguages,
+      },
+      userId
+    )
+      .then(async result => {
+        if (result.translations && Object.keys(result.translations).length > 0) {
+          const availableLanguages = [sourceLanguage, ...Object.keys(result.translations)];
+          try {
+            await supabase
+              .from('vibelogs')
+              .update({
+                translations: result.translations,
+                available_languages: availableLanguages,
+              })
+              .eq('id', vibelogId);
+            console.log(
+              `✅ [TRANSLATION] Saved translations for ${vibelogId}:`,
+              Object.keys(result.translations)
+            );
+          } catch (updateErr) {
+            console.error('[TRANSLATION] Failed to save translations:', updateErr);
+          }
+        }
+      })
+      .catch(err => {
+        console.error('[TRANSLATION] Failed to translate vibelog:', err);
+      });
   }
 }
 

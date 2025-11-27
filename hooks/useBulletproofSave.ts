@@ -6,6 +6,7 @@ interface SaveVibelogData {
   content: string;
   fullContent?: string;
   transcription?: string;
+  originalLanguage?: string; // ISO 639-1 code from Whisper detection
   coverImage?: {
     url: string;
     alt: string;
@@ -258,6 +259,7 @@ export function useBulletproofSave() {
           content: data.content,
           fullContent: data.fullContent,
           transcription: data.transcription,
+          originalLanguage: data.originalLanguage,
           coverImage: data.coverImage,
           audioData: data.audioData,
           userId: data.userId,
