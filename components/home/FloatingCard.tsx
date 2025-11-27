@@ -2,8 +2,9 @@
 
 import { Clock, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useMemo } from 'react';
 
+import { useI18n } from '@/components/providers/I18nProvider';
 import { useDominantColor } from '@/hooks/useDominantColor';
 import { getSafeImageUrl } from '@/lib/image-utils';
 import { cn } from '@/lib/utils';
@@ -28,6 +29,7 @@ interface FloatingCardProps {
  */
 export function FloatingCard({ vibelog, index, isActive = false, onCardClick }: FloatingCardProps) {
   const router = useRouter();
+  const { locale } = useI18n();
   const cardRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
@@ -41,6 +43,34 @@ export function FloatingCard({ vibelog, index, isActive = false, onCardClick }: 
 
   // Audio player integration
   const { setTrack, currentTrack, play } = useAudioPlayerStore();
+
+  // Apply translations based on current locale
+  const translatedContent = useMemo(() => {
+    const originalLanguage = vibelog.original_language || 'en';
+
+    // If locale matches original language, return original content
+    if (locale === originalLanguage) {
+      return {
+        title: vibelog.title,
+        teaser: vibelog.teaser,
+      };
+    }
+
+    // Try to get translation for current locale
+    const translation = vibelog.translations?.[locale];
+    if (translation) {
+      return {
+        title: translation.title || vibelog.title,
+        teaser: translation.teaser || vibelog.teaser,
+      };
+    }
+
+    // Fallback to original content
+    return {
+      title: vibelog.title,
+      teaser: vibelog.teaser,
+    };
+  }, [vibelog, locale]);
 
   // Intersection observer for reveal animation
   useEffect(() => {
@@ -179,13 +209,13 @@ export function FloatingCard({ vibelog, index, isActive = false, onCardClick }: 
         <GlassTextContainer dominantColor={dominantColor}>
           {/* Title */}
           <h3 className="text-lg font-semibold leading-tight text-white transition-colors group-hover:text-electric-glow">
-            {truncateTitle(vibelog.title)}
+            {truncateTitle(translatedContent.title)}
           </h3>
 
           {/* Teaser */}
-          {vibelog.teaser && (
+          {translatedContent.teaser && (
             <p className="mt-1 text-sm leading-relaxed text-white/80">
-              {truncateTeaser(vibelog.teaser)}
+              {truncateTeaser(translatedContent.teaser)}
             </p>
           )}
 

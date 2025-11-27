@@ -25,6 +25,9 @@ type RawFeedVibelog = {
   share_count?: number | null;
   view_count?: number | null;
   user_id?: string | null;
+  original_language?: string | null;
+  available_languages?: string[] | null;
+  translations?: Record<string, { title?: string; teaser?: string; content?: string }> | null;
 };
 
 type RawMemberVibelog = {
@@ -82,7 +85,10 @@ export async function GET(request: NextRequest) {
         like_count,
         share_count,
         view_count,
-        user_id
+        user_id,
+        original_language,
+        available_languages,
+        translations
       `
       )
       .eq('is_public', true)
