@@ -305,35 +305,16 @@ export async function handleAsyncTasks(
       console.error('[CONTENT-EXTRACTION] Failed to extract metadata:', err);
     });
 
-  // 3. Auto-generate Cover Image (if not already present)
+  // 3. Auto-generate Cover Image - DISABLED
+  // Cover generation is now handled exclusively by the client-side flow
+  // to prevent duplicate image generation. The generate-cover API has
+  // idempotency checks, but avoiding the call entirely is more efficient.
+  // See: components/mic/useMicStateMachine.ts completeProcessing()
+  //
+  // If cover is needed server-side, the client will call /api/generate-cover
+  // with the vibelogId after save completes.
   if (!data.cover_image_url) {
-    console.log('🎨 [AUTO-COVER] Generating AI cover for vibelog:', vibelogId);
-
-    // Trigger cover generation in background (fire-and-forget)
-    fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'https://vibelog.io'}/api/generate-cover`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        vibelogId,
-        title: data.title,
-        teaser: data.teaser,
-        transcript: data.transcription,
-        // Get username from user metadata if available
-        username: userId ? undefined : null, // Will be fetched server-side
-      }),
-    })
-      .then(async res => {
-        if (res.ok) {
-          const result = await res.json();
-          console.log('✅ [AUTO-COVER] Cover generated:', result.url);
-        } else {
-          const error = await res.json();
-          console.error('❌ [AUTO-COVER] Generation failed:', error);
-        }
-      })
-      .catch(err => {
-        console.error('❌ [AUTO-COVER] Request failed:', err);
-      });
+    console.log('ℹ️ [AUTO-COVER] Skipping server-side generation (handled by client):', vibelogId);
   }
 }
 

@@ -34,7 +34,7 @@ export default function VideoProcessingAnimation({
   onUploadComplete,
   onTranscribeComplete,
   onGenerateComplete,
-  onCoverComplete,
+  onCoverComplete: _onCoverComplete, // Unused - cover gen now handled by completeProcessing
   onAnimationComplete,
   className = '',
 }: VideoProcessingAnimationProps) {
@@ -116,7 +116,6 @@ export default function VideoProcessingAnimation({
     let _uploadOk = false;
     let _transcribeOk = false;
     let _generateOk = false;
-    let generatedContent = '';
 
     // Heuristics for animation timing
     const minDwell = 350;
@@ -162,7 +161,7 @@ export default function VideoProcessingAnimation({
       } else if (step.id === 'structure') {
         // Real work: generate vibelog
         try {
-          generatedContent = await onGenerateComplete();
+          await onGenerateComplete();
           _generateOk = true;
         } catch (err) {
           console.error('Vibelog generation failed:', err);
@@ -173,14 +172,11 @@ export default function VideoProcessingAnimation({
         // Title is generated as part of vibelog generation
         await new Promise(res => setTimeout(res, 300));
       } else if (step.id === 'image') {
-        // Start cover generation in background
-        if (typeof onCoverComplete === 'function' && generatedContent) {
-          console.log('[VIDEO-PROCESSING] Starting cover generation...');
-          onCoverComplete(generatedContent).catch(err => {
-            console.error('Cover generation failed:', err);
-          });
-        }
-        await new Promise(res => setTimeout(res, 600));
+        // FIXED: Don't start cover generation here - let completeProcessing handle it
+        // This prevents duplicate generation (VideoProcessingAnimation + completeProcessing)
+        // The save function will generate cover with vibelogId for proper storage
+        console.log('🖼️ [VIDEO-PROCESSING] Image step - generation deferred to save');
+        await new Promise(res => setTimeout(res, 500));
       } else if (postSteps.includes(step.id)) {
         await new Promise(res => setTimeout(res, 400));
       } else {
@@ -207,7 +203,6 @@ export default function VideoProcessingAnimation({
     onUploadComplete,
     onTranscribeComplete,
     onGenerateComplete,
-    onCoverComplete,
     onAnimationComplete,
     recordingTime,
     isAnimating,
