@@ -26,7 +26,10 @@ interface Vibelog {
   title: string;
   teaser: string;
   content: string;
+  transcript?: string | null;
   audio_url?: string | null;
+  ai_audio_url?: string | null;
+  video_url?: string | null;
   cover_image_url: string | null;
   created_at: string;
   published_at: string;
@@ -346,6 +349,7 @@ export default function VibelogDetailPage() {
             title: vibelog.title,
             content: vibelog.content,
             teaser: vibelog.teaser,
+            transcript: vibelog.transcript || undefined,
             slug: vibelog.user_id ? undefined : vibelog.id, // Use id as fallback if no slug
             cover_image_url: vibelog.cover_image_url,
             cover_image_alt: vibelog.title,

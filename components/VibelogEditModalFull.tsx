@@ -1,6 +1,6 @@
 'use client';
 
-import { Edit2, ImageIcon, Loader2, Sparkles, Upload, X } from 'lucide-react';
+import { Edit2, ImageIcon, Loader2, Mic, Sparkles, Upload, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -19,13 +19,14 @@ interface VibelogEditModalFullProps {
     title: string;
     content: string;
     teaser?: string;
+    transcript?: string;
     slug: string;
     cover_image_url?: string;
     cover_image_alt?: string;
   };
 }
 
-type EditTab = 'text' | 'image';
+type EditTab = 'text' | 'original' | 'image';
 
 export default function VibelogEditModalFull({
   isOpen,
@@ -46,6 +47,7 @@ export default function VibelogEditModalFull({
   // If teaser equals content, treat it as if there's no teaser
   const initialTeaser = vibelog.teaser && vibelog.teaser !== vibelog.content ? vibelog.teaser : '';
   const [teaser, setTeaser] = useState(initialTeaser);
+  const [transcript, setTranscript] = useState(vibelog.transcript || '');
   const [slug, setSlug] = useState(vibelog.slug);
   const [prompt, setPrompt] = useState('');
 
@@ -192,6 +194,7 @@ export default function VibelogEditModalFull({
         title?: string;
         content: string;
         teaser?: string;
+        transcript?: string;
         slug?: string;
         coverImage?: {
           url: string;
@@ -210,6 +213,11 @@ export default function VibelogEditModalFull({
 
       if (teaser) {
         payload.teaser = teaser;
+      }
+
+      // Always include transcript if it exists (even if unchanged, to ensure persistence)
+      if (transcript !== undefined) {
+        payload.transcript = transcript;
       }
 
       if (slug !== vibelog.slug) {
@@ -281,7 +289,18 @@ export default function VibelogEditModalFull({
             }`}
           >
             <Edit2 className="mr-2 inline h-4 w-4" />
-            Edit Text
+            VibeLog
+          </button>
+          <button
+            onClick={() => setActiveTab('original')}
+            className={`flex-1 px-6 py-3 text-center font-medium transition-colors ${
+              activeTab === 'original'
+                ? 'border-b-2 border-electric text-electric'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Mic className="mr-2 inline h-4 w-4" />
+            Original
           </button>
           <button
             onClick={() => setActiveTab('image')}
@@ -292,13 +311,13 @@ export default function VibelogEditModalFull({
             }`}
           >
             <ImageIcon className="mr-2 inline h-4 w-4" />
-            Edit Cover Image
+            Cover Image
           </button>
         </div>
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
-          {activeTab === 'text' ? (
+          {activeTab === 'text' && (
             <div className="space-y-6">
               {/* Manual Edit */}
               <div>
@@ -351,7 +370,33 @@ export default function VibelogEditModalFull({
                 onApply={handleRegenerationApply}
               />
             </div>
-          ) : (
+          )}
+
+          {activeTab === 'original' && (
+            <div className="space-y-6">
+              <div className="rounded-xl border border-border/50 bg-muted/30 p-4">
+                <p className="mb-4 text-sm text-muted-foreground">
+                  This is the original transcript from your voice recording. You can edit it here to
+                  fix any transcription errors, spelling mistakes, or names that were misheard.
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="transcript" className="mb-2 block">
+                  Original Transcript
+                </Label>
+                <Textarea
+                  id="transcript"
+                  value={transcript}
+                  onChange={e => setTranscript(e.target.value)}
+                  className="min-h-[500px] font-mono text-sm"
+                  placeholder="Original transcript content..."
+                />
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'image' && (
             <div className="space-y-6">
               {/* Current Image */}
               {coverImage && (

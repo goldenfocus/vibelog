@@ -1,8 +1,8 @@
 import { User } from 'lucide-react';
 import { Metadata } from 'next';
+import { headers } from 'next/headers';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { headers } from 'next/headers';
 
 import Comments from '@/components/comments/Comments';
 import Navigation from '@/components/Navigation';
@@ -10,9 +10,9 @@ import PublicVibelogContent from '@/components/PublicVibelogContent';
 import RelatedVibelogs from '@/components/RelatedVibelogs';
 import VibelogEditButton from '@/components/VibelogEditButton';
 import { formatFullDate } from '@/lib/date-utils';
-import { createServerSupabaseClient } from '@/lib/supabase';
-import { generateVibelogMetadata } from '@/lib/seo/metadata';
 import { extractLocaleFromPath } from '@/lib/seo/hreflang';
+import { generateVibelogMetadata } from '@/lib/seo/metadata';
+import { createServerSupabaseClient } from '@/lib/supabase';
 
 interface PageProps {
   params: Promise<{
@@ -414,6 +414,7 @@ export default async function VibelogPage({ params }: PageProps) {
                   title: vibelog.title,
                   content: vibelog.content,
                   teaser: vibelog.teaser,
+                  transcript: vibelog.transcript || undefined,
                   slug: vibelog.slug,
                   cover_image_url: vibelog.cover_image_url,
                   cover_image_alt: vibelog.title,
