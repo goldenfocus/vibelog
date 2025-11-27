@@ -44,6 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const isSigningOutRef = useRef(false);
   const hasMountedRef = useRef(false);
+  const userIdRef = useRef<string | null>(null);
   const supabase = createClient();
   const router = useRouter();
 
@@ -73,6 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // ====== CHECK CACHE FIRST (SYNCHRONOUS) ======
     const cachedUser = getCachedSession();
     if (cachedUser) {
+      userIdRef.current = cachedUser.id;
       setUser(cachedUser);
       setLoading(false); // Show UI immediately with cached user
       // Check admin status for cached user
@@ -115,6 +117,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (session?.user) {
           // Update cache if session is valid
+          userIdRef.current = session.user.id;
           setCachedSession(session.user);
           setUser(session.user);
 
@@ -122,6 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           checkAdminStatus(session.user.id);
         } else {
           // No session, clear cache
+          userIdRef.current = null;
           clearCachedSession();
           setUser(null);
           setIsAdmin(false);
@@ -155,6 +159,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Update user state and cache
       if (session?.user) {
+        userIdRef.current = session.user.id;
         setCachedSession(session.user);
         setUser(session.user);
         setError(null);
@@ -177,6 +182,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             });
         }
       } else {
+        userIdRef.current = null;
         clearCachedSession();
         setUser(null);
         setIsAdmin(false);
@@ -194,23 +200,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Session was updated in another tab - refresh our state
           const cachedUser = getCachedSession();
           if (cachedUser) {
-            // Prevent infinite loop: only sync if user ID actually changed
-            if (cachedUser.id !== user?.id) {
-              console.log('🔄 [AUTH] Session updated in another tab, syncing...');
+            // Only sync if user ID actually changed (use ref to avoid stale closure)
+            if (cachedUser.id !== userIdRef.current) {
+              userIdRef.current = cachedUser.id;
               setUser(cachedUser);
               setLoading(false);
-              // Refresh the page to ensure cookies are in sync
-              // This prevents 401 errors from stale cookies
-              setTimeout(() => {
-                if (mounted) {
-                  window.location.reload();
-                }
-              }, 100);
+              // No reload needed - Supabase auth state listener handles cookie sync
             }
           }
         } else if (e.oldValue && !e.newValue) {
           // Session was cleared in another tab - sign out here too
-          console.log('🚪 [AUTH] Signed out in another tab, syncing...');
+          userIdRef.current = null;
           setUser(null);
           setLoading(false);
           // Redirect to community page
