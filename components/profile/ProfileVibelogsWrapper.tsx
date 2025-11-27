@@ -13,6 +13,7 @@ interface Vibelog {
   audio_url?: string;
   audio_duration?: number;
   cover_image_url?: string | null;
+  video_url?: string | null;
   created_at: string;
   published_at: string;
   view_count: number;

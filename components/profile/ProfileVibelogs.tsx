@@ -3,10 +3,11 @@
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
+import { FloatingCard } from '@/components/home/FloatingCard';
+import type { HomeFeedVibelog } from '@/components/home/HomeCommunityShowcase';
 import { useI18n } from '@/components/providers/I18nProvider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import VibelogCard from '@/components/VibelogCard';
 
 interface Vibelog {
   id: string;
@@ -17,6 +18,7 @@ interface Vibelog {
   audio_url?: string;
   audio_duration?: number;
   cover_image_url?: string | null;
+  video_url?: string | null;
   created_at: string;
   published_at: string;
   view_count: number;
@@ -39,7 +41,7 @@ export function ProfileVibelogs({
   username,
   displayName,
   avatarUrl,
-  onRefresh,
+  onRefresh: _onRefresh,
 }: {
   vibelogs: Vibelog[];
   username: string;
@@ -52,22 +54,9 @@ export function ProfileVibelogs({
   const [sortBy, setSortBy] = useState<SortOption>('recent');
   const [showFilters, setShowFilters] = useState(false);
 
-  // Add author info to each vibelog for the card
-  const vibelogsWithAuthor = vibelogs.map(vibelog => ({
-    ...vibelog,
-    teaser: vibelog.teaser || vibelog.content,
-    cover_image_url: vibelog.cover_image_url ?? null,
-    comment_count: vibelog.comment_count ?? 0,
-    author: {
-      username,
-      display_name: displayName,
-      avatar_url: avatarUrl || null,
-    },
-  }));
-
-  // Filter and sort vibelogs
+  // Filter and sort vibelogs (using original data which has all fields)
   const filteredVibelogs = useMemo(() => {
-    let filtered = vibelogsWithAuthor;
+    let filtered = [...vibelogs];
 
     // Apply search filter
     if (searchQuery.trim()) {
@@ -82,28 +71,50 @@ export function ProfileVibelogs({
     }
 
     // Apply sorting
-    const sorted = [...filtered];
     switch (sortBy) {
       case 'recent':
-        sorted.sort(
+        filtered.sort(
           (a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
         );
         break;
       case 'popular':
-        sorted.sort((a, b) => b.view_count - a.view_count);
+        filtered.sort((a, b) => b.view_count - a.view_count);
         break;
       case 'longest':
-        sorted.sort((a, b) => b.word_count - a.word_count);
+        filtered.sort((a, b) => b.word_count - a.word_count);
         break;
       case 'shortest':
-        sorted.sort((a, b) => a.word_count - b.word_count);
+        filtered.sort((a, b) => a.word_count - b.word_count);
         break;
     }
 
-    return sorted;
-  }, [vibelogsWithAuthor, searchQuery, sortBy]);
+    return filtered;
+  }, [vibelogs, searchQuery, sortBy]);
 
-  if (vibelogsWithAuthor.length === 0) {
+  // Adapt filtered vibelogs to HomeFeedVibelog format for FloatingCard
+  const adaptToHomeFeedVibelog = (vibelog: Vibelog): HomeFeedVibelog => ({
+    id: vibelog.id,
+    title: vibelog.title,
+    slug: vibelog.slug,
+    public_slug: undefined,
+    teaser: vibelog.teaser || null,
+    content: vibelog.content,
+    cover_image_url: vibelog.cover_image_url ?? null,
+    audio_url: vibelog.audio_url,
+    video_url: vibelog.video_url,
+    published_at: vibelog.published_at,
+    read_time: vibelog.read_time,
+    original_language: vibelog.original_language,
+    available_languages: vibelog.available_languages,
+    translations: vibelog.translations,
+    author: {
+      username,
+      display_name: displayName,
+      avatar_url: avatarUrl || null,
+    },
+  });
+
+  if (vibelogs.length === 0) {
     return (
       <div className="py-12 text-center">
         <h3 className="mb-2 text-xl font-semibold">No vibelogs yet</h3>
@@ -119,7 +130,7 @@ export function ProfileVibelogs({
       {/* Header with search and filters */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-2xl font-bold">
-          Vibelogs <span className="text-muted-foreground">({vibelogsWithAuthor.length})</span>
+          Vibelogs <span className="text-muted-foreground">({vibelogs.length})</span>
         </h2>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -200,24 +211,12 @@ export function ProfileVibelogs({
         </div>
       )}
 
-      {/* Vibelogs grid */}
+      {/* Vibelogs grid - using FloatingCard for consistent design */}
       {filteredVibelogs.length > 0 ? (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredVibelogs.map((vibelog, index) => (
-            <div
-              key={vibelog.id}
-              className="animate-in fade-in-50 slide-in-from-bottom-4"
-              style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'backwards' }}
-            >
-              <VibelogCard
-                vibelog={vibelog}
-                onDeleteSuccess={() => {
-                  // Call parent refresh to reload vibelogs from server
-                  if (onRefresh) {
-                    onRefresh();
-                  }
-                }}
-              />
+            <div key={vibelog.id} className="flex justify-center">
+              <FloatingCard vibelog={adaptToHomeFeedVibelog(vibelog)} index={index} />
             </div>
           ))}
         </div>
