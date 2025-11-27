@@ -24,6 +24,9 @@ export interface HomeFeedVibelog {
   video_url?: string | null;
   published_at: string;
   read_time?: number | null;
+  original_language?: string | null;
+  available_languages?: string[] | null;
+  translations?: Record<string, { title?: string; teaser?: string; content?: string }> | null;
   author: {
     username: string;
     display_name: string;
