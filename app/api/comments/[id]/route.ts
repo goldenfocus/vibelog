@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { logger } from '@/lib/logger';
 import { rateLimit } from '@/lib/rateLimit';
 import { createServerSupabaseClient } from '@/lib/supabase';
-import { createServerAdminClient } from '@/lib/supabaseAdmin';
 
 /**
  * PATCH /api/comments/[id]
@@ -10,10 +10,7 @@ import { createServerAdminClient } from '@/lib/supabaseAdmin';
  * Update a comment (text or audio)
  * Only the comment author or admin can update
  */
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const supabase = await createServerSupabaseClient();
@@ -60,10 +57,8 @@ export async function PATCH(
       );
     }
 
-    const adminSupabase = await createServerAdminClient();
-
-    // Fetch the comment to verify ownership
-    const { data: comment, error: fetchError } = await adminSupabase
+    // Fetch the comment to verify ownership - RLS allows viewing public comments
+    const { data: comment, error: fetchError } = await supabase
       .from('comments')
       .select('id, user_id, vibelog_id')
       .eq('id', id)
@@ -73,8 +68,8 @@ export async function PATCH(
       return NextResponse.json({ error: 'Comment not found' }, { status: 404 });
     }
 
-    // Check if user is admin
-    const { data: profile } = await adminSupabase
+    // Check if user is admin - profiles are publicly readable
+    const { data: profile } = await supabase
       .from('profiles')
       .select('is_admin')
       .eq('id', user.id)
@@ -84,10 +79,7 @@ export async function PATCH(
 
     // Verify user is comment author or admin
     if (comment.user_id !== user.id && !isAdmin) {
-      return NextResponse.json(
-        { error: 'Unauthorized to update this comment' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'Unauthorized to update this comment' }, { status: 403 });
     }
 
     // Build update object
@@ -103,8 +95,8 @@ export async function PATCH(
       updates.audio_url = audioUrl || null;
     }
 
-    // Update comment
-    const { data: updatedComment, error: updateError } = await adminSupabase
+    // Update comment - RLS allows users to update their own comments
+    const { data: updatedComment, error: updateError } = await supabase
       .from('comments')
       .update(updates)
       .eq('id', id)
@@ -123,15 +115,15 @@ export async function PATCH(
       .single();
 
     if (updateError) {
-      console.error('Error updating comment:', updateError);
+      logger.error('Error updating comment', { error: updateError });
       return NextResponse.json(
         { error: 'Failed to update comment', details: updateError.message },
         { status: 500 }
       );
     }
 
-    // Fetch author profile for response
-    const { data: authorProfile } = await adminSupabase
+    // Fetch author profile for response - profiles are publicly readable
+    const { data: authorProfile } = await supabase
       .from('profiles')
       .select('username, display_name, avatar_url')
       .eq('id', updatedComment.user_id)
@@ -151,7 +143,7 @@ export async function PATCH(
       },
     });
   } catch (error) {
-    console.error('Update comment error:', error);
+    logger.error('Update comment error', error instanceof Error ? error : { error });
     return NextResponse.json(
       {
         error: 'Internal server error',
@@ -206,10 +198,8 @@ export async function DELETE(
       );
     }
 
-    const adminSupabase = await createServerAdminClient();
-
-    // Fetch the comment to verify ownership
-    const { data: comment, error: fetchError } = await adminSupabase
+    // Fetch the comment to verify ownership - RLS allows viewing public comments
+    const { data: comment, error: fetchError } = await supabase
       .from('comments')
       .select('id, user_id')
       .eq('id', id)
@@ -219,8 +209,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Comment not found' }, { status: 404 });
     }
 
-    // Check if user is admin
-    const { data: profile } = await adminSupabase
+    // Check if user is admin - profiles are publicly readable
+    const { data: profile } = await supabase
       .from('profiles')
       .select('is_admin')
       .eq('id', user.id)
@@ -230,17 +220,14 @@ export async function DELETE(
 
     // Verify user is comment author or admin
     if (comment.user_id !== user.id && !isAdmin) {
-      return NextResponse.json(
-        { error: 'Unauthorized to delete this comment' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'Unauthorized to delete this comment' }, { status: 403 });
     }
 
-    // Delete comment
-    const { error: deleteError } = await adminSupabase.from('comments').delete().eq('id', id);
+    // Delete comment - RLS allows users to delete their own comments
+    const { error: deleteError } = await supabase.from('comments').delete().eq('id', id);
 
     if (deleteError) {
-      console.error('Error deleting comment:', deleteError);
+      logger.error('Error deleting comment', { error: deleteError });
       return NextResponse.json(
         { error: 'Failed to delete comment', details: deleteError.message },
         { status: 500 }
@@ -252,7 +239,7 @@ export async function DELETE(
       message: 'Comment deleted successfully',
     });
   } catch (error) {
-    console.error('Delete comment error:', error);
+    logger.error('Delete comment error', error instanceof Error ? error : { error });
     return NextResponse.json(
       {
         error: 'Internal server error',

@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { useI18n } from '@/components/providers/I18nProvider';
-import { useSaveVibelog } from '@/hooks/useSaveVibelog';
+import { useBulletproofSave } from '@/hooks/useBulletproofSave';
 
 interface TextCreatorProps {
   remixContent?: string | null;
@@ -16,7 +16,7 @@ export function TextCreator({ remixContent, onSaveSuccess }: TextCreatorProps) {
   const { t } = useI18n();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState(remixContent || '');
-  const { saveVibelog, isSaving } = useSaveVibelog();
+  const { saveVibelog, isSaving } = useBulletproofSave();
 
   const handleSave = async () => {
     if (!content.trim()) {
