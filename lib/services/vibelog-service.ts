@@ -42,7 +42,7 @@ export interface NormalizedVibelogData {
   cover_image_height: number | null;
   audio_url: string | null;
   audio_duration: number | null;
-  language: string;
+  original_language: string; // ISO 639-1 code of spoken language
   word_count: number;
   read_time: number;
   tags: string[];
@@ -56,7 +56,6 @@ export interface NormalizedVibelogData {
   like_count: number;
   primary_topic?: string;
   seo_keywords?: string[];
-  original_language: string; // ISO 639-1 code of spoken language
 }
 
 // Utility Functions
@@ -144,7 +143,6 @@ export async function normalizeVibelogData(
     audio_duration: requestBody.audioData?.duration
       ? Math.round(requestBody.audioData.duration)
       : null,
-    language: requestBody.originalLanguage || 'en',
     original_language: requestBody.originalLanguage || 'en',
     word_count: wordCount,
     read_time: readTime,
