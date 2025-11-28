@@ -1,5 +1,5 @@
 import { extractBasicTags, extractContentMetadata } from '@/lib/content-extraction';
-import { generatePublicSlug, generateUserSlug, generateVibelogSEO } from '@/lib/seo';
+import { generatePublicSlug, generateUserSlug } from '@/lib/seo';
 import { getTargetLanguages, type SupportedLanguage, translateVibelog } from '@/lib/translation';
 import { embedVibelog } from '@/lib/vibe-brain';
 
@@ -37,17 +37,14 @@ export interface NormalizedVibelogData {
   content: string;
   transcript: string; // Original transcript for "Original" tab display
   cover_image_url: string | null;
-  cover_image_alt: string | null;
-  cover_image_width: number | null;
-  cover_image_height: number | null;
+  // NOTE: cover_image_alt, cover_image_width, cover_image_height removed - columns don't exist in DB
   audio_url: string | null;
   audio_duration: number | null;
   original_language: string; // ISO 639-1 code of spoken language
   word_count: number;
   read_time: number;
   tags: string[];
-  seo_title: string;
-  seo_description: string;
+  // NOTE: seo_title, seo_description removed - columns don't exist in vibelogs table
   is_public: boolean;
   is_published: boolean;
   published_at: string;
@@ -124,7 +121,7 @@ export async function normalizeVibelogData(
 
   const publicSlug = isAnonymous ? generatePublicSlug(title) : null;
   const userSlug = userId ? generateUserSlug(title, sessionId) : null;
-  const seoMetadata = generateVibelogSEO(title, fullContent, teaserContent);
+  // NOTE: seoMetadata removed - seo_title/seo_description columns don't exist in vibelogs table
 
   const data: NormalizedVibelogData = {
     user_id: userId,
@@ -136,9 +133,7 @@ export async function normalizeVibelogData(
     content: fullContent,
     transcript: transcription, // Save to 'transcript' column for "Original" tab display
     cover_image_url: requestBody.coverImage?.url || null,
-    cover_image_alt: requestBody.coverImage?.alt || null,
-    cover_image_width: requestBody.coverImage?.width || null,
-    cover_image_height: requestBody.coverImage?.height || null,
+    // NOTE: cover_image_alt, width, height removed - columns don't exist in vibelogs table
     audio_url: requestBody.audioData?.url || null,
     audio_duration: requestBody.audioData?.duration
       ? Math.round(requestBody.audioData.duration)
@@ -147,8 +142,7 @@ export async function normalizeVibelogData(
     word_count: wordCount,
     read_time: readTime,
     tags: extractBasicTags(title, fullContent),
-    seo_title: seoMetadata.title,
-    seo_description: seoMetadata.description,
+    // NOTE: seo_title, seo_description removed - columns don't exist in vibelogs table
     is_public: true,
     is_published: true,
     published_at: new Date().toISOString(),
@@ -181,23 +175,20 @@ export async function updateVibelog(
     throw new Error('Permission denied');
   }
 
-  // Build update data
+  // Build update data - only include columns that exist in the vibelogs table
   const updateData = {
     title: data.title,
     teaser: data.teaser,
     content: data.content,
     transcript: data.transcript, // Original transcript for "Original" tab
     cover_image_url: data.cover_image_url || undefined,
-    cover_image_alt: data.cover_image_alt || undefined,
-    cover_image_width: data.cover_image_width || undefined,
-    cover_image_height: data.cover_image_height || undefined,
+    // NOTE: cover_image_alt, width, height removed - columns don't exist in vibelogs table
     audio_url: data.audio_url || undefined,
     audio_duration: data.audio_duration || undefined,
     word_count: data.word_count,
     read_time: data.read_time,
     tags: data.tags,
-    seo_title: data.seo_title,
-    seo_description: data.seo_description,
+    // NOTE: seo_title, seo_description removed - columns don't exist in vibelogs table
     is_public: data.is_public,
     is_published: data.is_published,
     published_at: data.published_at,
@@ -340,8 +331,7 @@ export async function handleAsyncTasks(
         title: data.title,
         teaser: data.teaser,
         content: data.content,
-        seo_title: data.seo_title,
-        seo_description: data.seo_description,
+        // seo_title and seo_description are optional - will be derived from title/teaser during translation
         sourceLanguage,
         targetLanguages,
       },

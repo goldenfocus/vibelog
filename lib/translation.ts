@@ -54,8 +54,8 @@ export interface TranslateVibelogRequest {
   title: string;
   teaser: string;
   content: string;
-  seo_title: string;
-  seo_description: string;
+  seo_title?: string; // Optional - will be generated from title if not provided
+  seo_description?: string; // Optional - will be generated from teaser if not provided
 }
 
 // Translation result
