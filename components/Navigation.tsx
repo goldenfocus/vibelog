@@ -8,7 +8,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
 import { AccountSheet } from '@/components/AccountSheet';
-import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { FlagLinks } from '@/components/FlagLinks';
 import NotificationBell from '@/components/notifications/NotificationBell';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useI18n } from '@/components/providers/I18nProvider';
@@ -17,7 +17,7 @@ import { createClient } from '@/lib/supabase';
 
 export default function Navigation() {
   const pathname = usePathname();
-  const { t, locale, setLocale } = useI18n();
+  const { t, locale } = useI18n();
   const { user, loading } = useAuth();
 
   const [isMenuOpen, setIsMenuOpen] = useState(false); // Desktop menu
@@ -237,12 +237,8 @@ export default function Navigation() {
               </>
             ) : (
               <>
-                {/* Language Switcher - Always visible for all users */}
-                <LanguageSwitcher
-                  currentLanguage={locale}
-                  onLanguageChange={setLocale}
-                  compact={true}
-                />
+                {/* Language Flags - Subtle, always visible for all users */}
+                <FlagLinks currentLocale={locale} size="sm" />
 
                 {user ? (
                   <>

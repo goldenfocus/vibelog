@@ -19,7 +19,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://vibelog.io';
  * Language metadata for each supported locale
  */
 export const LOCALE_METADATA: Record<Locale, { name: string; nativeName: string; flag: string }> = {
-  en: { name: 'English', nativeName: 'English', flag: '🌐' },
+  en: { name: 'English', nativeName: 'English', flag: '🇬🇧' },
   vi: { name: 'Vietnamese', nativeName: 'Tiếng Việt', flag: '🇻🇳' },
   es: { name: 'Spanish', nativeName: 'Español', flag: '🇪🇸' },
   fr: { name: 'French', nativeName: 'Français', flag: '🇫🇷' },
