@@ -25,10 +25,11 @@ export async function DELETE(
     const adminClient = await createServerAdminClient();
 
     // Verify ownership and get all storage URLs + path info for cache revalidation
+    // Use LEFT JOIN (profiles()) instead of INNER JOIN (profiles!inner) to support anonymous vibelogs
     const { data: vibelog, error: fetchError } = await adminClient
       .from('vibelogs')
       .select(
-        'user_id, slug, audio_url, cover_image_url, video_url, ai_audio_url, profiles!inner(username)'
+        'user_id, slug, audio_url, cover_image_url, video_url, ai_audio_url, profiles(username)'
       )
       .eq('id', id)
       .single();
