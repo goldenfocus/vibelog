@@ -56,7 +56,7 @@ interface I18nProviderProps {
 export function I18nProvider({ children, initialLocale = 'en' }: I18nProviderProps) {
   const [locale, setLocaleState] = useState<SupportedLocale>(initialLocale);
   const [translations, setTranslations] = useState<Record<string, unknown>>({});
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Start true - translations need to load first
   const router = useRouter();
   const pathname = usePathname();
 
