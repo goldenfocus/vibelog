@@ -443,7 +443,7 @@ export default function VibelogActions({
       : labelClass;
 
   const wrapperClass = isCompact
-    ? 'flex flex-wrap items-center gap-3 border-t border-border/30 pt-4'
+    ? 'flex items-center gap-2 border-t border-border/30 pt-4'
     : 'flex justify-center gap-3 sm:gap-4';
 
   return (
@@ -556,10 +556,10 @@ export default function VibelogActions({
               </button>
             )}
 
-            {/* Copy Button */}
+            {/* Copy Button - hidden on mobile in compact mode */}
             <button
               onClick={handleCopyClick}
-              className={baseButtonClass}
+              className={`${baseButtonClass} ${isCompact ? 'hidden sm:flex' : ''}`}
               title={copySuccess ? t('titles.copied') : t('titles.copy')}
               data-testid="copy-button"
             >
@@ -646,11 +646,23 @@ export default function VibelogActions({
               <span className={labelClass}>{commentCount}</span>
             </button>
 
-            {/* X/Twitter Share Button */}
+            {/* Mobile Share Button - uses native share API (includes X, WhatsApp, etc) */}
+            {isCompact && onShare && (
+              <button
+                onClick={handleShareClick}
+                className={`${baseButtonClass} sm:hidden`}
+                title={t('titles.share')}
+                data-testid="mobile-share-button"
+              >
+                <Share2 className={iconClass} />
+              </button>
+            )}
+
+            {/* X/Twitter Share Button - hidden on mobile in compact mode */}
             <button
               onClick={handleTwitterShareClick}
               disabled={isGeneratingShareUrl}
-              className={baseButtonClass}
+              className={`${baseButtonClass} ${isCompact ? 'hidden sm:flex' : ''}`}
               title={t('titles.shareOnX')}
               data-testid="twitter-share-button"
             >
@@ -662,11 +674,11 @@ export default function VibelogActions({
               {!isCompact && <span className={labelClass}>{t('actions.shareOnX')}</span>}
             </button>
 
-            {/* Generic Share Button */}
+            {/* Generic Share Button - hidden on mobile in compact mode */}
             {onShare && (
               <button
                 onClick={handleShareClick}
-                className={baseButtonClass}
+                className={`${baseButtonClass} ${isCompact ? 'hidden sm:flex' : ''}`}
                 title={t('titles.share')}
                 data-testid="share-button"
               >
@@ -689,18 +701,21 @@ export default function VibelogActions({
               />
             )}
 
+            {/* Export Button in compact mode - hidden on mobile */}
             {isCompact && (
-              <ExportButton
-                content={content}
-                title={title}
-                author={author}
-                authorUsername={authorUsername}
-                vibelogUrl={vibelogUrl}
-                createdAt={createdAt}
-                audioUrl={audioUrl}
-                onExport={onExport}
-                variant="compact"
-              />
+              <div className="hidden sm:block">
+                <ExportButton
+                  content={content}
+                  title={title}
+                  author={author}
+                  authorUsername={authorUsername}
+                  vibelogUrl={vibelogUrl}
+                  createdAt={createdAt}
+                  audioUrl={audioUrl}
+                  onExport={onExport}
+                  variant="compact"
+                />
+              </div>
             )}
           </>
         )}
