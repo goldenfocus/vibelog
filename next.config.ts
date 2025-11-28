@@ -69,6 +69,16 @@ const nextConfig: NextConfig = {
     ].join('; ');
 
     return [
+      // Static images - allow cross-origin for OG images, social sharing, etc.
+      {
+        source: '/:path*.(png|jpg|jpeg|gif|svg|ico|webp)',
+        headers: [
+          { key: 'Cross-Origin-Resource-Policy', value: 'cross-origin' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
+      // All other routes - strict security headers
       {
         source: '/:path*',
         headers: [
