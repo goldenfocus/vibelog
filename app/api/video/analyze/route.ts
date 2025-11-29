@@ -128,47 +128,58 @@ export async function POST(request: NextRequest) {
 
     apiLogger.debug('Generating title and description via AI');
 
+    // Detect language for translation needs
+    const detectedLanguage = transcribeResult.detectedLanguage || 'en';
+    const needsTranslation = detectedLanguage !== 'en';
+
+    console.log('🌐 [VIDEO-ANALYZE] Detected language:', detectedLanguage, needsTranslation ? '(will translate to English)' : '');
+
     const completion = await openai.chat.completions.create({
       model: config.ai.openai.model, // gpt-4o-mini
       messages: [
         {
           role: 'system',
-          content: `You are a vibelog title and description generator. Your task is to create compelling, SEO-friendly titles and descriptions for video content.
+          content: `You are a creative vibelog writer who transforms spoken content into engaging, entertaining written pieces. Your goal is to capture the speaker's voice and energy while creating content that's delightful to read.
 
-REQUIREMENTS:
-- Title: 5-10 words, engaging and descriptive
-- Description: 1-2 sentences, compelling summary
-- Teaser: 2-3 sentences, creates curiosity and encourages viewing
-- All content should be natural, authentic, and match the speaker's tone
+CRITICAL: ALL OUTPUT MUST BE IN ENGLISH. If the transcription is in another language, translate and adapt it creatively.
 
-OUTPUT FORMAT (CRITICAL - EXACT FORMAT):
-TITLE: [Your title here]
-DESCRIPTION: [Your description here]
-TEASER: [Your teaser here]
+YOUR TASK:
+Transform the transcription into a complete, entertaining vibelog post that:
+1. Captures the speaker's personality and tone
+2. Expands the story/idea into an engaging narrative
+3. Is optimized for SEO and human readers
+4. Makes people smile, think, or feel something
 
-GUIDELINES:
-- Make titles clickable and clear
-- Descriptions should highlight the main value/insight
-- Teasers should create curiosity without spoilers
-- Keep language natural and conversational
-- Avoid clickbait or misleading statements`,
+OUTPUT FORMAT (EXACT - USE THESE HEADERS):
+TITLE: [Catchy, SEO-friendly title in English, 5-10 words]
+TEASER: [2-3 sentences that hook readers and create curiosity - in English]
+CONTENT: [Full vibelog content - 3-6 paragraphs of engaging storytelling in English. Be creative! Add personality, humor if appropriate, vivid descriptions. Make it a joy to read.]
+
+STYLE GUIDELINES:
+- Match the speaker's energy (playful → playful writing, serious → thoughtful writing)
+- Use vivid, sensory language
+- Include a narrative arc if the content tells a story
+- Add rhetorical flourishes that make text sing
+- Be conversational but polished
+- For whimsical/absurd content, lean into the absurdity with delight
+- End with something memorable`,
         },
         {
           role: 'user',
-          content: `Generate a title, description, and teaser for this video transcription:
+          content: `Transform this video transcription into an engaging English vibelog:
 
-"${transcription.substring(0, 2000)}"
+ORIGINAL TRANSCRIPTION${needsTranslation ? ` (in ${detectedLanguage})` : ''}:
+"${transcription}"
 
-${transcription.length > 2000 ? '\n\n[Transcription truncated for length]' : ''}
-
-Output in the exact format:
-TITLE: ...
-DESCRIPTION: ...
-TEASER: ...`,
+Remember:
+- Output EVERYTHING in English
+- Create FULL content (3-6 paragraphs), not just a teaser
+- Match the tone and energy of the original
+- Make it entertaining and a pleasure to read`,
         },
       ],
-      temperature: 0.7,
-      max_tokens: 500,
+      temperature: 0.8, // Slightly higher for creativity
+      max_tokens: 1500, // Much more room for full content
     });
 
     console.log('✅ [VIDEO-ANALYZE] AI generation complete');
@@ -186,30 +197,34 @@ TEASER: ...`,
 
     const aiResponse = completion.choices[0]?.message?.content || '';
 
-    // Parse AI response
+    // Parse AI response (new format with CONTENT)
     const titleMatch = aiResponse.match(/TITLE:\s*(.+?)(?:\n|$)/i);
-    const descriptionMatch = aiResponse.match(/DESCRIPTION:\s*([\s\S]+?)(?:\nTEASER:|$)/i);
-    const teaserMatch = aiResponse.match(/TEASER:\s*([\s\S]+?)$/i);
+    const teaserMatch = aiResponse.match(/TEASER:\s*([\s\S]+?)(?:\nCONTENT:|$)/i);
+    const contentMatch = aiResponse.match(/CONTENT:\s*([\s\S]+?)$/i);
 
     const title = titleMatch?.[1]?.trim() || 'Video Vibelog';
-    const description = descriptionMatch?.[1]?.trim() || transcription.substring(0, 200);
     const teaser = teaserMatch?.[1]?.trim() || transcription.substring(0, 300);
+    const content = contentMatch?.[1]?.trim() || teaser; // Fall back to teaser if no content
 
-    console.log('🎉 [VIDEO-ANALYZE] Analysis complete:', { title });
+    console.log('🎉 [VIDEO-ANALYZE] Analysis complete:', {
+      title,
+      contentLength: content.length,
+      teaserLength: teaser.length
+    });
 
     apiLogger.debug('AI generation complete', {
       title,
-      descriptionLength: description.length,
+      contentLength: content.length,
       teaserLength: teaser.length,
     });
 
-    // Return analysis results
+    // Return analysis results including original transcript
     return NextResponse.json({
       success: true,
       title,
-      description,
-      teaser,
-      transcription,
+      content,        // Full story content
+      teaser,         // Short hook for cards/previews
+      transcription,  // Original transcript for "Original" tab
     });
   } catch (error: unknown) {
     console.error('💥 [VIDEO-ANALYZE] Uncaught error:', error instanceof Error ? error.message : error);
