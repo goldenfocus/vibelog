@@ -246,3 +246,35 @@ export function extractTTSPathFromUrl(publicUrl: string): string {
   // Skip bucket name (next element after 'public') and get the rest as path
   return parts.slice(publicIndex + 2).join('/');
 }
+
+/**
+ * Extract storage path from Supabase public URL
+ * Converts: {supabase_url}/storage/v1/object/public/{bucket}/{path} → {path}
+ *
+ * @param url - Full Supabase storage public URL
+ * @param bucket - Bucket name (e.g., 'vibelogs', 'vibelog-covers', 'tts-audio')
+ * @returns Storage path relative to bucket, or null if extraction fails
+ *
+ * @example
+ * extractStoragePath(
+ *   'https://xyz.supabase.co/storage/v1/object/public/vibelogs/user123/audio/file.webm',
+ *   'vibelogs'
+ * )
+ * // Returns: 'user123/audio/file.webm'
+ */
+export function extractStoragePath(url: string | null, bucket: string): string | null {
+  if (!url) {
+    return null;
+  }
+
+  // URL format: {supabase_url}/storage/v1/object/public/{bucket}/{path}
+  const publicPattern = `/storage/v1/object/public/${bucket}/`;
+  const pathStartIndex = url.indexOf(publicPattern);
+
+  if (pathStartIndex === -1) {
+    console.warn(`[Storage] Could not extract path from URL: ${url}`);
+    return null;
+  }
+
+  return url.substring(pathStartIndex + publicPattern.length);
+}
