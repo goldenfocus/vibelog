@@ -10,16 +10,18 @@ import {
   Camera,
   StopCircle,
   RotateCcw,
-  Check,
   AlertCircle,
   X,
   Video,
   RefreshCw,
   CheckCircle,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import React, { useState, useRef, useEffect } from 'react';
 
 import { useVideoUpload } from '@/hooks/useVideoUpload';
+
+import { VideoProcessingOverlay } from './VideoProcessingOverlay';
 
 interface VideoCaptureZoneProps {
   vibelogId?: string; // Optional - will be created during upload if not provided
@@ -38,8 +40,13 @@ export function VideoCaptureZone({
 }: VideoCaptureZoneProps) {
   console.log('[VideoCaptureZone] Component rendering with vibelogId:', vibelogId);
 
+  const router = useRouter();
+
   // Use video upload hook
   const { uploadVideo, uploadProgress: uploadProgressState } = useVideoUpload();
+
+  // Track created vibelogId for processing overlay
+  const [createdVibelogId, setCreatedVibelogId] = useState<string | null>(null);
 
   const [status, setStatus] = useState<
     | 'idle'
@@ -47,11 +54,8 @@ export function VideoCaptureZone({
     | 'ready'
     | 'recording'
     | 'preview'
-    | 'processing'
     | 'uploading'
-    | 'analyzing'
-    | 'success'
-    | 'complete'
+    | 'processing' // New: shows VideoProcessingOverlay
     | 'error'
   >('idle');
   const [error, setError] = useState<string | null>(null);
@@ -347,6 +351,7 @@ export function VideoCaptureZone({
   };
 
   // Upload video (triggered by user confirmation after preview)
+  // New flow: Upload video -> Show processing overlay -> Navigate to vibelog page
   const confirmAndUploadVideo = async () => {
     if (!videoBlob) {
       console.error('❌ [UPLOAD] No video blob available');
@@ -398,64 +403,56 @@ export function VideoCaptureZone({
 
       console.log('✅ [UPLOAD] Upload successful:', result.url);
 
-      // Step 3: Analyze video to generate title & description
-      setStatus('analyzing');
-      console.log('🔍 [ANALYZE] Analyzing video content...');
-
-      const analyzeResponse = await fetch('/api/video/analyze', {
+      // Step 3: Start analysis in the background (don't await!)
+      // The processing overlay will poll for completion
+      console.log('🚀 [ANALYZE] Starting background analysis...');
+      fetch('/api/video/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ vibelogId: currentVibelogId }),
-      });
+      })
+        .then(async response => {
+          if (!response.ok) {
+            console.error('❌ [ANALYZE] Background analysis failed');
+            return;
+          }
 
-      if (!analyzeResponse.ok) {
-        // Analysis failed, but video is uploaded - still show success
-        console.error('❌ [ANALYZE] Analysis failed, but video was uploaded successfully');
-        setStatus('success');
-        if (onVideoCaptured) {
-          onVideoCaptured(result.url);
-        }
-        return;
-      }
+          const analysisResult = await response.json();
+          console.log('✅ [ANALYZE] Background analysis complete:', {
+            title: analysisResult.title,
+            contentLength: analysisResult.content?.length,
+          });
 
-      const analysisResult = await analyzeResponse.json();
-      console.log('✅ [ANALYZE] Analysis complete:', {
-        title: analysisResult.title,
-        contentLength: analysisResult.content?.length,
-        teaserLength: analysisResult.teaser?.length,
-        hasTranscript: !!analysisResult.transcription,
-      });
+          // Update vibelog with generated content AND auto-publish
+          await fetch('/api/save-vibelog', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              vibelogId: currentVibelogId,
+              title: analysisResult.title,
+              content: analysisResult.content,
+              teaser: analysisResult.teaser,
+              transcript: analysisResult.transcription,
+              isPublished: true,
+              isPublic: true,
+            }),
+          });
 
-      // Step 4: Update vibelog with generated content AND auto-publish
-      // - content: Full AI-generated story (for main reading experience)
-      // - teaser: Short hook (for cards/previews)
-      // - transcript: Original voice transcription (for "Original" tab)
-      const updateResponse = await fetch('/api/save-vibelog', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          vibelogId: currentVibelogId,
-          title: analysisResult.title,
-          content: analysisResult.content, // Full AI-generated content
-          teaser: analysisResult.teaser,   // Short teaser for cards
-          transcript: analysisResult.transcription, // Original transcript for "Original" tab
-          isPublished: true, // Auto-publish video vibelogs
-          isPublic: true,
-        }),
-      });
+          console.log('✅ [PUBLISH] Video vibelog auto-published to community');
+        })
+        .catch(error => {
+          console.error('❌ [ANALYZE] Background analysis error:', error);
+        });
 
-      if (!updateResponse.ok) {
-        console.error('❌ [UPDATE] Failed to update vibelog with analysis');
-      } else {
-        console.log('✅ [PUBLISH] Video vibelog auto-published to community');
-      }
+      // Step 4: Immediately show processing overlay!
+      // Store the vibelogId so the overlay can poll for status
+      setCreatedVibelogId(currentVibelogId!);
+      setStatus('processing');
 
-      // Notify parent component
+      // Notify parent component of video URL
       if (onVideoCaptured) {
         onVideoCaptured(result.url);
       }
-
-      setStatus('success');
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to upload video';
       console.error('❌ [UPLOAD] Upload error:', errorMessage, err);
@@ -567,26 +564,21 @@ export function VideoCaptureZone({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Success state (legacy)
-  if (status === 'success') {
+  // Processing state - show the beautiful processing overlay!
+  // This replaces the old success state with an engaging live experience
+  if (status === 'processing' && createdVibelogId) {
     return (
-      <div className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-900/20">
-        <Check className="h-5 w-5 text-green-600 dark:text-green-400" />
-        <div className="flex-1">
-          <p className="text-sm font-medium text-green-900 dark:text-green-100">
-            Video captured successfully!
-          </p>
-          <p className="text-xs text-green-700 dark:text-green-300">
-            Your video is now part of this vibelog.
-          </p>
-        </div>
-        <button
-          onClick={handleReset}
-          className="text-xs text-green-600 hover:underline dark:text-green-400"
-        >
-          Record another
-        </button>
-      </div>
+      <VideoProcessingOverlay
+        vibelogId={createdVibelogId}
+        videoBlob={videoBlob}
+        onComplete={() => {
+          console.log('[VideoCaptureZone] Processing overlay complete');
+        }}
+        onNavigate={slug => {
+          console.log('[VideoCaptureZone] Navigating to vibelog:', slug);
+          router.push(`/v/${slug}`);
+        }}
+      />
     );
   }
 
@@ -614,40 +606,6 @@ export function VideoCaptureZone({
               </p>
             )}
           </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Analyzing state - show video preview with overlay
-  if (status === 'analyzing' && videoBlob) {
-    const videoUrl = URL.createObjectURL(videoBlob);
-
-    return (
-      <div className="space-y-3 rounded-lg border-2 border-purple-500/30 bg-card p-4">
-        {/* Video preview with overlay */}
-        <div className="relative">
-          <video
-            src={videoUrl}
-            controls
-            playsInline
-            className="w-full rounded-lg bg-black"
-            style={{ maxHeight: '400px' }}
-          />
-          {/* Analysis overlay */}
-          <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/40 backdrop-blur-sm">
-            <div className="text-center">
-              <div className="mx-auto mb-3 h-12 w-12 animate-spin rounded-full border-4 border-purple-600 border-t-transparent"></div>
-              <p className="text-lg font-semibold text-white">Analyzing video...</p>
-              <p className="mt-1 text-sm text-white/80">You can replay while we work</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Video info */}
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span>{(videoBlob.size / (1024 * 1024)).toFixed(1)} MB</span>
-          <span>{formatTime(recordingTime)}</span>
         </div>
       </div>
     );
