@@ -1,3 +1,7 @@
+// [OUT OF SCOPE] Screen share feature commented out - entire file disabled
+// To re-enable, uncomment the code below
+
+/*
 'use client';
 
 import { Check } from 'lucide-react';
@@ -142,4 +146,13 @@ export function ScreenShareCreator({ remixContent, onSaveSuccess }: ScreenShareC
       </div>
     </div>
   );
+}
+*/
+
+// Placeholder export to prevent import errors while commented out
+export function ScreenShareCreator(_props: {
+  remixContent?: string | null;
+  onSaveSuccess?: (() => void) | null;
+}) {
+  return null;
 }
