@@ -1,6 +1,8 @@
 'use client';
 
-import { Mic, Monitor, X } from 'lucide-react';
+import { Mic } from 'lucide-react';
+// [OUT OF SCOPE] Screen share feature commented out
+// import { Monitor, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -11,7 +13,8 @@ import { OnboardingModal } from '@/components/OnboardingModal';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useI18n } from '@/components/providers/I18nProvider';
 import { Button } from '@/components/ui/button';
-import { ScreenCaptureZone } from '@/components/video';
+// [OUT OF SCOPE] Screen share feature commented out
+// import { ScreenCaptureZone } from '@/components/video';
 import { createClient } from '@/lib/supabase';
 
 export default function DashboardPage() {
@@ -21,9 +24,10 @@ export default function DashboardPage() {
   const [vibelogs, setVibelogs] = useState<Array<any>>([]);
   const [loadingVibelogs, setLoadingVibelogs] = useState(true);
   const [profile, setProfile] = useState<any>(null);
-  const [showScreenShare, setShowScreenShare] = useState(false);
-  const [tempVibelogId, setTempVibelogId] = useState<string | null>(null);
-  const [_error, setError] = useState<string | null>(null);
+  // [OUT OF SCOPE] Screen share feature commented out
+  // const [showScreenShare, setShowScreenShare] = useState(false);
+  // const [tempVibelogId, setTempVibelogId] = useState<string | null>(null);
+  // const [_error, setError] = useState<string | null>(null);
 
   // Fetch user's profile
   useEffect(() => {
@@ -147,41 +151,41 @@ export default function DashboardPage() {
     return null;
   }
 
-  // Handle screen share button click
-  const handleScreenShare = async () => {
-    // Create a temporary vibelog to associate the screen recording
-    const supabase = createClient();
-    const { data, error } = await supabase
-      .from('vibelogs')
-      .insert({
-        user_id: user.id,
-        title: 'Screen Recording',
-        content: 'Processing...',
-        teaser: 'Processing...',
-        is_public: false, // Not public until processed
-        capture_mode: 'screen',
-      })
-      .select('id')
-      .single();
-
-    if (error || !data) {
-      console.error('Failed to create temporary vibelog:', error);
-      setError('Failed to start screen recording. Please try again.');
-      return;
-    }
-
-    setTempVibelogId(data.id);
-    setShowScreenShare(true);
-  };
-
-  // Handle screen recording complete
-  const handleScreenRecordingComplete = (videoUrl: string) => {
-    console.log('Screen recording complete:', videoUrl);
-    setShowScreenShare(false);
-    setTempVibelogId(null);
-    // Refresh vibelogs
-    window.location.reload();
-  };
+  // [OUT OF SCOPE] Screen share feature commented out
+  // const handleScreenShare = async () => {
+  //   // Create a temporary vibelog to associate the screen recording
+  //   const supabase = createClient();
+  //   const { data, error } = await supabase
+  //     .from('vibelogs')
+  //     .insert({
+  //       user_id: user.id,
+  //       title: 'Screen Recording',
+  //       content: 'Processing...',
+  //       teaser: 'Processing...',
+  //       is_public: false, // Not public until processed
+  //       capture_mode: 'screen',
+  //     })
+  //     .select('id')
+  //     .single();
+  //
+  //   if (error || !data) {
+  //     console.error('Failed to create temporary vibelog:', error);
+  //     setError('Failed to start screen recording. Please try again.');
+  //     return;
+  //   }
+  //
+  //   setTempVibelogId(data.id);
+  //   setShowScreenShare(true);
+  // };
+  //
+  // // Handle screen recording complete
+  // const handleScreenRecordingComplete = (videoUrl: string) => {
+  //   console.log('Screen recording complete:', videoUrl);
+  //   setShowScreenShare(false);
+  //   setTempVibelogId(null);
+  //   // Refresh vibelogs
+  //   window.location.reload();
+  // };
 
   // Render dashboard immediately for authenticated users
   const displayName =
@@ -214,14 +218,15 @@ export default function DashboardPage() {
               {t('dashboard.newVibelog')}
             </Button>
 
-            <Button
+{/* [OUT OF SCOPE] Screen share button commented out */}
+            {/* <Button
               onClick={handleScreenShare}
               variant="outline"
               className="flex items-center gap-2 border-blue-500/30 bg-gradient-to-r from-blue-500/10 to-purple-500/10 hover:from-blue-500/20 hover:to-purple-500/20"
             >
               <Monitor className="h-4 w-4" />
               {t('dashboard.screenShare')}
-            </Button>
+            </Button> */}
           </div>
 
           {/* Main Recorder Interface */}
@@ -274,8 +279,8 @@ export default function DashboardPage() {
       {/* Onboarding Modal */}
       {user && <OnboardingModal user={user} onComplete={() => {}} />}
 
-      {/* Screen Share Modal */}
-      {showScreenShare && tempVibelogId && (
+{/* [OUT OF SCOPE] Screen Share Modal commented out */}
+      {/* {showScreenShare && tempVibelogId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
           <div className="relative mx-4 max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-900">
             <button
@@ -304,7 +309,7 @@ export default function DashboardPage() {
             />
           </div>
         </div>
-      )}
+      )} */}
 
       <style jsx>{`
         @keyframes toastSlideUp {

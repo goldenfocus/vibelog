@@ -1,10 +1,13 @@
 'use client';
 
-import { MessageCircle, Bot, Share2, FileText, Mic, Video, Monitor } from 'lucide-react';
+import { MessageCircle, Bot, Share2, FileText, Mic, Video } from 'lucide-react';
+// [OUT OF SCOPE] Screen share feature commented out
+// import { Monitor } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useState, useEffect, Suspense } from 'react';
 
-import { ScreenShareCreator } from '@/components/creation/ScreenShareCreator';
+// [OUT OF SCOPE] Screen share feature commented out
+// import { ScreenShareCreator } from '@/components/creation/ScreenShareCreator';
 import { TextCreator } from '@/components/creation/TextCreator';
 import { VideoCreator } from '@/components/creation/VideoCreator';
 import HomeCommunityShowcase from '@/components/home/HomeCommunityShowcase';
@@ -29,7 +32,8 @@ function RemixHandler({ onRemixContent }: { onRemixContent: (content: string | n
 export default function Home() {
   const { t, isLoading } = useI18n();
   const [remixContent, setRemixContent] = useState<string | null>(null);
-  const [creationMode, setCreationMode] = useState<'text' | 'audio' | 'video' | 'screen'>('audio');
+  // [OUT OF SCOPE] Screen mode removed - was: 'text' | 'audio' | 'video' | 'screen'
+  const [creationMode, setCreationMode] = useState<'text' | 'audio' | 'video'>('audio');
   const [refreshFeed, setRefreshFeed] = useState<(() => void) | null>(null);
 
   if (isLoading) {
@@ -130,7 +134,8 @@ export default function Home() {
               />
             </button>
 
-            <button
+{/* [OUT OF SCOPE] Screen share mode button commented out */}
+            {/* <button
               onClick={() => setCreationMode('screen')}
               className={`group flex h-16 w-16 items-center justify-center rounded-2xl border-2 transition-all sm:h-20 sm:w-20 ${
                 creationMode === 'screen'
@@ -147,7 +152,7 @@ export default function Home() {
                 }`}
                 strokeWidth={1.5}
               />
-            </button>
+            </button> */}
           </div>
 
           {/* Creation Interface - Conditional Rendering */}
@@ -159,9 +164,10 @@ export default function Home() {
               <MicRecorder remixContent={remixContent} onSaveSuccess={refreshFeed} />
             )}
             {creationMode === 'video' && <VideoCreator />}
-            {creationMode === 'screen' && (
+            {/* [OUT OF SCOPE] Screen share creator commented out */}
+            {/* {creationMode === 'screen' && (
               <ScreenShareCreator remixContent={remixContent} onSaveSuccess={refreshFeed} />
-            )}
+            )} */}
           </div>
 
           {/* Features Preview */}

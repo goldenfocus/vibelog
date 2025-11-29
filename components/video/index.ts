@@ -5,6 +5,7 @@
 
 export { VideoPlayer } from './VideoPlayer';
 export { VideoCaptureZone } from './VideoCaptureZone';
-export { ScreenCaptureZone } from './ScreenCaptureZone';
+// [OUT OF SCOPE] Screen share feature commented out
+// export { ScreenCaptureZone } from './ScreenCaptureZone';
 export { VideoUploadZone } from './VideoUploadZone';
 export { default as VideoProcessingAnimation } from './VideoProcessingAnimation';
