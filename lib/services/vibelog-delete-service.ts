@@ -55,6 +55,13 @@ export async function deleteVibelog(
   try {
     const adminClient = await createServerAdminClient();
 
+    logger.info('Delete vibelog request', {
+      vibelogId,
+      userId,
+      userIsAdmin,
+      requestProvided: !!request,
+    });
+
     // ============================================================================
     // STEP 1: Fetch vibelog and validate authorization
     // ============================================================================
@@ -77,6 +84,7 @@ export async function deleteVibelog(
       .single();
 
     if (fetchError || !vibelog) {
+      logger.error('Vibelog not found', { vibelogId, fetchError });
       return {
         success: false,
         message: 'Vibelog not found',
@@ -84,9 +92,29 @@ export async function deleteVibelog(
       };
     }
 
+    logger.info('Vibelog fetched', {
+      vibelogId,
+      vibelogUserId: vibelog.user_id,
+      requestUserId: userId,
+      title: vibelog.title,
+    });
+
     // Check authorization: owner OR admin
     const isOwner = vibelog.user_id === userId;
+    logger.info('Authorization check', {
+      vibelogId,
+      isOwner,
+      userIsAdmin,
+      canDelete: isOwner || userIsAdmin,
+    });
+
     if (!isOwner && !userIsAdmin) {
+      logger.warn('Authorization failed', {
+        vibelogId,
+        userId,
+        vibelogUserId: vibelog.user_id,
+        userIsAdmin,
+      });
       return {
         success: false,
         message: 'Forbidden - not your vibelog',

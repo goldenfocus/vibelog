@@ -90,21 +90,37 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    console.log('[Admin Delete] Starting delete request');
+
     // Get current user
     const supabase = await createServerSupabaseClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
+    console.log('[Admin Delete] User fetched:', {
+      userId: user?.id,
+      email: user?.email,
+    });
+
     // Require admin permissions
     await requireAdmin(user?.id);
 
+    console.log('[Admin Delete] Admin check passed');
+
     if (!user) {
+      console.error('[Admin Delete] No user after admin check (unexpected)');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Get vibelog ID from params
     const { id: vibelogId } = await params;
+
+    console.log('[Admin Delete] Calling delete service:', {
+      vibelogId,
+      userId: user.id,
+      userIsAdmin: true,
+    });
 
     // Import and use centralized delete service
     const { deleteVibelog } = await import('@/lib/services/vibelog-delete-service');
@@ -116,6 +132,8 @@ export async function DELETE(
       userIsAdmin: true, // Already verified by requireAdmin()
       request,
     });
+
+    console.log('[Admin Delete] Service result:', result);
 
     // Map result to HTTP response
     if (!result.success) {
