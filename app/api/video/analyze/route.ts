@@ -26,17 +26,22 @@ const AnalyzeVideoSchema = z.object({
 export async function POST(request: NextRequest) {
   const apiLogger = createApiLogger(request.headers.get('x-request-id') || undefined);
 
+  console.log('🎬 [VIDEO-ANALYZE] Starting video analysis...');
+
   try {
     // Get authenticated user
+    console.log('🔐 [VIDEO-ANALYZE] Getting authenticated user...');
     const supabase = await createServerSupabaseClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
     if (!user) {
+      console.log('❌ [VIDEO-ANALYZE] No user found');
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
+    console.log('✅ [VIDEO-ANALYZE] User authenticated:', user.id.substring(0, 8) + '...');
     apiLogger.setContext({ userId: user.id, endpoint: '/api/video/analyze' });
 
     // Rate limiting
@@ -83,11 +88,17 @@ export async function POST(request: NextRequest) {
     }
     const storagePath = pathMatch[1];
 
+    console.log('📂 [VIDEO-ANALYZE] Storage path extracted:', storagePath);
     apiLogger.debug('Transcribing video audio', { storagePath });
 
     // Call transcribe endpoint with storage path
     // Forward cookies from the original request to maintain authentication
     const cookieHeader = request.headers.get('cookie');
+    console.log('🍪 [VIDEO-ANALYZE] Cookie header present:', !!cookieHeader);
+
+    const transcribeUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/transcribe`;
+    console.log('📞 [VIDEO-ANALYZE] Calling transcribe at:', transcribeUrl);
+
     const transcribeResponse = await fetch(
       `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/transcribe`,
       {
@@ -100,8 +111,11 @@ export async function POST(request: NextRequest) {
       }
     );
 
+    console.log('📥 [VIDEO-ANALYZE] Transcribe response status:', transcribeResponse.status);
+
     if (!transcribeResponse.ok) {
       const error = await transcribeResponse.json();
+      console.error('❌ [VIDEO-ANALYZE] Transcription failed:', JSON.stringify(error));
       apiLogger.error('Transcription failed', { error });
       return NextResponse.json(
         { error: 'Failed to transcribe video', details: error },
@@ -109,7 +123,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { transcription } = await transcribeResponse.json();
+    const transcribeResult = await transcribeResponse.json();
+    console.log('✅ [VIDEO-ANALYZE] Transcription received, length:', transcribeResult.transcription?.length || 0);
+    const { transcription } = transcribeResult;
 
     if (!transcription || typeof transcription !== 'string') {
       return NextResponse.json({ error: 'Invalid transcription response' }, { status: 500 });
@@ -208,6 +224,8 @@ TEASER: ...`,
       transcription,
     });
   } catch (error: unknown) {
+    console.error('💥 [VIDEO-ANALYZE] Uncaught error:', error instanceof Error ? error.message : error);
+    console.error('💥 [VIDEO-ANALYZE] Stack:', error instanceof Error ? error.stack : 'N/A');
     apiLogger.error('Video analysis failed', { error });
 
     if (error instanceof z.ZodError) {
