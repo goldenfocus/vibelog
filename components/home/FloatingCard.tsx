@@ -131,9 +131,10 @@ export function FloatingCard({ vibelog, index, isActive = false, onCardClick }: 
       });
       play();
     }
-    // If has video but no audio, play video in card
+    // If has video, navigate to the full page where video plays with sound
     else if (vibelog.video_url) {
-      setIsVideoPlaying(!isVideoPlaying);
+      const slug = vibelog.public_slug || vibelog.id;
+      router.push(`/@${vibelog.author.username}/${slug}`);
     }
   };
 
