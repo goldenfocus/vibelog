@@ -361,11 +361,13 @@ export function VideoCaptureZone({
       let currentVibelogId = vibelogId;
       if (!currentVibelogId) {
         console.log('📝 [UPLOAD] Creating vibelog for video...');
+        // Include timestamp and random suffix to ensure unique slug generation
+        const uniqueId = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
         const createResponse = await fetch('/api/save-vibelog', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            content: 'Video vibelog (processing...)',
+            content: `Video vibelog ${uniqueId} (processing...)`,
             isPublished: false,
           }),
         });
