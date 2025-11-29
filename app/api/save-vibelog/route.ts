@@ -62,8 +62,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     } = await supabase.auth.getUser();
     const userId = user?.id || null;
 
+    console.log('👤 [VIBELOG-SAVE] User:', userId ? `authenticated (${userId.substring(0, 8)}...)` : 'anonymous');
+
     const { data: normalizedData, warnings } = await normalizeVibelogData(requestBody, userId);
     vibelogData = normalizedData;
+
+    console.log('📋 [VIBELOG-SAVE] Normalized data keys:', Object.keys(vibelogData));
 
     console.log('✅ [VIBELOG-SAVE] Data normalized:', {
       title: vibelogData.title,
@@ -157,7 +161,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         warnings: warnings.length > 0 ? warnings : undefined,
       });
     } catch (directInsertError) {
-      console.error('❌ [VIBELOG-SAVE] Direct insert failed:', directInsertError);
+      const errorMessage = directInsertError instanceof Error ? directInsertError.message : 'Database error';
+      const errorStack = directInsertError instanceof Error ? directInsertError.stack : undefined;
+      console.error('❌ [VIBELOG-SAVE] Direct insert failed:', {
+        message: errorMessage,
+        stack: errorStack,
+        error: directInsertError,
+      });
 
       // Log to failures table for recovery
       await logVibelogFailure(vibelogData, directInsertError, supabase);
@@ -167,7 +177,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         {
           success: false,
           message: 'Failed to create vibelog',
-          error: directInsertError instanceof Error ? directInsertError.message : 'Database error',
+          error: errorMessage,
+          // Include more details in development
+          details: process.env.NODE_ENV === 'development' ? errorStack : undefined,
         },
         { status: 500 }
       );
