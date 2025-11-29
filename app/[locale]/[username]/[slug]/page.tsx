@@ -399,9 +399,6 @@ export default async function VibelogPage({ params }: PageProps) {
             <div className="mb-8 overflow-hidden rounded-xl">
               <video
                 controls
-                autoPlay
-                muted
-                loop
                 playsInline
                 className="w-full rounded-lg"
                 preload="metadata"
