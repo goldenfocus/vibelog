@@ -421,18 +421,24 @@ export function VideoCaptureZone({
       const analysisResult = await analyzeResponse.json();
       console.log('✅ [ANALYZE] Analysis complete:', {
         title: analysisResult.title,
-        descriptionLength: analysisResult.description?.length,
+        contentLength: analysisResult.content?.length,
+        teaserLength: analysisResult.teaser?.length,
+        hasTranscript: !!analysisResult.transcription,
       });
 
       // Step 4: Update vibelog with generated content AND auto-publish
+      // - content: Full AI-generated story (for main reading experience)
+      // - teaser: Short hook (for cards/previews)
+      // - transcript: Original voice transcription (for "Original" tab)
       const updateResponse = await fetch('/api/save-vibelog', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           vibelogId: currentVibelogId,
           title: analysisResult.title,
-          content: `# ${analysisResult.title}\n\n${analysisResult.description}`,
-          teaser: analysisResult.teaser,
+          content: analysisResult.content, // Full AI-generated content
+          teaser: analysisResult.teaser,   // Short teaser for cards
+          transcript: analysisResult.transcription, // Original transcript for "Original" tab
           isPublished: true, // Auto-publish video vibelogs
           isPublic: true,
         }),
