@@ -81,7 +81,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
 /**
  * DELETE /api/admin/vibelogs/[id]
- * Delete any vibelog
+ * Delete any vibelog (admin only)
+ *
+ * Uses the centralized delete service for complete cleanup.
  */
 export async function DELETE(
   request: NextRequest,
@@ -102,39 +104,36 @@ export async function DELETE(
     }
 
     // Get vibelog ID from params
-    const { id } = await params;
+    const { id: vibelogId } = await params;
 
-    // Get vibelog details before deleting (for audit log)
-    const adminClient = await createServerAdminClient();
-    const { data: vibelog } = await adminClient
-      .from('vibelogs')
-      .select('user_id, title, slug')
-      .eq('id', id)
-      .single();
+    // Import and use centralized delete service
+    const { deleteVibelog } = await import('@/lib/services/vibelog-delete-service');
 
-    // Delete vibelog with admin client (bypasses RLS)
-    const { error } = await adminClient.from('vibelogs').delete().eq('id', id);
-
-    if (error) {
-      console.error('[Admin Vibelogs API] Error deleting vibelog:', error);
-      return NextResponse.json({ error: 'Failed to delete vibelog' }, { status: 500 });
-    }
-
-    // Log admin action
-    await logAdminAction(user.id, 'vibelog_delete', {
-      targetVibelogId: id,
-      targetUserId: vibelog?.user_id,
-      changes: {
-        title: vibelog?.title,
-        slug: vibelog?.slug,
-      },
-      ipAddress: getClientIp(request),
-      userAgent: getUserAgent(request),
+    // Call centralized delete service (handles all cleanup + audit logging)
+    const result = await deleteVibelog({
+      vibelogId,
+      userId: user.id,
+      userIsAdmin: true, // Already verified by requireAdmin()
+      request,
     });
+
+    // Map result to HTTP response
+    if (!result.success) {
+      const statusCode =
+        result.error === 'NOT_FOUND' ? 404 : result.error === 'FORBIDDEN' ? 403 : 500;
+
+      return NextResponse.json(
+        {
+          error: result.message,
+        },
+        { status: statusCode }
+      );
+    }
 
     return NextResponse.json({
       success: true,
-      message: 'Vibelog deleted successfully',
+      message: result.message,
+      storageWarnings: result.storageWarnings,
     });
   } catch (error) {
     console.error('[Admin Vibelogs API] Error:', error);

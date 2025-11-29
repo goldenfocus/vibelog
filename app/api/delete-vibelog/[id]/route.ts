@@ -1,6 +1,26 @@
-import { revalidatePath } from 'next/cache';
+/**
+ * DELETE /api/delete-vibelog/[id]
+ *
+ * Delete a vibelog with complete cleanup
+ *
+ * Authorization: Owner OR Admin
+ *
+ * Features:
+ * - Validates ownership or admin privileges
+ * - Cleans up all storage files (audio, video, covers, AI audio)
+ * - Removes reactions, embeddings, and cascades to related data
+ * - Revalidates cache
+ * - Logs admin actions
+ * - Supports anonymous vibelogs
+ *
+ * This is the SINGLE SOURCE OF TRUTH for vibelog deletion.
+ * All client components should use this endpoint.
+ */
+
 import { NextRequest, NextResponse } from 'next/server';
 
+import { logger } from '@/lib/logger';
+import { deleteVibelog } from '@/lib/services/vibelog-delete-service';
 import { createServerSupabaseClient } from '@/lib/supabase';
 import { createServerAdminClient } from '@/lib/supabaseAdmin';
 
@@ -11,7 +31,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    // Get current user
     const supabase = await createServerSupabaseClient();
     const {
       data: { user },
@@ -21,164 +41,72 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Use admin client to check ownership and admin status
-    const adminClient = await createServerAdminClient();
-
-    // Verify ownership and get all storage URLs + path info for cache revalidation
-    // Use LEFT JOIN (profiles()) instead of INNER JOIN (profiles!inner) to support anonymous vibelogs
-    const { data: vibelog, error: fetchError } = await adminClient
-      .from('vibelogs')
-      .select(
-        'user_id, slug, audio_url, cover_image_url, video_url, ai_audio_url, profiles(username)'
-      )
-      .eq('id', id)
-      .single();
-
-    if (fetchError || !vibelog) {
-      return NextResponse.json({ error: 'Vibelog not found' }, { status: 404 });
-    }
+    // Get vibelog ID
+    const { id: vibelogId } = await params;
 
     // Check if user is admin
+    const adminClient = await createServerAdminClient();
     const { data: userProfile, error: profileError } = await adminClient
       .from('profiles')
       .select('is_admin')
       .eq('id', user.id)
       .single();
 
-    console.log('🔍 Admin check debug:', {
+    logger.info('Delete authorization check', {
       userId: user.id,
-      vibelogOwnerId: vibelog.user_id,
+      vibelogId,
       userProfile,
       profileError,
-      isOwner: vibelog.user_id === user.id,
     });
 
     const isAdmin = userProfile?.is_admin === true;
 
-    // Verify user is vibelog author or admin
-    if (vibelog.user_id !== user.id && !isAdmin) {
-      console.log('❌ Delete forbidden:', {
-        userId: user.id,
-        vibelogOwnerId: vibelog.user_id,
-        isAdmin,
-      });
-      return NextResponse.json({ error: 'Forbidden - not your vibelog' }, { status: 403 });
-    }
-
-    console.log('✅ Delete authorized:', {
+    // Call centralized delete service
+    const result = await deleteVibelog({
+      vibelogId,
       userId: user.id,
-      isAdmin,
-      isOwner: vibelog.user_id === user.id,
+      userIsAdmin: isAdmin,
+      request,
     });
 
-    // Clean up storage files before deleting database record
-    const storageErrors: string[] = [];
-
-    // Helper function to extract storage path from public URL
-    const extractStoragePath = (url: string | null, bucket: string): string | null => {
-      if (!url) {
-        return null;
-      }
-
-      // URL format: {supabase_url}/storage/v1/object/public/{bucket}/{path}
-      const publicPattern = `/storage/v1/object/public/${bucket}/`;
-      const pathStartIndex = url.indexOf(publicPattern);
-
-      if (pathStartIndex === -1) {
-        console.warn(`Could not extract path from URL: ${url}`);
-        return null;
-      }
-
-      return url.substring(pathStartIndex + publicPattern.length);
-    };
-
-    // Delete audio file from vibelogs bucket
-    if (vibelog.audio_url) {
-      const audioPath = extractStoragePath(vibelog.audio_url, 'vibelogs');
-      if (audioPath) {
-        const { error } = await adminClient.storage.from('vibelogs').remove([audioPath]);
-        if (error) {
-          console.error('Failed to delete audio file:', error);
-          storageErrors.push(`audio: ${error.message}`);
-        }
-      }
+    // Log result
+    if (result.success) {
+      logger.info('Vibelog deleted successfully', {
+        vibelogId,
+        userId: user.id,
+        isAdmin,
+        storageWarnings: result.storageWarnings,
+      });
+    } else {
+      logger.error('Vibelog delete failed', {
+        vibelogId,
+        userId: user.id,
+        error: result.error,
+        message: result.message,
+      });
     }
 
-    // Delete AI audio file from tts-audio bucket
-    if (vibelog.ai_audio_url) {
-      const aiAudioPath = extractStoragePath(vibelog.ai_audio_url, 'tts-audio');
-      if (aiAudioPath) {
-        const { error } = await adminClient.storage.from('tts-audio').remove([aiAudioPath]);
-        if (error) {
-          console.error('Failed to delete AI audio file:', error);
-          storageErrors.push(`ai_audio: ${error.message}`);
-        }
-      }
+    // Map result to HTTP response
+    if (!result.success) {
+      const statusCode =
+        result.error === 'NOT_FOUND' ? 404 : result.error === 'FORBIDDEN' ? 403 : 500;
+
+      return NextResponse.json(
+        {
+          error: result.message,
+        },
+        { status: statusCode }
+      );
     }
 
-    // Delete video file from vibelogs bucket
-    if (vibelog.video_url) {
-      const videoPath = extractStoragePath(vibelog.video_url, 'vibelogs');
-      if (videoPath) {
-        const { error } = await adminClient.storage.from('vibelogs').remove([videoPath]);
-        if (error) {
-          console.error('Failed to delete video file:', error);
-          storageErrors.push(`video: ${error.message}`);
-        }
-      }
-    }
-
-    // Delete cover image from vibelog-covers bucket
-    if (vibelog.cover_image_url) {
-      const coverPath = extractStoragePath(vibelog.cover_image_url, 'vibelog-covers');
-      if (coverPath) {
-        const { error } = await adminClient.storage.from('vibelog-covers').remove([coverPath]);
-        if (error) {
-          console.error('Failed to delete cover image:', error);
-          storageErrors.push(`cover: ${error.message}`);
-        }
-      }
-    }
-
-    // Delete vibelog from database (use admin client to bypass RLS)
-    console.log('🗑️ Attempting database delete for vibelog:', id);
-    const { error: deleteError } = await adminClient.from('vibelogs').delete().eq('id', id);
-
-    if (deleteError) {
-      console.error('❌ Failed to delete vibelog from database:', deleteError);
-      return NextResponse.json({ error: 'Failed to delete vibelog' }, { status: 500 });
-    }
-
-    console.log('✅ Vibelog successfully deleted from database');
-
-    // Revalidate the vibelog page cache to remove it immediately
-    const profile = Array.isArray(vibelog.profiles) ? vibelog.profiles[0] : vibelog.profiles;
-    if (profile?.username && vibelog.slug) {
-      const vibelogPath = `/@${profile.username}/${vibelog.slug}`;
-      revalidatePath(vibelogPath);
-      console.log('✅ Revalidated cache for deleted vibelog:', vibelogPath);
-    }
-
-    // Also revalidate dashboard and profile pages
-    revalidatePath('/dashboard');
-    if (profile?.username) {
-      revalidatePath(`/@${profile.username}`);
-    }
-
-    // Return success with optional storage cleanup warnings
-    const response: { success: boolean; message: string; storageWarnings?: string[] } = {
+    // Success response
+    return NextResponse.json({
       success: true,
-      message: 'Vibelog deleted successfully',
-    };
-
-    if (storageErrors.length > 0) {
-      response.storageWarnings = storageErrors;
-      console.warn('Storage cleanup had errors:', storageErrors);
-    }
-
-    return NextResponse.json(response);
+      message: result.message,
+      storageWarnings: result.storageWarnings,
+    });
   } catch (error) {
-    console.error('Error deleting vibelog:', error);
+    logger.error('Delete API unexpected error', error instanceof Error ? error : { error });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
