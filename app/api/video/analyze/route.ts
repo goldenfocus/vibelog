@@ -13,6 +13,7 @@ import { trackAICost } from '@/lib/ai-cost-tracker';
 import { config } from '@/lib/config';
 import { createApiLogger } from '@/lib/logger';
 import { rateLimit, tooManyResponse } from '@/lib/rateLimit';
+import { transcribeFromStorage } from '@/lib/services/transcription-service';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
 export const runtime = 'nodejs';
@@ -55,6 +56,7 @@ export async function POST(request: NextRequest) {
     const validated = AnalyzeVideoSchema.parse(body);
     const { vibelogId } = validated;
 
+    console.log('📋 [VIDEO-ANALYZE] Vibelog ID:', vibelogId);
     apiLogger.debug('Starting video analysis', { vibelogId });
 
     // Verify vibelog exists and belongs to user
@@ -65,10 +67,12 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (fetchError || !vibelog) {
+      console.log('❌ [VIDEO-ANALYZE] Vibelog not found:', fetchError?.message);
       return NextResponse.json({ error: 'Vibelog not found' }, { status: 404 });
     }
 
     if (vibelog.user_id !== user.id) {
+      console.log('❌ [VIDEO-ANALYZE] Permission denied');
       return NextResponse.json(
         { error: 'You do not have permission to analyze this vibelog' },
         { status: 403 }
@@ -76,14 +80,18 @@ export async function POST(request: NextRequest) {
     }
 
     if (!vibelog.video_url) {
+      console.log('❌ [VIDEO-ANALYZE] No video URL');
       return NextResponse.json({ error: 'No video found for this vibelog' }, { status: 400 });
     }
+
+    console.log('📹 [VIDEO-ANALYZE] Video URL:', vibelog.video_url);
 
     // Extract storage path from video URL
     // Format: https://.../storage/v1/object/public/vibelogs/{path}
     const url = new URL(vibelog.video_url);
     const pathMatch = url.pathname.match(/\/public\/vibelogs\/(.+)$/);
     if (!pathMatch) {
+      console.log('❌ [VIDEO-ANALYZE] Invalid video URL format');
       return NextResponse.json({ error: 'Invalid video URL format' }, { status: 400 });
     }
     const storagePath = pathMatch[1];
@@ -91,45 +99,20 @@ export async function POST(request: NextRequest) {
     console.log('📂 [VIDEO-ANALYZE] Storage path extracted:', storagePath);
     apiLogger.debug('Transcribing video audio', { storagePath });
 
-    // Call transcribe endpoint with storage path
-    // Forward cookies from the original request to maintain authentication
-    const cookieHeader = request.headers.get('cookie');
-    console.log('🍪 [VIDEO-ANALYZE] Cookie header present:', !!cookieHeader);
+    // Call transcription service directly (no HTTP call needed!)
+    console.log('🎤 [VIDEO-ANALYZE] Calling transcription service...');
+    const transcribeResult = await transcribeFromStorage(storagePath, user.id);
 
-    const transcribeUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/transcribe`;
-    console.log('📞 [VIDEO-ANALYZE] Calling transcribe at:', transcribeUrl);
-
-    const transcribeResponse = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/transcribe`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(cookieHeader ? { Cookie: cookieHeader } : {}),
-        },
-        body: JSON.stringify({ storagePath }),
-      }
-    );
-
-    console.log('📥 [VIDEO-ANALYZE] Transcribe response status:', transcribeResponse.status);
-
-    if (!transcribeResponse.ok) {
-      const error = await transcribeResponse.json();
-      console.error('❌ [VIDEO-ANALYZE] Transcription failed:', JSON.stringify(error));
-      apiLogger.error('Transcription failed', { error });
+    if (!transcribeResult.success || !transcribeResult.transcription) {
+      console.error('❌ [VIDEO-ANALYZE] Transcription failed');
       return NextResponse.json(
-        { error: 'Failed to transcribe video', details: error },
+        { error: 'Failed to transcribe video' },
         { status: 500 }
       );
     }
 
-    const transcribeResult = await transcribeResponse.json();
-    console.log('✅ [VIDEO-ANALYZE] Transcription received, length:', transcribeResult.transcription?.length || 0);
     const { transcription } = transcribeResult;
-
-    if (!transcription || typeof transcription !== 'string') {
-      return NextResponse.json({ error: 'Invalid transcription response' }, { status: 500 });
-    }
+    console.log('✅ [VIDEO-ANALYZE] Transcription received, length:', transcription.length);
 
     apiLogger.debug('Transcription complete', {
       transcriptionLength: transcription.length,
@@ -137,6 +120,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Generate title and description using GPT-4o-mini
+    console.log('🤖 [VIDEO-ANALYZE] Generating title and description via AI...');
     const openai = new OpenAI({
       apiKey: config.ai.openai.apiKey,
       timeout: 60_000,
@@ -187,6 +171,8 @@ TEASER: ...`,
       max_tokens: 500,
     });
 
+    console.log('✅ [VIDEO-ANALYZE] AI generation complete');
+
     // Track AI cost
     const inputTokens = completion.usage?.prompt_tokens || 0;
     const outputTokens = completion.usage?.completion_tokens || 0;
@@ -208,6 +194,8 @@ TEASER: ...`,
     const title = titleMatch?.[1]?.trim() || 'Video Vibelog';
     const description = descriptionMatch?.[1]?.trim() || transcription.substring(0, 200);
     const teaser = teaserMatch?.[1]?.trim() || transcription.substring(0, 300);
+
+    console.log('🎉 [VIDEO-ANALYZE] Analysis complete:', { title });
 
     apiLogger.debug('AI generation complete', {
       title,
