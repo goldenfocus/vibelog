@@ -9,7 +9,7 @@ import { getCachedResponse, setCachedResponse } from '@/lib/ai-cache';
 import { trackAICost, calculateWhisperCost } from '@/lib/ai-cost-tracker';
 import { config } from '@/lib/config';
 import { normalizeVibeLog } from '@/lib/normalize-vibelog';
-import { downloadFromStorage, deleteFromStorage } from '@/lib/storage';
+import { downloadFromStorage } from '@/lib/storage';
 
 export interface TranscriptionResult {
   transcription: string;
@@ -131,11 +131,9 @@ export async function transcribeFromStorage(
   // Cache result
   await setCachedResponse('transcription', Buffer.from(audioBuffer), result);
 
-  // Clean up storage file
-  console.log('🧹 [TRANSCRIPTION-SERVICE] Cleaning up storage file:', storagePath);
-  deleteFromStorage(storagePath).catch((err) =>
-    console.warn('Failed to delete storage file:', err)
-  );
+  // NOTE: Do NOT delete the storage file - it's needed for video playback!
+  // The video file in storage is the source for the video player.
+  // Only audio files uploaded specifically for transcription should be deleted.
 
   return result;
 }

@@ -163,7 +163,7 @@ export async function updateVibelog(
   // Verify ownership
   const { data: existingVibelog, error: fetchError } = await supabase
     .from('vibelogs')
-    .select('id, user_id, slug, public_slug')
+    .select('id, user_id, slug, public_slug, title')
     .eq('id', vibelogId)
     .single();
 
@@ -212,7 +212,21 @@ export async function updateVibelog(
 
   // Handle slug updates
   let finalSlug = existingVibelog.slug || existingVibelog.public_slug;
-  if (!finalSlug && userId) {
+  const oldTitle = existingVibelog.title || '';
+  const isPlaceholderTitle = oldTitle.toLowerCase().includes('video vibelog') &&
+                             (oldTitle.includes('processing') || /video vibelog \d+-\w+/i.test(oldTitle));
+  const titleChanged = data.title && data.title !== oldTitle;
+
+  // Regenerate slug if:
+  // 1. No slug exists, OR
+  // 2. Title changed from a placeholder title (video vibelog processing)
+  if (userId && (!finalSlug || (isPlaceholderTitle && titleChanged))) {
+    console.log('🔄 [UPDATE-VIBELOG] Regenerating slug:', {
+      oldTitle,
+      newTitle: data.title,
+      isPlaceholderTitle,
+      hadSlug: !!finalSlug
+    });
     finalSlug = generateUserSlug(data.title, vibelogId);
     await supabase.from('vibelogs').update({ slug: finalSlug }).eq('id', vibelogId);
   }
