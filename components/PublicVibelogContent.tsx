@@ -7,7 +7,6 @@ import { toast } from 'sonner';
 
 import { ContentTabs } from '@/components/content/ContentTabs';
 import { useI18n } from '@/components/providers/I18nProvider';
-import { ReactionBar } from '@/components/reactions/ReactionBar';
 import VibelogActions from '@/components/VibelogActions';
 import VibelogContentRenderer from '@/components/VibelogContentRenderer';
 import VibelogEditModalFull from '@/components/VibelogEditModalFull';
@@ -160,19 +159,7 @@ export default function PublicVibelogContent({ vibelog }: PublicVibelogContentPr
         <VibelogContentRenderer content={contentWithoutDuplicateTitle} showCTA={false} />
       </ContentTabs>
 
-      {/* Reactions */}
-      <div className="mt-8 flex justify-center">
-        <ReactionBar
-          type="vibelog"
-          id={vibelog.id}
-          variant="expanded"
-          realtime
-          showCounts
-          emojiSet={['🔥', '💯', '🎯', '✨', '💜', '🚀', '👍', '❤️', '😂', '🎉', '🤔', '👏']}
-        />
-      </div>
-
-      {/* Action Buttons */}
+      {/* Action Buttons - includes unified reactions via QuickReactions */}
       <div className="mt-12 border-t border-border/40 pt-8">
         <VibelogActions
           vibelogId={vibelog.id}

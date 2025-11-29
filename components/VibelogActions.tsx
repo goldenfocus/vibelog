@@ -10,17 +10,19 @@ import {
   Loader2,
   MoreVertical,
   Trash2,
-  Heart,
   MessageCircle,
+  Link2,
+  ChevronDown,
+  ExternalLink,
 } from 'lucide-react';
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 
 import ExportButton from '@/components/ExportButton';
 import { XIcon } from '@/components/icons/XIcon';
-import LikersPopover from '@/components/LikersPopover';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useI18n } from '@/components/providers/I18nProvider';
+import { QuickReactions } from '@/components/reactions';
 import { AudioPreviewLimiter } from '@/lib/audioLimiter';
 import type { ExportFormat } from '@/lib/export';
 import { useAudioPlayerStore } from '@/state/audio-player-store';
@@ -68,7 +70,7 @@ export default function VibelogActions({
   onDelete,
   onRemix,
   onCopy,
-  onShare,
+  onShare: _onShare,
   onExport,
   onLikeCountChange,
   variant = 'default',
@@ -79,12 +81,11 @@ export default function VibelogActions({
   const [copySuccess, setCopySuccess] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [isLiked, setIsLiked] = useState(initialIsLiked);
   const [likeCount, setLikeCount] = useState(initialLikeCount);
-  const [isLiking, setIsLiking] = useState(false);
   const [isGeneratingShareUrl, setIsGeneratingShareUrl] = useState(false);
+  const [isShareOpen, setIsShareOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const lastLikeRequestRef = useRef<Promise<void> | null>(null);
+  const shareRef = useRef<HTMLDivElement>(null);
   const previewLimiterRef = useRef<AudioPreviewLimiter | null>(null);
 
   // Global audio player store
@@ -105,12 +106,10 @@ export default function VibelogActions({
   // Determine if this is user's own vibelog
   const isOwnVibelog = user?.id && authorId && user.id === authorId;
 
-  // Sync like count and liked state when props change (e.g., when parent re-fetches data)
-  // Parent components already fetch like data via /api/get-vibelogs, so no need to fetch here
+  // Sync like count when props change
   useEffect(() => {
     setLikeCount(initialLikeCount);
-    setIsLiked(initialIsLiked);
-  }, [initialLikeCount, initialIsLiked, vibelogId]);
+  }, [initialLikeCount]);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -118,13 +117,16 @@ export default function VibelogActions({
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsMenuOpen(false);
       }
+      if (shareRef.current && !shareRef.current.contains(event.target as Node)) {
+        setIsShareOpen(false);
+      }
     };
 
-    if (isMenuOpen) {
+    if (isMenuOpen || isShareOpen) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [isMenuOpen]);
+  }, [isMenuOpen, isShareOpen]);
 
   // Cleanup preview limiter on unmount
   useEffect(() => {
@@ -237,10 +239,33 @@ export default function VibelogActions({
     }
   };
 
-  const handleShareClick = async () => {
-    if (onShare) {
-      await onShare();
+  const handleCopyLinkClick = async () => {
+    try {
+      const url = vibelogUrl || window.location.href;
+      await navigator.clipboard.writeText(url);
+      toast.success(t('toasts.vibelogs.linkCopied') || 'Link copied!');
+    } catch (error) {
+      console.error('Copy link failed:', error);
+      toast.error(t('toasts.vibelogs.copyFailed') || 'Failed to copy link');
     }
+    setIsShareOpen(false);
+  };
+
+  const handleNativeShare = async () => {
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: title || 'VibeLog',
+          url: vibelogUrl || window.location.href,
+        });
+      } catch (error) {
+        // User cancelled or share failed
+        if ((error as Error).name !== 'AbortError') {
+          console.error('Native share failed:', error);
+        }
+      }
+    }
+    setIsShareOpen(false);
   };
 
   const handleTwitterShareClick = async () => {
@@ -272,6 +297,7 @@ export default function VibelogActions({
       toast.error(t('toasts.vibelogs.shareXFailed'));
     } finally {
       setIsGeneratingShareUrl(false);
+      setIsShareOpen(false);
     }
   };
 
@@ -306,113 +332,11 @@ export default function VibelogActions({
     setShowDeleteConfirm(false);
   };
 
-  // Callback to update like count when LikersPopover fetches fresh data
-  const handleCountUpdate = useCallback(
-    (newCount: number) => {
-      console.log('Updating like count from likers popover:', { oldCount: likeCount, newCount });
-      setLikeCount(newCount);
-    },
-    [likeCount]
-  );
-
-  const handleLikeClick = useCallback(async () => {
-    if (!user) {
-      toast.error(t('toasts.vibelogs.signInToLike'));
-      setTimeout(() => {
-        window.location.href = '/auth/signin';
-      }, 1000);
-      return;
-    }
-
-    // Prevent rapid clicking - wait for previous request to complete
-    if (isLiking || lastLikeRequestRef.current) {
-      return;
-    }
-
-    // Store original values for rollback if needed
-    const originalLikedState = isLiked;
-    const originalLikeCount = likeCount;
-
-    // Optimistic update - update UI immediately
-    const newLikedState = !isLiked;
-    const newLikeCount = newLikedState ? likeCount + 1 : Math.max(0, likeCount - 1);
-
-    setIsLiked(newLikedState);
-    setLikeCount(newLikeCount);
-    setIsLiking(true);
-
-    // Create and track the request promise
-    const likeRequest = (async () => {
-      try {
-        const method = newLikedState ? 'POST' : 'DELETE';
-        const response = await fetch(`/api/like-vibelog/${vibelogId}`, {
-          method,
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          // Revert optimistic update on error
-          setIsLiked(originalLikedState);
-          setLikeCount(originalLikeCount);
-
-          // Log detailed error for debugging
-          console.error('Like request failed:', {
-            status: response.status,
-            statusText: response.statusText,
-            data,
-            vibelogId,
-            method,
-          });
-
-          // Show user-friendly error message
-          if (response.status === 401) {
-            toast.error(t('toasts.vibelogs.signInToLike'));
-          } else if (response.status === 404) {
-            toast.error(t('toasts.vibelogs.notFound'));
-          } else {
-            toast.error(data.error || t('toasts.vibelogs.likeFailed'));
-          }
-          return;
-        }
-
-        // Update with server response (source of truth)
-        const finalLikeCount = data.like_count ?? newLikeCount;
-        setIsLiked(data.liked ?? newLikedState);
-        setLikeCount(finalLikeCount);
-
-        // Notify parent of like count change
-        onLikeCountChange?.(finalLikeCount);
-
-        // Log success for debugging
-        if (process.env.NODE_ENV !== 'production') {
-          console.log('Like updated successfully:', {
-            vibelogId,
-            liked: data.liked,
-            likeCount: finalLikeCount,
-          });
-        }
-
-        // Show subtle feedback only on errors (no toast spam on success)
-        // Instagram/Twitter style - just the animation is feedback enough
-      } catch (error) {
-        console.error('Error toggling like:', error);
-        // Revert on error using original values
-        setIsLiked(originalLikedState);
-        setLikeCount(originalLikeCount);
-        toast.error(t('toasts.vibelogs.networkError'));
-      } finally {
-        setIsLiking(false);
-        lastLikeRequestRef.current = null;
-      }
-    })();
-
-    lastLikeRequestRef.current = likeRequest;
-    await likeRequest;
-  }, [user, isLiking, isLiked, likeCount, vibelogId, onLikeCountChange]);
+  // Handle reaction change from QuickReactions
+  const handleReactionChange = (_reaction: string | null, newCount: number) => {
+    setLikeCount(newCount);
+    onLikeCountChange?.(newCount);
+  };
 
   const isCompact = variant === 'compact';
   const baseButtonClass = isCompact
@@ -427,24 +351,9 @@ export default function VibelogActions({
     ? 'hidden sm:inline'
     : 'text-xs font-medium text-muted-foreground group-hover:text-foreground';
 
-  // Ensure UI never shows "0" when the user has liked the vibelog by guaranteeing a minimum of 1
-  // while still letting the actual state value track the server response. This prevents moments
-  // where the icon shows a liked state but the count renders 0 due to stale data.
-  const displayLikeCount = isLiked ? Math.max(1, likeCount) : Math.max(0, likeCount);
-
-  const likeIconClass =
-    isLiked && !isCompact
-      ? `${iconClass} !text-red-500 group-hover:!text-red-600 active:!text-red-700`
-      : iconClass;
-
-  const likeLabelClass =
-    isLiked && !isCompact
-      ? `${labelClass} !text-red-500 group-hover:!text-red-600 active:!text-red-700`
-      : labelClass;
-
   const wrapperClass = isCompact
-    ? 'flex items-center gap-2 border-t border-border/30 pt-4'
-    : 'flex justify-center gap-3 sm:gap-4';
+    ? 'flex flex-wrap items-center gap-2 border-t border-border/30 pt-4'
+    : 'flex flex-wrap justify-center gap-3 sm:gap-4';
 
   return (
     <>
@@ -598,33 +507,16 @@ export default function VibelogActions({
               </button>
             )}
 
-            {/* Like Button */}
-            <LikersPopover
-              vibelogId={vibelogId}
-              likeCount={displayLikeCount}
-              onCountUpdate={handleCountUpdate}
-            >
-              <button
-                onClick={handleLikeClick}
-                disabled={isLiking}
-                className={`${baseButtonClass} ${isLiked ? 'text-red-500 hover:text-red-600 active:text-red-700' : ''}`}
-                title={
-                  user
-                    ? isLiked
-                      ? t('titles.unlike')
-                      : t('titles.like')
-                    : t('titles.signInToLike')
-                }
-                data-testid="like-button"
-              >
-                {isLiking ? (
-                  <Loader2 className={`${iconClass} animate-spin`} />
-                ) : (
-                  <Heart className={likeIconClass} fill={isLiked ? 'currentColor' : 'none'} />
-                )}
-                <span className={likeLabelClass}>{isLiking ? '...' : displayLikeCount}</span>
-              </button>
-            </LikersPopover>
+            {/* Like/Reaction Button */}
+            <QuickReactions
+              contentType="vibelog"
+              contentId={vibelogId}
+              initialCount={likeCount}
+              initialReaction={initialIsLiked ? '❤️' : null}
+              onReactionChange={handleReactionChange}
+              size={isCompact ? 'sm' : 'md'}
+              showCount={true}
+            />
 
             {/* Comment Count Button */}
             <button
@@ -646,46 +538,72 @@ export default function VibelogActions({
               <span className={labelClass}>{commentCount}</span>
             </button>
 
-            {/* Mobile Share Button - uses native share API (includes X, WhatsApp, etc) */}
-            {isCompact && onShare && (
+            {/* Consolidated Share Dropdown */}
+            <div className="relative" ref={shareRef}>
               <button
-                onClick={handleShareClick}
-                className={`${baseButtonClass} sm:hidden`}
-                title={t('titles.share')}
-                data-testid="mobile-share-button"
-              >
-                <Share2 className={iconClass} />
-              </button>
-            )}
-
-            {/* X/Twitter Share Button - hidden on mobile in compact mode */}
-            <button
-              onClick={handleTwitterShareClick}
-              disabled={isGeneratingShareUrl}
-              className={`${baseButtonClass} ${isCompact ? 'hidden sm:flex' : ''}`}
-              title={t('titles.shareOnX')}
-              data-testid="twitter-share-button"
-            >
-              {isGeneratingShareUrl ? (
-                <Loader2 className={`${iconClass} animate-spin`} />
-              ) : (
-                <XIcon className={iconClass} />
-              )}
-              {!isCompact && <span className={labelClass}>{t('actions.shareOnX')}</span>}
-            </button>
-
-            {/* Generic Share Button - hidden on mobile in compact mode */}
-            {onShare && (
-              <button
-                onClick={handleShareClick}
-                className={`${baseButtonClass} ${isCompact ? 'hidden sm:flex' : ''}`}
+                onClick={() => setIsShareOpen(!isShareOpen)}
+                disabled={isGeneratingShareUrl}
+                className={baseButtonClass}
                 title={t('titles.share')}
                 data-testid="share-button"
+                aria-expanded={isShareOpen}
+                aria-haspopup="true"
               >
-                <Share2 className={iconClass} />
-                <span className={labelClass}>{t('actions.share')}</span>
+                {isGeneratingShareUrl ? (
+                  <Loader2 className={`${iconClass} animate-spin`} />
+                ) : (
+                  <Share2 className={iconClass} />
+                )}
+                {!isCompact && (
+                  <span className={`${labelClass} flex items-center gap-1`}>
+                    {t('actions.share')}
+                    <ChevronDown className="h-3 w-3" />
+                  </span>
+                )}
               </button>
-            )}
+
+              {isShareOpen && (
+                <div
+                  className="absolute bottom-full right-0 z-50 mb-2 w-48 rounded-xl border border-border/50 bg-card/95 shadow-2xl backdrop-blur-sm"
+                  data-testid="share-dropdown"
+                >
+                  <div className="p-2">
+                    {/* Share on X */}
+                    <button
+                      onClick={handleTwitterShareClick}
+                      disabled={isGeneratingShareUrl}
+                      className="flex w-full touch-manipulation items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted/50 active:bg-muted/70 disabled:opacity-50"
+                      data-testid="share-twitter"
+                    >
+                      <XIcon className="h-4 w-4 text-muted-foreground" />
+                      <span>{t('actions.shareOnX')}</span>
+                    </button>
+
+                    {/* Copy Link */}
+                    <button
+                      onClick={handleCopyLinkClick}
+                      className="flex w-full touch-manipulation items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted/50 active:bg-muted/70"
+                      data-testid="share-copy-link"
+                    >
+                      <Link2 className="h-4 w-4 text-muted-foreground" />
+                      <span>{t('actions.copyLink') || 'Copy Link'}</span>
+                    </button>
+
+                    {/* Native Share (if available) */}
+                    {typeof navigator !== 'undefined' && navigator.share && (
+                      <button
+                        onClick={handleNativeShare}
+                        className="flex w-full touch-manipulation items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted/50 active:bg-muted/70"
+                        data-testid="share-native"
+                      >
+                        <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                        <span>{t('actions.moreOptions') || 'More...'}</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Export Button */}
             {!isCompact && (

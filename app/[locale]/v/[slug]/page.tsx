@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import Comments from '@/components/comments/Comments';
+import { ExportLinks } from '@/components/ExportLinks';
 import Navigation from '@/components/Navigation';
 import PublicVibelogContent from '@/components/PublicVibelogContent';
 import { formatFullDate } from '@/lib/date-utils';
@@ -16,6 +17,8 @@ interface PageProps {
   }>;
 }
 
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://vibelog.io';
+
 // Generate metadata for SEO
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
@@ -23,7 +26,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const { data: vibelog, error } = await supabase
     .from('vibelogs')
-    .select('seo_title, seo_description, title, cover_image_url')
+    .select('id, seo_title, seo_description, title, cover_image_url')
     .eq('public_slug', slug)
     .single();
 
@@ -37,6 +40,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   const coverImage = vibelog.cover_image_url;
+  const exportUrl = `${BASE_URL}/api/export/${vibelog.id}`;
 
   // Create unique metadata per vibelog
   const fallbackDescription =
@@ -59,6 +63,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       title: vibelog.title,
       description: fallbackDescription,
       images: coverImage ? [coverImage] : [],
+    },
+    // Export format alternate links for AI/bots
+    alternates: {
+      types: {
+        'application/json': `${exportUrl}/json`,
+        'text/markdown': `${exportUrl}/markdown`,
+        'text/html': `${exportUrl}/html`,
+        'text/plain': `${exportUrl}/text`,
+      },
     },
   };
 }
@@ -137,7 +150,7 @@ export default async function PublicVibelogPage({ params }: PageProps) {
         )}
 
         {/* Title */}
-        <h1 className="mb-2 bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-4xl font-bold leading-tight text-transparent dark:from-blue-400 dark:to-violet-400">
+        <h1 className="mb-2 bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-2xl font-bold leading-tight text-transparent dark:from-blue-400 dark:to-violet-400 sm:text-4xl">
           {vibelogWithAuthor.title}
         </h1>
 
@@ -172,7 +185,7 @@ export default async function PublicVibelogPage({ params }: PageProps) {
         )}
 
         {/* Meta */}
-        <div className="mb-8 flex items-center gap-4 text-sm text-muted-foreground">
+        <div className="mb-6 flex flex-wrap items-center gap-2 text-sm text-muted-foreground sm:mb-8 sm:gap-4">
           {vibelogWithAuthor.published_at && (
             <>
               <span>{formatFullDate(vibelogWithAuthor.published_at)}</span>
@@ -217,6 +230,14 @@ export default async function PublicVibelogPage({ params }: PageProps) {
             </audio>
           </div>
         )}
+
+        {/* Export Links - AI & human-friendly format downloads */}
+        <ExportLinks
+          vibelogId={vibelogWithAuthor.id}
+          vibelogSlug={vibelogWithAuthor.slug || vibelogWithAuthor.public_slug}
+          audioUrl={vibelogWithAuthor.audio_url}
+          className="mt-12"
+        />
 
         {/* Comments Section */}
         <div className="mt-12">
