@@ -86,12 +86,15 @@ export async function POST(request: NextRequest) {
     apiLogger.debug('Transcribing video audio', { storagePath });
 
     // Call transcribe endpoint with storage path
+    // Forward cookies from the original request to maintain authentication
+    const cookieHeader = request.headers.get('cookie');
     const transcribeResponse = await fetch(
       `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/transcribe`,
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(cookieHeader ? { Cookie: cookieHeader } : {}),
         },
         body: JSON.stringify({ storagePath }),
       }
