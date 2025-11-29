@@ -218,13 +218,14 @@ Remember:
       teaserLength: teaser.length,
     });
 
-    // Return analysis results including original transcript
+    // Return analysis results including original transcript and detected language
     return NextResponse.json({
       success: true,
       title,
-      content,        // Full story content
-      teaser,         // Short hook for cards/previews
-      transcription,  // Original transcript for "Original" tab
+      content,        // Full story content (in English)
+      teaser,         // Short hook for cards/previews (in English)
+      transcription,  // Original transcript for "Original" tab (in original language)
+      detectedLanguage, // ISO 639-1 language code from Whisper (e.g., 'fr', 'en', 'es')
     });
   } catch (error: unknown) {
     console.error('💥 [VIDEO-ANALYZE] Uncaught error:', error instanceof Error ? error.message : error);

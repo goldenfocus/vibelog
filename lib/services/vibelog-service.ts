@@ -185,6 +185,7 @@ export async function updateVibelog(
     // NOTE: cover_image_alt, width, height removed - columns don't exist in vibelogs table
     audio_url: data.audio_url || undefined,
     audio_duration: data.audio_duration || undefined,
+    original_language: data.original_language, // ISO 639-1 code for translation system
     word_count: data.word_count,
     read_time: data.read_time,
     tags: data.tags,
