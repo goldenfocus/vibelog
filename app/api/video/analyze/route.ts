@@ -171,7 +171,13 @@ TEASER: ...`,
     // Track AI cost
     const inputTokens = completion.usage?.prompt_tokens || 0;
     const outputTokens = completion.usage?.completion_tokens || 0;
-    trackAICost('generation', inputTokens, outputTokens, user.id);
+    // Cost calculation: GPT-4o-mini is $0.15/1M input, $0.60/1M output
+    const cost = (inputTokens * 0.00015 + outputTokens * 0.0006) / 1000;
+    trackAICost(user.id, 'gpt-4o-mini', cost, {
+      endpoint: '/api/video/analyze',
+      input_tokens: inputTokens,
+      output_tokens: outputTokens,
+    });
 
     const aiResponse = completion.choices[0]?.message?.content || '';
 
