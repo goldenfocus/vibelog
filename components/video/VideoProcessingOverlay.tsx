@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Video, Sparkles, Languages, FileText, Wand2, CheckCircle, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 
 interface ProcessingStep {
   id: string;
@@ -72,6 +73,7 @@ export function VideoProcessingOverlay({
   onNavigate,
 }: VideoProcessingOverlayProps) {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [steps, setSteps] = useState<ProcessingStep[]>(
     PROCESSING_STEPS.map((step, i) => ({
@@ -80,6 +82,11 @@ export function VideoProcessingOverlay({
     }))
   );
   const [isNavigating, setIsNavigating] = useState(false);
+
+  // Ensure we're mounted before using portal
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Poll for vibelog status
   const pollVibelogStatus = useCallback(async () => {
@@ -197,12 +204,13 @@ export function VideoProcessingOverlay({
     };
   }, [vibelogId, advanceStep, pollVibelogStatus, onComplete, onNavigate, router, currentStepIndex]);
 
-  return (
+  // Use portal to render overlay at document body level (escapes any parent containers)
+  const overlayContent = (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-background/95 backdrop-blur-xl"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-background/95 backdrop-blur-xl"
     >
       <div className="w-full max-w-md px-6">
         {/* Header */}
@@ -333,4 +341,10 @@ export function VideoProcessingOverlay({
       </div>
     </motion.div>
   );
+
+  // Render via portal to escape parent container constraints
+  if (!mounted) {
+    return null;
+  }
+  return createPortal(overlayContent, document.body);
 }
