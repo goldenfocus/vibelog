@@ -424,21 +424,27 @@ export function VideoCaptureZone({
         contentLength: analysisResult.content?.length,
         teaserLength: analysisResult.teaser?.length,
         hasTranscript: !!analysisResult.transcription,
+        detectedLanguage: analysisResult.detectedLanguage,
       });
 
       // Step 4: Update vibelog with generated content AND auto-publish
-      // - content: Full AI-generated story (for main reading experience)
-      // - teaser: Short hook (for cards/previews)
-      // - transcript: Original voice transcription (for "Original" tab)
+      // - content: Full AI-generated story (always in English for video vibelogs)
+      // - teaser: Short hook for cards/previews (always in English)
+      // - transcript: Original voice transcription (in original spoken language)
+      // NOTE: We intentionally do NOT pass originalLanguage for video vibelogs
+      // because content is always English. The translation system will generate
+      // translations FROM English TO all other languages including the original spoken language.
+      // The "Original" tab shows the raw transcript in the spoken language.
       const updateResponse = await fetch('/api/save-vibelog', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           vibelogId: currentVibelogId,
           title: analysisResult.title,
-          content: analysisResult.content, // Full AI-generated content
-          teaser: analysisResult.teaser,   // Short teaser for cards
-          transcript: analysisResult.transcription, // Original transcript for "Original" tab
+          content: analysisResult.content, // Full AI-generated content (in English)
+          teaser: analysisResult.teaser,   // Short teaser for cards (in English)
+          transcript: analysisResult.transcription, // Original transcript in spoken language (e.g., French)
+          // Note: original_language defaults to 'en' - correct for video vibelogs since content is English
           isPublished: true, // Auto-publish video vibelogs
           isPublic: true,
         }),
