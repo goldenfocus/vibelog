@@ -12,6 +12,10 @@ import { createServerAdminClient } from './supabaseAdmin';
  * Check if a user has admin privileges
  * @param userId The user ID to check
  * @returns true if the user is an admin, false otherwise
+ *
+ * IMPORTANT: Uses admin client to bypass RLS policies.
+ * Admin checks must not be constrained by RLS since we need to know
+ * if a user is an admin to make authorization decisions.
  */
 export async function isAdmin(userId: string | null | undefined): Promise<boolean> {
   if (!userId) {
@@ -19,8 +23,9 @@ export async function isAdmin(userId: string | null | undefined): Promise<boolea
   }
 
   try {
-    const supabase = await createServerSupabaseClient();
-    const { data, error } = await supabase
+    // Use admin client to bypass RLS - admin status checks must be authoritative
+    const adminClient = await createServerAdminClient();
+    const { data, error } = await adminClient
       .from('profiles')
       .select('is_admin')
       .eq('id', userId)
@@ -31,7 +36,9 @@ export async function isAdmin(userId: string | null | undefined): Promise<boolea
       return false;
     }
 
-    return data?.is_admin === true;
+    const result = data?.is_admin === true;
+    console.log('[Admin] Admin status check:', { userId, isAdmin: result });
+    return result;
   } catch (error) {
     console.error('[Admin] Exception checking admin status:', error);
     return false;
@@ -41,6 +48,8 @@ export async function isAdmin(userId: string | null | undefined): Promise<boolea
 /**
  * Check if a user has admin privileges by email
  * Useful for initial setup before profiles are created
+ *
+ * IMPORTANT: Uses admin client to bypass RLS policies.
  */
 export async function isAdminByEmail(email: string | null | undefined): Promise<boolean> {
   if (!email) {
@@ -48,8 +57,9 @@ export async function isAdminByEmail(email: string | null | undefined): Promise<
   }
 
   try {
-    const supabase = await createServerSupabaseClient();
-    const { data, error } = await supabase
+    // Use admin client to bypass RLS - admin status checks must be authoritative
+    const adminClient = await createServerAdminClient();
+    const { data, error } = await adminClient
       .from('profiles')
       .select('is_admin')
       .eq('email', email)
@@ -60,7 +70,9 @@ export async function isAdminByEmail(email: string | null | undefined): Promise<
       return false;
     }
 
-    return data?.is_admin === true;
+    const result = data?.is_admin === true;
+    console.log('[Admin] Admin status check by email:', { email, isAdmin: result });
+    return result;
   } catch (error) {
     console.error('[Admin] Exception checking admin status by email:', error);
     return false;
