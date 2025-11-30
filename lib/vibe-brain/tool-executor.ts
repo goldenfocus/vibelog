@@ -289,11 +289,13 @@ async function getUserVibelogs(username: string, limit: number): Promise<Vibelog
 
 /**
  * Get latest vibelogs - simple, always returns the newest content
+ * Only requires is_published=true (not is_public) to ensure results
  */
 async function getLatestVibelogs(limit: number): Promise<VibelogResult[]> {
   const supabase = await createServerAdminClient();
   const safeLimit = Math.min(limit, 10);
 
+  // Only require is_published - many vibelogs don't have is_public set
   const { data: vibelogs, error } = await supabase
     .from('vibelogs')
     .select(
@@ -308,14 +310,20 @@ async function getLatestVibelogs(limit: number): Promise<VibelogResult[]> {
     `
     )
     .eq('is_published', true)
-    .eq('is_public', true)
     .order('created_at', { ascending: false })
     .limit(safeLimit);
 
-  if (error || !vibelogs || vibelogs.length === 0) {
-    console.log('[TOOL] getLatestVibelogs: No vibelogs found');
+  if (error) {
+    console.error('[TOOL] getLatestVibelogs error:', error);
     return [];
   }
+
+  if (!vibelogs || vibelogs.length === 0) {
+    console.log('[TOOL] getLatestVibelogs: No published vibelogs found');
+    return [];
+  }
+
+  console.log(`[TOOL] getLatestVibelogs: Found ${vibelogs.length} vibelogs`);
 
   // Get reaction counts
   const vibelogIds = vibelogs.map(v => v.id);
