@@ -6,12 +6,15 @@
     "community": "Comunidad",
     "people": "Personas",
     "signUp": "Registrarse",
-    "openMenu": "Open menu",
-    "closeMenu": "Close menu",
-    "accountMenu": "Account menu",
-    "dashboard": "Dashboard",
+    "openMenu": "Abrir menú",
+    "closeMenu": "Cerrar menú",
+    "accountMenu": "Menú de cuenta",
+    "dashboard": "Panel",
     "signIn": "Iniciar sesión",
-    "loading": "Loading navigation"
+    "loading": "Cargando navegación",
+    "messages": "Mensajes",
+    "profileSettings": "Configuración de perfil",
+    "adminPanel": "Panel de administrador"
   },
   "hero": {
     "title": {
@@ -590,9 +593,37 @@
       "filterApplied": "Filter \"{{name}}\" applied!"
     },
     "notifications": {
-      "allMarkedRead": "All notifications marked as read",
-      "markReadFailed": "Failed to mark all as read"
+      "allMarkedRead": "Todas las notificaciones marcadas como leídas",
+      "markReadFailed": "Error al marcar todas como leídas"
     }
+  },
+  "notifications": {
+    "title": "Notificaciones",
+    "unreadCount": "{{count}} sin leer",
+    "filters": {
+      "all": "Todas",
+      "unread": "Sin leer",
+      "comment": "Comentario",
+      "reply": "Respuesta",
+      "reaction": "Reacción"
+    },
+    "empty": {
+      "title": "Sin notificaciones",
+      "allCaughtUp": "¡Estás al día!",
+      "noType": "No hay notificaciones de {{type}}"
+    },
+    "types": {
+      "comment": "Nuevo comentario en tu vibelog",
+      "reply": "Nueva respuesta a tu comentario",
+      "reaction": "Nueva reacción",
+      "mention": "Te mencionaron",
+      "follow": "Nuevo seguidor",
+      "vibelog_like": "A alguien le gustó tu vibelog",
+      "mini_vibelog_promoted": "Tu vibe fue promocionado",
+      "comment_promoted": "Tu comentario fue promocionado",
+      "system": "Notificación del sistema"
+    },
+    "commented": "comentó:"
   },
   "placeholders": {
     "comment": "Write your comment...",

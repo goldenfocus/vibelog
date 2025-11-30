@@ -126,8 +126,12 @@ export default function NotificationCenter({ isOpen, onClose }: NotificationCent
           {/* Title Row */}
           <div className="mb-3 flex items-center justify-between">
             <div>
-              <h2 className="text-base font-semibold text-white">Notifications</h2>
-              {unreadCount > 0 && <p className="text-xs text-gray-400">{unreadCount} unread</p>}
+              <h2 className="text-base font-semibold text-white">{t('notifications.title')}</h2>
+              {unreadCount > 0 && (
+                <p className="text-xs text-gray-400">
+                  {t('notifications.unreadCount', { count: unreadCount })}
+                </p>
+              )}
             </div>
             <div className="flex items-center gap-2">
               {/* Mark all as read - inline with close */}
@@ -162,7 +166,7 @@ export default function NotificationCenter({ isOpen, onClose }: NotificationCent
                     : 'bg-white/10 text-white hover:bg-white/20'
                 }`}
               >
-                {f.charAt(0).toUpperCase() + f.slice(1)}
+                {t(`notifications.filters.${f}`)}
               </button>
             ))}
           </div>
@@ -177,9 +181,11 @@ export default function NotificationCenter({ isOpen, onClose }: NotificationCent
           ) : notifications.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center text-center">
               <Filter className="mb-4 h-12 w-12 text-gray-600" />
-              <p className="text-lg font-medium text-white">No notifications</p>
+              <p className="text-lg font-medium text-white">{t('notifications.empty.title')}</p>
               <p className="text-sm text-gray-400">
-                {filter === 'all' ? "You're all caught up!" : `No ${filter} notifications`}
+                {filter === 'all'
+                  ? t('notifications.empty.allCaughtUp')
+                  : t('notifications.empty.noType', { type: t(`notifications.filters.${filter}`) })}
               </p>
             </div>
           ) : (

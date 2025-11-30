@@ -11,7 +11,10 @@
     "accountMenu": "Account menu",
     "dashboard": "Dashboard",
     "signIn": "Sign In",
-    "loading": "Loading navigation"
+    "loading": "Loading navigation",
+    "messages": "Messages",
+    "profileSettings": "Profile Settings",
+    "adminPanel": "Admin Panel"
   },
   "screenRecorder": {
     "modalTitle": "Screen Share Recording",
@@ -593,6 +596,34 @@
       "allMarkedRead": "All notifications marked as read",
       "markReadFailed": "Failed to mark all as read"
     }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "unreadCount": "{{count}} unread",
+    "filters": {
+      "all": "All",
+      "unread": "Unread",
+      "comment": "Comment",
+      "reply": "Reply",
+      "reaction": "Reaction"
+    },
+    "empty": {
+      "title": "No notifications",
+      "allCaughtUp": "You're all caught up!",
+      "noType": "No {{type}} notifications"
+    },
+    "types": {
+      "comment": "New comment on your vibelog",
+      "reply": "New reply to your comment",
+      "reaction": "New reaction",
+      "mention": "You were mentioned",
+      "follow": "New follower",
+      "vibelog_like": "Someone liked your vibelog",
+      "mini_vibelog_promoted": "Your vibe was promoted",
+      "comment_promoted": "Your comment was promoted",
+      "system": "System notification"
+    },
+    "commented": "commented:"
   },
   "placeholders": {
     "comment": "Write your comment...",

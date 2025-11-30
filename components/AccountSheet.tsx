@@ -123,7 +123,7 @@ export function AccountSheet({
           onClick={() => onOpenChange(false)}
         >
           <MessageCircle className="h-5 w-5" />
-          Messages
+          {t('navigation.messages')}
         </Link>
 
         <Link
@@ -132,7 +132,7 @@ export function AccountSheet({
           onClick={() => onOpenChange(false)}
         >
           <Settings className="h-5 w-5" />
-          Profile Settings
+          {t('navigation.profileSettings')}
         </Link>
 
         {isAdmin && (
@@ -142,7 +142,7 @@ export function AccountSheet({
             onClick={() => onOpenChange(false)}
           >
             <Shield className="h-5 w-5" />
-            Admin Panel
+            {t('navigation.adminPanel')}
           </Link>
         )}
       </div>

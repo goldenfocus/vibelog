@@ -5,13 +5,16 @@
     "pricing": "Preise",
     "community": "Community",
     "people": "Personen",
-    "signUp": "Anmelden",
-    "openMenu": "Open menu",
-    "closeMenu": "Close menu",
-    "accountMenu": "Account menu",
+    "signUp": "Registrieren",
+    "openMenu": "Menü öffnen",
+    "closeMenu": "Menü schließen",
+    "accountMenu": "Kontomenü",
     "dashboard": "Dashboard",
     "signIn": "Anmelden",
-    "loading": "Navigation wird geladen"
+    "loading": "Navigation wird geladen",
+    "messages": "Nachrichten",
+    "profileSettings": "Profileinstellungen",
+    "adminPanel": "Admin-Bereich"
   },
   "common": {
     "loading": "Wird geladen...",
@@ -595,9 +598,37 @@
       "filterApplied": "Filter \"{{name}}\" applied!"
     },
     "notifications": {
-      "allMarkedRead": "All notifications marked as read",
-      "markReadFailed": "Failed to mark all as read"
+      "allMarkedRead": "Alle Benachrichtigungen als gelesen markiert",
+      "markReadFailed": "Fehler beim Markieren als gelesen"
     }
+  },
+  "notifications": {
+    "title": "Benachrichtigungen",
+    "unreadCount": "{{count}} ungelesen",
+    "filters": {
+      "all": "Alle",
+      "unread": "Ungelesen",
+      "comment": "Kommentar",
+      "reply": "Antwort",
+      "reaction": "Reaktion"
+    },
+    "empty": {
+      "title": "Keine Benachrichtigungen",
+      "allCaughtUp": "Du bist auf dem neuesten Stand!",
+      "noType": "Keine {{type}}-Benachrichtigungen"
+    },
+    "types": {
+      "comment": "Neuer Kommentar zu deinem Vibelog",
+      "reply": "Neue Antwort auf deinen Kommentar",
+      "reaction": "Neue Reaktion",
+      "mention": "Du wurdest erwähnt",
+      "follow": "Neuer Follower",
+      "vibelog_like": "Jemand hat deinen Vibelog geliked",
+      "mini_vibelog_promoted": "Dein Vibe wurde befördert",
+      "comment_promoted": "Dein Kommentar wurde befördert",
+      "system": "Systembenachrichtigung"
+    },
+    "commented": "kommentierte:"
   },
   "placeholders": {
     "comment": "Write your comment...",

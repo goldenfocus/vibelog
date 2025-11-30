@@ -6,12 +6,15 @@
     "community": "社区",
     "people": "人员",
     "signUp": "注册",
-    "openMenu": "Open menu",
-    "closeMenu": "Close menu",
-    "accountMenu": "Account menu",
-    "dashboard": "Dashboard",
+    "openMenu": "打开菜单",
+    "closeMenu": "关闭菜单",
+    "accountMenu": "账户菜单",
+    "dashboard": "控制台",
     "signIn": "登录",
-    "loading": "正在加载导航"
+    "loading": "正在加载导航",
+    "messages": "消息",
+    "profileSettings": "个人设置",
+    "adminPanel": "管理面板"
   },
   "common": {
     "loading": "加载中...",
@@ -595,9 +598,37 @@
       "filterApplied": "Filter \"{{name}}\" applied!"
     },
     "notifications": {
-      "allMarkedRead": "All notifications marked as read",
-      "markReadFailed": "Failed to mark all as read"
+      "allMarkedRead": "所有通知已标记为已读",
+      "markReadFailed": "标记为已读失败"
     }
+  },
+  "notifications": {
+    "title": "通知",
+    "unreadCount": "{{count}} 条未读",
+    "filters": {
+      "all": "全部",
+      "unread": "未读",
+      "comment": "评论",
+      "reply": "回复",
+      "reaction": "反应"
+    },
+    "empty": {
+      "title": "没有通知",
+      "allCaughtUp": "已全部查看！",
+      "noType": "没有{{type}}通知"
+    },
+    "types": {
+      "comment": "有人评论了你的 vibelog",
+      "reply": "有人回复了你的评论",
+      "reaction": "新的反应",
+      "mention": "有人提到了你",
+      "follow": "新粉丝",
+      "vibelog_like": "有人喜欢了你的 vibelog",
+      "mini_vibelog_promoted": "你的 vibe 被推广了",
+      "comment_promoted": "你的评论被推广了",
+      "system": "系统通知"
+    },
+    "commented": "评论了："
   },
   "placeholders": {
     "comment": "Write your comment...",
