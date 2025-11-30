@@ -26,6 +26,59 @@ const translationCache: Record<string, any> = {};
 
 type SupportedLocale = 'en' | 'es' | 'fr' | 'de' | 'vi' | 'zh';
 
+// Critical translations shown during initial load - prevents raw keys from flashing
+// These are displayed BEFORE the full translation file loads
+const CRITICAL_TRANSLATIONS: Record<SupportedLocale, Record<string, unknown>> = {
+  en: {
+    common: { loading: 'Loading...', retry: 'Try Again' },
+    navigation: { loading: 'Loading navigation' },
+    dashboard: { loadingVibelogs: 'Loading your vibelogs...' },
+    pages: { community: { loading: 'Loading vibelogs...' } },
+    actions: { manage: 'Manage', share: 'Share' },
+    titles: { copy: 'Copy' },
+  },
+  es: {
+    common: { loading: 'Cargando...', retry: 'Intentar de nuevo' },
+    navigation: { loading: 'Cargando navegación' },
+    dashboard: { loadingVibelogs: 'Cargando tus vibelogs...' },
+    pages: { community: { loading: 'Cargando vibelogs...' } },
+    actions: { manage: 'Gestionar', share: 'Compartir' },
+    titles: { copy: 'Copiar' },
+  },
+  fr: {
+    common: { loading: 'Chargement...', retry: 'Réessayer' },
+    navigation: { loading: 'Chargement de la navigation' },
+    dashboard: { loadingVibelogs: 'Chargement de vos vibelogs...' },
+    pages: { community: { loading: 'Chargement des vibelogs...' } },
+    actions: { manage: 'Gérer', share: 'Partager' },
+    titles: { copy: 'Copier' },
+  },
+  de: {
+    common: { loading: 'Laden...', retry: 'Erneut versuchen' },
+    navigation: { loading: 'Navigation wird geladen' },
+    dashboard: { loadingVibelogs: 'Laden deiner Vibelogs...' },
+    pages: { community: { loading: 'Vibelogs werden geladen...' } },
+    actions: { manage: 'Verwalten', share: 'Teilen' },
+    titles: { copy: 'Kopieren' },
+  },
+  vi: {
+    common: { loading: 'Đang tải...', retry: 'Thử lại' },
+    navigation: { loading: 'Đang tải điều hướng' },
+    dashboard: { loadingVibelogs: 'Đang tải các vibelog của bạn...' },
+    pages: { community: { loading: 'Đang tải vibelogs...' } },
+    actions: { manage: 'Quản lý', share: 'Chia sẻ' },
+    titles: { copy: 'Sao chép' },
+  },
+  zh: {
+    common: { loading: '加载中...', retry: '重试' },
+    navigation: { loading: '正在加载导航' },
+    dashboard: { loadingVibelogs: '正在加载您的 vibelogs...' },
+    pages: { community: { loading: '正在加载 vibelogs...' } },
+    actions: { manage: '管理', share: '分享' },
+    titles: { copy: '复制' },
+  },
+};
+
 async function loadTranslations(locale: SupportedLocale) {
   if (translationCache[locale]) {
     return translationCache[locale];
@@ -40,7 +93,7 @@ async function loadTranslations(locale: SupportedLocale) {
     if (locale !== 'en') {
       return loadTranslations('en');
     }
-    return {};
+    return CRITICAL_TRANSLATIONS.en;
   }
 }
 
@@ -55,8 +108,11 @@ interface I18nProviderProps {
 
 export function I18nProvider({ children, initialLocale = 'en' }: I18nProviderProps) {
   const [locale, setLocaleState] = useState<SupportedLocale>(initialLocale);
-  const [translations, setTranslations] = useState<Record<string, unknown>>({});
-  const [isLoading, setIsLoading] = useState(true); // Start true - translations need to load first
+  // Initialize with critical translations to prevent raw keys flashing during hydration
+  const [translations, setTranslations] = useState<Record<string, unknown>>(
+    () => CRITICAL_TRANSLATIONS[initialLocale] || CRITICAL_TRANSLATIONS.en
+  );
+  const [isLoading, setIsLoading] = useState(true); // Start true - full translations need to load
   const router = useRouter();
   const pathname = usePathname();
 
