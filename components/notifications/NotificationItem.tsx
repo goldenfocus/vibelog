@@ -66,22 +66,28 @@ export default function NotificationItem({
 
   const content = (
     <div
-      className={`flex min-h-[160px] gap-3 rounded-lg border p-4 transition-all hover:border-electric/50 hover:bg-white/5 ${
-        notification.is_read ? 'border-white/10 bg-white/5' : 'border-electric/30 bg-electric/10'
+      className={`flex gap-4 rounded-xl border p-4 transition-all duration-200 hover:border-primary/50 active:scale-[0.99] ${
+        notification.is_read
+          ? 'border-border/30 bg-card/30'
+          : 'border-primary/30 bg-primary/5 shadow-sm'
       }`}
     >
       {/* Icon */}
-      <div className={`flex-shrink-0 ${colorClass}`}>
-        <Icon className="h-6 w-6" />
+      <div
+        className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full ${
+          notification.is_read ? 'bg-muted' : 'bg-primary/10'
+        }`}
+      >
+        <Icon className={`h-5 w-5 ${colorClass}`} />
       </div>
 
       {/* Content */}
-      <div className="flex-1 space-y-1">
+      <div className="min-w-0 flex-1 space-y-1">
         {/* Title */}
-        <h4 className="font-medium text-white">{notification.title}</h4>
+        <h4 className="font-medium text-foreground">{notification.title}</h4>
 
         {/* Message */}
-        <p className="text-sm text-gray-300">{notification.message}</p>
+        <p className="text-sm text-muted-foreground">{notification.message}</p>
 
         {/* Actor info */}
         {notification.actor_username && (
@@ -90,25 +96,27 @@ export default function NotificationItem({
               <img
                 src={notification.actor_avatar_url}
                 alt={notification.actor_display_name || notification.actor_username}
-                className="h-5 w-5 rounded-full"
+                className="h-5 w-5 rounded-full ring-1 ring-border/50"
               />
             ) : (
-              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-electric/20">
-                <User className="h-3 w-3 text-electric" />
+              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20">
+                <User className="h-3 w-3 text-primary" />
               </div>
             )}
-            <span className="text-xs text-gray-400">@{notification.actor_username}</span>
+            <span className="text-xs text-muted-foreground">@{notification.actor_username}</span>
           </div>
         )}
 
         {/* Timestamp */}
-        <p className="text-xs text-gray-500">{formatRelativeTime(notification.created_at)}</p>
+        <p className="text-xs text-muted-foreground/70">
+          {formatRelativeTime(notification.created_at)}
+        </p>
       </div>
 
       {/* Unread indicator */}
       {!notification.is_read && (
-        <div className="flex-shrink-0">
-          <div className="h-2 w-2 rounded-full bg-electric"></div>
+        <div className="flex-shrink-0 self-start pt-1">
+          <div className="h-2.5 w-2.5 rounded-full bg-primary shadow-[0_0_8px] shadow-primary/50"></div>
         </div>
       )}
     </div>
