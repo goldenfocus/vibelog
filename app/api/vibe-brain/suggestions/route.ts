@@ -13,6 +13,7 @@ export async function GET() {
     // Fetch latest vibelogs, top creators, and stats in parallel
     const [vibelogsResult, creatorsResult, statsResult] = await Promise.all([
       // Latest vibelogs - only require is_published
+      // Use left join (no !inner) so vibelogs are returned even if profile lookup fails
       supabase
         .from('vibelogs')
         .select(
@@ -21,7 +22,7 @@ export async function GET() {
           title,
           teaser,
           created_at,
-          profiles!inner(username, display_name)
+          profiles(username, display_name)
         `
         )
         .eq('is_published', true)
