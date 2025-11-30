@@ -22,6 +22,7 @@ import { useVibeBrainStore } from '@/state/vibe-brain-store';
 interface SuggestionsData {
   vibelogs: Array<{
     id: string;
+    publicSlug: string;
     title: string;
     teaser: string;
     username: string;
@@ -52,7 +53,7 @@ function generateInstantResponse(
     case 'trending': {
       const items = data.vibelogs.slice(0, 5).map(v => {
         const displayName = v.displayName ? ` (${v.displayName})` : '';
-        return `- [${v.title}](/v/${v.id}) by [@${v.username}](/@${v.username})${displayName}`;
+        return `- [${v.title}](/v/${v.publicSlug}) by [@${v.username}](/@${v.username})${displayName}`;
       });
       return `Here's what's fresh on VibeLog right now!\n\n${items.join('\n\n')}\n\nWant me to dig deeper into any of these?`;
     }
@@ -68,7 +69,7 @@ function generateInstantResponse(
       const teaser = pick.teaser
         ? `\n\n"${pick.teaser.slice(0, 100)}${pick.teaser.length > 100 ? '...' : ''}"`
         : '';
-      return `I've got something special for you!\n\nCheck out [${pick.title}](/v/${pick.id}) by [@${pick.username}](/@${pick.username})${teaser}\n\nTrust me on this one!`;
+      return `I've got something special for you!\n\nCheck out [${pick.title}](/v/${pick.publicSlug}) by [@${pick.username}](/@${pick.username})${teaser}\n\nTrust me on this one!`;
     }
 
     case 'creators': {

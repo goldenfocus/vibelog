@@ -60,6 +60,7 @@ export async function GET() {
       const profile = profileMap.get(v.user_id);
       return {
         id: v.id,
+        publicSlug: v.public_slug,
         title: v.title || 'Untitled',
         teaser: v.teaser?.slice(0, 100) || '',
         username: profile?.username || 'anonymous',
