@@ -3,6 +3,7 @@
 import { Bell, Heart, MessageCircle, Sparkles, TrendingUp, User } from 'lucide-react';
 import Link from 'next/link';
 
+import { useI18n } from '@/components/providers/I18nProvider';
 import { formatRelativeTime } from '@/lib/date-utils';
 import type { Notification, NotificationType } from '@/types/notifications';
 
@@ -41,10 +42,34 @@ export default function NotificationItem({
   onClick,
   onMarkRead,
 }: NotificationItemProps) {
+  const { t } = useI18n();
   console.log('🔔 Rendering notification:', notification);
 
   const Icon = typeIcons[notification.type];
   const colorClass = typeColors[notification.type];
+
+  // Get translated title based on notification type
+  const getTranslatedTitle = () => {
+    return t(`notifications.types.${notification.type}`) || notification.title;
+  };
+
+  // Build translated message with actor name
+  const getTranslatedMessage = () => {
+    const actorName = notification.actor_display_name || notification.actor_username;
+    if (!actorName) {
+      return notification.message;
+    }
+
+    // Extract the comment preview from the original message (after "commented: ")
+    const commentMatch = notification.message?.match(/commented:\s*"(.+)"$/);
+    const commentPreview = commentMatch ? commentMatch[1] : null;
+
+    if (commentPreview) {
+      return `${actorName} ${t('notifications.commented')} "${commentPreview}"`;
+    }
+
+    return notification.message;
+  };
 
   // Safety check
   if (!Icon) {
@@ -84,10 +109,10 @@ export default function NotificationItem({
       {/* Content */}
       <div className="min-w-0 flex-1 space-y-1">
         {/* Title */}
-        <h4 className="font-medium text-foreground">{notification.title}</h4>
+        <h4 className="font-medium text-foreground">{getTranslatedTitle()}</h4>
 
         {/* Message */}
-        <p className="text-sm text-muted-foreground">{notification.message}</p>
+        <p className="text-sm text-muted-foreground">{getTranslatedMessage()}</p>
 
         {/* Actor info */}
         {notification.actor_username && (
