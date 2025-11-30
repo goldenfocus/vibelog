@@ -200,20 +200,25 @@ The implications for creators are profound. We're moving toward a world where yo
       messages: [
         {
           role: 'system',
-          content: `You are a vibelog writer. Write posts in ${languageName}.
+          content: `You are an SEO-expert vibelog writer. Write posts in ${languageName}.
 
 TONE: ${toneInstruction}
 
 CRITICAL:
 - Write in ${languageName} only
 - Replace "blog" with "vibelog" variants
+- Generate SEO-optimized metadata for unique search ranking
 
 OUTPUT FORMAT:
+---SEO---
+title: [SEO title, 50-60 chars, includes main keyword]
+description: [Meta description, 150-160 chars, compelling with keyword]
+keywords: [5-8 comma-separated keywords/phrases relevant to content]
 ---TEASER---
 [2-3 paragraph hook (200-400 chars) that creates curiosity]
 ---FULL---
-# [Title]
-[Complete vibelog with H2 sections]`,
+# [Title - can be different from SEO title, more creative]
+[Complete vibelog with semantic H2/H3 sections for better SEO structure]`,
         },
         {
           role: 'user',
@@ -256,12 +261,33 @@ OUTPUT FORMAT:
       );
     }
 
-    // Parse dual-content response
+    // Parse SEO + content response
+    const seoMatch = rawContent.match(/---SEO---\s*([\s\S]*?)---TEASER---/);
     const teaserMatch = rawContent.match(/---TEASER---\s*([\s\S]*?)---FULL---/);
     const fullMatch = rawContent.match(/---FULL---\s*([\s\S]*?)$/);
 
     let teaser = '';
     let fullContent = '';
+    let seoTitle = '';
+    let seoDescription = '';
+    let seoKeywords: string[] = [];
+
+    // Parse SEO metadata
+    if (seoMatch) {
+      const seoBlock = seoMatch[1].trim();
+      const titleMatch = seoBlock.match(/title:\s*(.+)/i);
+      const descMatch = seoBlock.match(/description:\s*(.+)/i);
+      const keywordsMatch = seoBlock.match(/keywords:\s*(.+)/i);
+
+      if (titleMatch) seoTitle = titleMatch[1].trim();
+      if (descMatch) seoDescription = descMatch[1].trim();
+      if (keywordsMatch) {
+        seoKeywords = keywordsMatch[1]
+          .split(',')
+          .map(k => k.trim())
+          .filter(k => k.length > 0);
+      }
+    }
 
     if (teaserMatch && fullMatch) {
       teaser = postProcessContent(teaserMatch[1].trim());
@@ -273,10 +299,18 @@ OUTPUT FORMAT:
       teaser = firstParagraphs.substring(0, 300) + (firstParagraphs.length > 300 ? '...' : '');
     }
 
+    // Extract title from content H1 for fallback SEO title
+    const h1Match = fullContent.match(/^#\s+(.+)$/m);
+    const contentTitle = h1Match ? h1Match[1].trim() : '';
+
     return NextResponse.json({
       vibelogTeaser: teaser || 'Content generation in progress...',
       vibelogContent: fullContent || 'Content generation failed',
       originalLanguage: targetLanguage,
+      // SEO metadata for unique ranking per vibelog
+      seoTitle: seoTitle || contentTitle || '',
+      seoDescription: seoDescription || teaser.substring(0, 160) || '',
+      seoKeywords: seoKeywords,
       success: true,
     });
   } catch (error) {

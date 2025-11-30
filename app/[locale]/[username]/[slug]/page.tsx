@@ -96,6 +96,7 @@ async function getVibelog(username: string, slug: string) {
         public_slug,
         seo_title,
         seo_description,
+        seo_keywords,
         original_language,
         available_languages,
         translations
@@ -138,6 +139,7 @@ async function getVibelog(username: string, slug: string) {
           public_slug,
           seo_title,
           seo_description,
+          seo_keywords,
           original_language,
           available_languages,
           translations
@@ -232,6 +234,7 @@ async function getVibelog(username: string, slug: string) {
       public_slug,
       seo_title,
       seo_description,
+      seo_keywords,
       original_language,
       available_languages,
       translations
@@ -272,6 +275,7 @@ async function getVibelog(username: string, slug: string) {
         public_slug,
         seo_title,
         seo_description,
+        seo_keywords,
         original_language,
         available_languages,
         translations
@@ -336,6 +340,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     `Read ${vibelog.title} by @${normalizedUsername} on VibeLog`;
 
   // Generate SEO-optimized metadata with hreflang
+  // Each vibelog gets unique SEO metadata for differentiated search ranking
   return generateVibelogMetadata({
     title: vibelog.title,
     teaser: description,
@@ -345,6 +350,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     coverImage: vibelog.cover_image_url || undefined,
     publishedAt: vibelog.published_at || vibelog.created_at,
     updatedAt: vibelog.created_at,
+    // AI-generated SEO fields for unique ranking per vibelog
+    seoTitle: vibelog.seo_title || undefined,
+    seoDescription: vibelog.seo_description || undefined,
+    seoKeywords: vibelog.seo_keywords || undefined,
+    tags: vibelog.tags || undefined,
   });
 }
 
