@@ -1,9 +1,8 @@
 'use client';
 
-import { Globe } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 
 import { stripLocaleFromPath, type Locale } from '@/lib/seo/hreflang';
 import { cn } from '@/lib/utils';
@@ -30,13 +29,14 @@ interface FlagLinksProps {
 /**
  * FlagLinks - Responsive language selector
  *
- * Mobile: Single compact button → Bottom sheet with all languages
+ * Mobile: Current flag button → Smooth expanding pill with all flags
  * Desktop: Horizontal row of subtle flag links
  *
- * Design:
- * - Inactive: 50% opacity + grayscale (subtle, premium feel)
- * - Active: Full color + slight scale (clear indication)
- * - Hover: Restores color and opacity (inviting interaction)
+ * Design Philosophy:
+ * - Show current language flag (familiar, personal)
+ * - Tap to expand into horizontal flag row (no jarring modal)
+ * - Smooth CSS transitions (no mount/unmount flicker)
+ * - Auto-close when tapping outside or selecting
  *
  * SEO Benefits:
  * - Real <a href> links (crawlable by Googlebot)
@@ -45,7 +45,8 @@ interface FlagLinksProps {
  */
 export function FlagLinks({ currentLocale, className, size = 'md' }: FlagLinksProps) {
   const pathname = usePathname();
-  const [isOpen, setIsOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Get path without locale prefix for generating links
   const pathWithoutLocale = stripLocaleFromPath(pathname);
@@ -59,7 +60,45 @@ export function FlagLinks({ currentLocale, className, size = 'md' }: FlagLinksPr
   // Get current language info
   const currentLang = LANGUAGES.find(l => l.code === currentLocale) || LANGUAGES[0];
 
-  // Size configurations - all maintain 44px touch target via padding
+  // Close when clicking outside
+  useEffect(() => {
+    if (!isExpanded) {
+      return;
+    }
+
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsExpanded(false);
+      }
+    };
+
+    // Use touchstart for mobile (faster response)
+    document.addEventListener('touchstart', handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('touchstart', handleClickOutside);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isExpanded]);
+
+  // Close on escape key
+  useEffect(() => {
+    if (!isExpanded) {
+      return;
+    }
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsExpanded(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isExpanded]);
+
+  // Size configurations - all maintain 44px touch target
   const sizeClasses = {
     sm: 'text-base min-h-[44px] min-w-[32px] px-1',
     md: 'text-lg min-h-[44px] min-w-[36px] px-1',
@@ -71,25 +110,76 @@ export function FlagLinks({ currentLocale, className, size = 'md' }: FlagLinksPr
       {/*
         SEO Strategy: hreflang is handled in <head> via Next.js metadata.alternates.languages
         (see app/[locale]/layout.tsx). In-page links here are for USER navigation only.
-
-        - Mobile: Globe button → bottom sheet with language options
-        - Desktop: Horizontal flag row
       */}
 
-      {/* Mobile: Compact globe button */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className={cn(
-          'flex items-center justify-center rounded-lg lg:hidden',
-          'h-10 w-10 border border-border/40 bg-muted/60',
-          'transition-all duration-200 active:scale-95',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-          className
-        )}
-        aria-label={`Language: ${currentLang.nativeName}. Tap to change.`}
-      >
-        <Globe className="h-5 w-5 text-muted-foreground" />
-      </button>
+      {/* Mobile: Current flag → Expanding pill with all flags */}
+      <div ref={containerRef} className={cn('relative lg:hidden', className)}>
+        {/* Expanding pill container */}
+        <div
+          className={cn(
+            'flex items-center overflow-hidden rounded-full border',
+            'transition-all duration-300 ease-out',
+            isExpanded
+              ? 'border-primary/30 bg-background/95 shadow-lg backdrop-blur-md'
+              : 'border-border/40 bg-muted/60'
+          )}
+        >
+          {/* Current flag button (always visible) */}
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className={cn(
+              'flex h-10 w-10 items-center justify-center',
+              'transition-all duration-200',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+              isExpanded && 'scale-110'
+            )}
+            aria-label={`Language: ${currentLang.nativeName}. Tap to ${isExpanded ? 'close' : 'change'}.`}
+            aria-expanded={isExpanded}
+          >
+            <span className="text-xl" role="img" aria-hidden="true">
+              {currentLang.flag}
+            </span>
+          </button>
+
+          {/* Other flags (expand from right) */}
+          <div
+            className={cn(
+              'flex items-center gap-1 overflow-hidden',
+              'transition-all duration-300 ease-out',
+              isExpanded ? 'max-w-[200px] pr-2 opacity-100' : 'max-w-0 opacity-0'
+            )}
+          >
+            {LANGUAGES.filter(l => l.code !== currentLocale).map((lang, index) => (
+              <Link
+                key={lang.code}
+                href={getLocalizedPath(lang.code)}
+                hrefLang={lang.code}
+                onClick={() => setIsExpanded(false)}
+                aria-label={`Switch to ${lang.name} (${lang.nativeName})`}
+                title={lang.nativeName}
+                prefetch={false}
+                className={cn(
+                  'flex h-9 w-9 items-center justify-center rounded-full',
+                  'transition-all duration-200 ease-out',
+                  'hover:scale-110 hover:bg-primary/10',
+                  'active:scale-95',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary'
+                )}
+                style={{
+                  // Staggered entrance animation
+                  transitionDelay: isExpanded ? `${index * 30}ms` : '0ms',
+                  transform: isExpanded ? 'scale(1)' : 'scale(0.8)',
+                  opacity: isExpanded ? 1 : 0,
+                }}
+              >
+                <span className="text-lg" role="img" aria-hidden="true">
+                  {lang.flag}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
 
       {/* Desktop: Horizontal row of flags (visible + crawlable) */}
       <nav
@@ -128,86 +218,6 @@ export function FlagLinks({ currentLocale, className, size = 'md' }: FlagLinksPr
           );
         })}
       </nav>
-
-      {/* Mobile Bottom Sheet (user interaction) */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 z-[200] lg:hidden"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Select language"
-        >
-          {/* Backdrop with fade animation */}
-          <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
-            onClick={() => setIsOpen(false)}
-          />
-
-          {/* Bottom Sheet with slide-up animation */}
-          <div className="absolute inset-x-0 bottom-0 animate-in slide-in-from-bottom duration-300 ease-out">
-            <div className="rounded-t-3xl bg-background px-4 pb-8 pt-4 shadow-2xl">
-              {/* Handle bar */}
-              <div className="mx-auto mb-4 h-1 w-12 rounded-full bg-border/60" />
-
-              {/* Header */}
-              <div className="mb-4 text-center">
-                <h2 className="text-lg font-semibold text-foreground">Choose Language</h2>
-                <p className="text-sm text-muted-foreground">Select your preferred language</p>
-              </div>
-
-              {/* Language Grid - Using real Links for SEO within the sheet too */}
-              <div className="grid grid-cols-2 gap-2">
-                {LANGUAGES.map(lang => {
-                  const isActive = lang.code === currentLocale;
-                  return (
-                    <Link
-                      key={lang.code}
-                      href={getLocalizedPath(lang.code)}
-                      hrefLang={lang.code}
-                      onClick={() => setIsOpen(false)}
-                      className={cn(
-                        'flex items-center gap-3 rounded-xl px-4 py-3',
-                        'transition-all duration-200 active:scale-[0.98]',
-                        isActive
-                          ? 'bg-primary/10 ring-2 ring-primary'
-                          : 'bg-muted/50 hover:bg-muted'
-                      )}
-                    >
-                      <span className="text-2xl" role="img" aria-hidden="true">
-                        {lang.flag}
-                      </span>
-                      <div className="text-left">
-                        <div
-                          className={cn(
-                            'text-sm font-medium',
-                            isActive ? 'text-primary' : 'text-foreground'
-                          )}
-                        >
-                          {lang.nativeName}
-                        </div>
-                        <div className="text-xs text-muted-foreground">{lang.name}</div>
-                      </div>
-                      {isActive && (
-                        <div className="ml-auto">
-                          <div className="h-2 w-2 rounded-full bg-primary" />
-                        </div>
-                      )}
-                    </Link>
-                  );
-                })}
-              </div>
-
-              {/* Cancel button */}
-              <button
-                onClick={() => setIsOpen(false)}
-                className="mt-4 w-full rounded-xl bg-muted py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/80 active:scale-[0.98]"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }
