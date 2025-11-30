@@ -439,7 +439,7 @@ export function VideoCaptureZone({
               title: analysisResult.title,
               content: analysisResult.content, // Full AI-generated content (in English)
               teaser: analysisResult.teaser,   // Short teaser for cards (in English)
-              transcript: analysisResult.transcription, // Original transcript in spoken language
+              transcription: analysisResult.transcription, // Original transcript in spoken language (for "Original" tab)
               // Note: original_language defaults to 'en' - correct for video vibelogs since content is English
               isPublished: true,
               isPublic: true,

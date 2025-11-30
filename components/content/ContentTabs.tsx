@@ -198,8 +198,8 @@ export function ContentTabs({
         </TabsContent>
 
         <TabsContent value="original" className="space-y-6">
-          {/* Original Audio/Video Player */}
-          {(originalAudioUrl || videoUrl) && (
+          {/* Original Audio Player - only for audio vibelogs (video is already displayed at top of page) */}
+          {originalAudioUrl && !videoUrl && (
             <div className="flex flex-col gap-3 rounded-xl border border-border/50 bg-gradient-to-br from-background via-background to-background/50 p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
@@ -208,36 +208,23 @@ export function ContentTabs({
                 </div>
               </div>
 
-              {videoUrl ? (
-                <video
-                  controls
-                  className="w-full rounded-lg"
-                  preload="metadata"
-                  controlsList="nodownload"
-                >
-                  <source src={videoUrl} type="video/webm" />
-                  <source src={videoUrl} type="video/mp4" />
-                  Your browser does not support the video element.
-                </video>
-              ) : originalAudioUrl ? (
-                <button
-                  onClick={() => handlePlayClick(originalAudioUrl, 'original')}
-                  disabled={originalState.isLoading}
-                  className="flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 px-8 py-3 font-semibold text-white shadow-lg transition-all duration-200 hover:scale-105 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50"
-                  aria-label={
-                    originalState.isPlaying ? 'Pause original audio' : 'Play original audio'
-                  }
-                >
-                  {originalState.isLoading ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : originalState.isPlaying ? (
-                    <Pause className="h-5 w-5" />
-                  ) : (
-                    <Play className="h-5 w-5" />
-                  )}
-                  <span>{originalState.isPlaying ? 'Pause' : 'Play Original'}</span>
-                </button>
-              ) : null}
+              <button
+                onClick={() => handlePlayClick(originalAudioUrl, 'original')}
+                disabled={originalState.isLoading}
+                className="flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 px-8 py-3 font-semibold text-white shadow-lg transition-all duration-200 hover:scale-105 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label={
+                  originalState.isPlaying ? 'Pause original audio' : 'Play original audio'
+                }
+              >
+                {originalState.isLoading ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : originalState.isPlaying ? (
+                  <Pause className="h-5 w-5" />
+                ) : (
+                  <Play className="h-5 w-5" />
+                )}
+                <span>{originalState.isPlaying ? 'Pause' : 'Play Original'}</span>
+              </button>
             </div>
           )}
 
