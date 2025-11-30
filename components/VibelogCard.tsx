@@ -1,8 +1,9 @@
 'use client';
 
 import { Clock, User } from 'lucide-react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -51,7 +52,12 @@ interface VibelogCardProps {
   onDeleteSuccess?: (vibelogId: string) => void;
 }
 
-export default function VibelogCard({ vibelog, onRemix, onDeleteSuccess }: VibelogCardProps) {
+// Memoized to prevent unnecessary re-renders in lists
+const VibelogCard = memo(function VibelogCard({
+  vibelog,
+  onRemix,
+  onDeleteSuccess,
+}: VibelogCardProps) {
   const router = useRouter();
   const { user } = useAuth(); // Check if user is logged in
   const { t, locale } = useI18n();
@@ -271,11 +277,13 @@ export default function VibelogCard({ vibelog, onRemix, onDeleteSuccess }: Vibel
 
       {/* Cover Image (shown if no video) */}
       {!videoUrl && safeCoverUrl && (
-        <div className="mb-4 overflow-hidden rounded-xl">
-          <img
+        <div className="relative mb-4 h-48 overflow-hidden rounded-xl">
+          <Image
             src={safeCoverUrl}
             alt={vibelog.title}
-            className="h-48 w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
           />
         </div>
       )}
@@ -284,10 +292,12 @@ export default function VibelogCard({ vibelog, onRemix, onDeleteSuccess }: Vibel
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           {vibelog.author.avatar_url ? (
-            <img
+            <Image
               src={vibelog.author.avatar_url}
               alt={vibelog.author.display_name}
-              className="h-10 w-10 rounded-full border-2 border-electric/20"
+              width={40}
+              height={40}
+              className="rounded-full border-2 border-electric/20"
             />
           ) : (
             <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-electric/20 bg-electric/10">
@@ -379,4 +389,6 @@ export default function VibelogCard({ vibelog, onRemix, onDeleteSuccess }: Vibel
       )}
     </article>
   );
-}
+});
+
+export default VibelogCard;

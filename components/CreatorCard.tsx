@@ -1,8 +1,9 @@
 'use client';
 
 import { User, Eye, Heart, Zap, Calendar, Crown } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
-import { useState } from 'react';
+import { memo, useState } from 'react';
 
 import { useI18n } from '@/components/providers/I18nProvider';
 
@@ -19,7 +20,8 @@ interface CreatorCardProps {
   index?: number; // For stagger animation
 }
 
-export default function CreatorCard({
+// Memoized to prevent unnecessary re-renders when parent re-renders
+const CreatorCard = memo(function CreatorCard({
   username,
   displayName,
   avatarUrl,
@@ -90,7 +92,13 @@ export default function CreatorCard({
               className={`relative h-20 w-20 overflow-hidden rounded-full border-2 transition-all duration-300 ${isHovered ? 'border-electric shadow-lg shadow-electric/50' : 'border-border/50'} `}
             >
               {avatarUrl ? (
-                <img src={avatarUrl} alt={displayName} className="h-full w-full object-cover" />
+                <Image
+                  src={avatarUrl}
+                  alt={displayName}
+                  fill
+                  sizes="80px"
+                  className="object-cover"
+                />
               ) : (
                 <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-electric/20 to-violet-500/20">
                   <User className="h-10 w-10 text-electric" />
@@ -194,3 +202,5 @@ function formatNumber(num: number): string {
   }
   return num.toString();
 }
+
+export default CreatorCard;

@@ -29,84 +29,71 @@ export default function DashboardPage() {
   // const [tempVibelogId, setTempVibelogId] = useState<string | null>(null);
   // const [_error, setError] = useState<string | null>(null);
 
-  // Fetch user's profile
+  // Fetch user's profile and vibelogs in parallel (single fetch for profile)
   useEffect(() => {
-    async function fetchProfile() {
-      if (!user?.id) {
-        return;
-      }
-
-      const supabase = createClient();
-      const { data } = await supabase
-        .from('profiles')
-        .select('display_name, username, avatar_url')
-        .eq('id', user.id)
-        .single();
-
-      if (data) {
-        setProfile(data);
-      }
-    }
-    fetchProfile();
-  }, [user?.id]);
-
-  // Fetch user's vibelogs
-  useEffect(() => {
-    async function fetchVibelogs() {
+    async function fetchDashboardData() {
       if (!user?.id) {
         return;
       }
 
       const supabase = createClient();
 
-      // Fetch vibelogs (include user_id for Edit/Remix logic + video fields)
-      const { data: vibelogsData, error } = await supabase
-        .from('vibelogs')
-        .select(
+      // Fetch profile and vibelogs in parallel - single profile fetch instead of two
+      const [profileResult, vibelogsResult] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('display_name, username, avatar_url')
+          .eq('id', user.id)
+          .single(),
+        supabase
+          .from('vibelogs')
+          .select(
+            `
+            id,
+            title,
+            slug,
+            public_slug,
+            teaser,
+            content,
+            cover_image_url,
+            audio_url,
+            video_url,
+            created_at,
+            published_at,
+            view_count,
+            like_count,
+            share_count,
+            read_time,
+            user_id
           `
-          id,
-          title,
-          slug,
-          public_slug,
-          teaser,
-          content,
-          cover_image_url,
-          audio_url,
-          video_url,
-          created_at,
-          published_at,
-          view_count,
-          like_count,
-          share_count,
-          read_time,
-          user_id
-        `
-        )
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(10);
+          )
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(10),
+      ]);
 
-      if (error) {
-        console.error('Error fetching vibelogs:', error);
+      // Set profile state
+      if (profileResult.data) {
+        setProfile(profileResult.data);
+      }
+
+      // Handle vibelogs
+      if (vibelogsResult.error) {
+        console.error('Error fetching vibelogs:', vibelogsResult.error);
         setLoadingVibelogs(false);
         return;
       }
 
+      const vibelogsData = vibelogsResult.data;
       if (!vibelogsData || vibelogsData.length === 0) {
         setVibelogs([]);
         setLoadingVibelogs(false);
         return;
       }
 
-      // Fetch user's profile
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('username, display_name, avatar_url')
-        .eq('id', user.id)
-        .single();
-
       // Transform data to match VibelogCard interface
       // ALWAYS use database profile as source of truth for avatar
+      const profileData = profileResult.data;
       const transformedData = vibelogsData.map(v => ({
         ...v,
         author: {
@@ -124,8 +111,8 @@ export default function DashboardPage() {
       setLoadingVibelogs(false);
     }
 
-    fetchVibelogs();
-  }, [user?.id, user?.email, user?.user_metadata]);
+    fetchDashboardData();
+  }, [user?.id]);
 
   // Redirect to sign in if not authenticated (but NOT during sign out!)
   useEffect(() => {

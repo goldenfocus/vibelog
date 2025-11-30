@@ -2,7 +2,7 @@
 
 import { Clock, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useRef, useState, useEffect, useMemo } from 'react';
+import { useRef, useState, useEffect, useMemo, memo } from 'react';
 
 import { useI18n } from '@/components/providers/I18nProvider';
 import { useDominantColor } from '@/hooks/useDominantColor';
@@ -26,8 +26,14 @@ interface FloatingCardProps {
 /**
  * Futuristic floating card with 3D tilt, glassmorphism, and smooth animations
  * Features hover effects, gesture support, and media playback
+ * Memoized to prevent unnecessary re-renders in carousel
  */
-export function FloatingCard({ vibelog, index, isActive = false, onCardClick }: FloatingCardProps) {
+export const FloatingCard = memo(function FloatingCard({
+  vibelog,
+  index,
+  isActive = false,
+  onCardClick,
+}: FloatingCardProps) {
   const router = useRouter();
   const { locale } = useI18n();
   const cardRef = useRef<HTMLDivElement>(null);
