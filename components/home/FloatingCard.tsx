@@ -264,4 +264,4 @@ export const FloatingCard = memo(function FloatingCard({
       </div>
     </div>
   );
-}
+});
