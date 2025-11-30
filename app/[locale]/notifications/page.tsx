@@ -1,23 +1,36 @@
 'use client';
 
 import { Check, Filter, Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import Navigation from '@/components/Navigation';
 import NotificationItem from '@/components/notifications/NotificationItem';
+import { useAuth } from '@/components/providers/AuthProvider';
 import type { Notification } from '@/types/notifications';
 
 type FilterType = 'all' | 'unread' | 'comment' | 'reply' | 'reaction';
 
 export default function NotificationsPage() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterType>('all');
 
+  // Redirect anonymous users to sign-in
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace('/auth/signin');
+    }
+  }, [authLoading, user, router]);
+
   // Fetch notifications
   const fetchNotifications = async () => {
+    if (!user) return;
+
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -45,9 +58,11 @@ export default function NotificationsPage() {
   };
 
   useEffect(() => {
-    fetchNotifications();
+    if (user) {
+      fetchNotifications();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter]);
+  }, [filter, user]);
 
   // Mark notification as read
   const handleMarkRead = async (notificationId: string) => {
@@ -98,6 +113,20 @@ export default function NotificationsPage() {
       toast.error('Failed to mark all as read');
     }
   };
+
+  // Show loading state while checking auth
+  if (authLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Don't render content for anonymous users (redirect is happening)
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-background">
