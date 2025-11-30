@@ -214,8 +214,9 @@ export async function updateVibelog(
   // Handle slug updates
   let finalSlug = existingVibelog.slug || existingVibelog.public_slug;
   const oldTitle = existingVibelog.title || '';
-  const isPlaceholderTitle = oldTitle.toLowerCase().includes('video vibelog') &&
-                             (oldTitle.includes('processing') || /video vibelog \d+-\w+/i.test(oldTitle));
+  const isPlaceholderTitle =
+    oldTitle.toLowerCase().includes('video vibelog') &&
+    (oldTitle.includes('processing') || /video vibelog \d+-\w+/i.test(oldTitle));
   const titleChanged = data.title && data.title !== oldTitle;
 
   // Regenerate slug if:
@@ -226,7 +227,7 @@ export async function updateVibelog(
       oldTitle,
       newTitle: data.title,
       isPlaceholderTitle,
-      hadSlug: !!finalSlug
+      hadSlug: !!finalSlug,
     });
     finalSlug = generateUserSlug(data.title, vibelogId);
     await supabase.from('vibelogs').update({ slug: finalSlug }).eq('id', vibelogId);
@@ -331,6 +332,18 @@ export async function handleAsyncTasks(
   }
 
   // 4. Auto-translate to all supported languages (fire-and-forget)
+  // But ONLY if translations don't already exist (to prevent overwriting existing translations)
+  const { data: existing } = await supabase
+    .from('vibelogs')
+    .select('translations, available_languages')
+    .eq('id', vibelogId)
+    .single();
+
+  if (existing?.translations && Object.keys(existing.translations).length > 0) {
+    console.log('ℹ️ [TRANSLATION] Skipping - translations already exist for:', vibelogId);
+    return; // Don't overwrite existing translations
+  }
+
   const sourceLanguage = (data.original_language || 'en') as SupportedLanguage;
   const targetLanguages = getTargetLanguages(sourceLanguage);
 
