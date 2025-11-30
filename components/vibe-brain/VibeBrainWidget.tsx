@@ -12,11 +12,78 @@ import {
   MessageSquare,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 
 import { useI18n } from '@/components/providers/I18nProvider';
 import { cn } from '@/lib/utils';
 import { useVibeBrainStore } from '@/state/vibe-brain-store';
+
+// Types for pre-fetched suggestions data
+interface SuggestionsData {
+  vibelogs: Array<{
+    id: string;
+    title: string;
+    teaser: string;
+    username: string;
+    displayName: string | null;
+    createdAt: string;
+  }>;
+  creators: Array<{
+    id: string;
+    username: string;
+    displayName: string | null;
+    bio: string | null;
+    vibelogCount: number;
+  }>;
+  stats: {
+    totalUsers: number;
+    totalVibelogs: number;
+  };
+}
+
+/**
+ * Generate instant response from pre-fetched data
+ */
+function generateInstantResponse(
+  type: 'trending' | 'surprise' | 'creators',
+  data: SuggestionsData
+): string {
+  switch (type) {
+    case 'trending': {
+      const items = data.vibelogs.slice(0, 5).map(v => {
+        const displayName = v.displayName ? ` (${v.displayName})` : '';
+        return `- [${v.title}](/v/${v.id}) by [@${v.username}](/@${v.username})${displayName}`;
+      });
+      return `Here's what's fresh on VibeLog right now!\n\n${items.join('\n\n')}\n\nWant me to dig deeper into any of these?`;
+    }
+
+    case 'surprise': {
+      // Pick a random vibelog from the latest
+      const randomIndex = Math.floor(Math.random() * Math.min(data.vibelogs.length, 5));
+      const pick = data.vibelogs[randomIndex];
+      if (!pick) {
+        return 'Let me find something interesting for you...';
+      }
+
+      const teaser = pick.teaser
+        ? `\n\n"${pick.teaser.slice(0, 100)}${pick.teaser.length > 100 ? '...' : ''}"`
+        : '';
+      return `I've got something special for you!\n\nCheck out [${pick.title}](/v/${pick.id}) by [@${pick.username}](/@${pick.username})${teaser}\n\nTrust me on this one!`;
+    }
+
+    case 'creators': {
+      const items = data.creators.slice(0, 5).map(c => {
+        const displayName = c.displayName ? ` (${c.displayName})` : '';
+        const bio = c.bio ? ` - ${c.bio}` : '';
+        return `- [@${c.username}](/@${c.username})${displayName} - ${c.vibelogCount} vibelogs${bio}`;
+      });
+      return `The legends of VibeLog!\n\n${items.join('\n\n')}\n\nThese creators are keeping the vibes alive!`;
+    }
+
+    default:
+      return '';
+  }
+}
 
 /**
  * Parse markdown links [text](url) and render as Next.js Links
@@ -108,8 +175,23 @@ export function VibeBrainWidget() {
   const { t } = useI18n();
 
   const [input, setInput] = useState('');
+  const [suggestionsData, setSuggestionsData] = useState<SuggestionsData | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Pre-fetch suggestions data when widget opens
+  useEffect(() => {
+    if (isOpen && !suggestionsData) {
+      fetch('/api/vibe-brain/suggestions')
+        .then(res => res.json())
+        .then(data => {
+          if (data.vibelogs) {
+            setSuggestionsData(data);
+          }
+        })
+        .catch(err => console.error('[VibeBrain] Failed to prefetch suggestions:', err));
+    }
+  }, [isOpen, suggestionsData]);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -122,6 +204,46 @@ export function VibeBrainWidget() {
       inputRef.current?.focus();
     }
   }, [isOpen, isMinimized, showHistory]);
+
+  // Handle suggestion button click - use instant response if data available
+  const handleSuggestionClick = useCallback(
+    (type: 'trending' | 'surprise' | 'creators', fallbackQuery: string) => {
+      // If we have pre-fetched data, use instant response
+      if (suggestionsData && suggestionsData.vibelogs.length > 0) {
+        const instantResponse = generateInstantResponse(type, suggestionsData);
+
+        // Add messages directly to store
+        const userMessage =
+          type === 'trending'
+            ? "What's trending?"
+            : type === 'surprise'
+              ? 'Surprise me!'
+              : 'Who are the top creators?';
+
+        useVibeBrainStore.setState(state => ({
+          messages: [
+            ...state.messages,
+            {
+              id: `user-${Date.now()}`,
+              role: 'user' as const,
+              content: userMessage,
+              timestamp: new Date(),
+            },
+            {
+              id: `assistant-${Date.now() + 1}`,
+              role: 'assistant' as const,
+              content: instantResponse,
+              timestamp: new Date(),
+            },
+          ],
+        }));
+      } else {
+        // Fallback to AI if no pre-fetched data
+        sendMessage(fallbackQuery);
+      }
+    },
+    [suggestionsData, sendMessage]
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -275,29 +397,39 @@ export function VibeBrainWidget() {
                   platform. Ask me anything!
                 </p>
                 <div className="mt-4 flex flex-wrap justify-center gap-2">
-                  {[
-                    {
-                      label: "🔥 What's trending?",
-                      query: 'Show me the hottest vibes right now! What are people creating today?',
-                    },
-                    {
-                      label: '🎯 Surprise me!',
-                      query:
-                        'Pick something amazing for me to check out - surprise me with your best recommendation!',
-                    },
-                    {
-                      label: '🌟 Top creators',
-                      query: 'Who are the most prolific creators on VibeLog? Show me the legends!',
-                    },
-                  ].map(suggestion => (
-                    <button
-                      key={suggestion.label}
-                      onClick={() => sendMessage(suggestion.query)}
-                      className="rounded-full bg-white/5 px-3 py-1.5 text-xs text-white/80 transition-colors hover:bg-white/10"
-                    >
-                      {suggestion.label}
-                    </button>
-                  ))}
+                  <button
+                    onClick={() =>
+                      handleSuggestionClick(
+                        'trending',
+                        'Show me the hottest vibes right now! What are people creating today?'
+                      )
+                    }
+                    className="rounded-full bg-white/5 px-3 py-1.5 text-xs text-white/80 transition-colors hover:bg-white/10"
+                  >
+                    {"🔥 What's trending?"}
+                  </button>
+                  <button
+                    onClick={() =>
+                      handleSuggestionClick(
+                        'surprise',
+                        'Pick something amazing for me to check out - surprise me with your best recommendation!'
+                      )
+                    }
+                    className="rounded-full bg-white/5 px-3 py-1.5 text-xs text-white/80 transition-colors hover:bg-white/10"
+                  >
+                    {'🎯 Surprise me!'}
+                  </button>
+                  <button
+                    onClick={() =>
+                      handleSuggestionClick(
+                        'creators',
+                        'Who are the most prolific creators on VibeLog? Show me the legends!'
+                      )
+                    }
+                    className="rounded-full bg-white/5 px-3 py-1.5 text-xs text-white/80 transition-colors hover:bg-white/10"
+                  >
+                    {'🌟 Top creators'}
+                  </button>
                 </div>
               </div>
             ) : (
