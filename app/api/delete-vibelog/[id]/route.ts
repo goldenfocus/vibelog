@@ -31,41 +31,45 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    console.log('[Delete Endpoint] Starting delete request');
+
     // Get current user
     const supabase = await createServerSupabaseClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
+    console.log('[Delete Endpoint] User:', { userId: user?.id, email: user?.email });
+
     if (!user) {
+      console.error('[Delete Endpoint] No authenticated user');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Get vibelog ID
     const { id: vibelogId } = await params;
+    console.log('[Delete Endpoint] Vibelog ID:', vibelogId);
 
-    // Check if user is admin
-    const adminClient = await createServerAdminClient();
-    const { data: userProfile, error: profileError } = await adminClient
-      .from('profiles')
-      .select('is_admin')
-      .eq('id', user.id)
-      .single();
+    // Check if user is admin using the fixed isAdmin function
+    const { isAdmin } = await import('@/lib/auth-admin');
+    const userIsAdmin = await isAdmin(user.id);
+
+    console.log('[Delete Endpoint] Admin check:', {
+      userId: user.id,
+      isAdmin: userIsAdmin,
+    });
 
     logger.info('Delete authorization check', {
       userId: user.id,
       vibelogId,
-      userProfile,
-      profileError,
+      isAdmin: userIsAdmin,
     });
-
-    const isAdmin = userProfile?.is_admin === true;
 
     // Call centralized delete service
     const result = await deleteVibelog({
       vibelogId,
       userId: user.id,
-      userIsAdmin: isAdmin,
+      userIsAdmin,
       request,
     });
 
@@ -74,13 +78,14 @@ export async function DELETE(
       logger.info('Vibelog deleted successfully', {
         vibelogId,
         userId: user.id,
-        isAdmin,
+        isAdmin: userIsAdmin,
         storageWarnings: result.storageWarnings,
       });
     } else {
       logger.error('Vibelog delete failed', {
         vibelogId,
         userId: user.id,
+        isAdmin: userIsAdmin,
         error: result.error,
         message: result.message,
       });

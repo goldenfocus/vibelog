@@ -66,6 +66,8 @@ export async function deleteVibelog(
     // STEP 1: Fetch vibelog and validate authorization
     // ============================================================================
     // Use LEFT JOIN (profiles()) instead of INNER JOIN (profiles!inner) to support anonymous vibelogs
+    console.log('[Delete Service] Fetching vibelog:', vibelogId);
+
     const { data: vibelog, error: fetchError } = await adminClient
       .from('vibelogs')
       .select(
@@ -83,8 +85,28 @@ export async function deleteVibelog(
       .eq('id', vibelogId)
       .single();
 
+    console.log('[Delete Service] Fetch result:', {
+      found: !!vibelog,
+      error: fetchError,
+      errorCode: fetchError?.code,
+      errorMessage: fetchError?.message,
+      errorDetails: fetchError?.details,
+      errorHint: fetchError?.hint,
+    });
+
     if (fetchError || !vibelog) {
-      logger.error('Vibelog not found', { vibelogId, fetchError });
+      logger.error('Vibelog not found', {
+        vibelogId,
+        fetchError,
+        errorCode: fetchError?.code,
+        errorMessage: fetchError?.message,
+        errorDetails: fetchError?.details,
+      });
+      console.error('[Delete Service] Vibelog lookup failed:', {
+        vibelogId,
+        error: fetchError,
+        fullError: JSON.stringify(fetchError, null, 2),
+      });
       return {
         success: false,
         message: 'Vibelog not found',
