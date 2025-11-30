@@ -114,6 +114,11 @@ export function generatePageMetadata({
 
 /**
  * Generate metadata for vibelog posts with proper article schema
+ *
+ * SEO Priority:
+ * 1. Use seoTitle/seoDescription if provided (AI-optimized for each vibelog)
+ * 2. Fall back to title/teaser (still unique per vibelog)
+ * 3. Use seoKeywords + tags combined for unique keyword targeting
  */
 export function generateVibelogMetadata({
   title,
@@ -124,6 +129,10 @@ export function generateVibelogMetadata({
   coverImage,
   publishedAt,
   updatedAt,
+  seoTitle,
+  seoDescription,
+  seoKeywords,
+  tags,
 }: {
   title: string;
   teaser: string;
@@ -133,10 +142,21 @@ export function generateVibelogMetadata({
   coverImage?: string;
   publishedAt?: string;
   updatedAt?: string;
+  // SEO-optimized metadata (unique per vibelog for differentiated ranking)
+  seoTitle?: string;
+  seoDescription?: string;
+  seoKeywords?: string[];
+  tags?: string[];
 }): Metadata {
+  // Build unique keywords from multiple sources for differentiated ranking
+  const allKeywords = [...new Set([...(seoKeywords || []), ...(tags || [])])];
+  const uniqueKeywords = allKeywords.length > 0 ? allKeywords.join(', ') : 'voice story, vibelog, AI content';
+
   return generatePageMetadata({
-    title: `${title} | @${username}`,
-    description: teaser,
+    // Use SEO-optimized title if available, otherwise content title
+    title: seoTitle || `${title} | @${username}`,
+    // Use SEO-optimized description if available, otherwise teaser
+    description: seoDescription || teaser,
     path: `/@${username}/${slug}`,
     locale,
     image: coverImage || '/og-image.png',
@@ -144,7 +164,8 @@ export function generateVibelogMetadata({
     publishedTime: publishedAt,
     modifiedTime: updatedAt,
     author: `@${username}`,
-    keywords: 'voice story, vibelog, AI content, audio story',
+    // Unique keywords per vibelog for differentiated ranking
+    keywords: uniqueKeywords,
   });
 }
 
