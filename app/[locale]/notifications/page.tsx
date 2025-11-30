@@ -4,6 +4,7 @@ import { Check, Filter, Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
+import Navigation from '@/components/Navigation';
 import NotificationItem from '@/components/notifications/NotificationItem';
 import type { Notification } from '@/types/notifications';
 
@@ -99,71 +100,78 @@ export default function NotificationsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black">
-      {/* Header */}
-      <div className="border-b border-white/10 bg-black">
-        <div className="mx-auto max-w-4xl px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-white">Notifications</h1>
-              {unreadCount > 0 && <p className="text-sm text-gray-400">{unreadCount} unread</p>}
+    <div className="min-h-screen bg-background">
+      <Navigation />
+
+      {/* Main content with proper top padding for fixed nav */}
+      <main className="px-4 pb-16 pt-20 sm:px-6 sm:pt-24 lg:px-8">
+        <div className="mx-auto max-w-4xl">
+          {/* Header */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Notifications</h1>
+                {unreadCount > 0 && (
+                  <p className="mt-1 text-sm text-muted-foreground">{unreadCount} unread</p>
+                )}
+              </div>
+              {unreadCount > 0 && (
+                <button
+                  onClick={handleMarkAllRead}
+                  className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-all duration-200 hover:bg-primary/90 active:scale-95"
+                >
+                  <Check className="h-4 w-4" />
+                  Mark all as read
+                </button>
+              )}
             </div>
-            {unreadCount > 0 && (
-              <button
-                onClick={handleMarkAllRead}
-                className="flex items-center gap-2 rounded-lg bg-electric px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-electric/90"
-              >
-                <Check className="h-4 w-4" />
-                Mark all as read
-              </button>
+
+            {/* Filters */}
+            <div className="mt-6 flex flex-wrap gap-2">
+              {(['all', 'unread', 'comment', 'reply', 'reaction'] as FilterType[]).map(f => (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 active:scale-95 ${
+                    filter === f
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground'
+                  }`}
+                >
+                  {f.charAt(0).toUpperCase() + f.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Notification list */}
+          <div className="mt-8">
+            {loading ? (
+              <div className="flex h-64 items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : notifications.length === 0 ? (
+              <div className="flex h-64 flex-col items-center justify-center rounded-2xl border border-border/30 bg-card/30 text-center backdrop-blur-sm">
+                <Filter className="mb-4 h-12 w-12 text-muted-foreground/50" />
+                <p className="text-lg font-medium text-foreground">No notifications</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {filter === 'all' ? "You're all caught up!" : `No ${filter} notifications`}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {notifications.map(notification => (
+                  <NotificationItem
+                    key={notification.id}
+                    notification={notification}
+                    onMarkRead={handleMarkRead}
+                  />
+                ))}
+              </div>
             )}
           </div>
-
-          {/* Filters */}
-          <div className="mt-4 flex gap-2">
-            {(['all', 'unread', 'comment', 'reply', 'reaction'] as FilterType[]).map(f => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                  filter === f
-                    ? 'bg-electric text-white'
-                    : 'bg-white/10 text-white hover:bg-white/20'
-                }`}
-              >
-                {f.charAt(0).toUpperCase() + f.slice(1)}
-              </button>
-            ))}
-          </div>
         </div>
-      </div>
-
-      {/* Notification list */}
-      <div className="mx-auto max-w-4xl px-4 py-6">
-        {loading ? (
-          <div className="flex h-64 items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-electric" />
-          </div>
-        ) : notifications.length === 0 ? (
-          <div className="flex h-64 flex-col items-center justify-center text-center">
-            <Filter className="mb-4 h-12 w-12 text-gray-600" />
-            <p className="text-lg font-medium text-white">No notifications</p>
-            <p className="text-sm text-gray-400">
-              {filter === 'all' ? "You're all caught up!" : `No ${filter} notifications`}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {notifications.map(notification => (
-              <NotificationItem
-                key={notification.id}
-                notification={notification}
-                onMarkRead={handleMarkRead}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+      </main>
     </div>
   );
 }
