@@ -597,6 +597,42 @@
       "markReadFailed": "Error al marcar todas como leídas"
     }
   },
+  "messages": {
+    "title": "Mensajes",
+    "conversationCount": "{{count}} conversación",
+    "conversationCount_other": "{{count}} conversaciones",
+    "newMessage": "Nuevo mensaje",
+    "empty": {
+      "title": "Aún no hay mensajes",
+      "subtitle": "Inicia una conversación enviando un mensaje a alguien"
+    },
+    "typing": "escribiendo...",
+    "you": "Tú:",
+    "noMessagesInThread": "Aún no hay mensajes"
+  },
+  "dates": {
+    "justNow": "ahora mismo",
+    "minuteAgo": "hace {{count}} minuto",
+    "minutesAgo": "hace {{count}} minutos",
+    "hourAgo": "hace {{count}} hora",
+    "hoursAgo": "hace {{count}} horas",
+    "dayAgo": "hace {{count}} día",
+    "daysAgo": "hace {{count}} días",
+    "months": {
+      "january": "enero",
+      "february": "febrero",
+      "march": "marzo",
+      "april": "abril",
+      "may": "mayo",
+      "june": "junio",
+      "july": "julio",
+      "august": "agosto",
+      "september": "septiembre",
+      "october": "octubre",
+      "november": "noviembre",
+      "december": "diciembre"
+    }
+  },
   "notifications": {
     "title": "Notificaciones",
     "unreadCount": "{{count}} sin leer",

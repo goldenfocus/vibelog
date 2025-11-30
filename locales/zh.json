@@ -602,6 +602,42 @@
       "markReadFailed": "标记为已读失败"
     }
   },
+  "messages": {
+    "title": "消息",
+    "conversationCount": "{{count}} 个对话",
+    "conversationCount_other": "{{count}} 个对话",
+    "newMessage": "新消息",
+    "empty": {
+      "title": "暂无消息",
+      "subtitle": "发送消息给某人开始对话"
+    },
+    "typing": "正在输入...",
+    "you": "你：",
+    "noMessagesInThread": "暂无消息"
+  },
+  "dates": {
+    "justNow": "刚刚",
+    "minuteAgo": "{{count}} 分钟前",
+    "minutesAgo": "{{count}} 分钟前",
+    "hourAgo": "{{count}} 小时前",
+    "hoursAgo": "{{count}} 小时前",
+    "dayAgo": "{{count}} 天前",
+    "daysAgo": "{{count}} 天前",
+    "months": {
+      "january": "一月",
+      "february": "二月",
+      "march": "三月",
+      "april": "四月",
+      "may": "五月",
+      "june": "六月",
+      "july": "七月",
+      "august": "八月",
+      "september": "九月",
+      "october": "十月",
+      "november": "十一月",
+      "december": "十二月"
+    }
+  },
   "notifications": {
     "title": "通知",
     "unreadCount": "{{count}} 条未读",

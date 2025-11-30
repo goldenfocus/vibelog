@@ -602,6 +602,42 @@
       "markReadFailed": "Échec du marquage comme lu"
     }
   },
+  "messages": {
+    "title": "Messages",
+    "conversationCount": "{{count}} conversation",
+    "conversationCount_other": "{{count}} conversations",
+    "newMessage": "Nouveau message",
+    "empty": {
+      "title": "Pas encore de messages",
+      "subtitle": "Commencez une conversation en envoyant un message à quelqu'un"
+    },
+    "typing": "écrit...",
+    "you": "Vous :",
+    "noMessagesInThread": "Pas encore de messages"
+  },
+  "dates": {
+    "justNow": "à l'instant",
+    "minuteAgo": "il y a {{count}} minute",
+    "minutesAgo": "il y a {{count}} minutes",
+    "hourAgo": "il y a {{count}} heure",
+    "hoursAgo": "il y a {{count}} heures",
+    "dayAgo": "il y a {{count}} jour",
+    "daysAgo": "il y a {{count}} jours",
+    "months": {
+      "january": "janvier",
+      "february": "février",
+      "march": "mars",
+      "april": "avril",
+      "may": "mai",
+      "june": "juin",
+      "july": "juillet",
+      "august": "août",
+      "september": "septembre",
+      "october": "octobre",
+      "november": "novembre",
+      "december": "décembre"
+    }
+  },
   "notifications": {
     "title": "Notifications",
     "unreadCount": "{{count}} non lues",

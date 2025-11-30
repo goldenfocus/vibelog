@@ -602,6 +602,42 @@
       "markReadFailed": "Fehler beim Markieren als gelesen"
     }
   },
+  "messages": {
+    "title": "Nachrichten",
+    "conversationCount": "{{count}} Unterhaltung",
+    "conversationCount_other": "{{count}} Unterhaltungen",
+    "newMessage": "Neue Nachricht",
+    "empty": {
+      "title": "Noch keine Nachrichten",
+      "subtitle": "Starte eine Unterhaltung, indem du jemandem eine Nachricht sendest"
+    },
+    "typing": "schreibt...",
+    "you": "Du:",
+    "noMessagesInThread": "Noch keine Nachrichten"
+  },
+  "dates": {
+    "justNow": "gerade eben",
+    "minuteAgo": "vor {{count}} Minute",
+    "minutesAgo": "vor {{count}} Minuten",
+    "hourAgo": "vor {{count}} Stunde",
+    "hoursAgo": "vor {{count}} Stunden",
+    "dayAgo": "vor {{count}} Tag",
+    "daysAgo": "vor {{count}} Tagen",
+    "months": {
+      "january": "Januar",
+      "february": "Februar",
+      "march": "März",
+      "april": "April",
+      "may": "Mai",
+      "june": "Juni",
+      "july": "Juli",
+      "august": "August",
+      "september": "September",
+      "october": "Oktober",
+      "november": "November",
+      "december": "Dezember"
+    }
+  },
   "notifications": {
     "title": "Benachrichtigungen",
     "unreadCount": "{{count}} ungelesen",

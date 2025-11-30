@@ -6,13 +6,16 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
+import Navigation from '@/components/Navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useI18n } from '@/components/providers/I18nProvider';
 import { createClient } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 import type { ConversationWithDetails } from '@/types/messaging';
 import { formatMessageTime, getMessagePreview } from '@/types/messaging';
 
 export default function MessagesClient() {
+  const { t } = useI18n();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [conversations, setConversations] = useState<ConversationWithDetails[]>([]);
@@ -102,8 +105,9 @@ export default function MessagesClient() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zinc-50 via-metallic-blue-50/30 to-zinc-100 pt-16 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
-      <div className="mx-auto max-w-4xl">
+    <div className="min-h-screen bg-gradient-to-br from-zinc-50 via-metallic-blue-50/30 to-zinc-100 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
+      <Navigation />
+      <div className="mx-auto max-w-4xl pt-16">
         {/* Premium Header with Gradient */}
         <div className="sticky top-16 z-10 border-b border-metallic-blue-200/20 bg-white/80 backdrop-blur-xl dark:border-metallic-blue-800/20 dark:bg-zinc-900/80">
           <div className="relative overflow-hidden">
@@ -122,11 +126,12 @@ export default function MessagesClient() {
                 </motion.div>
                 <div>
                   <h1 className="bg-gradient-to-r from-metallic-blue-600 to-metallic-blue-500 bg-clip-text text-2xl font-bold text-transparent dark:from-metallic-blue-400 dark:to-metallic-blue-300">
-                    Messages
+                    {t('messages.title')}
                   </h1>
                   <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                    {conversations.length}{' '}
-                    {conversations.length === 1 ? 'conversation' : 'conversations'}
+                    {conversations.length === 1
+                      ? t('messages.conversationCount', { count: conversations.length })
+                      : t('messages.conversationCount_other', { count: conversations.length })}
                   </p>
                 </div>
               </div>
@@ -153,7 +158,7 @@ export default function MessagesClient() {
                   >
                     <Plus size={18} className="relative z-10" />
                   </motion.div>
-                  <span className="relative z-10 hidden sm:inline">New Message</span>
+                  <span className="relative z-10 hidden sm:inline">{t('messages.newMessage')}</span>
                 </motion.div>
               </Link>
             </div>
@@ -193,10 +198,10 @@ export default function MessagesClient() {
               </motion.div>
 
               <h3 className="mt-6 bg-gradient-to-r from-zinc-900 to-zinc-600 bg-clip-text text-xl font-bold text-transparent dark:from-zinc-100 dark:to-zinc-400">
-                No messages yet
+                {t('messages.empty.title')}
               </h3>
               <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-                Start a conversation by sending a message to someone
+                {t('messages.empty.subtitle')}
               </p>
 
               <Link href="/messages/new">
@@ -212,7 +217,7 @@ export default function MessagesClient() {
                 >
                   <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-1000 group-hover:translate-x-full" />
                   <Plus size={16} className="relative z-10" />
-                  <span className="relative z-10">New Message</span>
+                  <span className="relative z-10">{t('messages.newMessage')}</span>
                 </motion.div>
               </Link>
             </motion.div>
@@ -336,7 +341,7 @@ export default function MessagesClient() {
                                 transition={{ duration: 1, repeat: Infinity, delay: 0.3 }}
                               />
                             </div>
-                            <span className="italic">typing...</span>
+                            <span className="italic">{t('messages.typing')}</span>
                           </div>
                         ) : lastMessage ? (
                           <p
@@ -348,12 +353,14 @@ export default function MessagesClient() {
                             )}
                           >
                             {lastMessage.sender_id === user.id && (
-                              <span className="text-metallic-blue-500">You: </span>
+                              <span className="text-metallic-blue-500">{t('messages.you')} </span>
                             )}
                             {getMessagePreview(lastMessage, 60)}
                           </p>
                         ) : (
-                          <p className="text-sm italic text-muted-foreground">No messages yet</p>
+                          <p className="text-sm italic text-muted-foreground">
+                            {t('messages.noMessagesInThread')}
+                          </p>
                         )}
                       </div>
                     </div>
