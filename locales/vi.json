@@ -6,12 +6,15 @@
     "community": "Cộng đồng",
     "people": "Mọi người",
     "signUp": "Đăng ký",
-    "openMenu": "Open menu",
-    "closeMenu": "Close menu",
-    "accountMenu": "Account menu",
-    "dashboard": "Dashboard",
+    "openMenu": "Mở menu",
+    "closeMenu": "Đóng menu",
+    "accountMenu": "Menu tài khoản",
+    "dashboard": "Bảng điều khiển",
     "signIn": "Đăng nhập",
-    "loading": "Đang tải điều hướng"
+    "loading": "Đang tải điều hướng",
+    "messages": "Tin nhắn",
+    "profileSettings": "Cài đặt hồ sơ",
+    "adminPanel": "Bảng quản trị"
   },
   "common": {
     "loading": "Đang tải...",
@@ -598,6 +601,34 @@
       "allMarkedRead": "Tất cả thông báo đã được đánh dấu là đã đọc",
       "markReadFailed": "Không thể đánh dấu tất cả là đã đọc"
     }
+  },
+  "notifications": {
+    "title": "Thông báo",
+    "unreadCount": "{{count}} chưa đọc",
+    "filters": {
+      "all": "Tất cả",
+      "unread": "Chưa đọc",
+      "comment": "Bình luận",
+      "reply": "Trả lời",
+      "reaction": "Phản ứng"
+    },
+    "empty": {
+      "title": "Không có thông báo",
+      "allCaughtUp": "Bạn đã cập nhật hết rồi!",
+      "noType": "Không có thông báo {{type}}"
+    },
+    "types": {
+      "comment": "Bình luận mới trên vibelog của bạn",
+      "reply": "Trả lời mới cho bình luận của bạn",
+      "reaction": "Phản ứng mới",
+      "mention": "Bạn được nhắc đến",
+      "follow": "Người theo dõi mới",
+      "vibelog_like": "Ai đó đã thích vibelog của bạn",
+      "mini_vibelog_promoted": "Vibe của bạn đã được quảng bá",
+      "comment_promoted": "Bình luận của bạn đã được quảng bá",
+      "system": "Thông báo hệ thống"
+    },
+    "commented": "đã bình luận:"
   },
   "placeholders": {
     "comment": "Viết bình luận của bạn...",

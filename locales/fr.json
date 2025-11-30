@@ -11,7 +11,10 @@
     "accountMenu": "Menu du compte",
     "dashboard": "Tableau de bord",
     "signIn": "Se connecter",
-    "loading": "Chargement de la navigation"
+    "loading": "Chargement de la navigation",
+    "messages": "Messages",
+    "profileSettings": "Paramètres du profil",
+    "adminPanel": "Panneau d'administration"
   },
   "common": {
     "loading": "Chargement...",
@@ -598,6 +601,34 @@
       "allMarkedRead": "Toutes les notifications marquées comme lues",
       "markReadFailed": "Échec du marquage comme lu"
     }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "unreadCount": "{{count}} non lues",
+    "filters": {
+      "all": "Toutes",
+      "unread": "Non lues",
+      "comment": "Commentaire",
+      "reply": "Réponse",
+      "reaction": "Réaction"
+    },
+    "empty": {
+      "title": "Aucune notification",
+      "allCaughtUp": "Vous êtes à jour !",
+      "noType": "Aucune notification de type {{type}}"
+    },
+    "types": {
+      "comment": "Nouveau commentaire sur votre vibelog",
+      "reply": "Nouvelle réponse à votre commentaire",
+      "reaction": "Nouvelle réaction",
+      "mention": "Vous avez été mentionné",
+      "follow": "Nouveau follower",
+      "vibelog_like": "Quelqu'un a aimé votre vibelog",
+      "mini_vibelog_promoted": "Votre vibe a été promu",
+      "comment_promoted": "Votre commentaire a été promu",
+      "system": "Notification système"
+    },
+    "commented": "a commenté :"
   },
   "placeholders": {
     "comment": "Écrivez votre commentaire...",

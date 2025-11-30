@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { createServerSupabaseClient } from '@/lib/supabase';
+import type { Profile } from '@/types/database';
 import type { SendMessageRequest, GetMessagesResponse } from '@/types/messaging';
 
 /**
@@ -47,21 +48,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const limit = Math.min(Number(searchParams.get('limit')) || 50, 100);
     const cursor = searchParams.get('cursor'); // ISO timestamp
 
-    // Build query
+    // Build query - fetch messages without FK join
     let query = supabase
       .from('messages')
-      .select(
-        `
-        *,
-        sender:profiles!messages_sender_id_fkey (
-          id,
-          username,
-          display_name,
-          avatar_url,
-          email
-        )
-      `
-      )
+      .select('*')
       .eq('conversation_id', conversationId)
       .eq('is_deleted', false)
       .order('created_at', { ascending: false })
@@ -71,15 +61,34 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       query = query.lt('created_at', cursor);
     }
 
-    const { data: messages, error: messagesError } = await query;
+    const { data: messagesRaw, error: messagesError } = await query;
 
     if (messagesError) {
       throw messagesError;
     }
 
-    const hasMore = messages.length > limit;
-    const paginatedMessages = messages.slice(0, limit);
-    const nextCursor = hasMore ? paginatedMessages[paginatedMessages.length - 1].created_at : null;
+    const hasMore = messagesRaw.length > limit;
+    const paginatedMessagesRaw = messagesRaw.slice(0, limit);
+    const nextCursor = hasMore
+      ? paginatedMessagesRaw[paginatedMessagesRaw.length - 1].created_at
+      : null;
+
+    // Fetch sender profiles separately
+    const senderIds = [...new Set(paginatedMessagesRaw.map(m => m.sender_id).filter(Boolean))];
+    let sendersMap = new Map<string, Profile>();
+    if (senderIds.length > 0) {
+      const { data: sendersData } = await supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url, email')
+        .in('id', senderIds);
+      sendersMap = new Map(sendersData?.map(s => [s.id, s as Profile]) || []);
+    }
+
+    // Combine messages with sender profiles
+    const paginatedMessages = paginatedMessagesRaw.map(m => ({
+      ...m,
+      sender: m.sender_id ? sendersMap.get(m.sender_id) || null : null,
+    }));
 
     // Get read receipts for these messages
     const messageIds = paginatedMessages.map(m => m.id);
@@ -109,8 +118,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     };
 
     return NextResponse.json(response);
-  } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (error) {
+    console.error('[API] GET /api/conversations/[id]/messages error:', error);
+    return NextResponse.json(
+      {
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 }
+    );
   }
 }
 
@@ -163,7 +179,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     // Insert message
-    const { data: message, error: insertError } = await supabase
+    const { data: messageRaw, error: insertError } = await supabase
       .from('messages')
       .insert({
         conversation_id: conversationId,
@@ -175,23 +191,28 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         attachments: attachments || [],
         reply_to_message_id,
       })
-      .select(
-        `
-        *,
-        sender:profiles!messages_sender_id_fkey (
-          id,
-          username,
-          display_name,
-          avatar_url,
-          email
-        )
-      `
-      )
+      .select('*')
       .single();
 
     if (insertError) {
       throw insertError;
     }
+
+    // Fetch sender profile separately
+    let senderProfile = null;
+    if (messageRaw.sender_id) {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url, email')
+        .eq('id', messageRaw.sender_id)
+        .single();
+      senderProfile = profileData;
+    }
+
+    const message = {
+      ...messageRaw,
+      sender: senderProfile,
+    };
 
     // If voice message, trigger transcription asynchronously
     if (audio_url && !message.transcript) {
@@ -207,7 +228,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     return NextResponse.json({ message }, { status: 201 });
-  } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (error) {
+    console.error('[API] POST /api/conversations/[id]/messages error:', error);
+    return NextResponse.json(
+      {
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 }
+    );
   }
 }
