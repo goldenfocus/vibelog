@@ -12,6 +12,7 @@ import {
   MessageSquare,
 } from 'lucide-react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState, useCallback } from 'react';
 
 import { useI18n } from '@/components/providers/I18nProvider';
@@ -154,6 +155,7 @@ function MessageContent({ content }: { content: string }) {
 }
 
 export function VibeBrainWidget() {
+  const pathname = usePathname();
   const {
     isOpen,
     isMinimized,
@@ -180,9 +182,12 @@ export function VibeBrainWidget() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Hide on messages pages to avoid overlapping with message input
+  const isMessagesPage = pathname?.includes('/messages');
+
   // Pre-fetch suggestions data when widget opens
   useEffect(() => {
-    if (isOpen && !suggestionsData) {
+    if (isOpen && !suggestionsData && !isMessagesPage) {
       fetch('/api/vibe-brain/suggestions')
         .then(res => res.json())
         .then(data => {
@@ -192,7 +197,7 @@ export function VibeBrainWidget() {
         })
         .catch(err => console.error('[VibeBrain] Failed to prefetch suggestions:', err));
     }
-  }, [isOpen, suggestionsData]);
+  }, [isOpen, suggestionsData, isMessagesPage]);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -256,6 +261,11 @@ export function VibeBrainWidget() {
     setInput('');
     await sendMessage(message);
   };
+
+  // Hide on messages pages to avoid overlapping with message input
+  if (isMessagesPage) {
+    return null;
+  }
 
   // Floating button when closed
   if (!isOpen) {
