@@ -72,18 +72,18 @@ export async function deleteVibelog(
       .from('vibelogs')
       .select(
         `
+        id,
         user_id,
         slug,
         title,
         audio_url,
         cover_image_url,
         video_url,
-        ai_audio_url,
-        profiles(username)
+        ai_audio_url
       `
       )
       .eq('id', vibelogId)
-      .single();
+      .maybeSingle();
 
     console.log('[Delete Service] Fetch result:', {
       found: !!vibelog,
@@ -260,18 +260,29 @@ export async function deleteVibelog(
     // ============================================================================
     // STEP 6: Revalidate cache
     // ============================================================================
-    const profile = Array.isArray(vibelog.profiles) ? vibelog.profiles[0] : vibelog.profiles;
+    // Fetch username for cache revalidation
+    let username: string | null = null;
+    if (vibelog.user_id) {
+      const { data: profile } = await adminClient
+        .from('profiles')
+        .select('username')
+        .eq('id', vibelog.user_id)
+        .maybeSingle();
+      username = profile?.username || null;
+    }
 
-    if (profile?.username && vibelog.slug) {
-      const vibelogPath = `/@${profile.username}/${vibelog.slug}`;
+    // Revalidate specific vibelog page if we have the username and slug
+    if (username && vibelog.slug) {
+      const vibelogPath = `/@${username}/${vibelog.slug}`;
       revalidatePath(vibelogPath);
-      logger.info('Revalidated cache', { path: vibelogPath });
+      logger.info('Revalidated vibelog path', { path: vibelogPath });
     }
 
     // Revalidate dashboard and profile pages
     revalidatePath('/dashboard');
-    if (profile?.username) {
-      revalidatePath(`/@${profile.username}`);
+    if (username) {
+      revalidatePath(`/@${username}`);
+      logger.info('Revalidated profile path', { username });
     }
 
     // ============================================================================
