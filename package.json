@@ -25,7 +25,9 @@
     "wiki:generate": "node scripts/generate-wiki-pages.js",
     "wiki:sync": "node scripts/sync-wiki.js",
     "docs:embed": "node scripts/embed-all-docs.js",
-    "docs:full-update": "npm run wiki:sync && npm run docs:embed"
+    "docs:full-update": "npm run wiki:sync && npm run docs:embed",
+    "translations:regenerate": "npx tsx scripts/regenerate-all-translations.ts",
+    "translations:check": "npx tsx scripts/regenerate-all-translations.ts --dry-run"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [
