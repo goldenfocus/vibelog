@@ -6,7 +6,10 @@ import { createServerAdminClient } from '@/lib/supabaseAdmin';
 /**
  * GET /api/vibelogs/[vibelogId]/comments
  *
- * Fetch all comments for a specific vibelog
+ * Fetch comments for a specific vibelog with pagination
+ * Query params:
+ *   - limit: number of comments to fetch (default 50, max 100)
+ *   - offset: number of comments to skip (for pagination)
  */
 export async function GET(
   request: NextRequest,
@@ -14,6 +17,11 @@ export async function GET(
 ) {
   try {
     const { vibelogId } = await params;
+    const { searchParams } = new URL(request.url);
+
+    // Pagination with sensible defaults and limits
+    const limit = Math.min(parseInt(searchParams.get('limit') || '50', 10), 100);
+    const offset = parseInt(searchParams.get('offset') || '0', 10);
 
     const supabase = await createServerSupabaseClient();
     const adminSupabase = await createServerAdminClient();
@@ -42,8 +50,8 @@ export async function GET(
       );
     }
 
-    // Fetch ALL comments (including replies) with author profiles
-    const { data: comments, error: commentsError } = await adminSupabase
+    // Fetch comments with pagination (including replies)
+    const { data: comments, error: commentsError, count } = await adminSupabase
       .from('comments')
       .select(
         `
@@ -57,10 +65,12 @@ export async function GET(
         created_at,
         updated_at,
         parent_comment_id
-      `
+      `,
+        { count: 'exact' }
       )
       .eq('vibelog_id', vibelogId)
-      .order('created_at', { ascending: true });
+      .order('created_at', { ascending: true })
+      .range(offset, offset + limit - 1);
 
     if (commentsError) {
       console.error('Error fetching comments:', commentsError);
@@ -98,6 +108,12 @@ export async function GET(
     return NextResponse.json({
       success: true,
       comments: commentsWithAuthors,
+      pagination: {
+        total: count || 0,
+        limit,
+        offset,
+        hasMore: (count || 0) > offset + limit,
+      },
     });
   } catch (error) {
     console.error('Get comments error:', error);

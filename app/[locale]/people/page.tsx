@@ -86,29 +86,24 @@ export default function PeoplePage() {
         return;
       }
 
-      // Calculate total likes per creator from their vibelogs
+      // Fetch vibelogs for both likes aggregation and search in ONE query
+      // Limit to 500 vibelogs max (enough for stats + search for 50 users)
       const userIds = profiles.map(p => p.id);
-      const { data: vibelogStats } = await supabase
+      const { data: vibelogs } = await supabase
         .from('vibelogs')
-        .select('user_id, like_count')
+        .select('id, title, slug, user_id, like_count')
         .in('user_id', userIds)
-        .eq('is_published', true);
+        .eq('is_published', true)
+        .order('created_at', { ascending: false })
+        .limit(500);
 
-      // Aggregate likes per user
+      // Aggregate likes per user from the same data
       const likesByUser = new Map<string, number>();
-      vibelogStats?.forEach(v => {
+      vibelogs?.forEach(v => {
         if (v.user_id) {
           likesByUser.set(v.user_id, (likesByUser.get(v.user_id) || 0) + (v.like_count || 0));
         }
       });
-
-      // Fetch latest 3 vibelogs for each creator (for enhanced search)
-      const { data: vibelogs } = await supabase
-        .from('vibelogs')
-        .select('id, title, slug, user_id')
-        .in('user_id', userIds)
-        .order('created_at', { ascending: false })
-        .limit(150); // Fetch up to 3 per user (50 users × 3)
 
       // Group vibelogs by user_id
       const vibelogsByUser = new Map<string, Vibelog[]>();
