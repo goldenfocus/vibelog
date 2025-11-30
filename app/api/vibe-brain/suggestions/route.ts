@@ -10,17 +10,21 @@ export async function GET() {
   try {
     const supabase = await createServerAdminClient();
 
-    // Fetch latest vibelogs - simple query without join first
+    // Fetch latest vibelogs - exclude anonymous vibelogs (user_id is null)
     const { data: vibelogsData, error: vibelogsError } = await supabase
       .from('vibelogs')
-      .select('id, title, teaser, created_at, user_id')
+      .select('*')
       .eq('is_published', true)
+      .not('user_id', 'is', null)
       .order('created_at', { ascending: false })
       .limit(8);
 
-    if (vibelogsError) {
-      console.error('[SUGGESTIONS] Vibelogs query error:', vibelogsError);
-    }
+    // Debug logging
+    console.log('[SUGGESTIONS] Vibelogs query result:', {
+      dataLength: vibelogsData?.length || 0,
+      error: vibelogsError,
+      firstItem: vibelogsData?.[0]?.id,
+    });
 
     // Fetch profiles separately to avoid join issues
     const userIds = [...new Set((vibelogsData || []).map(v => v.user_id))];
