@@ -93,6 +93,9 @@ export async function GET(request: NextRequest) {
       )
       .eq('is_public', true)
       .eq('is_published', true)
+      // Exclude stuck/incomplete video vibelogs with placeholder titles
+      .neq('title', 'Video vibelog')
+      .not('title', 'ilike', '%processing%')
       .order('published_at', { ascending: false })
       .limit(latestLimit);
 
