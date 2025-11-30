@@ -38,3 +38,6 @@ export {
 
 export { VIBE_BRAIN_TOOLS } from './tools';
 export { executeTool } from './tool-executor';
+
+export { detectSubAgent, getSubAgentConfig, enhancePromptForSubAgent } from './sub-agents';
+export type { SubAgentType } from './sub-agents';

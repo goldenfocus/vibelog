@@ -275,17 +275,29 @@ export function VibeBrainWidget() {
                   platform. Ask me anything!
                 </p>
                 <div className="mt-4 flex flex-wrap justify-center gap-2">
-                  {['What is VibeLog?', 'How does it work?', 'Show me some examples'].map(
-                    suggestion => (
-                      <button
-                        key={suggestion}
-                        onClick={() => sendMessage(suggestion)}
-                        className="rounded-full bg-white/5 px-3 py-1.5 text-xs text-white/80 transition-colors hover:bg-white/10"
-                      >
-                        {suggestion}
-                      </button>
-                    )
-                  )}
+                  {[
+                    {
+                      label: "🔥 What's trending?",
+                      query: 'Show me the hottest vibes right now! What are people creating today?',
+                    },
+                    {
+                      label: '🎯 Surprise me!',
+                      query:
+                        'Pick something amazing for me to check out - surprise me with your best recommendation!',
+                    },
+                    {
+                      label: '🌟 Top creators',
+                      query: 'Who are the most prolific creators on VibeLog? Show me the legends!',
+                    },
+                  ].map(suggestion => (
+                    <button
+                      key={suggestion.label}
+                      onClick={() => sendMessage(suggestion.query)}
+                      className="rounded-full bg-white/5 px-3 py-1.5 text-xs text-white/80 transition-colors hover:bg-white/10"
+                    >
+                      {suggestion.label}
+                    </button>
+                  ))}
                 </div>
               </div>
             ) : (
