@@ -10,25 +10,29 @@ export async function GET() {
   try {
     const supabase = await createServerAdminClient();
 
-    // Fetch latest vibelogs, top creators, and stats in parallel
-    const [vibelogsResult, creatorsResult, statsResult] = await Promise.all([
-      // Latest vibelogs - only require is_published
-      // Use left join (no !inner) so vibelogs are returned even if profile lookup fails
-      supabase
-        .from('vibelogs')
-        .select(
-          `
-          id,
-          title,
-          teaser,
-          created_at,
-          profiles(username, display_name)
-        `
-        )
-        .eq('is_published', true)
-        .order('created_at', { ascending: false })
-        .limit(8),
+    // Fetch latest vibelogs - simple query without join first
+    const { data: vibelogsData, error: vibelogsError } = await supabase
+      .from('vibelogs')
+      .select('id, title, teaser, created_at, user_id')
+      .eq('is_published', true)
+      .order('created_at', { ascending: false })
+      .limit(8);
 
+    if (vibelogsError) {
+      console.error('[SUGGESTIONS] Vibelogs query error:', vibelogsError);
+    }
+
+    // Fetch profiles separately to avoid join issues
+    const userIds = [...new Set((vibelogsData || []).map(v => v.user_id))];
+    const { data: profilesData } =
+      userIds.length > 0
+        ? await supabase.from('profiles').select('id, username, display_name').in('id', userIds)
+        : { data: [] };
+
+    const profileMap = new Map((profilesData || []).map(p => [p.id, p]));
+
+    // Fetch creators and stats in parallel
+    const [creatorsResult, statsResult] = await Promise.all([
       // All profiles (we'll filter by vibelog count)
       supabase.from('profiles').select(`
           id,
@@ -47,15 +51,15 @@ export async function GET() {
       ]),
     ]);
 
-    // Process vibelogs
-    const vibelogs = (vibelogsResult.data || []).map(v => {
-      const profile = Array.isArray(v.profiles) ? v.profiles[0] : v.profiles;
+    // Process vibelogs with profile data from map
+    const vibelogs = (vibelogsData || []).map(v => {
+      const profile = profileMap.get(v.user_id);
       return {
         id: v.id,
         title: v.title || 'Untitled',
         teaser: v.teaser?.slice(0, 100) || '',
-        username: (profile as { username: string })?.username || 'anonymous',
-        displayName: (profile as { display_name?: string })?.display_name || null,
+        username: profile?.username || 'anonymous',
+        displayName: profile?.display_name || null,
         createdAt: v.created_at,
       };
     });
