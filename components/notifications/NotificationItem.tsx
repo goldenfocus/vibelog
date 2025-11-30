@@ -4,7 +4,7 @@ import { Bell, Heart, MessageCircle, Sparkles, TrendingUp, User } from 'lucide-r
 import Link from 'next/link';
 
 import { useI18n } from '@/components/providers/I18nProvider';
-import { formatRelativeTime } from '@/lib/date-utils';
+import { formatRelativeTimeI18n } from '@/lib/date-utils';
 import type { Notification, NotificationType } from '@/types/notifications';
 
 interface NotificationItemProps {
@@ -50,21 +50,24 @@ export default function NotificationItem({
 
   // Get translated title based on notification type
   const getTranslatedTitle = () => {
-    return t(`notifications.types.${notification.type}`) || notification.title;
+    const translatedTitle = t(`notifications.types.${notification.type}`);
+    // If translation returns the key itself, fall back to original title
+    return translatedTitle.startsWith('notifications.types.')
+      ? notification.title
+      : translatedTitle;
   };
 
-  // Build translated message with actor name
+  // Get translated message
   const getTranslatedMessage = () => {
     const actorName = notification.actor_display_name || notification.actor_username;
     if (!actorName) {
       return notification.message;
     }
 
-    // Extract the comment preview from the original message (after "commented: ")
+    // Check if message follows pattern "Name commented: "text""
     const commentMatch = notification.message?.match(/commented:\s*"(.+)"$/);
-    const commentPreview = commentMatch ? commentMatch[1] : null;
-
-    if (commentPreview) {
+    if (commentMatch) {
+      const commentPreview = commentMatch[1];
       return `${actorName} ${t('notifications.commented')} "${commentPreview}"`;
     }
 
@@ -134,7 +137,7 @@ export default function NotificationItem({
 
         {/* Timestamp */}
         <p className="text-xs text-muted-foreground/70">
-          {formatRelativeTime(notification.created_at)}
+          {formatRelativeTimeI18n(notification.created_at, t)}
         </p>
       </div>
 

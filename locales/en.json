@@ -597,6 +597,42 @@
       "markReadFailed": "Failed to mark all as read"
     }
   },
+  "messages": {
+    "title": "Messages",
+    "conversationCount": "{{count}} conversation",
+    "conversationCount_other": "{{count}} conversations",
+    "newMessage": "New Message",
+    "empty": {
+      "title": "No messages yet",
+      "subtitle": "Start a conversation by sending a message to someone"
+    },
+    "typing": "typing...",
+    "you": "You:",
+    "noMessagesInThread": "No messages yet"
+  },
+  "dates": {
+    "justNow": "just now",
+    "minuteAgo": "{{count}} minute ago",
+    "minutesAgo": "{{count}} minutes ago",
+    "hourAgo": "{{count}} hour ago",
+    "hoursAgo": "{{count}} hours ago",
+    "dayAgo": "{{count}} day ago",
+    "daysAgo": "{{count}} days ago",
+    "months": {
+      "january": "January",
+      "february": "February",
+      "march": "March",
+      "april": "April",
+      "may": "May",
+      "june": "June",
+      "july": "July",
+      "august": "August",
+      "september": "September",
+      "october": "October",
+      "november": "November",
+      "december": "December"
+    }
+  },
   "notifications": {
     "title": "Notifications",
     "unreadCount": "{{count}} unread",

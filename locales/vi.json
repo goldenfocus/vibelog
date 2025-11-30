@@ -602,6 +602,42 @@
       "markReadFailed": "Không thể đánh dấu tất cả là đã đọc"
     }
   },
+  "messages": {
+    "title": "Tin nhắn",
+    "conversationCount": "{{count}} cuộc trò chuyện",
+    "conversationCount_other": "{{count}} cuộc trò chuyện",
+    "newMessage": "Tin nhắn mới",
+    "empty": {
+      "title": "Chưa có tin nhắn",
+      "subtitle": "Bắt đầu cuộc trò chuyện bằng cách gửi tin nhắn cho ai đó"
+    },
+    "typing": "đang nhập...",
+    "you": "Bạn:",
+    "noMessagesInThread": "Chưa có tin nhắn"
+  },
+  "dates": {
+    "justNow": "vừa xong",
+    "minuteAgo": "{{count}} phút trước",
+    "minutesAgo": "{{count}} phút trước",
+    "hourAgo": "{{count}} giờ trước",
+    "hoursAgo": "{{count}} giờ trước",
+    "dayAgo": "{{count}} ngày trước",
+    "daysAgo": "{{count}} ngày trước",
+    "months": {
+      "january": "Tháng Một",
+      "february": "Tháng Hai",
+      "march": "Tháng Ba",
+      "april": "Tháng Tư",
+      "may": "Tháng Năm",
+      "june": "Tháng Sáu",
+      "july": "Tháng Bảy",
+      "august": "Tháng Tám",
+      "september": "Tháng Chín",
+      "october": "Tháng Mười",
+      "november": "Tháng Mười Một",
+      "december": "Tháng Mười Hai"
+    }
+  },
   "notifications": {
     "title": "Thông báo",
     "unreadCount": "{{count}} chưa đọc",
