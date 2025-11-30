@@ -74,54 +74,68 @@ export async function GET() {
     );
 
     // Get all participants for these conversations
-    const { data: allParticipants, error: participantsError } = await supabase
+    const { data: allParticipantsRaw, error: participantsError } = await supabase
       .from('conversation_participants')
-      .select(
-        `
-        conversation_id,
-        user_id,
-        is_typing,
-        profiles!inner (
-          id,
-          username,
-          display_name,
-          avatar_url,
-          email
-        )
-      `
-      )
+      .select('conversation_id, user_id, is_typing')
       .in('conversation_id', conversationIds);
 
     if (participantsError) {
       throw participantsError;
     }
 
+    // Get all participant user IDs and fetch their profiles separately
+    const participantUserIds = [...new Set(allParticipantsRaw?.map(p => p.user_id) || [])];
+    const { data: profilesData, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, username, display_name, avatar_url, email')
+      .in('id', participantUserIds);
+
+    if (profilesError) {
+      throw profilesError;
+    }
+
+    // Create a map for quick profile lookup
+    const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
+
+    // Combine participants with their profiles
+    const allParticipants =
+      allParticipantsRaw?.map(p => ({
+        ...p,
+        profiles: profilesMap.get(p.user_id) || null,
+      })) || [];
+
     // Get last messages
     const lastMessageIds = participations
       .map(p => (p.conversations as { last_message_id?: string }).last_message_id)
       .filter(Boolean);
 
-    let lastMessages: Array<{ id: string; [key: string]: any }> = [];
+    let lastMessages: Array<{ id: string; sender?: Profile | null; [key: string]: any }> = [];
     if (lastMessageIds.length > 0) {
-      const { data, error: messagesError } = await supabase
+      const { data: messagesRaw, error: messagesError } = await supabase
         .from('messages')
-        .select(
-          `
-          *,
-          sender:profiles!messages_sender_id_fkey (
-            id,
-            username,
-            display_name,
-            avatar_url
-          )
-        `
-        )
+        .select('*')
         .in('id', lastMessageIds);
 
       if (messagesError) {
         throw messagesError;
       }
-      lastMessages = data || [];
+
+      // Get sender profiles separately
+      const senderIds = [...new Set(messagesRaw?.map(m => m.sender_id).filter(Boolean) || [])];
+      let sendersMap = new Map<string, Profile>();
+      if (senderIds.length > 0) {
+        const { data: sendersData } = await supabase
+          .from('profiles')
+          .select('id, username, display_name, avatar_url')
+          .in('id', senderIds);
+        sendersMap = new Map(sendersData?.map(s => [s.id, s as Profile]) || []);
+      }
+
+      lastMessages =
+        messagesRaw?.map(m => ({
+          ...m,
+          sender: m.sender_id ? sendersMap.get(m.sender_id) || null : null,
+        })) || [];
     }
 
     // Get unread counts
@@ -184,8 +198,15 @@ export async function GET() {
     });
 
     return NextResponse.json({ conversations });
-  } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (error) {
+    console.error('[API] GET /api/conversations error:', error);
+    return NextResponse.json(
+      {
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 }
+    );
   }
 }
 
@@ -301,7 +322,14 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ error: 'Invalid conversation type' }, { status: 400 });
-  } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (error) {
+    console.error('[API] POST /api/conversations error:', error);
+    return NextResponse.json(
+      {
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 }
+    );
   }
 }

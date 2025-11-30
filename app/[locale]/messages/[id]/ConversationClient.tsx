@@ -50,7 +50,10 @@ export default function ConversationClient() {
       try {
         const response = await fetch('/api/conversations');
         if (!response.ok) {
-          throw new Error('Failed to fetch conversations');
+          // Redirect to messages list on API error
+          console.error('Failed to fetch conversations, redirecting to messages');
+          router.replace('/messages');
+          return;
         }
 
         const data = await response.json();
@@ -59,19 +62,22 @@ export default function ConversationClient() {
         );
 
         if (!conv) {
-          setError('Conversation not found');
+          // Conversation not found - redirect to messages list
+          console.error('Conversation not found, redirecting to messages');
+          router.replace('/messages');
           return;
         }
 
         setConversation(conv);
       } catch (err) {
         console.error('Error fetching conversation:', err);
-        setError('Failed to load conversation');
+        // Redirect on any error
+        router.replace('/messages');
       }
     };
 
     fetchConversation();
-  }, [user, conversationId]);
+  }, [user, conversationId, router]);
 
   // Fetch messages
   const fetchMessages = useCallback(
@@ -165,25 +171,30 @@ export default function ConversationClient() {
           filter: `conversation_id=eq.${conversationId}`,
         },
         async payload => {
-          // Fetch the full message with sender details
-          const { data: newMessage } = await supabase
+          // Fetch the message and sender profile separately (no FK join required)
+          const { data: messageData } = await supabase
             .from('messages')
-            .select(
-              `
-              *,
-              sender:profiles!messages_sender_id_fkey (
-                id,
-                username,
-                display_name,
-                avatar_url,
-                email
-              )
-            `
-            )
+            .select('*')
             .eq('id', payload.new.id)
             .single();
 
-          if (newMessage) {
+          if (messageData) {
+            // Fetch sender profile separately
+            let senderProfile = null;
+            if (messageData.sender_id) {
+              const { data: profileData } = await supabase
+                .from('profiles')
+                .select('id, username, display_name, avatar_url, email')
+                .eq('id', messageData.sender_id)
+                .single();
+              senderProfile = profileData;
+            }
+
+            const newMessage = {
+              ...messageData,
+              sender: senderProfile,
+            };
+
             setMessages(prev => [
               ...prev,
               {
