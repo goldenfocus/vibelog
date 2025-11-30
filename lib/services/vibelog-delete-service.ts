@@ -267,49 +267,66 @@ export async function deleteVibelog(
     logger.info('Deleted vibelog from database', { vibelogId });
 
     // ============================================================================
-    // STEP 6: Revalidate cache
+    // STEP 6: Revalidate cache (non-critical, don't fail if this errors)
     // ============================================================================
-    // Fetch username for cache revalidation
-    let username: string | null = null;
-    if (vibelog.user_id) {
-      const { data: profile } = await adminClient
-        .from('profiles')
-        .select('username')
-        .eq('id', vibelog.user_id)
-        .maybeSingle();
-      username = profile?.username || null;
-    }
+    try {
+      // Fetch username for cache revalidation
+      let username: string | null = null;
+      if (vibelog.user_id) {
+        const { data: profile } = await adminClient
+          .from('profiles')
+          .select('username')
+          .eq('id', vibelog.user_id)
+          .maybeSingle();
+        username = profile?.username || null;
+      }
 
-    // Revalidate specific vibelog page if we have the username and slug
-    if (username && vibelog.slug) {
-      const vibelogPath = `/@${username}/${vibelog.slug}`;
-      revalidatePath(vibelogPath);
-      logger.info('Revalidated vibelog path', { path: vibelogPath });
-    }
+      // Revalidate specific vibelog page if we have the username and slug
+      if (username && vibelog.slug) {
+        const vibelogPath = `/@${username}/${vibelog.slug}`;
+        revalidatePath(vibelogPath);
+        logger.info('Revalidated vibelog path', { path: vibelogPath });
+      }
 
-    // Revalidate dashboard and profile pages
-    revalidatePath('/dashboard');
-    if (username) {
-      revalidatePath(`/@${username}`);
-      logger.info('Revalidated profile path', { username });
+      // Revalidate dashboard and profile pages
+      revalidatePath('/dashboard');
+      if (username) {
+        revalidatePath(`/@${username}`);
+        logger.info('Revalidated profile path', { username });
+      }
+    } catch (error) {
+      // Cache revalidation is non-critical, log but don't fail
+      logger.warn('Cache revalidation failed (non-critical)', {
+        vibelogId,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
     }
 
     // ============================================================================
-    // STEP 7: Log admin action (if admin performed the delete)
+    // STEP 7: Log admin action (non-critical, don't fail if this errors)
     // ============================================================================
     if (userIsAdmin && request) {
-      await logAdminAction(userId, 'vibelog_delete', {
-        targetVibelogId: vibelogId,
-        targetUserId: vibelog.user_id,
-        changes: {
-          title: vibelog.title,
-          slug: vibelog.slug,
-          was_owner_delete: isOwner,
-        },
-        ipAddress: getClientIp(request),
-        userAgent: getUserAgent(request),
-      });
-      logger.info('Logged admin delete action', { vibelogId, userId });
+      try {
+        await logAdminAction(userId, 'vibelog_delete', {
+          targetVibelogId: vibelogId,
+          targetUserId: vibelog.user_id,
+          changes: {
+            title: vibelog.title,
+            slug: vibelog.slug,
+            was_owner_delete: isOwner,
+          },
+          ipAddress: getClientIp(request),
+          userAgent: getUserAgent(request),
+        });
+        logger.info('Logged admin delete action', { vibelogId, userId });
+      } catch (error) {
+        // Admin logging is non-critical, log but don't fail
+        logger.warn('Admin action logging failed (non-critical)', {
+          vibelogId,
+          userId,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
     }
 
     // ============================================================================
