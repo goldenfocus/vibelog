@@ -145,7 +145,9 @@ export function MessageInput({
 
       // Upload audio to Supabase Storage
       const formData = new FormData();
-      formData.append('file', audioBlob, `voice-message-${Date.now()}.webm`);
+      const sessionId = `msg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+      formData.append('audio', audioBlob, `voice-message-${sessionId}.webm`);
+      formData.append('sessionId', sessionId);
 
       const uploadResponse = await fetch('/api/upload-audio', {
         method: 'POST',
