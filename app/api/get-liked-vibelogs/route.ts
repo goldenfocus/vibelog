@@ -21,6 +21,16 @@ export async function GET(request: NextRequest) {
 
     const targetUserId = userId || user?.id; // Use query param if provided, otherwise authenticated user
 
+    // Validate UUID format - return empty for invalid IDs like "anonymous"
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (targetUserId && !uuidRegex.test(targetUserId)) {
+      return NextResponse.json({
+        success: true,
+        vibelogs: [],
+        count: 0,
+      });
+    }
+
     // Fetch liked vibelogs
     const { data: likes, error: likesError } = await supabase
       .from('vibelog_likes')
