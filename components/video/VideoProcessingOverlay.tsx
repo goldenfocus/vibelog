@@ -9,7 +9,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Video, Sparkles, Languages, FileText, Wand2, CheckCircle, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
 interface ProcessingStep {
@@ -83,28 +83,23 @@ export function VideoProcessingOverlay({
   );
   const [isNavigating, setIsNavigating] = useState(false);
 
+  // Use ref to track step index in interval callback (avoids stale closure)
+  const stepIndexRef = useRef(0);
+  // Track if processing has started to prevent re-runs
+  const processingStartedRef = useRef(false);
+
   // Ensure we're mounted before using portal
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Poll for vibelog status
-  const pollVibelogStatus = useCallback(async () => {
-    try {
-      const response = await fetch(`/api/vibelog/${vibelogId}/status`);
-      if (!response.ok) {
-        return null;
-      }
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('[VideoProcessingOverlay] Poll error:', error);
-      return null;
-    }
-  }, [vibelogId]);
-
   // Advance to next step with animation
   const advanceStep = useCallback((toIndex: number) => {
+    // Only advance forward, never backward
+    if (toIndex <= stepIndexRef.current && toIndex !== 0) {
+      return;
+    }
+    stepIndexRef.current = toIndex;
     setSteps(prev =>
       prev.map((step, i) => ({
         ...step,
@@ -114,10 +109,29 @@ export function VideoProcessingOverlay({
     setCurrentStepIndex(toIndex);
   }, []);
 
-  // Main processing orchestration
+  // Main processing orchestration - runs ONCE on mount
   useEffect(() => {
+    // Prevent re-running if already started
+    if (processingStartedRef.current) {
+      return;
+    }
+    processingStartedRef.current = true;
+
     let cancelled = false;
     let pollInterval: NodeJS.Timeout;
+
+    const pollVibelogStatus = async () => {
+      try {
+        const response = await fetch(`/api/vibelog/${vibelogId}/status`);
+        if (!response.ok) {
+          return null;
+        }
+        return await response.json();
+      } catch (error) {
+        console.error('[VideoProcessingOverlay] Poll error:', error);
+        return null;
+      }
+    };
 
     const runProcessing = async () => {
       // Step 0: Upload (already done)
@@ -155,7 +169,8 @@ export function VideoProcessingOverlay({
           clearInterval(pollInterval);
 
           // Animate through remaining steps quickly
-          for (let i = currentStepIndex + 1; i < PROCESSING_STEPS.length; i++) {
+          const currentStep = stepIndexRef.current;
+          for (let i = currentStep + 1; i < PROCESSING_STEPS.length; i++) {
             if (cancelled) {
               return;
             }
@@ -167,7 +182,7 @@ export function VideoProcessingOverlay({
           await new Promise(r => setTimeout(r, 600));
           if (!cancelled) {
             setIsNavigating(true);
-            const slug = status.public_slug;
+            const slug = status.public_slug || status.slug;
             if (onNavigate && slug) {
               onNavigate(slug);
             } else if (slug) {
@@ -181,15 +196,13 @@ export function VideoProcessingOverlay({
           clearInterval(pollInterval);
           advanceStep(PROCESSING_STEPS.length - 1);
           await new Promise(r => setTimeout(r, 600));
-          if (!cancelled && status?.public_slug) {
-            router.push(`/v/${status.public_slug}`);
+          if (!cancelled && (status?.public_slug || status?.slug)) {
+            router.push(`/v/${status.public_slug || status.slug}`);
           }
         } else {
-          // Simulate progress through steps based on time
+          // Simulate progress through steps based on time (every ~10 seconds advance)
           const progressStep = Math.min(Math.floor(attempts / 5) + 1, PROCESSING_STEPS.length - 2);
-          if (progressStep > currentStepIndex) {
-            advanceStep(progressStep);
-          }
+          advanceStep(progressStep); // advanceStep already guards against going backwards
         }
       }, 2000);
     };
@@ -202,7 +215,9 @@ export function VideoProcessingOverlay({
         clearInterval(pollInterval);
       }
     };
-  }, [vibelogId, advanceStep, pollVibelogStatus, onComplete, onNavigate, router, currentStepIndex]);
+    // Only run on mount - vibelogId should not change during processing
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vibelogId]);
 
   // Use portal to render overlay at document body level (escapes any parent containers)
   const overlayContent = (
