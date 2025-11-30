@@ -157,7 +157,7 @@ const CreatorCard = memo(function CreatorCard({
       `}</style>
     </Link>
   );
-}
+});
 
 // Stat Item Component
 function StatItem({
