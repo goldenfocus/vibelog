@@ -8,11 +8,13 @@ import { toast } from 'sonner';
 import Navigation from '@/components/Navigation';
 import NotificationItem from '@/components/notifications/NotificationItem';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useI18n } from '@/components/providers/I18nProvider';
 import type { Notification } from '@/types/notifications';
 
 type FilterType = 'all' | 'unread' | 'comment' | 'reply' | 'reaction';
 
 export default function NotificationsPage() {
+  const { t } = useI18n();
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -29,7 +31,9 @@ export default function NotificationsPage() {
 
   // Fetch notifications
   const fetchNotifications = async () => {
-    if (!user) return;
+    if (!user) {
+      return;
+    }
 
     setLoading(true);
     try {
@@ -107,10 +111,10 @@ export default function NotificationsPage() {
         prev.map(n => ({ ...n, is_read: true, read_at: new Date().toISOString() }))
       );
       setUnreadCount(0);
-      toast.success('All notifications marked as read');
+      toast.success(t('toasts.notifications.allMarkedRead'));
     } catch (error) {
       console.error('Error marking all as read:', error);
-      toast.error('Failed to mark all as read');
+      toast.error(t('toasts.notifications.markReadFailed'));
     }
   };
 
@@ -139,9 +143,13 @@ export default function NotificationsPage() {
           <div className="mb-6">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Notifications</h1>
+                <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
+                  {t('notifications.title')}
+                </h1>
                 {unreadCount > 0 && (
-                  <p className="mt-1 text-sm text-muted-foreground">{unreadCount} unread</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {t('notifications.unreadCount', { count: unreadCount })}
+                  </p>
                 )}
               </div>
               {unreadCount > 0 && (
@@ -150,7 +158,7 @@ export default function NotificationsPage() {
                   className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-all duration-200 hover:bg-primary/90 active:scale-95"
                 >
                   <Check className="h-4 w-4" />
-                  Mark all as read
+                  {t('titles.markAllRead')}
                 </button>
               )}
             </div>
@@ -167,7 +175,7 @@ export default function NotificationsPage() {
                       : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground'
                   }`}
                 >
-                  {f.charAt(0).toUpperCase() + f.slice(1)}
+                  {t(`notifications.filters.${f}`)}
                 </button>
               ))}
             </div>
@@ -182,9 +190,15 @@ export default function NotificationsPage() {
             ) : notifications.length === 0 ? (
               <div className="flex h-64 flex-col items-center justify-center rounded-2xl border border-border/30 bg-card/30 text-center backdrop-blur-sm">
                 <Filter className="mb-4 h-12 w-12 text-muted-foreground/50" />
-                <p className="text-lg font-medium text-foreground">No notifications</p>
+                <p className="text-lg font-medium text-foreground">
+                  {t('notifications.empty.title')}
+                </p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {filter === 'all' ? "You're all caught up!" : `No ${filter} notifications`}
+                  {filter === 'all'
+                    ? t('notifications.empty.allCaughtUp')
+                    : t('notifications.empty.noType', {
+                        type: t(`notifications.filters.${filter}`),
+                      })}
                 </p>
               </div>
             ) : (
