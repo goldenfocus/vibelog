@@ -101,12 +101,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const enrichedMessages = paginatedMessages.map(message => {
       const messageReads = reads?.filter(r => r.message_id === message.id) || [];
       const userRead = messageReads.find(r => r.user_id === user.id);
+      // Fix: Exclude sender from read_by_count - sender's own read shouldn't count
+      const otherReads = messageReads.filter(r => r.user_id !== message.sender_id);
 
       return {
         ...message,
         reads: messageReads,
         is_read: !!userRead,
-        read_by_count: messageReads.length,
+        read_by_count: otherReads.length, // Only count reads from OTHER users
       };
     });
 

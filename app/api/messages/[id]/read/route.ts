@@ -30,12 +30,18 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     // Get the message to verify it exists and get conversation_id
     const { data: message, error: messageError } = await supabase
       .from('messages')
-      .select('id, conversation_id, created_at')
+      .select('id, conversation_id, sender_id, created_at')
       .eq('id', messageId)
       .single();
 
     if (messageError || !message) {
       return NextResponse.json({ error: 'Message not found' }, { status: 404 });
+    }
+
+    // Prevent sender from marking their own messages as read
+    // This would incorrectly inflate read_by_count
+    if (message.sender_id === user.id) {
+      return NextResponse.json({ success: true }); // Silent success, no-op
     }
 
     // Verify user is participant in this conversation
