@@ -160,10 +160,10 @@ export function MessageInput({
 
       const { url: audioUrl } = await uploadResponse.json();
 
-      // Send message
+      // Send message - duration from useAudioEngine is in seconds, convert to milliseconds
       await onSendMessage({
         audio_url: audioUrl,
-        audio_duration: duration,
+        audio_duration: duration * 1000,
         reply_to_message_id: replyTo?.id,
       });
 
