@@ -88,14 +88,15 @@ CREATE POLICY "Users can delete their own reactions"
   USING (auth.uid() = user_id);
 
 -- 10. Create view for comment reactions with counts
+-- Note: Using reaction_type from original schema, aliased as emoji for compatibility
 CREATE OR REPLACE VIEW public.comment_reactions_summary AS
 SELECT
   comment_id,
-  emoji,
+  reaction_type as emoji,
   COUNT(*) as count,
   ARRAY_AGG(user_id) as user_ids
 FROM public.comment_reactions
-GROUP BY comment_id, emoji;
+GROUP BY comment_id, reaction_type;
 
 GRANT SELECT ON public.comment_reactions_summary TO authenticated;
 GRANT SELECT ON public.comment_reactions_summary TO anon;

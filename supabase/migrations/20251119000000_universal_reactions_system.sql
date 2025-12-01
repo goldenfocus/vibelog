@@ -47,19 +47,19 @@ CREATE TABLE IF NOT EXISTS public.reactions (
 -- ============================================================================
 
 -- Composite index for looking up reactions for specific content
-CREATE INDEX idx_reactions_reactable
+CREATE INDEX IF NOT EXISTS idx_reactions_reactable
   ON public.reactions(reactable_type, reactable_id);
 
 -- Index for user's reactions
-CREATE INDEX idx_reactions_user
+CREATE INDEX IF NOT EXISTS idx_reactions_user
   ON public.reactions(user_id);
 
 -- Index for emoji analytics
-CREATE INDEX idx_reactions_emoji
+CREATE INDEX IF NOT EXISTS idx_reactions_emoji
   ON public.reactions(emoji);
 
 -- Index for time-based queries
-CREATE INDEX idx_reactions_created
+CREATE INDEX IF NOT EXISTS idx_reactions_created
   ON public.reactions(created_at DESC);
 
 -- ============================================================================

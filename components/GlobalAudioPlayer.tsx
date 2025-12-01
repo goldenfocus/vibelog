@@ -1,10 +1,11 @@
 'use client';
 
-import { Play, Pause, X } from 'lucide-react';
+import { Play, Pause, X, Mic } from 'lucide-react';
 import React, { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 
 import Waveform from '@/components/mic/Waveform';
+import { cn } from '@/lib/utils';
 import { useAudioPlayerStore } from '@/state/audio-player-store';
 
 export default function GlobalAudioPlayer() {
@@ -351,23 +352,60 @@ export default function GlobalAudioPlayer() {
     return null;
   }
 
+  // Detect if this is a voice message from messaging
+  const isVoiceMessage = currentTrack.id.startsWith('voice-message-');
+
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/30 bg-card/95 shadow-2xl backdrop-blur-sm">
+    <div
+      className={cn(
+        'fixed bottom-0 left-0 right-0 z-50 shadow-2xl backdrop-blur-xl',
+        isVoiceMessage
+          ? 'from-metallic-blue-950/95 to-metallic-blue-950/95 border-t border-metallic-blue-500/30 bg-gradient-to-r via-zinc-900/95'
+          : 'border-t border-border/30 bg-card/95'
+      )}
+    >
       <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
+            {/* Voice message icon indicator */}
+            {isVoiceMessage && (
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-metallic-blue-500 to-metallic-blue-600 shadow-lg shadow-metallic-blue-500/30">
+                <Mic className="h-5 w-5 text-white" />
+              </div>
+            )}
             <div>
               {currentTrack.title && (
-                <p className="font-medium text-foreground">{currentTrack.title}</p>
+                <p
+                  className={cn(
+                    'font-medium',
+                    isVoiceMessage
+                      ? 'bg-gradient-to-r from-metallic-blue-300 to-white bg-clip-text text-transparent'
+                      : 'text-foreground'
+                  )}
+                >
+                  {currentTrack.title}
+                </p>
               )}
               {currentTrack.author && (
-                <p className="text-sm text-muted-foreground">{currentTrack.author}</p>
+                <p
+                  className={cn(
+                    'text-sm',
+                    isVoiceMessage ? 'text-metallic-blue-400' : 'text-muted-foreground'
+                  )}
+                >
+                  {currentTrack.author}
+                </p>
               )}
             </div>
           </div>
           <button
             onClick={handleClose}
-            className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+            className={cn(
+              'rounded-lg p-2 transition-colors',
+              isVoiceMessage
+                ? 'text-metallic-blue-400 hover:bg-metallic-blue-500/20 hover:text-white'
+                : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+            )}
             aria-label="Close player"
           >
             <X className="h-5 w-5" />
@@ -379,9 +417,13 @@ export default function GlobalAudioPlayer() {
             onClick={handlePlayPause}
             disabled={isLoading}
             aria-label={isLoading ? 'Loading audio' : isPlaying ? 'Pause audio' : 'Play audio'}
-            className={`flex h-12 w-12 items-center justify-center rounded-full bg-gradient-electric text-white transition-all duration-200 hover:shadow-[0_10px_20px_rgba(97,144,255,0.3)] ${
-              isLoading ? 'cursor-wait opacity-70' : ''
-            }`}
+            className={cn(
+              'flex h-12 w-12 items-center justify-center rounded-full text-white transition-all duration-200',
+              isVoiceMessage
+                ? 'bg-gradient-to-br from-metallic-blue-500 to-metallic-blue-600 shadow-lg shadow-metallic-blue-500/40 hover:shadow-xl hover:shadow-metallic-blue-500/50'
+                : 'bg-gradient-electric hover:shadow-[0_10px_20px_rgba(97,144,255,0.3)]',
+              isLoading && 'cursor-wait opacity-70'
+            )}
           >
             {isLoading ? (
               <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/30 border-t-white" />
@@ -393,16 +435,29 @@ export default function GlobalAudioPlayer() {
           </button>
 
           <div className="flex flex-1 items-center gap-3">
-            <span className="min-w-[40px] font-mono text-sm text-muted-foreground">
+            <span
+              className={cn(
+                'min-w-[40px] font-mono text-sm',
+                isVoiceMessage ? 'text-metallic-blue-400' : 'text-muted-foreground'
+              )}
+            >
               {formatTime(currentTime)}
             </span>
 
             <div
               onClick={handleSeekClick}
-              className="group relative h-2 flex-1 cursor-pointer rounded-full bg-muted/30"
+              className={cn(
+                'group relative h-2 flex-1 cursor-pointer rounded-full',
+                isVoiceMessage ? 'bg-metallic-blue-800/50' : 'bg-muted/30'
+              )}
             >
               <div
-                className="relative h-full rounded-full bg-gradient-electric transition-all duration-75"
+                className={cn(
+                  'relative h-full rounded-full transition-all duration-75',
+                  isVoiceMessage
+                    ? 'bg-gradient-to-r from-metallic-blue-500 to-metallic-blue-400 shadow-sm shadow-metallic-blue-500/50'
+                    : 'bg-gradient-electric'
+                )}
                 style={{
                   width: `${
                     duration && !isNaN(duration) && duration > 0
@@ -411,11 +466,23 @@ export default function GlobalAudioPlayer() {
                   }%`,
                 }}
               >
-                <div className="absolute right-0 top-1/2 h-3 w-3 -translate-y-1/2 translate-x-1.5 transform rounded-full border-2 border-electric bg-white shadow-sm transition-all duration-150 group-hover:h-4 group-hover:w-4" />
+                <div
+                  className={cn(
+                    'absolute right-0 top-1/2 h-3 w-3 -translate-y-1/2 translate-x-1.5 transform rounded-full border-2 bg-white shadow-sm transition-all duration-150 group-hover:h-4 group-hover:w-4',
+                    isVoiceMessage
+                      ? 'border-metallic-blue-500 shadow-metallic-blue-500/50'
+                      : 'border-electric'
+                  )}
+                />
               </div>
             </div>
 
-            <span className="min-w-[40px] text-right font-mono text-sm text-muted-foreground">
+            <span
+              className={cn(
+                'min-w-[40px] text-right font-mono text-sm',
+                isVoiceMessage ? 'text-metallic-blue-400' : 'text-muted-foreground'
+              )}
+            >
               {formatTime(duration)}
             </span>
           </div>

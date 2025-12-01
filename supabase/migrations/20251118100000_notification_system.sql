@@ -68,12 +68,14 @@ CREATE INDEX IF NOT EXISTS notifications_priority_idx ON notifications(priority)
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 
 -- Users can view their own notifications
+DROP POLICY IF EXISTS "notifications_select_own" ON notifications;
 CREATE POLICY "notifications_select_own" ON notifications
   FOR SELECT
   TO authenticated
   USING (auth.uid() = user_id);
 
 -- Users can update their own notifications (mark as read/seen)
+DROP POLICY IF EXISTS "notifications_update_own" ON notifications;
 CREATE POLICY "notifications_update_own" ON notifications
   FOR UPDATE
   TO authenticated
@@ -81,12 +83,14 @@ CREATE POLICY "notifications_update_own" ON notifications
   WITH CHECK (auth.uid() = user_id);
 
 -- Users can delete their own notifications
+DROP POLICY IF EXISTS "notifications_delete_own" ON notifications;
 CREATE POLICY "notifications_delete_own" ON notifications
   FOR DELETE
   TO authenticated
   USING (auth.uid() = user_id);
 
 -- System can insert notifications (via service role)
+DROP POLICY IF EXISTS "notifications_insert_system" ON notifications;
 CREATE POLICY "notifications_insert_system" ON notifications
   FOR INSERT
   TO authenticated
@@ -158,12 +162,14 @@ CREATE TABLE IF NOT EXISTS notification_preferences (
 ALTER TABLE notification_preferences ENABLE ROW LEVEL SECURITY;
 
 -- Users can view their own preferences
+DROP POLICY IF EXISTS "notification_preferences_select_own" ON notification_preferences;
 CREATE POLICY "notification_preferences_select_own" ON notification_preferences
   FOR SELECT
   TO authenticated
   USING (auth.uid() = user_id);
 
 -- Users can update their own preferences
+DROP POLICY IF EXISTS "notification_preferences_update_own" ON notification_preferences;
 CREATE POLICY "notification_preferences_update_own" ON notification_preferences
   FOR UPDATE
   TO authenticated
@@ -171,6 +177,7 @@ CREATE POLICY "notification_preferences_update_own" ON notification_preferences
   WITH CHECK (auth.uid() = user_id);
 
 -- Users can insert their own preferences
+DROP POLICY IF EXISTS "notification_preferences_insert_own" ON notification_preferences;
 CREATE POLICY "notification_preferences_insert_own" ON notification_preferences
   FOR INSERT
   TO authenticated
