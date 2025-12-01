@@ -409,6 +409,23 @@ POST /api/vibe-brain/chat
 - **20251123000000**: Add documentation embeddings (content_type='documentation', nullable content_id)
 - **20251123100000**: Fix comments RLS for anonymous access - allow anon users to view public comments
 
+#### Direct Messaging System (2025-11-25 onwards)
+
+- **20251125000001**: Complete messaging infrastructure
+  - `conversations` - DM threads between users
+  - `conversation_participants` - User membership with typing indicators
+  - `messages` - Text, voice, video messages with reply threading
+  - `message_reads` - Read receipts per message per user
+  - `follows` - User follow relationships
+  - `user_presence` - Online/offline status with last_seen
+  - Helper functions: `get_or_create_dm`, `get_unread_count`, `mark_conversation_read`
+  - Real-time subscriptions for typing indicators, new messages, read receipts
+
+- **20251201100000**: Messaging bug fixes
+  - Fixed `get_unread_count` to handle NULL `last_read_at`
+  - Added typing indicator auto-cleanup (5 second timeout)
+  - Added presence index for performance
+
 ### Key Tables & Relationships
 
 #### Core Content
@@ -437,6 +454,19 @@ ai_usage_log (global) - all AI requests
 ai_daily_costs (global) - circuit breaker
 ai_cache (global) - response caching
 tts_cache (global) - TTS audio caching
+```
+
+#### Direct Messaging
+
+```
+profiles
+  ├─→ conversations (many:many via conversation_participants)
+  │     ├─→ conversation_participants (1:many)
+  │     │     └─→ typing indicators, last_read_message_id
+  │     └─→ messages (1:many)
+  │           └─→ message_reads (1:many) - read receipts
+  ├─→ follows (self-join) - follower/following relationships
+  └─→ user_presence (1:1) - online status, last_seen
 ```
 
 ### Advanced Features
@@ -477,6 +507,44 @@ CREATE INDEX content_embeddings_vector_idx
 CREATE INDEX idx_content_embeddings_documentation
   ON content_embeddings(content_type, created_at DESC)
   WHERE content_type = 'documentation';
+```
+
+#### Direct Messaging Schema
+
+```sql
+-- Conversations (DM threads)
+CREATE TABLE conversations (
+  id UUID PRIMARY KEY,
+  type TEXT DEFAULT 'dm',  -- 'dm' or 'group'
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  last_message_id UUID REFERENCES messages(id),
+  last_message_at TIMESTAMPTZ
+);
+
+-- Messages with multimedia support
+CREATE TABLE messages (
+  id UUID PRIMARY KEY,
+  conversation_id UUID REFERENCES conversations(id),
+  sender_id UUID REFERENCES auth.users(id),
+  content TEXT,
+  message_type TEXT DEFAULT 'text',  -- 'text', 'voice', 'video', 'image'
+  media_url TEXT,  -- For voice/video/image messages
+  media_duration INTEGER,  -- Duration in seconds
+  reply_to_id UUID REFERENCES messages(id),  -- Threading
+  is_edited BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Read receipts (double checkmarks)
+CREATE TABLE message_reads (
+  message_id UUID REFERENCES messages(id),
+  user_id UUID REFERENCES auth.users(id),
+  read_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (message_id, user_id)
+);
+
+-- Realtime typing indicators via conversation_participants
+-- is_typing + typing_started_at fields, auto-cleared after 5s
 ```
 
 ---
