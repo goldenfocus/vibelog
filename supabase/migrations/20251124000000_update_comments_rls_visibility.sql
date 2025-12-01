@@ -10,6 +10,7 @@
 DROP POLICY IF EXISTS "comments select public or own" ON public.comments;
 
 -- Create updated policy that checks both comment AND vibelog visibility
+DROP POLICY IF EXISTS "comments select public or own" ON public.comments;
 CREATE POLICY "comments select public or own" ON public.comments
   FOR SELECT
   USING (

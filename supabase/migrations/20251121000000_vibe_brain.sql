@@ -97,18 +97,23 @@ ALTER TABLE vibe_brain_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_memories ENABLE ROW LEVEL SECURITY;
 
 -- Content embeddings: service role only (backend writes)
+DROP POLICY IF EXISTS "Service role can manage embeddings" ON content_embeddings;
 CREATE POLICY "Service role can manage embeddings" ON content_embeddings
   FOR ALL USING (auth.role() = 'service_role');
 
 -- Conversations: users can only see their own
+DROP POLICY IF EXISTS "Users can view own conversations" ON vibe_brain_conversations;
 CREATE POLICY "Users can view own conversations" ON vibe_brain_conversations
   FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can create own conversations" ON vibe_brain_conversations;
 CREATE POLICY "Users can create own conversations" ON vibe_brain_conversations
   FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can delete own conversations" ON vibe_brain_conversations;
 CREATE POLICY "Users can delete own conversations" ON vibe_brain_conversations
   FOR DELETE USING (auth.uid() = user_id);
 
 -- Messages: users can only see messages in their conversations
+DROP POLICY IF EXISTS "Users can view messages in own conversations" ON vibe_brain_messages;
 CREATE POLICY "Users can view messages in own conversations" ON vibe_brain_messages
   FOR SELECT USING (
     EXISTS (
@@ -116,12 +121,15 @@ CREATE POLICY "Users can view messages in own conversations" ON vibe_brain_messa
       WHERE id = conversation_id AND user_id = auth.uid()
     )
   );
+DROP POLICY IF EXISTS "Service role can manage messages" ON vibe_brain_messages;
 CREATE POLICY "Service role can manage messages" ON vibe_brain_messages
   FOR ALL USING (auth.role() = 'service_role');
 
 -- User memories: users can see their own, service role can manage
+DROP POLICY IF EXISTS "Users can view own memories" ON user_memories;
 CREATE POLICY "Users can view own memories" ON user_memories
   FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Service role can manage memories" ON user_memories;
 CREATE POLICY "Service role can manage memories" ON user_memories
   FOR ALL USING (auth.role() = 'service_role');
 

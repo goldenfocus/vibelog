@@ -137,18 +137,37 @@ export default function ConversationClient() {
     }
   }, [messages, shouldAutoScroll]);
 
-  // Mark messages as read when viewing
+  // Track which messages we've already marked as read to avoid duplicate API calls
+  const markedAsReadRef = useRef<Set<string>>(new Set());
+
+  // Mark ALL unread messages as read when viewing the conversation
+  // This ensures read receipts (double checkmarks) show correctly for the sender
   useEffect(() => {
     if (!user || !conversationId || messages.length === 0) {
       return;
     }
 
-    const lastMessage = messages[messages.length - 1];
-    if (lastMessage && lastMessage.sender_id !== user.id && !lastMessage.is_read) {
-      fetch(`/api/messages/${lastMessage.id}/read`, { method: 'POST' }).catch(err =>
-        console.error('Failed to mark message as read:', err)
-      );
+    // Find all unread messages from other users that we haven't already marked
+    const unreadMessages = messages.filter(
+      msg => msg.sender_id !== user.id && !msg.is_read && !markedAsReadRef.current.has(msg.id)
+    );
+
+    if (unreadMessages.length === 0) {
+      return;
     }
+
+    // Mark these messages as "being processed" to avoid duplicate calls
+    unreadMessages.forEach(msg => markedAsReadRef.current.add(msg.id));
+
+    // Mark all unread messages as read
+    // This updates the sender's read receipts (single -> double checkmark)
+    Promise.all(
+      unreadMessages.map(msg =>
+        fetch(`/api/messages/${msg.id}/read`, { method: 'POST' }).catch(err =>
+          console.error(`Failed to mark message ${msg.id} as read:`, err)
+        )
+      )
+    );
   }, [messages, user, conversationId]);
 
   // Auto-clear stale typing indicators on the client side

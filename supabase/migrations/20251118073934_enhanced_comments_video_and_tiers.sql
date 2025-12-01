@@ -65,8 +65,11 @@ CREATE INDEX IF NOT EXISTS comment_reactions_user_idx ON comment_reactions(user_
 -- RLS for comment_reactions
 ALTER TABLE comment_reactions ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "comment_reactions_select_all" ON comment_reactions;
 CREATE POLICY "comment_reactions_select_all" ON comment_reactions FOR SELECT TO authenticated, anon USING (true);
+DROP POLICY IF EXISTS "comment_reactions_insert_authenticated" ON comment_reactions;
 CREATE POLICY "comment_reactions_insert_authenticated" ON comment_reactions FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "comment_reactions_delete_own" ON comment_reactions;
 CREATE POLICY "comment_reactions_delete_own" ON comment_reactions FOR DELETE TO authenticated USING (auth.uid() = user_id);
 
 -- ============================================================================
@@ -94,4 +97,5 @@ CREATE INDEX IF NOT EXISTS conversation_threads_featured_idx ON conversation_thr
 
 ALTER TABLE conversation_threads ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "conversation_threads_select_all" ON conversation_threads;
 CREATE POLICY "conversation_threads_select_all" ON conversation_threads FOR SELECT TO authenticated, anon USING (true);

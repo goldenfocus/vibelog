@@ -77,6 +77,7 @@ INSERT INTO vibe_brain_config (key, value, description) VALUES
 ALTER TABLE vibe_brain_config ENABLE ROW LEVEL SECURITY;
 
 -- Only service role can manage config
+DROP POLICY IF EXISTS "Service role can manage config" ON vibe_brain_config;
 CREATE POLICY "Service role can manage config" ON vibe_brain_config
   FOR ALL USING (auth.role() = 'service_role');
 

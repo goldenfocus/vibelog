@@ -10,6 +10,7 @@
 DROP POLICY IF EXISTS "comments select public or own" ON public.comments;
 
 -- Create new policy that explicitly allows both authenticated and anonymous users
+DROP POLICY IF EXISTS "comments_select_public_or_own" ON public.comments;
 CREATE POLICY "comments_select_public_or_own" ON public.comments
   FOR SELECT
   TO authenticated, anon  -- Explicitly grant to both roles
