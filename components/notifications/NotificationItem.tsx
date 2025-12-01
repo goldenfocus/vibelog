@@ -2,6 +2,7 @@
 
 import { Bell, Heart, MessageCircle, Sparkles, TrendingUp, User } from 'lucide-react';
 import Link from 'next/link';
+import { memo } from 'react';
 
 import { useI18n } from '@/components/providers/I18nProvider';
 import { formatRelativeTimeI18n } from '@/lib/date-utils';
@@ -13,6 +14,7 @@ interface NotificationItemProps {
   onMarkRead?: (notificationId: string) => void;
 }
 
+// Map notification types to their corresponding icons
 const typeIcons: Record<NotificationType, React.ComponentType<{ className?: string }>> = {
   comment: MessageCircle,
   reply: MessageCircle,
@@ -25,6 +27,7 @@ const typeIcons: Record<NotificationType, React.ComponentType<{ className?: stri
   system: Bell,
 };
 
+// Map notification types to their corresponding colors
 const typeColors: Record<NotificationType, string> = {
   comment: 'text-blue-500',
   reply: 'text-blue-500',
@@ -37,18 +40,25 @@ const typeColors: Record<NotificationType, string> = {
   system: 'text-gray-500',
 };
 
-export default function NotificationItem({
+/**
+ * NotificationItemComponent - Renders a single notification with i18n support
+ *
+ * Performance optimizations applied:
+ * - Wrapped in React.memo with custom comparator to prevent unnecessary re-renders
+ * - Only re-renders when notification.id or notification.is_read changes
+ */
+function NotificationItemComponent({
   notification,
   onClick,
   onMarkRead,
 }: NotificationItemProps) {
   const { t } = useI18n();
-  console.log('🔔 Rendering notification:', notification);
 
   const Icon = typeIcons[notification.type];
   const colorClass = typeColors[notification.type];
 
   // Get translated title based on notification type
+  // Falls back to original title if translation key doesn't exist
   const getTranslatedTitle = () => {
     const translatedTitle = t(`notifications.types.${notification.type}`);
     // If translation returns the key itself, fall back to original title
@@ -57,7 +67,7 @@ export default function NotificationItem({
       : translatedTitle;
   };
 
-  // Get translated message
+  // Get translated message with actor name interpolation
   const getTranslatedMessage = () => {
     const actorName = notification.actor_display_name || notification.actor_username;
     if (!actorName) {
@@ -74,19 +84,19 @@ export default function NotificationItem({
     return notification.message;
   };
 
-  // Safety check
+  // Safety check for unknown notification types
   if (!Icon) {
-    console.error('❌ Unknown notification type:', notification.type);
+    console.error('Unknown notification type:', notification.type);
     return null;
   }
 
   const handleClick = () => {
-    // Mark as read when clicked
+    // Mark as read when clicked (if not already read)
     if (!notification.is_read && onMarkRead) {
       onMarkRead(notification.id);
     }
 
-    // Execute custom onClick
+    // Execute custom onClick handler if provided
     if (onClick) {
       onClick(notification);
     }
@@ -100,7 +110,7 @@ export default function NotificationItem({
           : 'border-primary/30 bg-primary/5 shadow-sm'
       }`}
     >
-      {/* Icon */}
+      {/* Icon - visual indicator of notification type */}
       <div
         className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full ${
           notification.is_read ? 'bg-muted' : 'bg-primary/10'
@@ -111,13 +121,13 @@ export default function NotificationItem({
 
       {/* Content */}
       <div className="min-w-0 flex-1 space-y-1">
-        {/* Title */}
+        {/* Title - translated based on notification type */}
         <h4 className="font-medium text-foreground">{getTranslatedTitle()}</h4>
 
-        {/* Message */}
+        {/* Message - may include actor name interpolation */}
         <p className="text-sm text-muted-foreground">{getTranslatedMessage()}</p>
 
-        {/* Actor info */}
+        {/* Actor info - shows who triggered the notification */}
         {notification.actor_username && (
           <div className="flex items-center gap-2 pt-1">
             {notification.actor_avatar_url ? (
@@ -135,13 +145,13 @@ export default function NotificationItem({
           </div>
         )}
 
-        {/* Timestamp */}
+        {/* Timestamp - i18n-aware relative time display */}
         <p className="text-xs text-muted-foreground/70">
           {formatRelativeTimeI18n(notification.created_at, t)}
         </p>
       </div>
 
-      {/* Unread indicator */}
+      {/* Unread indicator - pulsing dot for unread notifications */}
       {!notification.is_read && (
         <div className="flex-shrink-0 self-start pt-1">
           <div className="h-2.5 w-2.5 rounded-full bg-primary shadow-[0_0_8px] shadow-primary/50"></div>
@@ -150,7 +160,7 @@ export default function NotificationItem({
     </div>
   );
 
-  // If there's an action URL, wrap in Link
+  // If there's an action URL, wrap in Next.js Link for client-side navigation
   if (notification.action_url) {
     return (
       <Link href={notification.action_url} onClick={handleClick}>
@@ -166,3 +176,24 @@ export default function NotificationItem({
     </div>
   );
 }
+
+/**
+ * Memoized NotificationItem to prevent re-renders when parent updates unrelated state.
+ *
+ * Custom comparator only checks:
+ * - notification.id (identity)
+ * - notification.is_read (the only field that changes after initial render)
+ *
+ * This prevents re-renders when:
+ * - Parent component's state changes (e.g., loading, filter)
+ * - Sibling notifications are marked as read
+ * - Other unrelated state updates occur
+ */
+const NotificationItem = memo(NotificationItemComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.notification.id === nextProps.notification.id &&
+    prevProps.notification.is_read === nextProps.notification.is_read
+  );
+});
+
+export default NotificationItem;

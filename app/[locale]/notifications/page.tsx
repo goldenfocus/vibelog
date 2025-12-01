@@ -2,7 +2,7 @@
 
 import { Check, Filter, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import Navigation from '@/components/Navigation';
@@ -21,6 +21,8 @@ export default function NotificationsPage() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterType>('all');
+  // Track last fetched filter to prevent duplicate API calls
+  const lastFetchRef = useRef<string>('');
 
   // Redirect anonymous users to sign-in
   useEffect(() => {
@@ -29,19 +31,20 @@ export default function NotificationsPage() {
     }
   }, [authLoading, user, router]);
 
-  // Fetch notifications
-  const fetchNotifications = async () => {
-    if (!user) {
-      return;
-    }
+  // Fetch notifications - memoized to prevent recreation on every render
+  // Uses lastFetchRef to dedupe requests with the same filter
+  const fetchNotifications = useCallback(async (currentFilter: FilterType) => {
+    // Dedupe: skip if we already fetched this filter (prevents double-fetch from StrictMode)
+    if (lastFetchRef.current === currentFilter) return;
+    lastFetchRef.current = currentFilter;
 
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (filter === 'unread') {
+      if (currentFilter === 'unread') {
         params.set('isRead', 'false');
-      } else if (filter !== 'all') {
-        params.set('types', filter);
+      } else if (currentFilter !== 'all') {
+        params.set('types', currentFilter);
       }
 
       const response = await fetch(`/api/notifications?${params}`);
@@ -50,23 +53,21 @@ export default function NotificationsPage() {
       }
 
       const data = await response.json();
-      console.log('📬 Notifications API response:', data);
       setNotifications(data.notifications || []);
       setUnreadCount(data.unreadCount || 0);
-    } catch (error) {
-      console.error('❌ Error fetching notifications:', error);
-      toast.error('Failed to load notifications');
+    } catch {
+      toast.error(t('toasts.notifications.loadFailed'));
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
+  // Fetch when user or filter changes
   useEffect(() => {
     if (user) {
-      fetchNotifications();
+      fetchNotifications(filter);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter, user]);
+  }, [filter, user, fetchNotifications]);
 
   // Mark notification as read
   const handleMarkRead = async (notificationId: string) => {
@@ -81,7 +82,7 @@ export default function NotificationsPage() {
         throw new Error('Failed to mark as read');
       }
 
-      // Update local state
+      // Update local state optimistically
       setNotifications(prev =>
         prev.map(n =>
           n.id === notificationId ? { ...n, is_read: true, read_at: new Date().toISOString() } : n
@@ -106,7 +107,7 @@ export default function NotificationsPage() {
         throw new Error('Failed to mark all as read');
       }
 
-      // Update local state
+      // Update local state optimistically
       setNotifications(prev =>
         prev.map(n => ({ ...n, is_read: true, read_at: new Date().toISOString() }))
       );
@@ -168,7 +169,13 @@ export default function NotificationsPage() {
               {(['all', 'unread', 'comment', 'reply', 'reaction'] as FilterType[]).map(f => (
                 <button
                   key={f}
-                  onClick={() => setFilter(f)}
+                  onClick={() => {
+                    // Reset lastFetchRef when filter changes to allow new fetch
+                    if (f !== filter) {
+                      lastFetchRef.current = '';
+                      setFilter(f);
+                    }
+                  }}
                   className={`rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 active:scale-95 ${
                     filter === f
                       ? 'bg-primary text-primary-foreground'
