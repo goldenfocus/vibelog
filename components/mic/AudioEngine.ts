@@ -159,10 +159,48 @@ export class AudioEngine {
 
   /**
    * Stop recording and fully release microphone (removes browser indicator)
+   * Waits for the MediaRecorder to finish processing before releasing resources
    */
   stopRecordingAndRelease(): void {
-    this.stopRecording();
+    this.isRecording = false;
 
+    // Stop level monitoring first
+    this.stopLevelMonitoring();
+
+    // Clean up timer
+    if (this.recordingTimer) {
+      clearInterval(this.recordingTimer);
+      this.recordingTimer = null;
+    }
+
+    // Stop MediaRecorder - the onstop callback will handle blob creation
+    // We need to wait for it to complete before releasing resources
+    if (this.mediaRecorderRef && this.mediaRecorderRef.state === 'recording') {
+      // Store original onstop callback
+      const originalOnStop = this.mediaRecorderRef.onstop;
+
+      // Wrap onstop to release resources after blob is created
+      this.mediaRecorderRef.onstop = event => {
+        // Call original onstop to create the blob
+        if (originalOnStop) {
+          originalOnStop.call(this.mediaRecorderRef, event);
+        }
+
+        // Now safe to release resources after blob is created
+        this.releaseResources();
+      };
+
+      this.mediaRecorderRef.stop();
+    } else {
+      // No active recording, just release resources
+      this.releaseResources();
+    }
+  }
+
+  /**
+   * Release audio resources (stream tracks and AudioContext)
+   */
+  private releaseResources(): void {
     // Safely stop MediaStream tracks to remove browser recording indicator
     try {
       if (this.streamRef) {
@@ -271,34 +309,7 @@ export class AudioEngine {
   cleanup(): void {
     this.isCleanedUp = true;
     this.stopRecording();
-
-    // Safely stop media stream tracks
-    try {
-      if (this.streamRef) {
-        this.streamRef.getTracks().forEach(track => {
-          try {
-            track.stop();
-          } catch (err) {
-            // Ignore errors when stopping tracks during cleanup
-            // This can happen during navigation/unmount
-          }
-        });
-        this.streamRef = null;
-      }
-    } catch {
-      // Ignore stream cleanup errors
-    }
-
-    // Safely close audio context
-    try {
-      if (this.audioContextRef && this.audioContextRef.state !== 'closed') {
-        this.audioContextRef.close();
-      }
-      this.audioContextRef = null;
-      this.analyserRef = null;
-    } catch {
-      // Ignore audio context cleanup errors
-    }
+    this.releaseResources();
 
     if (this.recordingTimer) {
       clearInterval(this.recordingTimer);
