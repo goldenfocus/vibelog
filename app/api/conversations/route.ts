@@ -35,6 +35,10 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Clear stale typing indicators (older than 5 seconds)
+    // This is the server-side cleanup for stuck "typing..." indicators
+    await supabase.rpc('clear_stale_typing_indicators');
+
     // Get user's conversation participations
     const { data: participations, error: participationsError } = await supabase
       .from('conversation_participants')

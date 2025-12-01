@@ -151,6 +151,20 @@ export default function ConversationClient() {
     }
   }, [messages, user, conversationId]);
 
+  // Auto-clear stale typing indicators on the client side
+  // This handles the case where we're viewing an already-stuck typing indicator
+  useEffect(() => {
+    if (!conversation?.is_typing) {
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      setConversation(prev => (prev ? { ...prev, is_typing: false } : null));
+    }, 5000);
+
+    return () => clearTimeout(timeout);
+  }, [conversation?.is_typing]);
+
   // Real-time updates
   useEffect(() => {
     if (!user || !conversationId) {
@@ -225,6 +239,17 @@ export default function ConversationClient() {
         payload => {
           // Handle typing indicators
           if (payload.new.is_typing !== payload.old.is_typing) {
+            // Check if typing indicator is fresh (within 5 seconds)
+            const typingUpdatedAt = payload.new.typing_updated_at
+              ? new Date(payload.new.typing_updated_at).getTime()
+              : 0;
+            const isStale = Date.now() - typingUpdatedAt > 5000;
+
+            // Ignore stale typing indicators
+            if (payload.new.is_typing && isStale) {
+              return;
+            }
+
             setConversation(prev =>
               prev
                 ? {
@@ -234,6 +259,40 @@ export default function ConversationClient() {
                 : null
             );
           }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'message_reads',
+        },
+        payload => {
+          // Update read receipt count when someone reads a message
+          const { message_id, user_id: readerId } = payload.new as {
+            message_id: string;
+            user_id: string;
+          };
+
+          // Only update if it's not the current user reading (they already know)
+          // and it's not the sender reading their own message
+          if (readerId === user.id) {
+            return;
+          }
+
+          setMessages(prev =>
+            prev.map(msg => {
+              if (msg.id === message_id && msg.sender_id === user.id) {
+                // This is a message I sent, and someone else read it
+                return {
+                  ...msg,
+                  read_by_count: (msg.read_by_count || 0) + 1,
+                };
+              }
+              return msg;
+            })
+          );
         }
       )
       .subscribe();
