@@ -108,12 +108,27 @@ export async function GET() {
         profiles: profilesMap.get(p.user_id) || null,
       })) || [];
 
-    // Get last messages
-    const lastMessageIds = participations
-      .map(p => (p.conversations as { last_message_id?: string }).last_message_id)
-      .filter(Boolean);
+    // Get last messages - fetch by last_message_id OR get the latest message for each conversation
+    const conversationIdsWithoutLastMessage: string[] = [];
+    const lastMessageIds: string[] = [];
 
-    let lastMessages: Array<{ id: string; sender?: Profile | null; [key: string]: any }> = [];
+    participations.forEach(p => {
+      const conv = p.conversations as unknown as { id: string; last_message_id?: string };
+      if (conv.last_message_id) {
+        lastMessageIds.push(conv.last_message_id);
+      } else {
+        conversationIdsWithoutLastMessage.push(conv.id);
+      }
+    });
+
+    let lastMessages: Array<{
+      id: string;
+      sender?: Profile | null;
+      conversation_id?: string;
+      [key: string]: any;
+    }> = [];
+
+    // Fetch messages by last_message_id
     if (lastMessageIds.length > 0) {
       const { data: messagesRaw, error: messagesError } = await supabase
         .from('messages')
@@ -124,23 +139,44 @@ export async function GET() {
         throw messagesError;
       }
 
-      // Get sender profiles separately
-      const senderIds = [...new Set(messagesRaw?.map(m => m.sender_id).filter(Boolean) || [])];
-      let sendersMap = new Map<string, Profile>();
-      if (senderIds.length > 0) {
-        const { data: sendersData } = await supabase
-          .from('profiles')
-          .select('id, username, display_name, avatar_url')
-          .in('id', senderIds);
-        sendersMap = new Map(sendersData?.map(s => [s.id, s as Profile]) || []);
-      }
-
-      lastMessages =
-        messagesRaw?.map(m => ({
-          ...m,
-          sender: m.sender_id ? sendersMap.get(m.sender_id) || null : null,
-        })) || [];
+      lastMessages = messagesRaw || [];
     }
+
+    // For conversations without last_message_id, fetch the most recent message directly
+    // This handles cases where messages exist but the trigger didn't update last_message_id
+    if (conversationIdsWithoutLastMessage.length > 0) {
+      for (const convId of conversationIdsWithoutLastMessage) {
+        const { data: latestMessage } = await supabase
+          .from('messages')
+          .select('*')
+          .eq('conversation_id', convId)
+          .eq('is_deleted', false)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (latestMessage) {
+          lastMessages.push(latestMessage);
+        }
+      }
+    }
+
+    // Get sender profiles separately
+    const senderIds = [...new Set(lastMessages.map(m => m.sender_id).filter(Boolean))];
+    let sendersMap = new Map<string, Profile>();
+    if (senderIds.length > 0) {
+      const { data: sendersData } = await supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url')
+        .in('id', senderIds);
+      sendersMap = new Map(sendersData?.map(s => [s.id, s as Profile]) || []);
+    }
+
+    // Enrich messages with sender profiles
+    lastMessages = lastMessages.map(m => ({
+      ...m,
+      sender: m.sender_id ? sendersMap.get(m.sender_id) || null : null,
+    }));
 
     // Get unread counts
     const { data: unreadCounts } = await supabase.rpc('get_unread_count', {
@@ -167,7 +203,11 @@ export async function GET() {
           ?.filter(ap => ap.conversation_id === conversation.id)
           .map(ap => ap.profiles as unknown as Profile) || [];
 
-      const lastMessage = lastMessages.find(m => m.id === conversation.last_message_id) || null;
+      // Find last message by ID or by conversation_id (for conversations without last_message_id)
+      const lastMessage =
+        lastMessages.find(m => m.id === conversation.last_message_id) ||
+        lastMessages.find(m => m.conversation_id === conversation.id) ||
+        null;
 
       const unreadData = unreadCounts?.find((uc: any) => uc.conversation_id === conversation.id);
       const unreadCount = unreadData?.unread_count || 0;
