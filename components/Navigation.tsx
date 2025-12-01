@@ -162,7 +162,7 @@ export default function Navigation() {
             {/* Header */}
             <div className="flex shrink-0 items-center justify-between border-b border-border px-5 py-4">
               <Link
-                href="/"
+                href={`/${locale}/`}
                 onClick={() => setIsMobileNavOpen(false)}
                 className="text-xl font-semibold"
               >
@@ -204,7 +204,7 @@ export default function Navigation() {
     <nav className="fixed inset-x-0 top-0 z-50 border-b border-border/20 bg-background/80 backdrop-blur-sm">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
-          <Link href="/" className="text-xl font-bold">
+          <Link href={`/${locale}/`} className="text-xl font-bold">
             <span className="bg-gradient-electric bg-clip-text text-transparent">vibelog.io</span>
           </Link>
 

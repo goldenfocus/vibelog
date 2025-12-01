@@ -13,6 +13,7 @@ import { createServerSupabaseClient } from '@/lib/supabase';
 
 interface PageProps {
   params: Promise<{
+    locale: string;
     slug: string;
   }>;
 }
@@ -77,7 +78,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function PublicVibelogPage({ params }: PageProps) {
-  const { slug } = await params;
+  const { locale, slug } = await params;
   const supabase = await createServerSupabaseClient();
 
   // Fetch the vibelog by public_slug
@@ -252,7 +253,7 @@ export default async function PublicVibelogPage({ params }: PageProps) {
               : 'Enjoyed this post? Create your own!'}
           </p>
           <Link
-            href="/"
+            href={`/${locale}/`}
             className="inline-block rounded-lg border border-border bg-background px-6 py-3 font-medium hover:bg-muted"
           >
             Try VibeLog Free
@@ -265,7 +266,7 @@ export default async function PublicVibelogPage({ params }: PageProps) {
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
           <p>
             Powered by{' '}
-            <Link href="/" className="font-medium hover:text-foreground">
+            <Link href={`/${locale}/`} className="font-medium hover:text-foreground">
               VibeLog
             </Link>{' '}
             — Turn your voice into beautiful stories

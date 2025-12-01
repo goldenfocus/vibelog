@@ -1,30 +1,11 @@
-import { Metadata } from 'next';
+'use client';
+
 import Link from 'next/link';
 
-export const metadata: Metadata = {
-  title: '404 - Page Not Found | VibeLog',
-  description: 'The page you are looking for does not exist.',
-  openGraph: {
-    title: '404 - Page Not Found | VibeLog',
-    description: 'The page you are looking for does not exist.',
-    images: [
-      {
-        url: '/og-image.png',
-        width: 1200,
-        height: 630,
-        alt: 'VibeLog - Voice-First Blogging Platform',
-      },
-    ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: '404 - Page Not Found | VibeLog',
-    description: 'The page you are looking for does not exist.',
-    images: ['/og-image.png'],
-  },
-};
+import { useI18n } from '@/components/providers/I18nProvider';
 
 export default function NotFound() {
+  const { locale } = useI18n();
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
       <div className="text-center">
@@ -46,7 +27,7 @@ export default function NotFound() {
         {/* Actions */}
         <div className="flex flex-col gap-4 delay-300 duration-700 animate-in fade-in slide-in-from-bottom-4 sm:flex-row sm:justify-center">
           <Link
-            href="/"
+            href={`/${locale}/`}
             className="inline-flex items-center justify-center gap-2 rounded-lg bg-electric px-8 py-4 font-semibold text-white transition-all duration-200 hover:bg-electric-glow hover:shadow-lg hover:shadow-electric/20"
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -61,7 +42,7 @@ export default function NotFound() {
           </Link>
 
           <Link
-            href="/community"
+            href={`/${locale}/community`}
             className="inline-flex items-center justify-center gap-2 rounded-lg border-2 border-border bg-card px-8 py-4 font-semibold text-foreground transition-all duration-200 hover:border-electric/50 hover:bg-muted"
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
