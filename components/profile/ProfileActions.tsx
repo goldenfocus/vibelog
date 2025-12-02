@@ -12,7 +12,7 @@ interface ProfileActionsProps {
   username?: string;
 }
 
-export function ProfileActions({ profileUserId }: ProfileActionsProps) {
+export function ProfileActions({ profileUserId, username }: ProfileActionsProps) {
   const router = useRouter();
   const { user } = useAuth();
   const [sending, setSending] = useState(false);
@@ -23,10 +23,16 @@ export function ProfileActions({ profileUserId }: ProfileActionsProps) {
   }
 
   const handleMessage = async () => {
+    // If we have the username, navigate directly to the human-friendly URL
+    if (username) {
+      router.push(`/messages/dm/${username}`);
+      return;
+    }
+
+    // Fallback: fetch username first, then navigate
     try {
       setSending(true);
 
-      // Create or get existing DM conversation
       const response = await fetch('/api/conversations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -50,12 +56,9 @@ export function ProfileActions({ profileUserId }: ProfileActionsProps) {
       }
 
       const data = await response.json();
-      console.log('✅ API Response:', data);
-
       const conversationId = data.conversation?.id;
 
       if (conversationId) {
-        console.log('✅ Redirecting to:', `/messages/${conversationId}`);
         router.push(`/messages/${conversationId}`);
       } else {
         console.error('❌ No conversation ID in response:', data);
