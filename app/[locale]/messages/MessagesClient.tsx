@@ -1,10 +1,11 @@
 'use client';
 
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { MessageCircle, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
 import Navigation from '@/components/Navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -17,10 +18,26 @@ import { formatMessageTime, getMessagePreview } from '@/types/messaging';
 export default function MessagesClient() {
   const { t } = useI18n();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { user, loading: authLoading } = useAuth();
-  const [conversations, setConversations] = useState<ConversationWithDetails[]>([]);
-  const [loading, setLoading] = useState(true);
   const isSubscribedRef = useRef(false);
+
+  // Fetch conversations with React Query (cached, no reload on tab switch)
+  const { data: conversationsData, isLoading: loading } = useQuery({
+    queryKey: ['conversations', user?.id],
+    queryFn: async () => {
+      const response = await fetch('/api/conversations');
+      if (!response.ok) {
+        console.warn('Failed to fetch conversations:', response.status);
+        return { conversations: [] };
+      }
+      return response.json();
+    },
+    enabled: !!user,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  const conversations: ConversationWithDetails[] = conversationsData?.conversations || [];
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -28,38 +45,6 @@ export default function MessagesClient() {
       router.push('/auth/signin');
     }
   }, [user, authLoading, router]);
-
-  // Fetch conversations
-  useEffect(() => {
-    if (!user) {
-      return;
-    }
-
-    const fetchConversations = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch('/api/conversations');
-
-        if (!response.ok) {
-          // If API fails, just show empty state instead of error
-          console.warn('Failed to fetch conversations:', response.status);
-          setConversations([]);
-          return;
-        }
-
-        const data = await response.json();
-        setConversations(data.conversations || []);
-      } catch (err) {
-        console.error('Error fetching conversations:', err);
-        // Show empty state instead of error - more welcoming
-        setConversations([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchConversations();
-  }, [user]);
 
   // Real-time updates for new messages
   useEffect(() => {
@@ -81,11 +66,8 @@ export default function MessagesClient() {
           table: 'messages',
         },
         () => {
-          // Refetch conversations when new message arrives
-          fetch('/api/conversations')
-            .then(res => res.json())
-            .then(data => setConversations(data.conversations || []))
-            .catch(err => console.error('Error refreshing conversations:', err));
+          // Invalidate cache to trigger refetch when new message arrives
+          queryClient.invalidateQueries({ queryKey: ['conversations', user.id] });
         }
       )
       .subscribe();
@@ -94,7 +76,7 @@ export default function MessagesClient() {
       isSubscribedRef.current = false;
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user, queryClient]);
 
   if (authLoading || !user) {
     return (
