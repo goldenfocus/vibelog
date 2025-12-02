@@ -213,8 +213,14 @@ export default function MessagesClient() {
               const avatarUrl = isGroup ? conversation.avatar_url : otherUser?.avatar_url;
               const lastMessage = conversation.last_message;
 
+              // Use human-friendly URL for DMs, UUID for groups
+              const conversationUrl =
+                !isGroup && otherUser?.username
+                  ? `/messages/dm/${otherUser.username}`
+                  : `/messages/${conversation.id}`;
+
               return (
-                <Link key={conversation.id} href={`/messages/${conversation.id}`}>
+                <Link key={conversation.id} href={conversationUrl}>
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
