@@ -80,7 +80,7 @@ export async function GET() {
     // Get all participants for these conversations
     const { data: allParticipantsRaw, error: participantsError } = await supabase
       .from('conversation_participants')
-      .select('conversation_id, user_id, is_typing')
+      .select('conversation_id, user_id, is_typing, typing_updated_at')
       .in('conversation_id', conversationIds);
 
     if (participantsError) {
@@ -212,11 +212,21 @@ export async function GET() {
       const unreadData = unreadCounts?.find((uc: any) => uc.conversation_id === conversation.id);
       const unreadCount = unreadData?.unread_count || 0;
 
-      // Check if anyone is typing
+      // Check if anyone is typing (filter out stale indicators > 10 seconds old)
       const typingParticipants =
-        allParticipants?.filter(
-          ap => ap.conversation_id === conversation.id && ap.user_id !== user.id && ap.is_typing
-        ) || [];
+        allParticipants?.filter(ap => {
+          if (ap.conversation_id !== conversation.id || ap.user_id === user.id || !ap.is_typing) {
+            return false;
+          }
+          // Filter out stale typing indicators
+          if (ap.typing_updated_at) {
+            const isStale = Date.now() - new Date(ap.typing_updated_at).getTime() > 10000;
+            if (isStale) {
+              return false;
+            }
+          }
+          return true;
+        }) || [];
 
       // For DMs, identify the other user
       const otherUser =
