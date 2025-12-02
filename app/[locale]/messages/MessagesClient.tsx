@@ -275,17 +275,6 @@ export default function MessagesClient() {
                           </div>
                         </motion.div>
                       )}
-
-                      {/* Online indicator (for demo - replace with real status) */}
-                      {!isGroup && Math.random() > 0.5 && (
-                        <motion.div
-                          animate={{ scale: [1, 1.2, 1] }}
-                          transition={{ duration: 2, repeat: Infinity }}
-                          className="absolute bottom-0 right-0"
-                        >
-                          <div className="h-4 w-4 rounded-full border-2 border-white bg-gradient-to-br from-emerald-400 to-emerald-500 shadow-sm dark:border-zinc-800" />
-                        </motion.div>
-                      )}
                     </div>
 
                     {/* Content */}
