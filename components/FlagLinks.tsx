@@ -149,36 +149,56 @@ export function FlagLinks({ currentLocale, className, size = 'md' }: FlagLinksPr
               isExpanded ? 'max-w-[200px] pr-2 opacity-100' : 'max-w-0 opacity-0'
             )}
           >
-            {LANGUAGES.filter(l => l.code !== currentLocale).map((lang, index) => (
-              <Link
-                key={lang.code}
-                href={getLocalizedPath(lang.code)}
-                hrefLang={lang.code}
-                onClick={() => setIsExpanded(false)}
-                aria-label={`Switch to ${lang.name} (${lang.nativeName})`}
-                title={lang.nativeName}
-                prefetch={false}
-                className={cn(
-                  'flex h-9 w-9 items-center justify-center rounded-full',
-                  'transition-all duration-200 ease-out',
-                  'hover:scale-110 hover:bg-primary/10',
-                  'active:scale-95',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary'
-                )}
-                style={{
-                  // Staggered entrance animation
-                  transitionDelay: isExpanded ? `${index * 30}ms` : '0ms',
-                  transform: isExpanded ? 'scale(1)' : 'scale(0.8)',
-                  opacity: isExpanded ? 1 : 0,
-                }}
-              >
-                <span className="text-lg" role="img" aria-hidden="true">
-                  {lang.flag}
-                </span>
-              </Link>
-            ))}
+            {LANGUAGES.filter(l => l.code !== currentLocale).map((lang, index) => {
+              const totalItems = LANGUAGES.filter(l => l.code !== currentLocale).length;
+              // Staggered entrance: first item appears first (index * 30ms)
+              // Staggered exit: last item disappears first (reverse order for visual consistency)
+              const delay = isExpanded ? `${index * 30}ms` : `${(totalItems - 1 - index) * 30}ms`;
+
+              return (
+                <Link
+                  key={lang.code}
+                  href={getLocalizedPath(lang.code)}
+                  hrefLang={lang.code}
+                  onClick={() => setIsExpanded(false)}
+                  aria-label={`Switch to ${lang.name} (${lang.nativeName})`}
+                  title={lang.nativeName}
+                  prefetch={false}
+                  className={cn(
+                    'flex h-9 w-9 items-center justify-center rounded-full',
+                    'transition-all duration-200 ease-out',
+                    'hover:scale-110 hover:bg-primary/10',
+                    'active:scale-95',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary'
+                  )}
+                  style={{
+                    transitionDelay: delay,
+                    transform: isExpanded ? 'scale(1)' : 'scale(0.8)',
+                    opacity: isExpanded ? 1 : 0,
+                  }}
+                >
+                  <span className="text-lg" role="img" aria-hidden="true">
+                    {lang.flag}
+                  </span>
+                </Link>
+              );
+            })}
           </div>
         </div>
+
+        {/* Hidden but crawlable links for SEO - always accessible to crawlers on mobile */}
+        <nav aria-label="Language selection" className="sr-only">
+          {LANGUAGES.filter(l => l.code !== currentLocale).map(lang => (
+            <Link
+              key={lang.code}
+              href={getLocalizedPath(lang.code)}
+              hrefLang={lang.code}
+              aria-label={`Switch to ${lang.name} (${lang.nativeName})`}
+            >
+              {lang.nativeName}
+            </Link>
+          ))}
+        </nav>
       </div>
 
       {/* Desktop: Horizontal row of flags (visible + crawlable) */}
