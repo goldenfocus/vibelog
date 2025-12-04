@@ -15,6 +15,7 @@ import { useI18n } from '@/components/providers/I18nProvider';
 import { Button } from '@/components/ui/button';
 // [OUT OF SCOPE] Screen share feature commented out
 // import { ScreenCaptureZone } from '@/components/video';
+import { BOTTOM_NAV_HEIGHT } from '@/lib/mobile/constants';
 import { createClient } from '@/lib/supabase';
 
 export default function DashboardPage() {
@@ -205,7 +206,7 @@ export default function DashboardPage() {
               {t('dashboard.newVibelog')}
             </Button>
 
-{/* [OUT OF SCOPE] Screen share button commented out */}
+            {/* [OUT OF SCOPE] Screen share button commented out */}
             {/* <Button
               onClick={handleScreenShare}
               variant="outline"
@@ -260,13 +261,16 @@ export default function DashboardPage() {
               <FuturisticCarousel vibelogs={vibelogs} />
             )}
           </div>
+
+          {/* Bottom padding for mobile BottomNav */}
+          <div style={{ height: BOTTOM_NAV_HEIGHT.BASE + 20 }} className="lg:hidden" />
         </div>
       </main>
 
       {/* Onboarding Modal */}
       {user && <OnboardingModal user={user} onComplete={() => {}} />}
 
-{/* [OUT OF SCOPE] Screen Share Modal commented out */}
+      {/* [OUT OF SCOPE] Screen Share Modal commented out */}
       {/* {showScreenShare && tempVibelogId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
           <div className="relative mx-4 max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-900">
