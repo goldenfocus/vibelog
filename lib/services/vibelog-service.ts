@@ -1,5 +1,6 @@
 import { extractBasicTags, extractContentMetadata } from '@/lib/content-extraction';
 import { generatePublicSlug, generateUserSlug } from '@/lib/seo';
+import { createServerAdminClient } from '@/lib/supabaseAdmin';
 import { getTargetLanguages, type SupportedLanguage, translateVibelog } from '@/lib/translation';
 import { embedVibelog } from '@/lib/vibe-brain';
 
@@ -369,7 +370,9 @@ export async function handleAsyncTasks(
         if (result.translations && Object.keys(result.translations).length > 0) {
           const availableLanguages = [sourceLanguage, ...Object.keys(result.translations)];
           try {
-            await supabase
+            // Use admin client to bypass RLS for background translation updates
+            const adminClient = await createServerAdminClient();
+            await adminClient
               .from('vibelogs')
               .update({
                 translations: result.translations,
