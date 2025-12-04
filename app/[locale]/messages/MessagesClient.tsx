@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 
+import { BottomNav } from '@/components/mobile/BottomNav';
 import Navigation from '@/components/Navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useI18n } from '@/components/providers/I18nProvider';
@@ -373,6 +374,9 @@ export default function MessagesClient() {
         {/* Bottom padding for BottomNav */}
         <div style={{ height: BOTTOM_NAV_HEIGHT.BASE + 20 }} className="lg:hidden" />
       </div>
+
+      {/* Mobile Bottom Navigation */}
+      <BottomNav className="lg:hidden" />
     </div>
   );
 }
