@@ -185,6 +185,20 @@ export function FlagLinks({ currentLocale, className, size = 'md' }: FlagLinksPr
             })}
           </div>
         </div>
+
+        {/* Hidden but crawlable links for SEO - always accessible to crawlers on mobile */}
+        <nav aria-label="Language selection" className="sr-only">
+          {LANGUAGES.filter(l => l.code !== currentLocale).map(lang => (
+            <Link
+              key={lang.code}
+              href={getLocalizedPath(lang.code)}
+              hrefLang={lang.code}
+              aria-label={`Switch to ${lang.name} (${lang.nativeName})`}
+            >
+              {lang.nativeName}
+            </Link>
+          ))}
+        </nav>
       </div>
 
       {/* Desktop: Horizontal row of flags (visible + crawlable) */}
