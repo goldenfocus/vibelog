@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useBottomNav } from '@/components/providers/BottomNavProvider';
 import { useI18n } from '@/components/providers/I18nProvider';
 import { useBottomNavVisibility } from '@/hooks/useBottomNavVisibility';
 import { useSafeArea } from '@/hooks/useSafeArea';
@@ -50,6 +51,7 @@ export function BottomNav({ className, alwaysVisible = false, onCreateClick }: B
   const { user } = useAuth();
   const { bottom } = useSafeArea();
   const { isVisible } = useBottomNavVisibility();
+  const { isHidden: isHiddenByContext } = useBottomNav();
   const [unreadMessages, setUnreadMessages] = useState(0);
 
   // Fetch unread message count
@@ -82,8 +84,8 @@ export function BottomNav({ className, alwaysVisible = false, onCreateClick }: B
     return () => clearInterval(interval);
   }, [user]);
 
-  // Show navigation if alwaysVisible prop or auto-hide logic
-  const shouldShow = alwaysVisible || isVisible;
+  // Show navigation if alwaysVisible prop or auto-hide logic, but respect context hide
+  const shouldShow = !isHiddenByContext && (alwaysVisible || isVisible);
 
   const navItems: NavItem[] = [
     {

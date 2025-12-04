@@ -14,6 +14,7 @@ import HomeCommunityShowcase from '@/components/home/HomeCommunityShowcase';
 import MicRecorder from '@/components/MicRecorder';
 import Navigation from '@/components/Navigation';
 import { useI18n } from '@/components/providers/I18nProvider';
+import { BOTTOM_NAV_HEIGHT } from '@/lib/mobile/constants';
 import { cn } from '@/lib/utils';
 
 function RemixHandler({ onRemixContent }: { onRemixContent: (content: string | null) => void }) {
@@ -81,7 +82,7 @@ export default function Home() {
             <p
               className={cn(
                 'mx-auto max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg md:text-xl',
-                'transition-all duration-700 delay-100 ease-out',
+                'transition-all delay-100 duration-700 ease-out',
                 mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
               )}
             >
@@ -93,7 +94,7 @@ export default function Home() {
           <div
             className={cn(
               'mb-6 flex justify-center gap-3 sm:mb-8 sm:gap-4',
-              'transition-all duration-700 delay-200 ease-out',
+              'transition-all delay-200 duration-700 ease-out',
               mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
             )}
           >
@@ -138,7 +139,7 @@ export default function Home() {
           <div
             className={cn(
               'mb-12 flex justify-center sm:mb-16',
-              'transition-all duration-700 delay-300 ease-out',
+              'transition-all delay-300 duration-700 ease-out',
               mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
             )}
           >
@@ -156,14 +157,26 @@ export default function Home() {
           <div
             className={cn(
               'mx-auto mb-12 grid max-w-4xl grid-cols-3 gap-2 sm:mb-16 sm:gap-4 md:gap-6',
-              'transition-all duration-700 delay-400 ease-out',
+              'delay-400 transition-all duration-700 ease-out',
               mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
             )}
           >
             {[
-              { Icon: MessageCircle, title: t('features.input.title'), desc: t('features.input.description') },
-              { Icon: Bot, title: t('features.aiMagic.title'), desc: t('features.aiMagic.description') },
-              { Icon: Share2, title: t('features.share.title'), desc: t('features.share.description') },
+              {
+                Icon: MessageCircle,
+                title: t('features.input.title'),
+                desc: t('features.input.description'),
+              },
+              {
+                Icon: Bot,
+                title: t('features.aiMagic.title'),
+                desc: t('features.aiMagic.description'),
+              },
+              {
+                Icon: Share2,
+                title: t('features.share.title'),
+                desc: t('features.share.description'),
+              },
             ].map(({ Icon, title, desc }, index) => (
               <div
                 key={title}
@@ -191,6 +204,9 @@ export default function Home() {
           </div>
 
           <HomeCommunityShowcase onRemix={setRemixContent} onRefreshRequest={setRefreshFeed} />
+
+          {/* Bottom padding for mobile BottomNav */}
+          <div style={{ height: BOTTOM_NAV_HEIGHT.BASE + 20 }} className="lg:hidden" />
         </div>
       </main>
 

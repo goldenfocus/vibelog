@@ -2,7 +2,9 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
 import GlobalAudioPlayer from '@/components/GlobalAudioPlayer';
+import { BottomNav } from '@/components/mobile/BottomNav';
 import { AuthProvider } from '@/components/providers/AuthProvider';
+import { BottomNavProvider } from '@/components/providers/BottomNavProvider';
 import { I18nProvider } from '@/components/providers/I18nProvider';
 import { ReactQueryProvider } from '@/components/providers/ReactQueryProvider';
 import { Toaster as Sonner } from '@/components/ui/sonner';
@@ -119,11 +121,14 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
       <AuthProvider>
         <TooltipProvider>
           <I18nProvider initialLocale={locale as Locale}>
-            {children}
-            <GlobalAudioPlayer />
-            <VibeBrainWidget />
-            <Toaster />
-            <Sonner />
+            <BottomNavProvider>
+              {children}
+              <BottomNav className="lg:hidden" alwaysVisible />
+              <GlobalAudioPlayer />
+              <VibeBrainWidget />
+              <Toaster />
+              <Sonner />
+            </BottomNavProvider>
           </I18nProvider>
         </TooltipProvider>
       </AuthProvider>

@@ -8,6 +8,7 @@ import { MessageBubble } from '@/components/messaging/MessageBubble';
 import { MessageInput } from '@/components/messaging/MessageInput';
 import { ImmersiveHeader } from '@/components/mobile/ImmersiveHeader';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useBottomNav } from '@/components/providers/BottomNavProvider';
 import { useSafeArea } from '@/hooks/useSafeArea';
 import { createClient } from '@/lib/supabase';
 import type { ConversationWithDetails, MessageWithDetails } from '@/types/messaging';
@@ -18,6 +19,7 @@ export default function ConversationClient() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { top } = useSafeArea();
+  const { hide: hideBottomNav, show: showBottomNav } = useBottomNav();
   const [conversation, setConversation] = useState<ConversationWithDetails | null>(null);
   const [messages, setMessages] = useState<MessageWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,6 +36,12 @@ export default function ConversationClient() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+
+  // Hide bottom nav on mount, show on unmount (immersive mode)
+  useEffect(() => {
+    hideBottomNav();
+    return () => showBottomNav();
+  }, [hideBottomNav, showBottomNav]);
 
   // Redirect if not authenticated
   useEffect(() => {
