@@ -1,8 +1,9 @@
 'use client';
 
-import { Home, Mic, TrendingUp, Bell, User } from 'lucide-react';
+import { Home, Mic, TrendingUp, MessageCircle, User } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useI18n } from '@/components/providers/I18nProvider';
@@ -17,6 +18,7 @@ interface NavItem {
   icon: React.ElementType;
   label: string;
   activePattern?: RegExp;
+  badge?: number;
 }
 
 export interface BottomNavProps {
@@ -48,6 +50,37 @@ export function BottomNav({ className, alwaysVisible = false, onCreateClick }: B
   const { user } = useAuth();
   const { bottom } = useSafeArea();
   const { isVisible } = useBottomNavVisibility();
+  const [unreadMessages, setUnreadMessages] = useState(0);
+
+  // Fetch unread message count
+  useEffect(() => {
+    if (!user) {
+      setUnreadMessages(0);
+      return;
+    }
+
+    const fetchUnreadCount = async () => {
+      try {
+        const response = await fetch('/api/conversations');
+        if (response.ok) {
+          const data = await response.json();
+          const totalUnread =
+            data.conversations?.reduce(
+              (sum: number, conv: { unread_count?: number }) => sum + (conv.unread_count || 0),
+              0
+            ) || 0;
+          setUnreadMessages(totalUnread);
+        }
+      } catch {
+        // Silently fail - badge is not critical
+      }
+    };
+
+    fetchUnreadCount();
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, [user]);
 
   // Show navigation if alwaysVisible prop or auto-hide logic
   const shouldShow = alwaysVisible || isVisible;
@@ -62,7 +95,7 @@ export function BottomNav({ className, alwaysVisible = false, onCreateClick }: B
     {
       href: `/${locale}/vibes`,
       icon: TrendingUp,
-      label: 'Vibes',
+      label: 'Discover',
       activePattern: new RegExp(`^/${locale}/vibes`),
     },
     {
@@ -72,10 +105,11 @@ export function BottomNav({ className, alwaysVisible = false, onCreateClick }: B
       // Create button is special - always highlighted
     },
     {
-      href: user ? `/${locale}/dashboard/notifications` : `/${locale}/login`,
-      icon: Bell,
-      label: 'Notifications',
-      activePattern: new RegExp(`^/${locale}/dashboard/notifications`),
+      href: user ? `/${locale}/messages` : `/${locale}/login`,
+      icon: MessageCircle,
+      label: 'Messages',
+      activePattern: new RegExp(`^/${locale}/messages`),
+      badge: unreadMessages,
     },
     {
       href: user ? `/${locale}/dashboard` : `/${locale}/login`,
@@ -173,7 +207,7 @@ export function BottomNav({ className, alwaysVisible = false, onCreateClick }: B
                 {/* Icon container */}
                 <div
                   className={cn(
-                    'flex items-center justify-center rounded-full transition-all',
+                    'relative flex items-center justify-center rounded-full transition-all',
 
                     // Create button gets special treatment
                     isCreateButton
@@ -195,6 +229,12 @@ export function BottomNav({ className, alwaysVisible = false, onCreateClick }: B
                           : 'h-6 w-6 text-muted-foreground'
                     )}
                   />
+                  {/* Badge for unread count */}
+                  {item.badge && item.badge > 0 && (
+                    <div className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm">
+                      {item.badge > 9 ? '9+' : item.badge}
+                    </div>
+                  )}
                 </div>
 
                 {/* Label */}
@@ -244,7 +284,7 @@ export function BottomNav({ className, alwaysVisible = false, onCreateClick }: B
               {/* Icon container */}
               <div
                 className={cn(
-                  'flex items-center justify-center rounded-full transition-all',
+                  'relative flex items-center justify-center rounded-full transition-all',
 
                   // Create button gets special treatment
                   isCreateButton
@@ -266,6 +306,12 @@ export function BottomNav({ className, alwaysVisible = false, onCreateClick }: B
                         : 'h-6 w-6 text-muted-foreground'
                   )}
                 />
+                {/* Badge for unread count */}
+                {item.badge && item.badge > 0 && (
+                  <div className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm">
+                    {item.badge > 9 ? '9+' : item.badge}
+                  </div>
+                )}
               </div>
 
               {/* Label */}
