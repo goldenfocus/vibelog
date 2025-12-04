@@ -2,6 +2,49 @@
 
 > Voice-to-publish platform that turns spoken thoughts into beautiful posts instantly.
 
+## System Paths (MANDATORY)
+
+When commands like `npm`, `gh`, `pnpm` fail with "command not found", use full paths:
+
+| Command | Full Path              |
+| ------- | ---------------------- |
+| `gh`    | `/opt/homebrew/bin/gh` |
+| `npm`   | `/usr/local/bin/npm`   |
+| `node`  | `/usr/local/bin/node`  |
+| `npx`   | `/usr/local/bin/npx`   |
+
+Example: `/opt/homebrew/bin/gh pr create --title "feat: ..." --base main`
+
+## Git Worktree Rules (MANDATORY)
+
+You are likely running in a git worktree. Follow these rules:
+
+1. **Branch naming**: Always rename auto-generated branch names (like `modest-williams`) to descriptive names BEFORE pushing:
+
+   ```bash
+   git branch -m old-name feat/descriptive-name
+   ```
+
+2. **Naming convention**: Use `feat/`, `fix/`, `refactor/` prefixes with kebab-case:
+   - ✅ `feat/mobile-language-selector`
+   - ✅ `fix/homepage-animation-glitch`
+   - ❌ `modest-williams` (auto-generated, meaningless)
+
+3. **Before pushing**: Always check branch name matches the work:
+
+   ```bash
+   git branch --show-current
+   ```
+
+4. **PR workflow**:
+
+   ```bash
+   /opt/homebrew/bin/gh pr create --title "feat: Description" --base main
+   /opt/homebrew/bin/gh pr merge --squash --auto
+   ```
+
+5. **After merge**: Clean up worktree (user responsibility)
+
 ## Prime Directives
 
 1. **Ship, don't ask** - Execute immediately. Only ask if genuinely ambiguous.
