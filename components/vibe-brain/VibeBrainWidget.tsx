@@ -160,7 +160,6 @@ export function VibeBrainWidget() {
     isOpen,
     isMinimized,
     showHistory,
-    hasSeenNotification,
     messages,
     isLoading,
     error,
@@ -272,16 +271,10 @@ export function VibeBrainWidget() {
     return (
       <button
         onClick={toggle}
-        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-lg transition-all hover:scale-110 hover:shadow-xl"
+        className="fixed bottom-24 right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all hover:scale-110 hover:shadow-xl lg:bottom-6 lg:right-6 lg:h-14 lg:w-14"
         aria-label={t('ariaLabels.openVibeBrain')}
       >
-        <Brain className="h-7 w-7" />
-        {!hasSeenNotification && (
-          <span className="absolute -right-1 -top-1 flex h-4 w-4">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-pink-400 opacity-75"></span>
-            <span className="relative inline-flex h-4 w-4 rounded-full bg-pink-500"></span>
-          </span>
-        )}
+        <Brain className="h-6 w-6 lg:h-7 lg:w-7" />
       </button>
     );
   }
@@ -291,7 +284,7 @@ export function VibeBrainWidget() {
     return (
       <button
         onClick={maximize}
-        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 px-4 py-2 text-white shadow-lg transition-all hover:scale-105"
+        className="fixed bottom-24 right-4 z-40 flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-primary-foreground shadow-lg transition-all hover:scale-105 lg:bottom-6 lg:right-6"
       >
         <Brain className="h-5 w-5" />
         <span className="text-sm font-medium">Vibe Brain</span>

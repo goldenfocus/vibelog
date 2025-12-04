@@ -193,16 +193,13 @@ export function BottomNav({ className, alwaysVisible = false, onCreateClick }: B
                 onClick={() => handleNavClick(item)}
                 className={cn(
                   // Base button styles
-                  'flex flex-col items-center justify-center gap-1',
+                  'flex flex-col items-center justify-center gap-0.5',
                   'relative flex-1',
                   'touch-manipulation active:scale-95',
                   'transition-all duration-200',
 
-                  // Create button is special (larger, highlighted)
-                  isCreateButton && [
-                    'text-primary',
-                    '-mt-4', // Lift it up slightly
-                  ]
+                  // Create button is special (highlighted)
+                  isCreateButton && 'text-primary'
                 )}
                 aria-label={item.label}
               >
@@ -213,22 +210,18 @@ export function BottomNav({ className, alwaysVisible = false, onCreateClick }: B
 
                     // Create button gets special treatment
                     isCreateButton
-                      ? [
-                          'h-14 w-14',
-                          'bg-gradient-to-br from-primary/20 to-primary/10',
-                          'ring-2 ring-primary/30',
-                        ]
-                      : ['h-12 w-12', active && 'bg-primary/10']
+                      ? ['h-11 w-11', 'bg-primary/15', 'ring-2 ring-primary/30']
+                      : ['h-10 w-10', active && 'bg-primary/10']
                   )}
                 >
                   <Icon
                     className={cn(
                       'transition-colors',
                       isCreateButton
-                        ? 'h-6 w-6 text-primary'
+                        ? 'h-5 w-5 text-primary'
                         : active
-                          ? 'h-6 w-6 text-primary'
-                          : 'h-6 w-6 text-muted-foreground'
+                          ? 'h-5 w-5 text-primary'
+                          : 'h-5 w-5 text-muted-foreground'
                     )}
                   />
                   {/* Badge for unread count */}
@@ -269,16 +262,13 @@ export function BottomNav({ className, alwaysVisible = false, onCreateClick }: B
               onClick={() => handleNavClick(item)}
               className={cn(
                 // Base link styles
-                'flex flex-col items-center justify-center gap-1',
+                'flex flex-col items-center justify-center gap-0.5',
                 'relative flex-1',
                 'touch-manipulation active:scale-95',
                 'transition-all duration-200',
 
-                // Create button is special (larger, highlighted)
-                isCreateButton && [
-                  'text-primary',
-                  '-mt-4', // Lift it up slightly
-                ]
+                // Create button is special (highlighted)
+                isCreateButton && 'text-primary'
               )}
               aria-label={item.label}
               aria-current={active ? 'page' : undefined}
@@ -290,22 +280,18 @@ export function BottomNav({ className, alwaysVisible = false, onCreateClick }: B
 
                   // Create button gets special treatment
                   isCreateButton
-                    ? [
-                        'h-14 w-14',
-                        'bg-gradient-to-br from-primary/20 to-primary/10',
-                        'ring-2 ring-primary/30',
-                      ]
-                    : ['h-12 w-12', active && 'bg-primary/10']
+                    ? ['h-11 w-11', 'bg-primary/15', 'ring-2 ring-primary/30']
+                    : ['h-10 w-10', active && 'bg-primary/10']
                 )}
               >
                 <Icon
                   className={cn(
                     'transition-colors',
                     isCreateButton
-                      ? 'h-6 w-6 text-primary'
+                      ? 'h-5 w-5 text-primary'
                       : active
-                        ? 'h-6 w-6 text-primary'
-                        : 'h-6 w-6 text-muted-foreground'
+                        ? 'h-5 w-5 text-primary'
+                        : 'h-5 w-5 text-muted-foreground'
                   )}
                 />
                 {/* Badge for unread count */}
