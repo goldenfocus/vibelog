@@ -14,6 +14,7 @@ import {
   Link2,
   ChevronDown,
   ExternalLink,
+  Languages,
 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
@@ -84,6 +85,7 @@ export default function VibelogActions({
   const [likeCount, setLikeCount] = useState(initialLikeCount);
   const [isGeneratingShareUrl, setIsGeneratingShareUrl] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isTranslating, setIsTranslating] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const shareRef = useRef<HTMLDivElement>(null);
   const previewLimiterRef = useRef<AudioPreviewLimiter | null>(null);
@@ -332,6 +334,44 @@ export default function VibelogActions({
     setShowDeleteConfirm(false);
   };
 
+  const handleTranslateClick = async () => {
+    setIsMenuOpen(false);
+    setIsTranslating(true);
+    try {
+      const response = await fetch('/api/translate-vibelog', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vibelogId }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Translation failed');
+      }
+
+      if (data.skipped) {
+        toast.success(
+          t('toasts.vibelogs.alreadyTranslated') || 'Already translated to all languages'
+        );
+      } else {
+        toast.success(
+          t('toasts.vibelogs.translated', { count: data.translatedLanguages?.length || 0 }) ||
+            `Translated to ${data.translatedLanguages?.length || 0} languages`
+        );
+      }
+    } catch (error) {
+      console.error('Translation error:', error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : t('toasts.vibelogs.translateFailed') || 'Translation failed'
+      );
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
   // Handle reaction change from QuickReactions
   const handleReactionChange = (_reaction: string | null, newCount: number) => {
     setLikeCount(newCount);
@@ -419,6 +459,27 @@ export default function VibelogActions({
                       >
                         <Edit className="h-4 w-4" />
                         <span>{t('actions.edit')}</span>
+                      </button>
+                      <button
+                        onClick={e => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          handleTranslateClick();
+                        }}
+                        disabled={isTranslating}
+                        className="flex w-full touch-manipulation items-center gap-2 rounded-md px-3 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted/50 active:bg-muted/70 disabled:opacity-50"
+                        data-testid="menu-translate-button"
+                      >
+                        {isTranslating ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Languages className="h-4 w-4" />
+                        )}
+                        <span>
+                          {isTranslating
+                            ? t('actions.translating') || 'Translating...'
+                            : t('actions.translate') || 'Translate'}
+                        </span>
                       </button>
                       <button
                         onClick={e => {
