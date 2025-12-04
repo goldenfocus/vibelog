@@ -124,7 +124,9 @@
     "listen": "Listen",
     "pause": "Pause",
     "generating": "Generating...",
-    "shareOnX": "Share on X"
+    "shareOnX": "Share on X",
+    "translate": "Translate",
+    "translating": "Translating..."
   },
   "features": {
     "input": {
@@ -577,7 +579,11 @@
       "imageRegenerateFailed": "Failed to regenerate image",
       "textRegenerated": "Text regenerated successfully!",
       "textRegenerateFailed": "Failed to regenerate text",
-      "aiSuggestionsApplied": "AI suggestions applied! Click \"Save Changes\" to persist."
+      "aiSuggestionsApplied": "AI suggestions applied! Click \"Save Changes\" to persist.",
+      "translated": "Translated to {{count}} languages",
+      "alreadyTranslated": "Already translated to all languages",
+      "translateFailed": "Translation failed",
+      "linkCopied": "Link copied to clipboard!"
     },
     "reactions": {
       "signInRequired": "Please sign in to react",
