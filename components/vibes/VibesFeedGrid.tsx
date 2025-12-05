@@ -1,7 +1,7 @@
 'use client';
 
 import { ArrowDown, ArrowUp, Flame, Loader2 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { CommentCard, type CommentCardData } from '@/components/home/CommentCard';
 import { useI18n } from '@/components/providers/I18nProvider';
@@ -58,8 +58,11 @@ export function VibesFeedGrid({ initialComments, filter, sort }: VibesFeedGridPr
     },
   });
 
-  // Filter and sort comments
-  const processedComments = sortComments(filterCommentsByType(initialComments, filter), sort);
+  // Filter and sort comments - memoized to prevent infinite re-renders
+  const processedComments = useMemo(
+    () => sortComments(filterCommentsByType(initialComments, filter), sort),
+    [initialComments, filter, sort]
+  );
 
   // Scroll to top button visibility
   useEffect(() => {
