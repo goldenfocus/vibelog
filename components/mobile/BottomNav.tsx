@@ -96,10 +96,10 @@ export function BottomNav({ className, alwaysVisible = false, onCreateClick }: B
       activePattern: new RegExp(`^/${locale}/?$`),
     },
     {
-      href: `/${locale}/vibes`,
+      href: `/${locale}/community`,
       icon: TrendingUp,
       label: 'Discover',
-      activePattern: new RegExp(`^/${locale}/vibes`),
+      activePattern: new RegExp(`^/${locale}/community`),
     },
     {
       href: onCreateClick ? '#' : `/${locale}`,
