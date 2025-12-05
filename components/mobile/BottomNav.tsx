@@ -87,7 +87,8 @@ export function BottomNav({ className, alwaysVisible = false, onCreateClick }: B
   // Show navigation if alwaysVisible prop or auto-hide logic, but respect context hide
   const shouldShow = !isHiddenByContext && (alwaysVisible || isVisible);
 
-  const navItems: NavItem[] = [
+  // Base nav items for all users
+  const baseNavItems: NavItem[] = [
     {
       href: `/${locale}`,
       icon: Home,
@@ -106,20 +107,27 @@ export function BottomNav({ className, alwaysVisible = false, onCreateClick }: B
       label: 'Create',
       // Create button is special - always highlighted
     },
+  ];
+
+  // Additional items only for logged-in users
+  const authNavItems: NavItem[] = [
     {
-      href: user ? `/${locale}/messages` : `/${locale}/login`,
+      href: `/${locale}/messages`,
       icon: MessageCircle,
       label: 'Messages',
       activePattern: new RegExp(`^/${locale}/messages`),
       badge: unreadMessages,
     },
     {
-      href: user ? `/${locale}/dashboard` : `/${locale}/login`,
+      href: `/${locale}/dashboard`,
       icon: User,
       label: 'You',
       activePattern: new RegExp(`^/${locale}/dashboard`),
     },
   ];
+
+  // Only show Messages and You tabs when logged in
+  const navItems = user ? [...baseNavItems, ...authNavItems] : baseNavItems;
 
   const isActive = (item: NavItem) => {
     // Create button has special styling
@@ -169,7 +177,7 @@ export function BottomNav({ className, alwaysVisible = false, onCreateClick }: B
       <div
         className="absolute left-0 top-0 h-1 bg-primary transition-all duration-300 ease-out"
         style={{
-          width: '20%', // 5 items = 20% each
+          width: `${100 / navItems.length}%`,
           transform: `translateX(${navItems.findIndex(item => isActive(item)) * 100}%)`,
         }}
       />
