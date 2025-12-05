@@ -24,6 +24,7 @@ export interface SaveVibelogRequest {
   sessionId?: string;
   isTeaser?: boolean;
   originalLanguage?: string; // ISO 639-1 code from Whisper detection
+  channelId?: string; // Channel to post to (uses default channel if not specified)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   metadata?: Record<string, any>;
 }
@@ -54,6 +55,7 @@ export interface NormalizedVibelogData {
   like_count: number;
   primary_topic?: string;
   seo_keywords?: string[];
+  channel_id?: string | null; // Channel this vibelog belongs to
 }
 
 // Utility Functions
@@ -150,6 +152,7 @@ export async function normalizeVibelogData(
     view_count: 0,
     share_count: 0,
     like_count: 0,
+    channel_id: requestBody.channelId || null, // Will be set to default channel if null
   };
 
   return { data, warnings };

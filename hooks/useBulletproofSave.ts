@@ -18,6 +18,7 @@ interface SaveVibelogData {
     duration: number;
   };
   userId?: string;
+  channelId?: string; // Channel to post to (auto-assigned if not provided)
   isTeaser?: boolean;
   isPublished?: boolean;
   isPublic?: boolean;
@@ -263,6 +264,7 @@ export function useBulletproofSave() {
           coverImage: data.coverImage,
           audioData: data.audioData,
           userId: data.userId,
+          channelId: data.channelId,
           sessionId,
           isTeaser: data.isTeaser,
           metadata: {

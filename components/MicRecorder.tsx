@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 
 import AudioPlayer from '@/components/AudioPlayer';
+import ChannelSelector from '@/components/ChannelSelector';
 import Controls from '@/components/mic/Controls';
 import { ProcessedVibelogCard } from '@/components/mic/ProcessedVibelogCard';
 import ProcessingAnimation from '@/components/mic/ProcessingAnimation';
@@ -42,6 +43,9 @@ export default function MicRecorder({ remixContent, onSaveSuccess }: MicRecorder
     isLoggedIn,
     attribution,
     vibelogId,
+    channels,
+    selectedChannelId,
+    selectChannel,
     startRecording,
     stopRecording,
     reset,
@@ -129,6 +133,18 @@ export default function MicRecorder({ remixContent, onSaveSuccess }: MicRecorder
 
   return (
     <div className="w-full">
+      {/* Channel selector - show for logged in users with channels */}
+      {isLoggedIn && channels.length > 0 && recordingState === 'idle' && (
+        <div className="mb-4 flex justify-center">
+          <ChannelSelector
+            channels={channels}
+            selectedChannelId={selectedChannelId}
+            onSelect={selectChannel}
+            disabled={recordingState !== 'idle'}
+          />
+        </div>
+      )}
+
       {/* Recording controls with settings gear */}
       <div className="relative flex justify-center">
         <Controls
