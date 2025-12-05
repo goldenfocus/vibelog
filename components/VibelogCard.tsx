@@ -3,7 +3,7 @@
 import { Clock, User } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -283,7 +283,7 @@ const VibelogCard = memo(function VibelogCard({
             alt={vibelog.title}
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            className="object-cover"
           />
         </div>
       )}

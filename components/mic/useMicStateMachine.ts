@@ -8,11 +8,13 @@ import { useI18n } from '@/components/providers/I18nProvider';
 import { useAudioEngine } from '@/hooks/useAudioEngine';
 import { useAudioPlayback } from '@/hooks/useAudioPlayback';
 import { useBulletproofSave } from '@/hooks/useBulletproofSave';
+import { useChannels } from '@/hooks/useChannels';
 import { useProfile } from '@/hooks/useProfile';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useToneSettings } from '@/hooks/useToneSettings';
 import { useVibelogAPI } from '@/hooks/useVibelogAPI';
 import { useVoiceActivityDetection } from '@/hooks/useVoiceActivityDetection';
+import type { ChannelSummary } from '@/lib/channels/types';
 import type { CoverImage, ToastState, UpgradePromptState } from '@/types/micRecorder';
 
 interface AttributionDetails {
@@ -44,6 +46,11 @@ interface UseMicStateMachineReturn {
   isLoggedIn: boolean;
   attribution: AttributionDetails;
   vibelogId?: string;
+
+  // Channel state
+  channels: ChannelSummary[];
+  selectedChannelId: string | null;
+  selectChannel: (channelId: string | null) => void;
 
   // Actions
   startRecording: () => Promise<void>;
@@ -150,6 +157,9 @@ export function useMicStateMachine(
   const { profile } = useProfile(user?.id);
   const isLoggedIn = Boolean(user);
   const { tone, keepFillerWords } = useToneSettings();
+
+  // Channel management
+  const { channels, selectedChannelId, selectChannel } = useChannels(user?.id);
 
   const [recordingState, setRecordingState] = useState<RecordingState>('idle');
   const [transcription, setTranscription] = useState('');
@@ -682,6 +692,7 @@ export function useMicStateMachine(
         audioDataSource: audioData ? 'state' : 'ref',
         audioUrl: finalAudioData?.url || '(none)',
         userId: user?.id || 'anonymous',
+        channelId: selectedChannelId || '(auto)',
       });
 
       const result = await saveVibelog({
@@ -692,6 +703,7 @@ export function useMicStateMachine(
         coverImage: coverImage || undefined,
         audioData: finalAudioData || undefined,
         userId: user?.id,
+        channelId: selectedChannelId || undefined,
         isTeaser: isTeaserContent,
         metadata: {
           recordingTime,
@@ -772,6 +784,7 @@ export function useMicStateMachine(
     t,
     transcription,
     user?.id,
+    selectedChannelId,
     // Note: vibelogAPI.processingData is a ref, not a state value, so it doesn't need to be in deps
     // Including it causes stale closure issues where the ref data isn't accessible
     vibelogContent,
@@ -820,6 +833,12 @@ export function useMicStateMachine(
     isLoggedIn,
     attribution,
     vibelogId,
+
+    // Channel state
+    channels,
+    selectedChannelId,
+    selectChannel,
+
     startRecording,
     stopRecording,
     reset,

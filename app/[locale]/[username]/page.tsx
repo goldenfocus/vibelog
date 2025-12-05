@@ -1,4 +1,4 @@
-import { Calendar, Eye, FileText } from 'lucide-react';
+import { Calendar, Eye, FileText, Users } from 'lucide-react';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
@@ -11,6 +11,31 @@ import { ZoomableImage } from '@/components/profile/ZoomableImage';
 import { formatMonthYear } from '@/lib/date-utils';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
+// Channel data type for when fetching from channels table
+interface ChannelData {
+  id: string;
+  owner_id: string;
+  handle: string;
+  name: string;
+  bio: string | null;
+  avatar_url: string | null;
+  header_image: string | null;
+  website_url: string | null;
+  twitter_url: string | null;
+  instagram_url: string | null;
+  youtube_url: string | null;
+  tiktok_url: string | null;
+  linkedin_url: string | null;
+  github_url: string | null;
+  facebook_url: string | null;
+  threads_url: string | null;
+  subscriber_count: number;
+  vibelog_count: number;
+  total_views: number;
+  is_public: boolean;
+  created_at: string;
+}
+
 // Force dynamic rendering to show updated profile images immediately
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -21,8 +46,78 @@ interface PageProps {
   }>;
 }
 
-// Fetch profile data (server-side)
-async function getProfile(username: string) {
+// Unified profile/channel data type
+interface ProfileData {
+  id: string;
+  username: string;
+  display_name: string | null;
+  full_name?: string | null;
+  bio: string | null;
+  avatar_url: string | null;
+  header_image: string | null;
+  twitter_url: string | null;
+  instagram_url: string | null;
+  linkedin_url: string | null;
+  github_url: string | null;
+  youtube_url: string | null;
+  tiktok_url: string | null;
+  facebook_url: string | null;
+  threads_url: string | null;
+  website_url: string | null;
+  total_vibelogs: number;
+  total_views: number;
+  total_shares: number;
+  subscriber_count?: number;
+  created_at: string;
+  is_public: boolean;
+  is_channel?: boolean; // New: indicates if this is a channel vs legacy profile
+  channel_id?: string; // New: the channel ID for fetching vibelogs
+  owner_id?: string; // New: the user who owns this channel
+}
+
+// Fetch channel by handle (new approach)
+async function getChannel(handle: string): Promise<ChannelData | null> {
+  const supabase = await createServerSupabaseClient();
+
+  const { data: channel, error } = await supabase
+    .from('channels')
+    .select(
+      `
+      id,
+      owner_id,
+      handle,
+      name,
+      bio,
+      avatar_url,
+      header_image,
+      website_url,
+      twitter_url,
+      instagram_url,
+      youtube_url,
+      tiktok_url,
+      linkedin_url,
+      github_url,
+      facebook_url,
+      threads_url,
+      subscriber_count,
+      vibelog_count,
+      total_views,
+      is_public,
+      created_at
+    `
+    )
+    .eq('handle', handle.toLowerCase())
+    .single();
+
+  if (error || !channel) {
+    return null;
+  }
+
+  return channel as ChannelData;
+}
+
+// Fetch profile data (server-side) - now checks channels first
+async function getProfile(username: string): Promise<ProfileData | null> {
   const supabase = await createServerSupabaseClient();
 
   // Normalize username (strip @ if present)
@@ -66,7 +161,38 @@ async function getProfile(username: string) {
     };
   }
 
-  // Fetch profile data
+  // NEW: First try to find a channel with this handle
+  const channel = await getChannel(normalizedUsername);
+  if (channel && channel.is_public) {
+    return {
+      id: channel.owner_id, // Use owner_id for user-level operations
+      username: channel.handle,
+      display_name: channel.name,
+      bio: channel.bio,
+      avatar_url: channel.avatar_url,
+      header_image: channel.header_image,
+      twitter_url: channel.twitter_url,
+      instagram_url: channel.instagram_url,
+      linkedin_url: channel.linkedin_url,
+      github_url: channel.github_url,
+      youtube_url: channel.youtube_url,
+      tiktok_url: channel.tiktok_url,
+      facebook_url: channel.facebook_url,
+      threads_url: channel.threads_url,
+      website_url: channel.website_url,
+      total_vibelogs: channel.vibelog_count,
+      total_views: channel.total_views,
+      total_shares: 0, // Channels don't track shares yet
+      subscriber_count: channel.subscriber_count,
+      created_at: channel.created_at,
+      is_public: channel.is_public,
+      is_channel: true,
+      channel_id: channel.id,
+      owner_id: channel.owner_id,
+    };
+  }
+
+  // FALLBACK: Fetch from profiles table (for pioneer accounts with short handles)
   const { data: profile, error } = await supabase
     .from('profiles')
     .select(
@@ -107,15 +233,18 @@ async function getProfile(username: string) {
     return null;
   }
 
-  return profile;
+  return {
+    ...profile,
+    is_channel: false,
+  };
 }
 
-// Fetch user's published vibelogs
-async function getVibelogs(userId: string) {
+// Fetch vibelogs - supports both channel_id and user_id modes
+async function getVibelogs(profile: ProfileData) {
   const supabase = await createServerSupabaseClient();
 
   // Handle anonymous vibelogs
-  if (userId === 'anonymous') {
+  if (profile.id === 'anonymous') {
     const { data: vibelogs, error } = await supabase
       .from('vibelogs')
       .select(
@@ -156,6 +285,51 @@ async function getVibelogs(userId: string) {
     return vibelogs || [];
   }
 
+  // NEW: If this is a channel, fetch by channel_id
+  if (profile.is_channel && profile.channel_id) {
+    const { data: vibelogs, error } = await supabase
+      .from('vibelogs')
+      .select(
+        `
+        id,
+        title,
+        slug,
+        content,
+        teaser,
+        audio_url,
+        audio_duration,
+        cover_image_url,
+        video_url,
+        video_source,
+        video_uploaded_at,
+        created_at,
+        published_at,
+        view_count,
+        like_count,
+        share_count,
+        comment_count,
+        read_time,
+        word_count,
+        tags,
+        original_language,
+        available_languages,
+        translations
+      `
+      )
+      .eq('channel_id', profile.channel_id)
+      .eq('is_published', true)
+      .eq('is_public', true)
+      .order('published_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching channel vibelogs:', error);
+      return [];
+    }
+
+    return vibelogs || [];
+  }
+
+  // FALLBACK: Fetch by user_id (legacy profiles)
   const { data: vibelogs, error } = await supabase
     .from('vibelogs')
     .select(
@@ -185,7 +359,7 @@ async function getVibelogs(userId: string) {
       translations
     `
     )
-    .eq('user_id', userId)
+    .eq('user_id', profile.id)
     .eq('is_published', true)
     .eq('is_public', true)
     .order('published_at', { ascending: false });
@@ -237,7 +411,7 @@ export default async function ProfilePage({ params }: PageProps) {
     notFound();
   }
 
-  const vibelogs = await getVibelogs(profile.id);
+  const vibelogs = await getVibelogs(profile);
 
   const displayName = profile.display_name || profile.username;
   const joinDate = formatMonthYear(profile.created_at);
@@ -325,7 +499,19 @@ export default async function ProfilePage({ params }: PageProps) {
                     style={{ animationDelay: '150ms' }}
                   >
                     {/* Stats */}
-                    <div className="flex items-center gap-6 text-sm">
+                    <div className="flex flex-wrap items-center gap-4 text-sm sm:gap-6">
+                      {/* Subscribers - only for channels */}
+                      {profile.is_channel && profile.subscriber_count !== undefined && (
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4 text-electric" />
+                          <span className="font-semibold text-foreground">
+                            {profile.subscriber_count.toLocaleString()}
+                          </span>
+                          <span className="text-muted-foreground">
+                            {profile.subscriber_count === 1 ? 'subscriber' : 'subscribers'}
+                          </span>
+                        </div>
+                      )}
                       <div className="flex items-center gap-2">
                         <FileText className="h-4 w-4 text-electric" />
                         <span className="font-semibold text-foreground">
@@ -344,7 +530,9 @@ export default async function ProfilePage({ params }: PageProps) {
                       </div>
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-electric" />
-                        <span className="text-muted-foreground">Joined {joinDate}</span>
+                        <span className="text-muted-foreground">
+                          {profile.is_channel ? 'Created' : 'Joined'} {joinDate}
+                        </span>
                       </div>
                     </div>
 

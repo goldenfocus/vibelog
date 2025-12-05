@@ -431,7 +431,7 @@ export default function CommentItem({
                 <img
                   src={attachment.url}
                   alt={t('altText.commentAttachment')}
-                  className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                  className="h-full w-full object-cover"
                 />
               ) : (
                 <div className="relative h-full w-full">

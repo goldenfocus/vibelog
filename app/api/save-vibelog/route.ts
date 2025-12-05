@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // import { checkAndBlockBots } from '@/lib/botid-check'; // DISABLED: Blocking legit users
+import { getUserDefaultChannel } from '@/lib/channels';
 import {
   createVibelog,
   handleAsyncTasks,
@@ -62,10 +63,22 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     } = await supabase.auth.getUser();
     const userId = user?.id || null;
 
-    console.log('👤 [VIBELOG-SAVE] User:', userId ? `authenticated (${userId.substring(0, 8)}...)` : 'anonymous');
+    console.log(
+      '👤 [VIBELOG-SAVE] User:',
+      userId ? `authenticated (${userId.substring(0, 8)}...)` : 'anonymous'
+    );
 
     const { data: normalizedData, warnings } = await normalizeVibelogData(requestBody, userId);
     vibelogData = normalizedData;
+
+    // Auto-assign default channel if user is authenticated and no channel specified
+    if (userId && !vibelogData.channel_id) {
+      const defaultChannel = await getUserDefaultChannel(userId);
+      if (defaultChannel) {
+        vibelogData.channel_id = defaultChannel.id;
+        console.log('📺 [VIBELOG-SAVE] Auto-assigned to default channel:', defaultChannel.handle);
+      }
+    }
 
     console.log('📋 [VIBELOG-SAVE] Normalized data keys:', Object.keys(vibelogData));
 
@@ -79,6 +92,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       hasAudio: !!vibelogData.audio_url,
       audioDuration: vibelogData.audio_duration,
       sessionId: vibelogData.session_id,
+      channelId: vibelogData.channel_id,
     });
 
     // === STEP 3: UPDATE OR INSERT ===
@@ -161,7 +175,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         warnings: warnings.length > 0 ? warnings : undefined,
       });
     } catch (directInsertError) {
-      const errorMessage = directInsertError instanceof Error ? directInsertError.message : 'Database error';
+      const errorMessage =
+        directInsertError instanceof Error ? directInsertError.message : 'Database error';
       const errorStack = directInsertError instanceof Error ? directInsertError.stack : undefined;
       console.error('❌ [VIBELOG-SAVE] Direct insert failed:', {
         message: errorMessage,

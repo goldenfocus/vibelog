@@ -267,10 +267,7 @@ export function ImageUploadZone({
             <img
               src={preview || currentImage}
               alt={type}
-              className={cn(
-                'h-full w-full object-cover transition-transform duration-300 will-change-transform group-hover:scale-105',
-                uploading && 'opacity-50'
-              )}
+              className={cn('h-full w-full object-cover', uploading && 'opacity-50')}
               style={{ transform: 'translateZ(0)' }}
             />
             <div
