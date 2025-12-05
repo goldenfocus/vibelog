@@ -1,6 +1,7 @@
 /**
  * Channel Subscription API
  *
+ * GET /api/channels/[handle]/subscribe - Check subscription status
  * POST /api/channels/[handle]/subscribe - Subscribe to channel
  * DELETE /api/channels/[handle]/subscribe - Unsubscribe from channel
  */
@@ -12,6 +13,48 @@ import { createClient } from '@/lib/supabase';
 
 interface RouteParams {
   params: Promise<{ handle: string }>;
+}
+
+/**
+ * GET /api/channels/[handle]/subscribe
+ *
+ * Check if current user is subscribed to the channel
+ */
+export async function GET(request: NextRequest, { params }: RouteParams) {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ subscribed: false }, { status: 200 });
+    }
+
+    const { handle } = await params;
+
+    // Get the channel
+    const channel = await getChannelByHandle(handle);
+    if (!channel) {
+      return NextResponse.json({ error: 'Channel not found' }, { status: 404 });
+    }
+
+    // Check subscription
+    const { data: subscription } = await supabase
+      .from('channel_subscriptions')
+      .select('id')
+      .eq('channel_id', channel.id)
+      .eq('user_id', user.id)
+      .single();
+
+    return NextResponse.json({
+      subscribed: !!subscription,
+      subscriber_count: channel.subscriber_count,
+    });
+  } catch (error) {
+    console.error('[GET /api/channels/[handle]/subscribe] Error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 }
 
 /**
