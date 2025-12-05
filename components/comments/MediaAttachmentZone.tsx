@@ -247,7 +247,7 @@ export default function MediaAttachmentZone({
                     <img
                       src={attachment.url}
                       alt={t('altText.attachment', { index: index + 1 })}
-                      className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                      className="h-full w-full object-cover"
                       style={{ filter: (attachment as any).filter || 'none' }}
                     />
                   ) : (
