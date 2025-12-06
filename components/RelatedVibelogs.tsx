@@ -99,7 +99,7 @@ export default function RelatedVibelogs({ vibelogId, limit = 4 }: RelatedVibelog
                   <img
                     src={safeCoverUrl}
                     alt={vibelog.title}
-                    className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                    className="h-full w-full object-cover"
                   />
                 </div>
               ) : (
