@@ -213,8 +213,8 @@ export async function translateVibelog(
     title: request.title,
     teaser: request.teaser,
     content: request.content,
-    seo_title: request.seo_title,
-    seo_description: request.seo_description,
+    seo_title: request.seo_title || request.title, // Fallback to title if not provided
+    seo_description: request.seo_description || request.teaser, // Fallback to teaser if not provided
   };
 
   // Translate to each target language in parallel (with concurrency limit)
