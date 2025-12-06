@@ -68,10 +68,13 @@ export function useChannels(userId?: string): UseChannelsReturn {
         id: channel.id,
         handle: channel.handle,
         name: channel.name,
+        ai_display_name: channel.ai_display_name,
         avatar_url: channel.avatar_url,
+        primary_topic: channel.primary_topic,
         subscriber_count: channel.subscriber_count,
         vibelog_count: channel.vibelog_count,
         is_default: channel.is_default,
+        auto_generated: channel.auto_generated,
       }));
 
       setChannels(summaries);

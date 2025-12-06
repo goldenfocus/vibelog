@@ -80,7 +80,9 @@ export async function getUserChannels(userId: string): Promise<ChannelSummary[]>
 
   const { data, error } = await supabase
     .from('channels')
-    .select('id, handle, name, avatar_url, subscriber_count, vibelog_count, is_default')
+    .select(
+      'id, handle, name, ai_display_name, avatar_url, primary_topic, subscriber_count, vibelog_count, is_default, auto_generated'
+    )
     .eq('owner_id', userId)
     .order('is_default', { ascending: false })
     .order('created_at', { ascending: true });
@@ -687,7 +689,9 @@ export async function getPopularChannels(limit = 10): Promise<ChannelSummary[]> 
 
   const { data, error } = await supabase
     .from('channels')
-    .select('id, handle, name, avatar_url, subscriber_count, vibelog_count, is_default')
+    .select(
+      'id, handle, name, ai_display_name, avatar_url, primary_topic, subscriber_count, vibelog_count, is_default, auto_generated'
+    )
     .eq('is_public', true)
     .order('subscriber_count', { ascending: false })
     .limit(limit);
@@ -708,7 +712,9 @@ export async function getChannelsByTopic(topic: string, limit = 20): Promise<Cha
 
   const { data, error } = await supabase
     .from('channels')
-    .select('id, handle, name, avatar_url, subscriber_count, vibelog_count, is_default')
+    .select(
+      'id, handle, name, ai_display_name, avatar_url, primary_topic, subscriber_count, vibelog_count, is_default, auto_generated'
+    )
     .eq('is_public', true)
     .or(`primary_topic.eq.${topic},topics.cs.{${topic}}`)
     .order('subscriber_count', { ascending: false })
@@ -731,7 +737,9 @@ export async function searchChannels(query: string, limit = 20): Promise<Channel
 
   const { data, error } = await supabase
     .from('channels')
-    .select('id, handle, name, avatar_url, subscriber_count, vibelog_count, is_default')
+    .select(
+      'id, handle, name, ai_display_name, avatar_url, primary_topic, subscriber_count, vibelog_count, is_default, auto_generated'
+    )
     .eq('is_public', true)
     .or(`handle.ilike.${searchTerm},name.ilike.${searchTerm}`)
     .order('subscriber_count', { ascending: false })

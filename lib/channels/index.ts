@@ -58,3 +58,25 @@ export {
   getChannelsByTopic,
   searchChannels,
 } from './channel-service';
+
+// Auto-channel service (for automatic channel creation from topics)
+export {
+  ensureChannelForTopic,
+  assignVibelogToTopicChannel,
+  getUserChannelByTopic,
+} from './auto-channel-service';
+export type { AutoChannelResult } from './auto-channel-service';
+
+// AI name generation
+export { generateChannelName, getTopicDisplayName, TOPIC_DISPLAY_NAMES } from './ai-name-generator';
+
+// Theme styles (colors, icons, gradients for topics)
+export {
+  THEME_STYLES,
+  getThemeStyle,
+  getTopicIcon,
+  getTopicGradient,
+  getTopicGlow,
+  getTopicEmoji,
+} from './theme-styles';
+export type { ThemeStyle } from './theme-styles';

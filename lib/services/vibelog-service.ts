@@ -1,3 +1,4 @@
+import { assignVibelogToTopicChannel } from '@/lib/channels';
 import { extractBasicTags, extractContentMetadata } from '@/lib/content-extraction';
 import { generatePublicSlug, generateUserSlug } from '@/lib/seo';
 import { createServerAdminClient } from '@/lib/supabaseAdmin';
@@ -300,7 +301,7 @@ export async function handleAsyncTasks(
     console.error('[VIBE BRAIN] Failed to embed vibelog:', err);
   });
 
-  // 2. Extract Metadata
+  // 2. Extract Metadata + Auto-assign to topic channel
   extractContentMetadata(data.title, data.content, userId)
     .then(async metadata => {
       if (metadata && metadata.tags.length > 0) {
@@ -314,6 +315,34 @@ export async function handleAsyncTasks(
             })
             .eq('id', vibelogId);
           console.log('📊 [CONTENT-EXTRACTION] Enriched vibelog with:', metadata.tags);
+
+          // 2.5 Auto-assign to topic channel (only for authenticated users)
+          if (userId && metadata.primaryTopic && metadata.primaryTopic !== 'other') {
+            try {
+              // Get user's username for handle generation
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('username')
+                .eq('id', userId)
+                .single();
+
+              if (profile?.username) {
+                const { channelId, wasChannelCreated } = await assignVibelogToTopicChannel(
+                  vibelogId,
+                  userId,
+                  profile.username,
+                  metadata.primaryTopic,
+                  data.content // Pass content for AI name generation
+                );
+                console.log(
+                  `🌌 [AUTO-CHANNEL] ${wasChannelCreated ? 'Created' : 'Assigned to'} channel ${channelId} for topic: ${metadata.primaryTopic}`
+                );
+              }
+            } catch (channelErr) {
+              console.error('[AUTO-CHANNEL] Failed to assign topic channel:', channelErr);
+              // Don't throw - vibelog is already saved, channel assignment is optional
+            }
+          }
         } catch (updateErr) {
           console.error('[CONTENT-EXTRACTION] Failed to update metadata:', updateErr);
         }

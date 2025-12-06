@@ -1,6 +1,6 @@
 'use client';
 
-import { LogOut, Loader2, Settings, Shield, MessageCircle, Radio } from 'lucide-react';
+import { LogOut, Loader2, Settings, Shield, MessageCircle, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 
@@ -131,8 +131,8 @@ export function AccountSheet({
           className="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium text-foreground transition-colors hover:bg-muted/50 active:bg-muted/70"
           onClick={() => onOpenChange(false)}
         >
-          <Radio className="h-5 w-5" />
-          {t('navigation.channels') || 'Channels'}
+          <Sparkles className="h-5 w-5" />
+          {t('navigation.universe') || 'My Universe'}
         </Link>
 
         <Link

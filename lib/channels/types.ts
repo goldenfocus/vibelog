@@ -35,6 +35,7 @@ export interface Channel {
   // Identity
   handle: string;
   name: string;
+  ai_display_name: string | null; // AI-generated creative name (e.g., "Awakening Echoes")
   bio: string | null;
   avatar_url: string | null;
   header_image: string | null;
@@ -62,6 +63,7 @@ export interface Channel {
   is_default: boolean;
   is_public: boolean;
   allow_collabs: boolean;
+  auto_generated: boolean; // True if created automatically from topic detection
 
   // Stats (denormalized for performance)
   subscriber_count: number;
@@ -80,10 +82,13 @@ export interface ChannelSummary {
   id: string;
   handle: string;
   name: string;
+  ai_display_name: string | null;
   avatar_url: string | null;
+  primary_topic: string | null;
   subscriber_count: number;
   vibelog_count: number;
   is_default: boolean;
+  auto_generated: boolean;
 }
 
 /**
