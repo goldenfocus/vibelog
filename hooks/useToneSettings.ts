@@ -16,21 +16,18 @@ export type WritingTone =
 
 export interface ToneSettings {
   tone: WritingTone;
-  keepFillerWords: boolean;
 }
 
 export interface UseToneSettingsReturn extends ToneSettings {
   loading: boolean;
   error: string | null;
   setTone: (tone: WritingTone) => Promise<void>;
-  setKeepFillerWords: (keep: boolean) => Promise<void>;
   updateSettings: (settings: Partial<ToneSettings>) => Promise<void>;
 }
 
 const STORAGE_KEY = 'vibelog_tone_settings';
 const DEFAULT_SETTINGS: ToneSettings = {
   tone: 'authentic',
-  keepFillerWords: false,
 };
 
 /**
@@ -44,16 +41,13 @@ const DEFAULT_SETTINGS: ToneSettings = {
  *
  * @example
  * ```tsx
- * const { tone, setTone, keepFillerWords, voiceCloningEnabled } = useToneSettings();
+ * const { tone, setTone } = useToneSettings();
  *
  * // Change tone
  * await setTone('humorous');
  *
  * // Update multiple settings at once
- * await updateSettings({
- *   tone: 'professional',
- *   keepFillerWords: true
- * });
+ * await updateSettings({ tone: 'professional' });
  * ```
  */
 export function useToneSettings(): UseToneSettingsReturn {
@@ -74,7 +68,6 @@ export function useToneSettings(): UseToneSettingsReturn {
         const parsed = JSON.parse(stored);
         return {
           tone: parsed.tone || DEFAULT_SETTINGS.tone,
-          keepFillerWords: parsed.keepFillerWords ?? DEFAULT_SETTINGS.keepFillerWords,
         };
       }
     } catch (err) {
@@ -117,7 +110,7 @@ export function useToneSettings(): UseToneSettingsReturn {
         const supabase = createClient();
         const { data, error: fetchError } = await supabase
           .from('profiles')
-          .select('default_writing_tone, keep_filler_words')
+          .select('default_writing_tone')
           .eq('id', user.id)
           .single();
 
@@ -138,7 +131,6 @@ export function useToneSettings(): UseToneSettingsReturn {
         if (data) {
           const dbSettings: ToneSettings = {
             tone: (data.default_writing_tone as WritingTone) || DEFAULT_SETTINGS.tone,
-            keepFillerWords: data.keep_filler_words ?? DEFAULT_SETTINGS.keepFillerWords,
           };
           setSettings(dbSettings);
           setError(null);
@@ -187,9 +179,6 @@ export function useToneSettings(): UseToneSettingsReturn {
           .from('profiles')
           .update({
             ...(newSettings.tone && { default_writing_tone: newSettings.tone }),
-            ...(newSettings.keepFillerWords !== undefined && {
-              keep_filler_words: newSettings.keepFillerWords,
-            }),
           })
           .eq('id', user.id);
 
@@ -220,19 +209,11 @@ export function useToneSettings(): UseToneSettingsReturn {
     [updateSettings]
   );
 
-  const setKeepFillerWords = useCallback(
-    async (keepFillerWords: boolean) => {
-      await updateSettings({ keepFillerWords });
-    },
-    [updateSettings]
-  );
-
   return {
     ...settings,
     loading,
     error,
     setTone,
-    setKeepFillerWords,
     updateSettings,
   };
 }

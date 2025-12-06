@@ -71,7 +71,7 @@ export function useVideoStateMachine(options: {
   const { vibelogId: initialVibelogId, onComplete, onSaveSuccess } = options;
 
   const { user: _user } = useAuth();
-  const { tone, keepFillerWords } = useToneSettings();
+  const { tone } = useToneSettings();
   const { uploadVideo } = useVideoUpload();
 
   const [upgradePrompt, setUpgradePrompt] = useState<UpgradePromptState>({
@@ -200,7 +200,6 @@ export function useVideoStateMachine(options: {
     const teaserResult = await vibelogAPI.processVibelogGeneration(transcriptionData, {
       enableStreaming: false,
       tone,
-      keepFillerWords,
       detectedLanguage: languageFromRef,
     });
 
@@ -213,7 +212,7 @@ export function useVideoStateMachine(options: {
       teaserResult.fullContent || teaserResult.content;
 
     return teaserResult.fullContent || teaserResult.content;
-  }, [vibelogAPI, tone, keepFillerWords]);
+  }, [vibelogAPI, tone]);
 
   // Step 4: Generate cover image
   const processCoverImage = useCallback(
