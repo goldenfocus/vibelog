@@ -1,10 +1,9 @@
 'use client';
 
-import { FileText, Mic, Video } from 'lucide-react';
+import { Mic, Video } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, Suspense, useCallback } from 'react';
 
-import { TextCreator } from '@/components/creation/TextCreator';
 import { VideoCreator } from '@/components/creation/VideoCreator';
 import HomeCommunityShowcase from '@/components/home/HomeCommunityShowcase';
 import { Portal } from '@/components/home/Portal';
@@ -36,7 +35,7 @@ export default function Home() {
   const isLoggedIn = Boolean(user);
 
   const [remixContent, setRemixContent] = useState<string | null>(null);
-  const [creationMode, setCreationMode] = useState<'text' | 'audio' | 'video'>('audio');
+  const [creationMode, setCreationMode] = useState<'audio' | 'video'>('audio');
   const [refreshFeed, setRefreshFeed] = useState<(() => void) | null>(null);
   const [mounted, setMounted] = useState(false);
   const [isAwakening, setIsAwakening] = useState(false);
@@ -64,14 +63,6 @@ export default function Home() {
       setCreationMode('audio');
       setShowCreator(true);
     }, 800);
-  };
-
-  const handleTextClick = () => {
-    setIsAwakening(true);
-    setTimeout(() => {
-      setCreationMode('text');
-      setShowCreator(true);
-    }, 500);
   };
 
   if (isLoading || authLoading) {
@@ -176,19 +167,6 @@ export default function Home() {
                 {t('home.guestInstruction')}
               </p>
             )}
-
-            {/* Type instead button */}
-            <button
-              onClick={handleTextClick}
-              className={cn(
-                'text-electric-mac mt-4 text-sm font-medium uppercase tracking-wide opacity-70 transition-all hover:opacity-100 active:scale-95',
-                'delay-300 duration-1000 ease-out',
-                mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0',
-                isAwakening && 'translate-y-8 opacity-0'
-              )}
-            >
-              Type instead
-            </button>
           </div>
 
           {/* Creation State (Awakened) */}
@@ -211,27 +189,28 @@ export default function Home() {
               ← {t('home.returnToUniverse')}
             </button>
 
-            {/* Mode Switcher */}
-            <div className="mb-8 flex gap-4">
-              {[
-                { mode: 'text' as const, Icon: FileText, label: t('home.modes.text') },
-                { mode: 'audio' as const, Icon: Mic, label: t('home.modes.audio') },
-                { mode: 'video' as const, Icon: Video, label: t('home.modes.video') },
-              ].map(({ mode, Icon }) => (
-                <button
-                  key={mode}
-                  onClick={() => setCreationMode(mode)}
-                  className={cn(
-                    'rounded-xl p-3 transition-all',
-                    creationMode === mode
-                      ? 'bg-electric/20 text-electric-glow'
-                      : 'text-muted-foreground hover:bg-white/5 hover:text-white'
-                  )}
-                >
-                  <Icon className="h-6 w-6" />
-                </button>
-              ))}
-            </div>
+            {/* Mode Switcher - only for logged-in users */}
+            {isLoggedIn && (
+              <div className="mb-8 flex gap-4">
+                {[
+                  { mode: 'audio' as const, Icon: Mic, label: t('home.modes.audio') },
+                  { mode: 'video' as const, Icon: Video, label: t('home.modes.video') },
+                ].map(({ mode, Icon }) => (
+                  <button
+                    key={mode}
+                    onClick={() => setCreationMode(mode)}
+                    className={cn(
+                      'rounded-xl p-3 transition-all',
+                      creationMode === mode
+                        ? 'bg-electric/20 text-electric-glow'
+                        : 'text-muted-foreground hover:bg-white/5 hover:text-white'
+                    )}
+                  >
+                    <Icon className="h-6 w-6" />
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Cool instruction text for guests in awakened state */}
             {!isLoggedIn && (
@@ -241,9 +220,6 @@ export default function Home() {
             )}
 
             <div className="w-full max-w-2xl">
-              {creationMode === 'text' && (
-                <TextCreator remixContent={remixContent} onSaveSuccess={handleSaveSuccess} />
-              )}
               {creationMode === 'audio' && (
                 <MicRecorder remixContent={remixContent} onSaveSuccess={handleSaveSuccess} />
               )}
