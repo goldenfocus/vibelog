@@ -1,11 +1,11 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { FileText, Mic, X } from 'lucide-react';
+import { Mic, Video, X } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 
-import { TextCreator } from '@/components/creation/TextCreator';
+import { VideoCreator } from '@/components/creation/VideoCreator';
 import { Portal } from '@/components/home/Portal';
 import MicRecorder from '@/components/MicRecorder';
 import Navigation from '@/components/Navigation';
@@ -29,16 +29,16 @@ export default function Home() {
   const { isLoading } = useI18n();
   const [remixContent, setRemixContent] = useState<string | null>(null);
   const [isPortalActive, setIsPortalActive] = useState(false);
-  const [creationMode, setCreationMode] = useState<'audio' | 'text'>('audio');
+  const [creationMode, setCreationMode] = useState<'audio' | 'video'>('audio');
 
   const handlePortalClick = () => {
     setIsPortalActive(true);
     setCreationMode('audio');
   };
 
-  const handleTypeInstead = () => {
+  const handleVideoInstead = () => {
     setIsPortalActive(true);
-    setCreationMode('text');
+    setCreationMode('video');
   };
 
   const handleClose = () => {
@@ -110,11 +110,11 @@ export default function Home() {
                 </p>
 
                 <button
-                  onClick={handleTypeInstead}
+                  onClick={handleVideoInstead}
                   className="group inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-6 py-3 text-sm font-medium text-muted-foreground transition-all hover:border-white/20 hover:bg-white/10 hover:text-white"
                 >
-                  <FileText className="h-4 w-4" />
-                  <span>Type instead</span>
+                  <Video className="h-4 w-4" />
+                  <span>Record video</span>
                 </button>
               </motion.div>
             </motion.div>
@@ -149,16 +149,16 @@ export default function Home() {
                     Audio
                   </button>
                   <button
-                    onClick={() => setCreationMode('text')}
+                    onClick={() => setCreationMode('video')}
                     className={cn(
                       'flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all',
-                      creationMode === 'text'
+                      creationMode === 'video'
                         ? 'bg-electric/20 text-electric-glow ring-1 ring-electric/50'
                         : 'text-muted-foreground hover:text-white'
                     )}
                   >
-                    <FileText className="h-4 w-4" />
-                    Text
+                    <Video className="h-4 w-4" />
+                    Video
                   </button>
                 </div>
 
@@ -166,7 +166,7 @@ export default function Home() {
                   {creationMode === 'audio' ? (
                     <MicRecorder remixContent={remixContent} onSaveSuccess={handleClose} />
                   ) : (
-                    <TextCreator remixContent={remixContent} onSaveSuccess={handleClose} />
+                    <VideoCreator />
                   )}
                 </div>
               </div>
