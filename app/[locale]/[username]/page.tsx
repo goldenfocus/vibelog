@@ -2,6 +2,7 @@ import { Calendar, Eye, FileText, Users } from 'lucide-react';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
+import { SubscribeButton } from '@/components/channel/SubscribeButton';
 import Navigation from '@/components/Navigation';
 import { LikedVibelogs } from '@/components/profile/LikedVibelogs';
 import { ProfileActions } from '@/components/profile/ProfileActions';
@@ -490,8 +491,16 @@ export default async function ProfilePage({ params }: PageProps) {
                     </p>
                   )}
 
-                  {/* Message Button */}
-                  <ProfileActions profileUserId={profile.id} username={profile.username} />
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-3">
+                    {profile.is_channel && (
+                      <SubscribeButton
+                        channelHandle={profile.username}
+                        channelOwnerId={profile.owner_id}
+                      />
+                    )}
+                    <ProfileActions profileUserId={profile.id} username={profile.username} />
+                  </div>
 
                   {/* Stats and Social Links */}
                   <div

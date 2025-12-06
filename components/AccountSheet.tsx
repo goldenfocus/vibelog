@@ -1,6 +1,6 @@
 'use client';
 
-import { LogOut, Loader2, Settings, Shield, MessageCircle } from 'lucide-react';
+import { LogOut, Loader2, Settings, Shield, MessageCircle, Radio } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 
@@ -124,6 +124,15 @@ export function AccountSheet({
         >
           <MessageCircle className="h-5 w-5" />
           {t('navigation.messages')}
+        </Link>
+
+        <Link
+          href="/dashboard/channels"
+          className="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium text-foreground transition-colors hover:bg-muted/50 active:bg-muted/70"
+          onClick={() => onOpenChange(false)}
+        >
+          <Radio className="h-5 w-5" />
+          {t('navigation.channels') || 'Channels'}
         </Link>
 
         <Link
