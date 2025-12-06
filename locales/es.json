@@ -496,6 +496,9 @@
       "video": "Crear con video",
       "screen": "Grabar pantalla"
     },
+    "guestInstruction": "Toca el portal. Expresa tu mente. Mira cómo sucede la magia.",
+    "guestRecordingInstruction": "Solo habla naturalmente. Cuando termines, transformaremos tus palabras en algo hermoso.",
+    "returnToUniverse": "Volver al universo",
     "showcase": {
       "latestVibelogs": "Últimos vibelogs",
       "discoverNewest": "Descubre las voces más nuevas de la comunidad",

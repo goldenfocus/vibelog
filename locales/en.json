@@ -55,6 +55,9 @@
       "video": "Create with video",
       "screen": "Record screen share"
     },
+    "guestInstruction": "Tap the portal. Speak your mind. Watch the magic unfold.",
+    "guestRecordingInstruction": "Just speak naturally. When you're done, we'll transform your words into something beautiful.",
+    "returnToUniverse": "Return to universe",
     "showcase": {
       "latestVibelogs": "Latest vibelogs",
       "discoverNewest": "Discover the newest voices in the community",

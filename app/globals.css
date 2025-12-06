@@ -53,18 +53,18 @@ All colors MUST be HSL.
     --electric-metallic: 217 88% 70%;
     --surface-elevated: 0 0% 10%;
     --surface-subtle: 0 0% 4%;
-    
+
     /* Premium gradients with metallic depth */
     --gradient-electric: linear-gradient(135deg, hsl(217 92% 65%), hsl(217 85% 75%), hsl(217 88% 70%));
     --gradient-metallic: linear-gradient(145deg, hsl(217 92% 65%) 0%, hsl(217 88% 70%) 50%, hsl(217 85% 75%) 100%);
     --gradient-subtle: linear-gradient(180deg, hsl(0 0% 8%), hsl(0 0% 6%));
     --gradient-glow: radial-gradient(circle at center, hsl(217 92% 65% / 0.3), hsl(217 85% 75% / 0.1), transparent 70%);
-    
+
     /* Enhanced shadows with metallic glow */
     --shadow-electric: 0 0 60px hsl(217 92% 65% / 0.4), 0 0 30px hsl(217 85% 75% / 0.2);
     --shadow-elevated: 0 8px 32px hsl(0 0% 0% / 0.4);
     --shadow-subtle: 0 2px 8px hsl(0 0% 0% / 0.2);
-    
+
     /* Animation transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
@@ -138,27 +138,28 @@ All colors MUST be HSL.
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   }
-  
+
   /* Custom scrollbar for dark theme */
   ::-webkit-scrollbar {
     width: 8px;
   }
-  
+
   ::-webkit-scrollbar-track {
     background: hsl(var(--surface-subtle));
   }
-  
+
   ::-webkit-scrollbar-thumb {
     background: hsl(var(--muted));
     border-radius: 4px;
   }
-  
+
   ::-webkit-scrollbar-thumb:hover {
     background: hsl(var(--primary));
   }
 }
 
 @layer components {
+
   /* Simple mic pulse animation */
   .mic {
     animation: simple-pulse 2s ease-in-out infinite;
@@ -172,23 +173,23 @@ All colors MUST be HSL.
     width: 75%;
     height: 75%;
   }
-  
+
   /* Waveform animation */
   .waveform-bar {
     animation: waveform-bounce 0.8s ease-in-out infinite alternate;
   }
-  
+
   /* Typing animation for transcription */
   .typing-cursor::after {
     content: '|';
     animation: blink 1s infinite;
   }
-  
+
   /* Electric glow effect */
   .electric-glow {
     box-shadow: var(--shadow-electric);
   }
-  
+
   /* Glass morphism effect */
   .glass-card {
     background: hsl(var(--surface-elevated) / 0.8);
@@ -198,14 +199,18 @@ All colors MUST be HSL.
 }
 
 @layer utilities {
+
   /* Hide scrollbar utility */
   .scrollbar-hide {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
   }
 
   .scrollbar-hide::-webkit-scrollbar {
-    display: none;  /* Chrome, Safari and Opera */
+    display: none;
+    /* Chrome, Safari and Opera */
   }
 
   /* Prevent vertical movement during horizontal scroll */
@@ -221,7 +226,7 @@ All colors MUST be HSL.
   .transition-smooth {
     transition: var(--transition-smooth);
   }
-  
+
   .transition-bounce {
     transition: var(--transition-bounce);
   }
@@ -229,23 +234,68 @@ All colors MUST be HSL.
 
 /* Custom keyframes */
 @keyframes simple-pulse {
-  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 hsl(217 92% 65% / 0.3); }
-  50% { transform: scale(1.05); box-shadow: 0 0 20px 5px hsl(217 92% 65% / 0.6); }
+
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 hsl(217 92% 65% / 0.3);
+  }
+
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px 5px hsl(217 92% 65% / 0.6);
+  }
 }
 
 @keyframes recording-pulse {
-  0%, 100% { transform: scale(1); box-shadow: 0 0 10px hsl(0 84% 50% / 0.6); }
-  50% { transform: scale(1.03); box-shadow: 0 0 20px hsl(0 84% 50% / 0.8); }
+
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 10px hsl(0 84% 50% / 0.6);
+  }
+
+  50% {
+    transform: scale(1.03);
+    box-shadow: 0 0 20px hsl(0 84% 50% / 0.8);
+  }
 }
 
 @keyframes waveform-bounce {
-  from { transform: scaleY(0.3); }
-  to { transform: scaleY(1); }
+  from {
+    transform: scaleY(0.3);
+  }
+
+  to {
+    transform: scaleY(1);
+  }
 }
 
 @keyframes blink {
-  0%, 50% { opacity: 1; }
-  51%, 100% { opacity: 0; }
+
+  0%,
+  50% {
+    opacity: 1;
+  }
+
+  51%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes slow-pulse {
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
 }
 
 @keyframes fadeInUp {
@@ -253,6 +303,7 @@ All colors MUST be HSL.
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
