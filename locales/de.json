@@ -84,6 +84,9 @@
       "video": "Mit Video erstellen",
       "screen": "Bildschirm aufnehmen"
     },
+    "guestInstruction": "Tippe auf das Portal. Sprich deine Gedanken. Sieh die Magie entfalten.",
+    "guestRecordingInstruction": "Sprich einfach natürlich. Wenn du fertig bist, verwandeln wir deine Worte in etwas Schönes.",
+    "returnToUniverse": "Zurück zum Universum",
     "showcase": {
       "latestVibelogs": "Neueste Vibelogs",
       "discoverNewest": "Entdecke die neuesten Stimmen der Community",

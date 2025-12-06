@@ -84,6 +84,9 @@
       "video": "Tạo bằng video",
       "screen": "Ghi màn hình"
     },
+    "guestInstruction": "Chạm vào cổng. Nói lên suy nghĩ. Xem điều kỳ diệu xảy ra.",
+    "guestRecordingInstruction": "Chỉ cần nói tự nhiên. Khi bạn xong, chúng tôi sẽ biến lời bạn thành điều tuyệt vời.",
+    "returnToUniverse": "Quay lại vũ trụ",
     "showcase": {
       "latestVibelogs": "Vibelogs mới nhất",
       "discoverNewest": "Khám phá những giọng nói mới nhất trong cộng đồng",

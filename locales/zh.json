@@ -84,6 +84,9 @@
       "video": "使用视频创建",
       "screen": "录制屏幕"
     },
+    "guestInstruction": "点击传送门。说出你的想法。见证魔法发生。",
+    "guestRecordingInstruction": "自然地说话就好。完成后，我们会把你的话变成美好的东西。",
+    "returnToUniverse": "返回宇宙",
     "showcase": {
       "latestVibelogs": "最新vibelogs",
       "discoverNewest": "发现社区中最新的声音",

@@ -1,18 +1,15 @@
 'use client';
 
-import { MessageCircle, Bot, Share2, FileText, Mic, Video } from 'lucide-react';
-// [OUT OF SCOPE] Screen share feature commented out
-// import { Monitor } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
-import { useState, useEffect, Suspense } from 'react';
+import { Mic, Video } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect, Suspense, useCallback } from 'react';
 
-// [OUT OF SCOPE] Screen share feature commented out
-// import { ScreenShareCreator } from '@/components/creation/ScreenShareCreator';
-import { TextCreator } from '@/components/creation/TextCreator';
 import { VideoCreator } from '@/components/creation/VideoCreator';
 import HomeCommunityShowcase from '@/components/home/HomeCommunityShowcase';
+import { Portal } from '@/components/home/Portal';
 import MicRecorder from '@/components/MicRecorder';
 import Navigation from '@/components/Navigation';
+import { useAuth } from '@/components/providers/AuthProvider';
 import { useI18n } from '@/components/providers/I18nProvider';
 import { BOTTOM_NAV_HEIGHT } from '@/lib/mobile/constants';
 import { cn } from '@/lib/utils';
@@ -33,20 +30,44 @@ function RemixHandler({ onRemixContent }: { onRemixContent: (content: string | n
 
 export default function Home() {
   const { t, isLoading } = useI18n();
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const isLoggedIn = Boolean(user);
+
   const [remixContent, setRemixContent] = useState<string | null>(null);
-  // [OUT OF SCOPE] Screen mode removed - was: 'text' | 'audio' | 'video' | 'screen'
-  const [creationMode, setCreationMode] = useState<'text' | 'audio' | 'video'>('audio');
+  const [creationMode, setCreationMode] = useState<'audio' | 'video'>('audio');
   const [refreshFeed, setRefreshFeed] = useState<(() => void) | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [isAwakening, setIsAwakening] = useState(false);
+  const [showCreator, setShowCreator] = useState(false);
 
   // Trigger entrance animations after mount
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  if (isLoading) {
+  // Callback for after vibelog is saved - redirect to community page
+  const handleSaveSuccess = useCallback(() => {
+    // Refresh the feed if available
+    if (refreshFeed) {
+      refreshFeed();
+    }
+    // Redirect to community page to see their vibelog
+    router.push('/community');
+  }, [refreshFeed, router]);
+
+  const handlePortalClick = () => {
+    setIsAwakening(true);
+    // Delay showing the creator slightly to allow the "awakening" animation to play
+    setTimeout(() => {
+      setCreationMode('audio');
+      setShowCreator(true);
+    }, 800);
+  };
+
+  if (isLoading || authLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="flex min-h-screen items-center justify-center bg-black">
         <div className="text-center">
           <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-electric border-t-transparent"></div>
           <p className="text-muted-foreground">{t('common.loading')}</p>
@@ -56,158 +77,175 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div
+      className={cn(
+        'min-h-screen transition-colors duration-1000',
+        isAwakening ? 'bg-[#050510]' : 'bg-background'
+      )}
+    >
       <Suspense fallback={null}>
         <RemixHandler onRemixContent={setRemixContent} />
       </Suspense>
-      <Navigation />
 
-      {/* Hero Section - Mobile-optimized with staggered animations */}
-      <main className="px-4 pb-12 pt-20 sm:px-6 sm:pb-16 sm:pt-28 lg:px-8">
-        <div className="mx-auto max-w-6xl">
-          {/* Hero Text - Compact on mobile */}
-          <div className="mb-8 text-center sm:mb-16">
+      {/* Navigation - fades out during awakening, or stays minimal */}
+      <div
+        className={cn(
+          'transition-opacity duration-1000',
+          isAwakening ? 'pointer-events-none opacity-0' : 'opacity-100'
+        )}
+      >
+        <Navigation />
+      </div>
+
+      <main className="relative flex min-h-screen flex-col items-center overflow-hidden px-4">
+        {/* Cinematic Universe Background Effects */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div
+            className={cn(
+              'duration-[2000ms] absolute left-1/2 top-1/2 h-[1000px] w-[1000px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-electric/5 blur-[120px] transition-all',
+              isAwakening ? 'scale-150 opacity-20' : 'scale-100 opacity-10'
+            )}
+          />
+          {/* Stars / Particles could be added here */}
+        </div>
+
+        {/* Content Container */}
+        <div className="relative z-10 flex w-full max-w-4xl flex-col items-center pt-24 sm:pt-32">
+          {/* Main Cinematic Hero State */}
+          <div
+            className={cn(
+              'flex flex-col items-center text-center transition-all duration-1000 ease-in-out',
+              showCreator ? 'absolute -translate-y-[100vh] opacity-0' : 'translate-y-0 opacity-100'
+            )}
+          >
+            {/* Headline */}
             <h1
               className={cn(
-                'mb-4 text-3xl font-bold leading-tight tracking-tight sm:mb-8 sm:text-5xl md:text-6xl lg:text-7xl',
-                'transition-all duration-700 ease-out',
-                mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
+                'mb-6 text-4xl font-bold tracking-tight sm:mb-8 sm:text-6xl md:text-7xl',
+                'bg-gradient-to-b from-white to-white/70 bg-clip-text text-transparent',
+                'transition-all duration-1000 ease-out',
+                mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0',
+                isAwakening && 'scale-105 opacity-80 blur-sm'
               )}
             >
-              {t('hero.title.part1')}{' '}
-              <span className="bg-gradient-electric bg-clip-text text-transparent">
-                {t('hero.title.part2')}
-              </span>
+              Your voice. Your universe.
             </h1>
+
+            {/* Sub-headline */}
             <p
               className={cn(
-                'mx-auto max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg md:text-xl',
-                'transition-all delay-100 duration-700 ease-out',
-                mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
+                'mb-12 max-w-xl text-lg text-blue-100/60 sm:text-2xl',
+                'transition-all delay-100 duration-1000 ease-out',
+                mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0',
+                isAwakening && 'opacity-0'
               )}
             >
-              {t('hero.subtitle')}
+              Speak or write your first vibe and watch your world come alive.
             </p>
-          </div>
 
-          {/* Mode Selector - Animated entrance */}
-          <div
-            className={cn(
-              'mb-6 flex justify-center gap-3 sm:mb-8 sm:gap-4',
-              'transition-all delay-200 duration-700 ease-out',
-              mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
-            )}
-          >
-            {[
-              { mode: 'text' as const, Icon: FileText, label: t('home.modes.text') },
-              { mode: 'audio' as const, Icon: Mic, label: t('home.modes.audio') },
-              { mode: 'video' as const, Icon: Video, label: t('home.modes.video') },
-            ].map(({ mode, Icon, label }, index) => (
-              <button
-                key={mode}
-                onClick={() => setCreationMode(mode)}
+            {/* THE PORTAL */}
+            <div
+              className={cn(
+                'mb-8 transition-all duration-1000 ease-out',
+                mounted ? 'scale-100 opacity-100' : 'scale-75 opacity-0',
+                isAwakening && 'scale-[3] opacity-0'
+              )}
+            >
+              <Portal onClick={handlePortalClick} />
+            </div>
+
+            {/* Instruction text for non-logged-in users */}
+            {!isLoggedIn && (
+              <p
                 className={cn(
-                  'group relative flex h-14 w-14 items-center justify-center rounded-2xl border-2 sm:h-16 sm:w-16',
-                  'transition-all duration-300 active:scale-95',
-                  creationMode === mode
-                    ? 'border-primary bg-primary/10 shadow-lg shadow-primary/20'
-                    : 'border-border/30 bg-card/50 hover:border-border hover:bg-card/80 hover:shadow-md'
+                  'max-w-sm text-center text-sm leading-relaxed text-blue-100/50',
+                  'transition-all delay-200 duration-1000 ease-out',
+                  mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0',
+                  isAwakening && 'opacity-0'
                 )}
-                aria-label={label}
-                style={{
-                  transitionDelay: mounted ? `${200 + index * 50}ms` : '0ms',
-                }}
               >
-                <Icon
-                  className={cn(
-                    'h-6 w-6 sm:h-7 sm:w-7',
-                    'transition-all duration-300',
-                    creationMode === mode
-                      ? 'scale-110 text-primary'
-                      : 'text-muted-foreground group-hover:scale-105 group-hover:text-foreground'
-                  )}
-                  strokeWidth={1.5}
-                />
-                {creationMode === mode && (
-                  <div className="absolute -bottom-1 left-1/2 h-1 w-6 -translate-x-1/2 rounded-full bg-primary" />
-                )}
-              </button>
-            ))}
+                {t('home.guestInstruction')}
+              </p>
+            )}
           </div>
 
-          {/* Creation Interface - Animated container */}
+          {/* Creation State (Awakened) */}
           <div
             className={cn(
-              'mb-12 flex justify-center sm:mb-16',
-              'transition-all delay-300 duration-700 ease-out',
-              mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
+              'absolute inset-0 flex flex-col items-center pt-24 transition-all delay-300 duration-1000',
+              showCreator
+                ? 'translate-y-0 opacity-100'
+                : 'pointer-events-none translate-y-20 opacity-0'
             )}
           >
-            {creationMode === 'text' && (
-              <TextCreator remixContent={remixContent} onSaveSuccess={refreshFeed} />
-            )}
-            {creationMode === 'audio' && (
-              <MicRecorder remixContent={remixContent} onSaveSuccess={refreshFeed} />
-            )}
-            {creationMode === 'video' && <VideoCreator />}
-          </div>
+            {/* Back button to return to portal state */}
+            <button
+              onClick={() => {
+                setShowCreator(false);
+                setIsAwakening(false);
+              }}
+              className="mb-8 text-sm text-muted-foreground transition-colors hover:text-white"
+            >
+              ← {t('home.returnToUniverse')}
+            </button>
 
-          {/* Features Preview - Compact mobile cards with staggered animations */}
-          <h2 className="sr-only">Features</h2>
-          <div
-            className={cn(
-              'mx-auto mb-12 grid max-w-4xl grid-cols-3 gap-2 sm:mb-16 sm:gap-4 md:gap-6',
-              'delay-400 transition-all duration-700 ease-out',
-              mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
-            )}
-          >
-            {[
-              {
-                Icon: MessageCircle,
-                title: t('features.input.title'),
-                desc: t('features.input.description'),
-              },
-              {
-                Icon: Bot,
-                title: t('features.aiMagic.title'),
-                desc: t('features.aiMagic.description'),
-              },
-              {
-                Icon: Share2,
-                title: t('features.share.title'),
-                desc: t('features.share.description'),
-              },
-            ].map(({ Icon, title, desc }, index) => (
-              <div
-                key={title}
-                className={cn(
-                  'group rounded-xl border border-border/50 bg-card/80 p-2.5 text-center backdrop-blur-sm sm:rounded-2xl sm:p-4 md:p-6',
-                  'transition-all duration-300 hover:-translate-y-1 hover:bg-card/90 hover:shadow-lg'
-                )}
-                style={{
-                  transitionDelay: mounted ? `${400 + index * 100}ms` : '0ms',
-                }}
-              >
-                <div className="mb-2 flex items-center justify-center sm:mb-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 transition-transform duration-300 group-hover:scale-110 sm:h-12 sm:w-12 sm:rounded-2xl">
-                    <Icon className="h-5 w-5 text-primary sm:h-6 sm:w-6" strokeWidth={1.5} />
-                  </div>
-                </div>
-                <h3 className="mb-1 text-xs font-semibold text-foreground sm:mb-2 sm:text-sm md:text-base">
-                  {title}
-                </h3>
-                <p className="hidden text-xs leading-relaxed text-muted-foreground sm:block sm:text-sm">
-                  {desc}
-                </p>
+            {/* Mode Switcher - only for logged-in users */}
+            {isLoggedIn && (
+              <div className="mb-8 flex gap-4">
+                {[
+                  { mode: 'audio' as const, Icon: Mic, label: t('home.modes.audio') },
+                  { mode: 'video' as const, Icon: Video, label: t('home.modes.video') },
+                ].map(({ mode, Icon }) => (
+                  <button
+                    key={mode}
+                    onClick={() => setCreationMode(mode)}
+                    className={cn(
+                      'rounded-xl p-3 transition-all',
+                      creationMode === mode
+                        ? 'bg-electric/20 text-electric-glow'
+                        : 'text-muted-foreground hover:bg-white/5 hover:text-white'
+                    )}
+                  >
+                    <Icon className="h-6 w-6" />
+                  </button>
+                ))}
               </div>
-            ))}
+            )}
+
+            {/* Cool instruction text for guests in awakened state */}
+            {!isLoggedIn && (
+              <p className="mb-8 max-w-md text-center text-sm leading-relaxed text-blue-100/60">
+                {t('home.guestRecordingInstruction')}
+              </p>
+            )}
+
+            <div className="w-full max-w-2xl">
+              {creationMode === 'audio' && (
+                <MicRecorder remixContent={remixContent} onSaveSuccess={handleSaveSuccess} />
+              )}
+              {creationMode === 'video' && isLoggedIn && <VideoCreator />}
+            </div>
           </div>
-
-          <HomeCommunityShowcase onRemix={setRemixContent} onRefreshRequest={setRefreshFeed} />
-
-          {/* Bottom padding for mobile BottomNav */}
-          <div style={{ height: BOTTOM_NAV_HEIGHT.BASE + 20 }} className="lg:hidden" />
         </div>
+
+        {/* Scroll Reveal Section (Optional / Light) */}
+        {!isAwakening && (
+          <div
+            className={cn(
+              'mt-32 w-full max-w-5xl opacity-0 transition-opacity delay-1000 duration-1000',
+              mounted && 'opacity-100'
+            )}
+          >
+            {/* We keep the community showcase but push it down significantly */}
+            <div className="py-20 text-center text-sm uppercase tracking-widest text-muted-foreground/40">
+              Scroll for more
+            </div>
+            <HomeCommunityShowcase onRemix={setRemixContent} onRefreshRequest={setRefreshFeed} />
+          </div>
+        )}
+
+        {/* Bottom padding */}
+        <div style={{ height: BOTTOM_NAV_HEIGHT.BASE + 20 }} className="lg:hidden" />
       </main>
 
       {/* Organization Schema for SEO */}

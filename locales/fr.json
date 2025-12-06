@@ -84,6 +84,9 @@
       "video": "Créer avec de la vidéo",
       "screen": "Enregistrer l'écran"
     },
+    "guestInstruction": "Touchez le portail. Exprimez-vous. Regardez la magie opérer.",
+    "guestRecordingInstruction": "Parlez naturellement. Une fois terminé, nous transformerons vos mots en quelque chose de beau.",
+    "returnToUniverse": "Retour à l'univers",
     "showcase": {
       "latestVibelogs": "Derniers vibelogs",
       "discoverNewest": "Découvrez les nouvelles voix de la communauté",
