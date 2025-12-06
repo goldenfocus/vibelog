@@ -23,6 +23,8 @@ export interface SaveVibelogRequest {
   };
   sessionId?: string;
   isTeaser?: boolean;
+  isPublished?: boolean; // Whether to publish the vibelog (default: true)
+  isPublic?: boolean; // Whether the vibelog is public (default: true)
   originalLanguage?: string; // ISO 639-1 code from Whisper detection
   channelId?: string; // Channel to post to (uses default channel if not specified)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -146,8 +148,8 @@ export async function normalizeVibelogData(
     read_time: readTime,
     tags: extractBasicTags(title, fullContent),
     // NOTE: seo_title, seo_description removed - columns don't exist in vibelogs table
-    is_public: true,
-    is_published: true,
+    is_public: requestBody.isPublic !== false, // Default to true unless explicitly set to false
+    is_published: requestBody.isPublished !== false, // Default to true unless explicitly set to false
     published_at: new Date().toISOString(),
     view_count: 0,
     share_count: 0,
@@ -336,7 +338,14 @@ export async function handleAsyncTasks(
   }
 
   // 4. Auto-translate to all supported languages (fire-and-forget)
-  // But ONLY if translations don't already exist (to prevent overwriting existing translations)
+  // Skip translation for unpublished vibelogs (e.g., video vibelogs during processing)
+  // This prevents translating placeholder content like "Video vibelog ... (processing...)"
+  if (!data.is_published) {
+    console.log('ℹ️ [TRANSLATION] Skipping - vibelog not published yet:', vibelogId);
+    return;
+  }
+
+  // Check if translations already exist (to prevent overwriting)
   const { data: existing } = await supabase
     .from('vibelogs')
     .select('translations, available_languages')
