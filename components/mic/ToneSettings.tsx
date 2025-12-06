@@ -147,7 +147,7 @@ export default function ToneSettings({ disabled = false }: ToneSettingsProps) {
       {isOpen && (
         <>
           {/* Mobile backdrop */}
-          <div className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm sm:hidden" />
+          <div className="fixed inset-0 z-40 bg-background/90 backdrop-blur-xl sm:hidden" />
 
           {/* Panel */}
           <div
