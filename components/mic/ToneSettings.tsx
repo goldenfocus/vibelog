@@ -79,7 +79,7 @@ export default function ToneSettings({ disabled = false }: ToneSettingsProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
-  const { tone, keepFillerWords, setTone, setKeepFillerWords, loading } = useToneSettings();
+  const { tone, setTone, loading } = useToneSettings();
 
   // Close panel when clicking outside
   useEffect(() => {
@@ -129,10 +129,6 @@ export default function ToneSettings({ disabled = false }: ToneSettingsProps) {
     await setTone(newTone);
   };
 
-  const handleKeepFillerWordsChange = async (checked: boolean) => {
-    await setKeepFillerWords(checked);
-  };
-
   return (
     <div className="relative">
       {/* Gear Icon Button */}
@@ -151,7 +147,7 @@ export default function ToneSettings({ disabled = false }: ToneSettingsProps) {
       {isOpen && (
         <>
           {/* Mobile backdrop */}
-          <div className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm sm:hidden" />
+          <div className="fixed inset-0 z-40 bg-background/90 backdrop-blur-xl sm:hidden" />
 
           {/* Panel */}
           <div
@@ -211,29 +207,6 @@ export default function ToneSettings({ disabled = false }: ToneSettingsProps) {
                 <p className="mt-2 text-xs text-muted-foreground">
                   How AI will polish your vibelog
                 </p>
-              </div>
-
-              {/* Keep Filler Words Toggle */}
-              <div className="flex items-start space-x-3">
-                <input
-                  type="checkbox"
-                  id="keep-filler-words"
-                  checked={keepFillerWords}
-                  onChange={e => handleKeepFillerWordsChange(e.target.checked)}
-                  disabled={loading}
-                  className="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                />
-                <div className="flex-1">
-                  <label
-                    htmlFor="keep-filler-words"
-                    className="block cursor-pointer text-sm font-medium"
-                  >
-                    Keep filler words
-                  </label>
-                  <p className="text-xs text-muted-foreground">
-                    Preserve &quot;ums&quot; and &quot;ahs&quot; for authentic feel
-                  </p>
-                </div>
               </div>
             </div>
 

@@ -22,7 +22,6 @@ export interface UseVibelogAPIReturn {
       enableStreaming?: boolean;
       onStreamChunk?: (chunk: string) => void;
       tone?: string;
-      keepFillerWords?: boolean;
       detectedLanguage?: string;
     }
   ) => Promise<TeaserResult>;
@@ -268,7 +267,6 @@ export function useVibelogAPI(
       enableStreaming?: boolean;
       onStreamChunk?: (chunk: string) => void;
       tone?: string;
-      keepFillerWords?: boolean;
       detectedLanguage?: string;
     }
   ): Promise<TeaserResult> => {
@@ -281,7 +279,6 @@ export function useVibelogAPI(
       // OPTIMIZATION 2: Enable streaming for faster perceived performance
       const enableStreaming = options?.enableStreaming ?? false;
       const tone = options?.tone;
-      const keepFillerWords = options?.keepFillerWords;
       const detectedLanguage = options?.detectedLanguage;
 
       const vibelogResponse = await fetch('/api/generate-vibelog', {
@@ -293,7 +290,6 @@ export function useVibelogAPI(
           transcription: transcriptionData,
           stream: enableStreaming,
           ...(tone && { tone }),
-          ...(keepFillerWords !== undefined && { keepFillerWords }),
           ...(detectedLanguage && { detectedLanguage }),
         }),
       });
@@ -401,10 +397,10 @@ export function useVibelogAPI(
       // Use AI-generated teaser if available, otherwise fall back to client-side teaser logic
       const teaserResult: TeaserResult = vibelogTeaser
         ? {
-          content: vibelogTeaser,
-          isTeaser: true,
-          fullContent: vibelogContent,
-        }
+            content: vibelogTeaser,
+            isTeaser: true,
+            fullContent: vibelogContent,
+          }
         : createTeaserContent(vibelogContent);
 
       // Store the FULL content for cover generation, not the teaser

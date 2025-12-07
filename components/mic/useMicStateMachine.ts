@@ -156,7 +156,7 @@ export function useMicStateMachine(
   const { user } = useAuth();
   const { profile } = useProfile(user?.id);
   const isLoggedIn = Boolean(user);
-  const { tone, keepFillerWords } = useToneSettings();
+  const { tone } = useToneSettings();
 
   // Channel management
   const { channels, selectedChannelId, selectChannel } = useChannels(user?.id);
@@ -515,14 +515,12 @@ export function useMicStateMachine(
 
     console.log('🚀 [VIBELOG-GEN] Starting generation...');
     console.log('🎨 [VIBELOG-GEN] Using tone:', tone);
-    console.log('🗣️ [VIBELOG-GEN] Keep filler words:', keepFillerWords);
     console.log('🌐 [VIBELOG-GEN] Detected language:', languageFromRef);
 
     // OPTIMIZATION 2: Enable streaming for real-time content delivery
     const teaserResult = await vibelogAPI.processVibelogGeneration(transcriptionData, {
       enableStreaming: false,
       tone,
-      keepFillerWords,
       detectedLanguage: languageFromRef,
       onStreamChunk: (_chunk: string) => {
         // Optional: Update UI with streaming chunks in real-time
@@ -546,7 +544,7 @@ export function useMicStateMachine(
     });
 
     return teaserResult.fullContent || teaserResult.content;
-  }, [vibelogAPI, tone, keepFillerWords]);
+  }, [vibelogAPI, tone]);
 
   const processCoverImage = useCallback(
     async (vibelogContentOverride?: string, vibelogId?: string) => {
