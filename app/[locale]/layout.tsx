@@ -11,6 +11,7 @@ import { Toaster as Sonner } from '@/components/ui/sonner';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { VibeBrainWidget } from '@/components/vibe-brain/VibeBrainWidget';
+import { getGlobalSchemas } from '@/lib/seo/global-schema';
 import {
   SUPPORTED_LOCALES,
   generateHreflangLinks,
@@ -116,12 +117,21 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
     notFound();
   }
 
+  // Global structured data for platform identity (SEO)
+  const globalSchemas = getGlobalSchemas();
+
   return (
     <ReactQueryProvider>
       <AuthProvider>
         <TooltipProvider>
           <I18nProvider initialLocale={locale as Locale}>
             <BottomNavProvider>
+              {/* Global JSON-LD Schema for Platform Identity */}
+              <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(globalSchemas) }}
+              />
+
               {children}
               <BottomNav className="lg:hidden" alwaysVisible />
               <GlobalAudioPlayer />
