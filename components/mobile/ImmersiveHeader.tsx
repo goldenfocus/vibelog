@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, MoreVertical } from 'lucide-react';
 
 import { useSafeArea } from '@/hooks/useSafeArea';
+import { Z_INDEX } from '@/lib/mobile/constants';
 import { triggerHaptic } from '@/lib/mobile/haptics';
 import { cn } from '@/lib/utils';
 
@@ -74,12 +75,12 @@ export function ImmersiveHeader({
   return (
     <header
       className={cn(
-        'fixed left-0 right-0 top-0 z-40',
+        'fixed left-0 right-0 top-0',
         'bg-background/95 backdrop-blur-xl',
         'border-b border-border/30',
         className
       )}
-      style={{ paddingTop: top }}
+      style={{ paddingTop: top, zIndex: Z_INDEX.HEADER }}
     >
       <div className="flex h-14 items-center gap-2 px-2">
         {/* Back button */}
