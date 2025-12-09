@@ -160,9 +160,21 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (commentError) {
-      logger.error('Error creating comment', { error: commentError });
+      logger.error('Error creating comment', {
+        error: commentError,
+        code: commentError.code,
+        hint: commentError.hint,
+        details: commentError.details,
+        vibelogId,
+        userId: user.id,
+      });
       return NextResponse.json(
-        { error: 'Failed to create comment', details: commentError.message },
+        {
+          error: 'Failed to create comment',
+          details: commentError.message,
+          code: commentError.code,
+          hint: commentError.hint,
+        },
         { status: 500 }
       );
     }

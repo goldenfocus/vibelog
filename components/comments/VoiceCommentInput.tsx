@@ -247,7 +247,8 @@ export default function VoiceCommentInput({
 
       if (!commentResponse.ok) {
         const error = await commentResponse.json();
-        throw new Error(error.error || 'Failed to submit comment');
+        console.error('Comment creation failed:', error);
+        throw new Error(error.details || error.error || 'Failed to submit comment');
       }
 
       toast.success(t('toasts.comments.voiceLive'));
