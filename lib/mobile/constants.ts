@@ -107,7 +107,9 @@ export const ANIMATIONS = {
 // Z-Index Layers
 export const Z_INDEX = {
   BOTTOM_NAV: 40,
+  HEADER: 45, // Headers should be above bottom nav but below audio player
   AUDIO_PLAYER: 50,
+  MESSAGE_INPUT: 55, // Message input above audio player, below modals
   MODAL: 60,
   FULLSCREEN: 70,
   TOAST: 80,

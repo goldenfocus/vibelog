@@ -1,15 +1,16 @@
 'use client';
 
-import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, MoreVertical } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState, useRef, useCallback } from 'react';
 
 import { MessageBubble } from '@/components/messaging/MessageBubble';
 import { MessageInput } from '@/components/messaging/MessageInput';
+import { ImmersiveHeader } from '@/components/mobile/ImmersiveHeader';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useBottomNav } from '@/components/providers/BottomNavProvider';
 import { useKeyboardHeight } from '@/hooks/useKeyboardHeight';
+import { useSafeArea } from '@/hooks/useSafeArea';
 import { MESSAGE_INPUT } from '@/lib/mobile/constants';
 import { createClient } from '@/lib/supabase';
 import type { ConversationWithDetails, MessageWithDetails } from '@/types/messaging';
@@ -19,6 +20,7 @@ export default function DMConversationClient() {
   const username = params?.username as string;
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  const { top } = useSafeArea();
   const { hide: hideBottomNav, show: showBottomNav } = useBottomNav();
   const [conversation, setConversation] = useState<ConversationWithDetails | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -449,95 +451,18 @@ export default function DMConversationClient() {
   const messagesBottomPadding = inputHeight + 16;
 
   return (
-    <div className="flex h-dvh flex-col bg-gradient-to-br from-zinc-50 via-metallic-blue-50/20 to-zinc-100 pt-16 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
-      {/* Premium Header with Gradient */}
-      <div className="relative flex-shrink-0 border-b border-metallic-blue-200/20 bg-white/80 backdrop-blur-xl dark:border-metallic-blue-800/20 dark:bg-zinc-900/80">
-        <div className="absolute inset-0 bg-gradient-to-r from-metallic-blue-500/5 via-transparent to-metallic-blue-500/5" />
+    <div className="flex h-dvh flex-col bg-gradient-to-br from-zinc-50 via-metallic-blue-50/20 to-zinc-100 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
+      {/* Immersive Header - fixed positioned, compact */}
+      <ImmersiveHeader
+        onBack={() => router.push('/messages')}
+        avatar={avatarUrl}
+        title={displayName}
+        subtitle={conversation?.is_typing ? 'typing...' : `@${otherUser?.username || username}`}
+        isTyping={conversation?.is_typing}
+      />
 
-        <div className="relative flex items-center justify-between px-4 py-3.5 sm:px-6">
-          <div className="flex items-center gap-3">
-            <motion.button
-              whileHover={{ scale: 1.1, x: -2 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => router.push('/messages')}
-              className="rounded-xl p-2 transition-all duration-200 hover:bg-metallic-blue-100 dark:hover:bg-metallic-blue-900/30"
-            >
-              <ArrowLeft size={20} className="text-metallic-blue-600 dark:text-metallic-blue-400" />
-            </motion.button>
-
-            <motion.div
-              initial={{ scale: 0, rotate: -180 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-              className="relative"
-            >
-              {avatarUrl ? (
-                <div className="relative">
-                  <div className="absolute inset-0 rounded-full bg-gradient-to-br from-metallic-blue-400 to-metallic-blue-600 opacity-0 blur-md transition-opacity hover:opacity-50" />
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={avatarUrl}
-                    alt={displayName}
-                    className="relative h-11 w-11 rounded-full border-2 border-white object-cover shadow-md dark:border-zinc-800"
-                  />
-                </div>
-              ) : (
-                <div className="relative">
-                  <div className="absolute inset-0 rounded-full bg-gradient-to-br from-metallic-blue-400 to-metallic-blue-600 opacity-20 blur-md" />
-                  <div className="relative flex h-11 w-11 items-center justify-center rounded-full border-2 border-white bg-gradient-to-br from-metallic-blue-500 to-metallic-blue-600 text-base font-bold text-white shadow-lg dark:border-zinc-800">
-                    {displayName.charAt(0).toUpperCase()}
-                  </div>
-                </div>
-              )}
-            </motion.div>
-
-            <div>
-              <h2 className="bg-gradient-to-r from-zinc-900 to-zinc-700 bg-clip-text text-base font-bold text-transparent dark:from-zinc-100 dark:to-zinc-300">
-                {displayName}
-              </h2>
-              {conversation?.is_typing ? (
-                <motion.div
-                  initial={{ opacity: 0, y: -5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center gap-1.5 text-xs font-medium text-metallic-blue-500"
-                >
-                  <div className="flex gap-0.5">
-                    <motion.div
-                      className="h-1.5 w-1.5 rounded-full bg-metallic-blue-500"
-                      animate={{ opacity: [0.3, 1, 0.3], y: [0, -3, 0] }}
-                      transition={{ duration: 0.8, repeat: Infinity, delay: 0 }}
-                    />
-                    <motion.div
-                      className="h-1.5 w-1.5 rounded-full bg-metallic-blue-500"
-                      animate={{ opacity: [0.3, 1, 0.3], y: [0, -3, 0] }}
-                      transition={{ duration: 0.8, repeat: Infinity, delay: 0.15 }}
-                    />
-                    <motion.div
-                      className="h-1.5 w-1.5 rounded-full bg-metallic-blue-500"
-                      animate={{ opacity: [0.3, 1, 0.3], y: [0, -3, 0] }}
-                      transition={{ duration: 0.8, repeat: Infinity, delay: 0.3 }}
-                    />
-                  </div>
-                  <span className="italic">typing...</span>
-                </motion.div>
-              ) : (
-                <p className="text-xs text-zinc-500">@{otherUser?.username || username}</p>
-              )}
-            </div>
-          </div>
-
-          <motion.button
-            whileHover={{ scale: 1.1, rotate: 90 }}
-            whileTap={{ scale: 0.95 }}
-            className="rounded-xl p-2 transition-all duration-200 hover:bg-metallic-blue-100 dark:hover:bg-metallic-blue-900/30"
-          >
-            <MoreVertical
-              size={20}
-              className="text-metallic-blue-600 dark:text-metallic-blue-400"
-            />
-          </motion.button>
-        </div>
-      </div>
+      {/* Spacer for fixed header */}
+      <div style={{ height: `calc(56px + ${top}px)` }} className="flex-shrink-0" />
 
       {/* Messages - with dynamic bottom padding for fixed input */}
       <div

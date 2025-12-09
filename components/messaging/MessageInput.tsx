@@ -337,7 +337,7 @@ export function MessageInput({
       className="fixed inset-x-0 border-t border-metallic-blue-200/30 bg-gradient-to-b from-white/95 to-white backdrop-blur-xl dark:border-metallic-blue-800/30 dark:from-zinc-900/95 dark:to-zinc-900"
       style={{
         bottom: bottomOffset,
-        zIndex: Z_INDEX.MODAL, // Higher than bottom nav to ensure input is always visible
+        zIndex: Z_INDEX.MESSAGE_INPUT, // Above audio player, below modals
         paddingBottom: isKeyboardOpen ? 0 : safeAreaBottom,
         transition: `bottom ${KEYBOARD.ANIMATION_DURATION}ms ease-out`,
       }}
