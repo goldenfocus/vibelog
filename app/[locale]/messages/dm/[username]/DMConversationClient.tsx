@@ -9,7 +9,6 @@ import { MessageBubble } from '@/components/messaging/MessageBubble';
 import { MessageInput } from '@/components/messaging/MessageInput';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useKeyboardHeight } from '@/hooks/useKeyboardHeight';
-import { useSafeArea } from '@/hooks/useSafeArea';
 import { MESSAGE_INPUT } from '@/lib/mobile/constants';
 import { createClient } from '@/lib/supabase';
 import type { ConversationWithDetails, MessageWithDetails } from '@/types/messaging';
@@ -40,7 +39,6 @@ export default function DMConversationClient() {
 
   // Keyboard detection for auto-scroll on keyboard open
   const { isKeyboardOpen } = useKeyboardHeight();
-  const { bottom: safeAreaBottom } = useSafeArea();
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -439,8 +437,8 @@ export default function DMConversationClient() {
   const avatarUrl = otherUser?.avatar_url;
 
   // Calculate bottom padding for messages container
-  // This ensures messages aren't hidden behind the fixed input
-  const messagesBottomPadding = inputHeight + safeAreaBottom + 16;
+  // inputHeight already includes keyboard/safe-area offset from MessageInput
+  const messagesBottomPadding = inputHeight + 16;
 
   return (
     <div className="flex h-dvh flex-col bg-gradient-to-br from-zinc-50 via-metallic-blue-50/20 to-zinc-100 pt-16 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
