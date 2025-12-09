@@ -404,6 +404,115 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
+// Build sameAs array for Person schema (social profile links)
+function buildSameAsLinks(profile: ProfileData): string[] {
+  const links: string[] = [];
+  if (profile.twitter_url) links.push(profile.twitter_url);
+  if (profile.instagram_url) links.push(profile.instagram_url);
+  if (profile.youtube_url) links.push(profile.youtube_url);
+  if (profile.tiktok_url) links.push(profile.tiktok_url);
+  if (profile.linkedin_url) links.push(profile.linkedin_url);
+  if (profile.github_url) links.push(profile.github_url);
+  if (profile.facebook_url) links.push(profile.facebook_url);
+  if (profile.threads_url) links.push(profile.threads_url);
+  if (profile.website_url) links.push(profile.website_url);
+  return links;
+}
+
+// Generate ProfilePage + Person JSON-LD schema
+function generateProfileSchema(profile: ProfileData, vibelogCount: number) {
+  const profileUrl = `https://vibelog.io/${profile.username}`;
+  const displayName = profile.display_name || profile.username;
+  const sameAsLinks = buildSameAsLinks(profile);
+
+  // Person schema as the main entity
+  const personSchema: Record<string, unknown> = {
+    '@type': 'Person',
+    '@id': `${profileUrl}#person`,
+    name: displayName,
+    alternateName: `@${profile.username}`,
+    url: profileUrl,
+  };
+
+  // Add optional fields only if they exist
+  if (profile.bio) {
+    personSchema.description = profile.bio;
+  }
+  if (profile.avatar_url) {
+    personSchema.image = {
+      '@type': 'ImageObject',
+      url: profile.avatar_url,
+      contentUrl: profile.avatar_url,
+    };
+  }
+  if (sameAsLinks.length > 0) {
+    personSchema.sameAs = sameAsLinks;
+  }
+
+  // Interaction statistics
+  const interactionStatistics: Record<string, unknown>[] = [];
+
+  // Subscriber/follower count (for channels)
+  if (profile.is_channel && profile.subscriber_count !== undefined) {
+    interactionStatistics.push({
+      '@type': 'InteractionCounter',
+      interactionType: { '@type': 'FollowAction' },
+      userInteractionCount: profile.subscriber_count,
+    });
+  }
+
+  // Total views as interaction stat
+  if (profile.total_views > 0) {
+    interactionStatistics.push({
+      '@type': 'InteractionCounter',
+      interactionType: { '@type': 'WatchAction' },
+      userInteractionCount: profile.total_views,
+    });
+  }
+
+  if (interactionStatistics.length > 0) {
+    personSchema.interactionStatistic = interactionStatistics;
+  }
+
+  // ProfilePage schema wrapping the Person
+  const profilePageSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'ProfilePage',
+    '@id': profileUrl,
+    url: profileUrl,
+    name: `${displayName} (@${profile.username}) - VibeLog`,
+    description: profile.bio || `${displayName}'s voice-to-text vibelogs on VibeLog`,
+    dateCreated: profile.created_at,
+    mainEntity: personSchema,
+    // CollectionPage aspect - the profile contains a collection of vibelogs
+    mainContentOfPage: {
+      '@type': 'ItemList',
+      numberOfItems: vibelogCount,
+      itemListElement: {
+        '@type': 'ListItem',
+        item: {
+          '@type': 'Blog',
+          name: `${displayName}'s Vibelogs`,
+          description: `Voice-to-text blog posts by ${displayName}`,
+          author: { '@id': `${profileUrl}#person` },
+        },
+      },
+    },
+    // Publisher info
+    publisher: {
+      '@type': 'Organization',
+      name: 'VibeLog',
+      url: 'https://vibelog.io',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://vibelog.io/og-image.png',
+      },
+    },
+  };
+
+  return profilePageSchema;
+}
+
 export default async function ProfilePage({ params }: PageProps) {
   const { username } = await params;
   const profile = await getProfile(username);
@@ -417,8 +526,17 @@ export default async function ProfilePage({ params }: PageProps) {
   const displayName = profile.display_name || profile.username;
   const joinDate = formatMonthYear(profile.created_at);
 
+  // Generate structured data for SEO
+  const profileSchema = generateProfileSchema(profile, vibelogs.length);
+
   return (
     <div className="min-h-screen bg-background">
+      {/* JSON-LD Structured Data for SEO */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(profileSchema) }}
+      />
+
       <Navigation />
 
       <main>
