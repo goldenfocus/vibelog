@@ -51,7 +51,8 @@ export default function TextCommentInput({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Failed to submit comment');
+        console.error('Comment creation failed:', error);
+        throw new Error(error.details || error.error || 'Failed to create comment');
       }
 
       toast.success(t('toasts.comments.live'));
