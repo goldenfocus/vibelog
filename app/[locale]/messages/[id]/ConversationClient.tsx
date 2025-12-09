@@ -42,7 +42,6 @@ export default function ConversationClient() {
 
   // Keyboard detection for auto-scroll on keyboard open
   const { isKeyboardOpen } = useKeyboardHeight();
-  const { bottom: safeAreaBottom } = useSafeArea();
 
   // Hide bottom nav on mount, show on unmount (immersive mode)
   useEffect(() => {
@@ -460,8 +459,8 @@ export default function ConversationClient() {
   const avatarUrl = isGroup ? conversation?.avatar_url : otherUser?.avatar_url;
 
   // Calculate bottom padding for messages container
-  // This ensures messages aren't hidden behind the fixed input
-  const messagesBottomPadding = inputHeight + safeAreaBottom + 16;
+  // inputHeight already includes keyboard/safe-area offset from MessageInput
+  const messagesBottomPadding = inputHeight + 16;
 
   return (
     <div className="flex h-dvh flex-col bg-gradient-to-br from-zinc-50 via-metallic-blue-50/20 to-zinc-100 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">

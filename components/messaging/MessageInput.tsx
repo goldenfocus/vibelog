@@ -64,11 +64,13 @@ export function MessageInput({
     return MESSAGE_INPUT.BASE_HEIGHT;
   }, [inputMode, replyTo]);
 
-  // Report height changes to parent
+  // Report height changes to parent (includes keyboard offset for proper message padding)
   useEffect(() => {
     const height = getCurrentHeight();
-    onHeightChange?.(height + safeAreaBottom);
-  }, [getCurrentHeight, onHeightChange, safeAreaBottom]);
+    // When keyboard is open, add keyboardHeight so parent knows total space needed
+    const totalOffset = isKeyboardOpen ? keyboardHeight : safeAreaBottom;
+    onHeightChange?.(height + totalOffset);
+  }, [getCurrentHeight, onHeightChange, safeAreaBottom, isKeyboardOpen, keyboardHeight]);
 
   // Audio engine integration
   const {
