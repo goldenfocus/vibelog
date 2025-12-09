@@ -8,6 +8,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { MessageBubble } from '@/components/messaging/MessageBubble';
 import { MessageInput } from '@/components/messaging/MessageInput';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useBottomNav } from '@/components/providers/BottomNavProvider';
 import { useKeyboardHeight } from '@/hooks/useKeyboardHeight';
 import { MESSAGE_INPUT } from '@/lib/mobile/constants';
 import { createClient } from '@/lib/supabase';
@@ -18,6 +19,7 @@ export default function DMConversationClient() {
   const username = params?.username as string;
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  const { hide: hideBottomNav, show: showBottomNav } = useBottomNav();
   const [conversation, setConversation] = useState<ConversationWithDetails | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<MessageWithDetails[]>([]);
@@ -39,6 +41,12 @@ export default function DMConversationClient() {
 
   // Keyboard detection for auto-scroll on keyboard open
   const { isKeyboardOpen } = useKeyboardHeight();
+
+  // Hide bottom nav on mount, show on unmount (immersive messaging mode)
+  useEffect(() => {
+    hideBottomNav();
+    return () => showBottomNav();
+  }, [hideBottomNav, showBottomNav]);
 
   // Redirect if not authenticated
   useEffect(() => {
