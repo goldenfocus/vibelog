@@ -365,6 +365,12 @@ export default function DMConversationClient() {
       }
 
       setReplyTo(null);
+
+      // Force scroll to bottom after sending - ensures timestamp is visible
+      // Small delay to allow the message to be added to DOM
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
     } catch (err) {
       console.error('Error sending message:', err);
       setError('Failed to send message. Please try again.');

@@ -1,6 +1,6 @@
 'use client';
 
-import { Home, Mic, TrendingUp, MessageCircle, User } from 'lucide-react';
+import { Home, Mic, TrendingUp, MessageCircle, Users } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -18,6 +18,7 @@ interface NavItem {
   href: string;
   icon: React.ElementType;
   label: string;
+  ariaLabel: string; // For accessibility when label is empty
   activePattern?: RegExp;
   badge?: number;
 }
@@ -88,41 +89,48 @@ export function BottomNav({ className, alwaysVisible = false, onCreateClick }: B
   const shouldShow = !isHiddenByContext && (alwaysVisible || isVisible);
 
   // Base nav items for all users
+  // Only Create button has a label - others are icon-only for visual peace
   const baseNavItems: NavItem[] = [
     {
       href: `/${locale}`,
       icon: Home,
-      label: 'Home',
+      label: '', // No label - icon only
+      ariaLabel: 'Home',
       activePattern: new RegExp(`^/${locale}/?$`),
     },
     {
       href: `/${locale}/community`,
       icon: TrendingUp,
-      label: 'Discover',
+      label: '', // No label - icon only
+      ariaLabel: 'Discover',
       activePattern: new RegExp(`^/${locale}/community`),
     },
     {
       href: onCreateClick ? '#' : `/${locale}`,
       icon: Mic,
-      label: 'Create',
+      label: 'Create', // Only Create keeps its label
+      ariaLabel: 'Create',
       // Create button is special - always highlighted
     },
   ];
 
   // Additional items only for logged-in users
+  // Order: People (community/followers), then Messages (far right for thumb access)
   const authNavItems: NavItem[] = [
+    {
+      href: `/${locale}/dashboard`,
+      icon: Users,
+      label: '', // No label - icon only
+      ariaLabel: 'People',
+      activePattern: new RegExp(`^/${locale}/dashboard`),
+    },
     {
       href: `/${locale}/messages`,
       icon: MessageCircle,
-      label: 'Messages',
+      label: '', // No label - icon only
+      ariaLabel: 'Messages',
       activePattern: new RegExp(`^/${locale}/messages`),
       badge: unreadMessages,
-    },
-    {
-      href: `/${locale}/dashboard`,
-      icon: User,
-      label: 'You',
-      activePattern: new RegExp(`^/${locale}/dashboard`),
     },
   ];
 
@@ -197,7 +205,7 @@ export function BottomNav({ className, alwaysVisible = false, onCreateClick }: B
             // Create button with custom onClick
             return (
               <button
-                key={item.label}
+                key={item.ariaLabel}
                 onClick={() => handleNavClick(item)}
                 className={cn(
                   // Base button styles
@@ -209,7 +217,7 @@ export function BottomNav({ className, alwaysVisible = false, onCreateClick }: B
                   // Create button is special (highlighted)
                   isCreateButton && 'text-primary'
                 )}
-                aria-label={item.label}
+                aria-label={item.ariaLabel}
               >
                 {/* Icon container */}
                 <div
@@ -240,19 +248,21 @@ export function BottomNav({ className, alwaysVisible = false, onCreateClick }: B
                   )}
                 </div>
 
-                {/* Label */}
-                <span
-                  className={cn(
-                    'text-xs font-medium transition-colors',
-                    isCreateButton
-                      ? 'text-primary'
-                      : active
-                        ? 'text-foreground'
-                        : 'text-muted-foreground'
-                  )}
-                >
-                  {item.label}
-                </span>
+                {/* Label - only show if label exists */}
+                {item.label && (
+                  <span
+                    className={cn(
+                      'text-xs font-medium transition-colors',
+                      isCreateButton
+                        ? 'text-primary'
+                        : active
+                          ? 'text-foreground'
+                          : 'text-muted-foreground'
+                    )}
+                  >
+                    {item.label}
+                  </span>
+                )}
 
                 {/* Active indicator dot */}
                 {active && !isCreateButton && (
@@ -278,7 +288,7 @@ export function BottomNav({ className, alwaysVisible = false, onCreateClick }: B
                 // Create button is special (highlighted)
                 isCreateButton && 'text-primary'
               )}
-              aria-label={item.label}
+              aria-label={item.ariaLabel}
               aria-current={active ? 'page' : undefined}
             >
               {/* Icon container */}
@@ -310,19 +320,21 @@ export function BottomNav({ className, alwaysVisible = false, onCreateClick }: B
                 )}
               </div>
 
-              {/* Label */}
-              <span
-                className={cn(
-                  'text-xs font-medium transition-colors',
-                  isCreateButton
-                    ? 'text-primary'
-                    : active
-                      ? 'text-foreground'
-                      : 'text-muted-foreground'
-                )}
-              >
-                {item.label}
-              </span>
+              {/* Label - only show if label exists */}
+              {item.label && (
+                <span
+                  className={cn(
+                    'text-xs font-medium transition-colors',
+                    isCreateButton
+                      ? 'text-primary'
+                      : active
+                        ? 'text-foreground'
+                        : 'text-muted-foreground'
+                  )}
+                >
+                  {item.label}
+                </span>
+              )}
 
               {/* Active indicator dot */}
               {active && !isCreateButton && (
