@@ -135,7 +135,7 @@ export default async function PublicVibelogPage({ params }: PageProps) {
       <Navigation />
 
       {/* Main content */}
-      <main className="container mx-auto max-w-3xl px-4 pb-12 pt-24">
+      <main className="container mx-auto max-w-3xl px-4 pb-28 pt-24 lg:pb-12">
         {/* Cover Image */}
         {coverImage && (
           <div className="relative mb-8 aspect-video overflow-hidden rounded-2xl border border-border/10 shadow-lg">

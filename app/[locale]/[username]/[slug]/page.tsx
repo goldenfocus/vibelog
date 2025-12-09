@@ -401,7 +401,7 @@ export default async function VibelogPage({ params }: PageProps) {
       />
       <Navigation />
 
-      <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-4xl px-4 pb-28 pt-8 sm:px-6 lg:px-8 lg:pb-8">
         {/* Vibelog article */}
         <article className="rounded-2xl border border-border/50 bg-gradient-to-br from-background via-background to-background/50 p-6 sm:p-8">
           {/* Video Player (if available) - shown above cover image with autoplay */}
