@@ -472,6 +472,7 @@ export default function DMConversationClient() {
         title={displayName}
         subtitle={conversation?.is_typing ? 'typing...' : `@${otherUser?.username || username}`}
         isTyping={conversation?.is_typing}
+        profileUrl={`/@${otherUser?.username || username}`}
       />
 
       {/* Spacer for fixed header */}
