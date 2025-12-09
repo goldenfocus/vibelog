@@ -2,10 +2,9 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Pause } from 'lucide-react';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 
 import { cn } from '@/lib/utils';
-import { useAudioPlayerStore } from '@/state/audio-player-store';
 import { formatAudioDuration } from '@/types/messaging';
 
 interface VoiceMessagePlayerProps {
@@ -23,56 +22,84 @@ export function VoiceMessagePlayer({
 }: VoiceMessagePlayerProps) {
   const [showTranscript, setShowTranscript] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState<1 | 1.5 | 2>(1);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [totalDuration, setTotalDuration] = useState(duration / 1000); // Convert ms to seconds
   const audioRef = useRef<HTMLAudioElement>(null);
 
-  const {
-    currentTrack,
-    isPlaying: globalIsPlaying,
-    currentTime: globalCurrentTime,
-    duration: globalDuration,
-    play: globalPlay,
-    pause: globalPause,
-    setTrack,
-  } = useAudioPlayerStore();
-
-  // Check if this is the current track
-  const isCurrentTrack = currentTrack?.url === audioUrl;
-  const isPlaying = isCurrentTrack && globalIsPlaying;
-  const currentTime = isCurrentTrack ? globalCurrentTime : 0;
-  const totalDuration = isCurrentTrack ? globalDuration : duration / 1000; // Convert ms to seconds
-
-  // Handle play/pause
-  const handlePlayPause = async () => {
-    if (isCurrentTrack) {
-      if (globalIsPlaying) {
-        globalPause();
-      } else {
-        await globalPlay();
-      }
-    } else {
-      // Set this as the current track
-      setTrack({
-        id: `voice-message-${audioUrl}`,
-        url: audioUrl,
-        title: 'Voice Message',
-        type: 'url',
-      });
-      // Play will happen automatically via the global audio player
+  // Update time as audio plays
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) {
+      return;
     }
-  };
+
+    const handleTimeUpdate = () => {
+      setCurrentTime(audio.currentTime);
+    };
+
+    const handleLoadedMetadata = () => {
+      // Use actual duration from audio if available, otherwise use prop
+      if (audio.duration && isFinite(audio.duration)) {
+        setTotalDuration(audio.duration);
+      }
+    };
+
+    const handleEnded = () => {
+      setIsPlaying(false);
+      setCurrentTime(0);
+    };
+
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
+
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('play', handlePlay);
+    audio.addEventListener('pause', handlePause);
+
+    return () => {
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('play', handlePlay);
+      audio.removeEventListener('pause', handlePause);
+    };
+  }, []);
+
+  // Apply playback speed when it changes
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.playbackRate = playbackSpeed;
+    }
+  }, [playbackSpeed]);
+
+  // Handle play/pause - uses local audio element directly
+  const handlePlayPause = useCallback(async () => {
+    const audio = audioRef.current;
+    if (!audio) {
+      return;
+    }
+
+    if (isPlaying) {
+      audio.pause();
+    } else {
+      // Reset to start if at the end
+      if (audio.currentTime >= audio.duration - 0.1) {
+        audio.currentTime = 0;
+      }
+      await audio.play();
+    }
+  }, [isPlaying]);
 
   // Cycle playback speed
-  const handleSpeedChange = () => {
+  const handleSpeedChange = useCallback(() => {
     const speeds: Array<1 | 1.5 | 2> = [1, 1.5, 2];
     const currentIndex = speeds.indexOf(playbackSpeed);
     const nextSpeed = speeds[(currentIndex + 1) % speeds.length];
     setPlaybackSpeed(nextSpeed);
-
-    // Apply speed to audio element if playing
-    if (audioRef.current) {
-      audioRef.current.playbackRate = nextSpeed;
-    }
-  };
+  }, [playbackSpeed]);
 
   // Calculate progress percentage
   const progress = totalDuration > 0 ? (currentTime / totalDuration) * 100 : 0;
