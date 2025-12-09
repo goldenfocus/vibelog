@@ -52,12 +52,24 @@ export function VoiceMessagePlayer({
 
     const handlePlay = () => setIsPlaying(true);
     const handlePause = () => setIsPlaying(false);
+    const handleError = (e: Event) => {
+      console.error('Audio error:', e, 'Audio URL:', audioUrl);
+      setIsPlaying(false);
+    };
+    const handleCanPlay = () => {
+      // Audio is ready to play
+      if (audio.duration && isFinite(audio.duration)) {
+        setTotalDuration(audio.duration);
+      }
+    };
 
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('play', handlePlay);
     audio.addEventListener('pause', handlePause);
+    audio.addEventListener('error', handleError);
+    audio.addEventListener('canplay', handleCanPlay);
 
     return () => {
       audio.removeEventListener('timeupdate', handleTimeUpdate);
@@ -65,8 +77,10 @@ export function VoiceMessagePlayer({
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('play', handlePlay);
       audio.removeEventListener('pause', handlePause);
+      audio.removeEventListener('error', handleError);
+      audio.removeEventListener('canplay', handleCanPlay);
     };
-  }, []);
+  }, [audioUrl]);
 
   // Apply playback speed when it changes
   useEffect(() => {
@@ -82,14 +96,26 @@ export function VoiceMessagePlayer({
       return;
     }
 
-    if (isPlaying) {
-      audio.pause();
-    } else {
-      // Reset to start if at the end
-      if (audio.currentTime >= audio.duration - 0.1) {
-        audio.currentTime = 0;
+    try {
+      if (isPlaying) {
+        audio.pause();
+      } else {
+        // Reset to start if at the end (handle NaN/Infinity duration gracefully)
+        const dur = audio.duration;
+        if (isFinite(dur) && dur > 0 && audio.currentTime >= dur - 0.1) {
+          audio.currentTime = 0;
+        }
+        await audio.play();
       }
-      await audio.play();
+    } catch (error) {
+      console.error('Audio playback error:', error);
+      // Try to recover by resetting
+      audio.currentTime = 0;
+      try {
+        await audio.play();
+      } catch (retryError) {
+        console.error('Audio retry failed:', retryError);
+      }
     }
   }, [isPlaying]);
 
@@ -281,8 +307,14 @@ export function VoiceMessagePlayer({
         </div>
       )}
 
-      {/* Hidden audio element for playback control */}
-      <audio ref={audioRef} src={audioUrl} preload="metadata" style={{ display: 'none' }} />
+      {/* Audio element for playback control - crossOrigin for Supabase storage */}
+      <audio
+        ref={audioRef}
+        src={audioUrl}
+        preload="auto"
+        crossOrigin="anonymous"
+        style={{ display: 'none' }}
+      />
     </div>
   );
 }
