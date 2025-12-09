@@ -46,6 +46,7 @@ export function MessageInput({
   const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
   const [previewCurrentTime, setPreviewCurrentTime] = useState(0);
   const [previewDuration, setPreviewDuration] = useState(0);
+  const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
 
   // Keyboard detection for mobile
   const { isKeyboardOpen, keyboardHeight } = useKeyboardHeight();
@@ -175,10 +176,25 @@ export function MessageInput({
     };
   }, [isRecording]);
 
+  // Create stable blob URL when audioBlob changes
+  useEffect(() => {
+    if (audioBlob) {
+      const url = URL.createObjectURL(audioBlob);
+      setPreviewBlobUrl(url);
+      // Clean up on unmount or when audioBlob changes
+      return () => {
+        URL.revokeObjectURL(url);
+        setPreviewBlobUrl(null);
+      };
+    } else {
+      setPreviewBlobUrl(null);
+    }
+  }, [audioBlob]);
+
   // Voice preview audio event handlers
   useEffect(() => {
     const audio = previewAudioRef.current;
-    if (!audio) {
+    if (!audio || !previewBlobUrl) {
       return;
     }
 
@@ -208,7 +224,7 @@ export function MessageInput({
       audio.removeEventListener('play', handlePlay);
       audio.removeEventListener('pause', handlePause);
     };
-  }, [audioBlob]); // Re-run when audioBlob changes
+  }, [previewBlobUrl]); // Re-run when blob URL changes
 
   // Handle preview play/pause
   const handlePreviewPlayPause = useCallback(async () => {
@@ -327,6 +343,10 @@ export function MessageInput({
 
   // Cancel recording
   const handleCancelRecording = () => {
+    // Stop any playing preview
+    if (previewAudioRef.current) {
+      previewAudioRef.current.pause();
+    }
     handleStopVoiceRecording();
     resetAudioEngine();
     setInputMode('text');
@@ -646,24 +666,33 @@ export function MessageInput({
                   <Waveform levels={audioLevels} isActive variant="recording" />
                 </motion.div>
               </div>
-            ) : audioBlob ? (
+            ) : audioBlob && previewBlobUrl ? (
               /* Preview UI - shown after recording stops, before sending */
-              <div className="relative overflow-hidden rounded-3xl border-2 border-emerald-200/50 bg-gradient-to-br from-white/90 to-emerald-50/30 p-4 shadow-lg backdrop-blur-sm dark:border-emerald-800/50 dark:from-zinc-800/90 dark:to-emerald-950/30">
-                {/* Hidden audio element for preview playback */}
-                <audio
-                  ref={previewAudioRef}
-                  src={URL.createObjectURL(audioBlob)}
-                  preload="metadata"
+              <div className="dark:to-metallic-blue-950/30 relative overflow-hidden rounded-3xl border-2 border-metallic-blue-200/50 bg-gradient-to-br from-white/90 to-metallic-blue-50/30 p-4 shadow-lg backdrop-blur-sm dark:border-metallic-blue-800/50 dark:from-zinc-800/90">
+                {/* Animated gradient background - same as recording for consistency */}
+                <motion.div
+                  animate={{
+                    background: [
+                      'linear-gradient(45deg, rgba(30, 116, 255, 0.1) 0%, transparent 100%)',
+                      'linear-gradient(225deg, rgba(30, 116, 255, 0.1) 0%, transparent 100%)',
+                      'linear-gradient(45deg, rgba(30, 116, 255, 0.1) 0%, transparent 100%)',
+                    ],
+                  }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                  className="absolute inset-0"
                 />
 
+                {/* Hidden audio element for preview playback - uses stable blob URL */}
+                <audio ref={previewAudioRef} src={previewBlobUrl} preload="metadata" />
+
                 {/* Preview player row */}
-                <div className="flex items-center gap-3">
-                  {/* Play/Pause button */}
+                <div className="relative flex items-center gap-3">
+                  {/* Play/Pause button - metallic blue theme */}
                   <motion.button
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={handlePreviewPlayPause}
-                    className="group relative flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/40 transition-all hover:shadow-xl hover:shadow-emerald-500/50"
+                    className="group relative flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-metallic-blue-500 to-metallic-blue-600 text-white shadow-lg shadow-metallic-blue-500/40 transition-all hover:shadow-xl hover:shadow-metallic-blue-500/50"
                   >
                     {isPreviewPlaying && (
                       <motion.div
@@ -685,12 +714,12 @@ export function MessageInput({
                     </motion.div>
                   </motion.button>
 
-                  {/* Progress bar */}
+                  {/* Progress bar - metallic blue theme */}
                   <div className="min-w-0 flex-1">
                     <div className="relative flex h-10 items-center">
-                      <div className="absolute inset-0 h-1.5 rounded-full bg-emerald-500/20 shadow-inner" />
+                      <div className="absolute inset-0 h-1.5 rounded-full bg-metallic-blue-500/20 shadow-inner" />
                       <motion.div
-                        className="absolute h-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400 shadow-sm shadow-emerald-500/50"
+                        className="absolute h-1.5 rounded-full bg-gradient-to-r from-metallic-blue-500 to-metallic-blue-400 shadow-sm shadow-metallic-blue-500/50"
                         initial={{ width: 0 }}
                         animate={{
                           width: `${previewDuration > 0 ? (previewCurrentTime / previewDuration) * 100 : 0}%`,
@@ -704,14 +733,14 @@ export function MessageInput({
                             left: `${previewDuration > 0 ? (previewCurrentTime / previewDuration) * 100 : 0}%`,
                           }}
                         >
-                          <div className="h-4 w-4 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50" />
+                          <div className="h-4 w-4 rounded-full bg-metallic-blue-500 shadow-lg shadow-metallic-blue-500/50" />
                         </motion.div>
                       )}
                     </div>
                   </div>
 
-                  {/* Duration */}
-                  <div className="min-w-[45px] text-right font-mono text-xs font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+                  {/* Duration - metallic blue theme */}
+                  <div className="min-w-[45px] text-right font-mono text-xs font-semibold tabular-nums text-metallic-blue-600 dark:text-metallic-blue-400">
                     {isPreviewPlaying || previewCurrentTime > 0
                       ? formatTime(Math.floor(previewCurrentTime))
                       : formatTime(Math.floor(previewDuration || duration))}
@@ -719,12 +748,15 @@ export function MessageInput({
                 </div>
 
                 {/* Action buttons */}
-                <div className="mt-4 flex items-center justify-end gap-2">
+                <div className="relative mt-4 flex items-center justify-end gap-2">
                   {/* Re-record button */}
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => {
+                      if (previewAudioRef.current) {
+                        previewAudioRef.current.pause();
+                      }
                       resetAudioEngine();
                       setPreviewCurrentTime(0);
                       setPreviewDuration(0);
@@ -747,24 +779,42 @@ export function MessageInput({
                     Cancel
                   </motion.button>
 
-                  {/* Send button */}
+                  {/* Send button - vibelog style with electric accent */}
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={handleSendVoiceMessage}
                     disabled={isSending}
-                    className="group relative overflow-hidden rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 px-5 py-2 text-sm font-semibold text-white shadow-md shadow-emerald-500/40 transition-all hover:shadow-lg hover:shadow-emerald-500/50 disabled:opacity-50"
+                    className="group relative overflow-hidden rounded-full bg-gradient-to-br from-metallic-blue-500 to-metallic-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-md shadow-metallic-blue-500/40 transition-all hover:shadow-lg hover:shadow-metallic-blue-500/50 disabled:cursor-not-allowed"
                   >
+                    {/* Shimmer effect */}
                     <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+
                     <span className="relative flex items-center gap-2">
                       {isSending ? (
                         <>
-                          <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                            className="h-3 w-3 rounded-full border-2 border-white/30 border-t-white"
-                          />
-                          Sending...
+                          {/* Vibelog-style sending animation */}
+                          <motion.div className="relative">
+                            {/* Pulsing ring */}
+                            <motion.div
+                              animate={{ scale: [1, 1.5, 1], opacity: [0.8, 0, 0.8] }}
+                              transition={{ duration: 1, repeat: Infinity }}
+                              className="absolute inset-0 h-4 w-4 rounded-full bg-white/30"
+                            />
+                            {/* Spinning mic icon */}
+                            <motion.div
+                              animate={{ rotate: 360 }}
+                              transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+                            >
+                              <Mic size={16} />
+                            </motion.div>
+                          </motion.div>
+                          <motion.span
+                            animate={{ opacity: [1, 0.5, 1] }}
+                            transition={{ duration: 1, repeat: Infinity }}
+                          >
+                            Sending vibe...
+                          </motion.span>
                         </>
                       ) : (
                         <>
