@@ -127,23 +127,30 @@ export async function POST(request: NextRequest) {
     const commentType = videoUrl ? 'Video' : audioUrl ? 'Voice' : 'Text';
 
     // Create comment - RLS policy allows authenticated users to insert their own comments
+    // Build insert object, only including fields with values to let DB defaults work
+    const insertData: Record<string, unknown> = {
+      vibelog_id: vibelogId,
+      user_id: user.id,
+      slug,
+      seo_title: `${commentType} Vibe`,
+      seo_description: content?.slice(0, 160) || `${commentType} comment on VibeLog`,
+    };
+
+    // Only set optional fields if they have values
+    if (content) insertData.content = content;
+    if (audioUrl) insertData.audio_url = audioUrl;
+    if (videoUrl) insertData.video_url = videoUrl;
+    if (voiceId) insertData.voice_id = voiceId;
+    if (parentCommentId) insertData.parent_comment_id = parentCommentId;
+    if (attachments && attachments.length > 0) {
+      insertData.attachments = attachments;
+      insertData.attachment_count = attachments.length;
+      insertData.has_rich_media = true;
+    }
+
     const { data: comment, error: commentError } = await supabase
       .from('comments')
-      .insert({
-        vibelog_id: vibelogId,
-        user_id: user.id,
-        content: content || null,
-        audio_url: audioUrl || null,
-        video_url: videoUrl || null,
-        voice_id: voiceId || null,
-        parent_comment_id: parentCommentId || null,
-        attachments: attachments && attachments.length > 0 ? attachments : null,
-        attachment_count: attachments ? attachments.length : 0,
-        has_rich_media: attachments && attachments.length > 0,
-        slug,
-        seo_title: `${commentType} Vibe`,
-        seo_description: content?.slice(0, 160) || `${commentType} comment on VibeLog`,
-      })
+      .insert(insertData)
       .select(
         `
         id,
