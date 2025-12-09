@@ -29,6 +29,22 @@ const UpdatePreferencesSchema = z.object({
   vibelog_like_email: z.boolean().optional(),
   vibelog_like_push: z.boolean().optional(),
 
+  mini_vibelog_promoted_in_app: z.boolean().optional(),
+  mini_vibelog_promoted_email: z.boolean().optional(),
+  mini_vibelog_promoted_push: z.boolean().optional(),
+
+  comment_promoted_in_app: z.boolean().optional(),
+  comment_promoted_email: z.boolean().optional(),
+  comment_promoted_push: z.boolean().optional(),
+
+  system_in_app: z.boolean().optional(),
+  system_email: z.boolean().optional(),
+  system_push: z.boolean().optional(),
+
+  vibe_thread_message_in_app: z.boolean().optional(),
+  vibe_thread_message_email: z.boolean().optional(),
+  vibe_thread_message_push: z.boolean().optional(),
+
   group_similar: z.boolean().optional(),
   group_window_minutes: z.number().min(5).max(1440).optional(),
 

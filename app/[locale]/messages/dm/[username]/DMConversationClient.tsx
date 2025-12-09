@@ -97,6 +97,12 @@ export default function DMConversationClient() {
           is_typing: false,
         });
         setConversationId(conv.id);
+
+        // Mark any message notifications for this conversation as read
+        // This clears the notification badge instantly when opening the conversation
+        fetch(`/api/conversations/${conv.id}/mark-notifications-read`, {
+          method: 'POST',
+        }).catch(err => console.error('Failed to mark notifications as read:', err));
       } catch (err) {
         console.error('Error fetching conversation:', err);
         setError('Failed to load conversation');

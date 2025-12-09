@@ -50,6 +50,7 @@ export async function GET() {
       mini_vibelog_promoted: 0,
       comment_promoted: 0,
       system: 0,
+      vibe_thread_message: 0,
     };
 
     if (typeData) {

@@ -85,6 +85,12 @@ export default function ConversationClient() {
         }
 
         setConversation(conv);
+
+        // Mark any message notifications for this conversation as read
+        // This clears the notification badge instantly when opening the conversation
+        fetch(`/api/conversations/${conversationId}/mark-notifications-read`, {
+          method: 'POST',
+        }).catch(err => console.error('Failed to mark notifications as read:', err));
       } catch (err) {
         console.error('Error fetching conversation:', err);
         // Redirect on any error

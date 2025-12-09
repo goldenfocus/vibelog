@@ -1,6 +1,6 @@
 'use client';
 
-import { Bell, Heart, MessageCircle, Sparkles, TrendingUp, User } from 'lucide-react';
+import { Bell, Heart, Mail, MessageCircle, Sparkles, TrendingUp, User } from 'lucide-react';
 import Link from 'next/link';
 import { memo } from 'react';
 
@@ -25,6 +25,7 @@ const typeIcons: Record<NotificationType, React.ComponentType<{ className?: stri
   mini_vibelog_promoted: Sparkles,
   comment_promoted: TrendingUp,
   system: Bell,
+  vibe_thread_message: Mail,
 };
 
 // Map notification types to their corresponding colors
@@ -38,6 +39,7 @@ const typeColors: Record<NotificationType, string> = {
   mini_vibelog_promoted: 'text-electric',
   comment_promoted: 'text-electric',
   system: 'text-gray-500',
+  vibe_thread_message: 'text-green-500',
 };
 
 /**
@@ -47,11 +49,7 @@ const typeColors: Record<NotificationType, string> = {
  * - Wrapped in React.memo with custom comparator to prevent unnecessary re-renders
  * - Only re-renders when notification.id or notification.is_read changes
  */
-function NotificationItemComponent({
-  notification,
-  onClick,
-  onMarkRead,
-}: NotificationItemProps) {
+function NotificationItemComponent({ notification, onClick, onMarkRead }: NotificationItemProps) {
   const { t } = useI18n();
 
   const Icon = typeIcons[notification.type];

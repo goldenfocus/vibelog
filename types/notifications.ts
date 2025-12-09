@@ -18,7 +18,8 @@ export type NotificationType =
   | 'vibelog_like' // Someone liked your vibelog
   | 'mini_vibelog_promoted' // Your comment was promoted to mini-vibelog
   | 'comment_promoted' // Your comment was promoted to full vibelog
-  | 'system'; // System notifications
+  | 'system' // System notifications
+  | 'vibe_thread_message'; // New message in a conversation
 
 export type NotificationPriority = 'low' | 'medium' | 'high' | 'urgent';
 
@@ -102,6 +103,7 @@ export interface NotificationPreferences {
   mini_vibelog_promoted: NotificationChannel;
   comment_promoted: NotificationChannel;
   system: NotificationChannel;
+  vibe_thread_message: NotificationChannel;
 
   // Grouping settings
   group_similar: boolean; // Group similar notifications
@@ -305,6 +307,10 @@ export interface NotificationPreferencesRow {
   system_in_app: boolean;
   system_email: boolean;
   system_push: boolean;
+
+  vibe_thread_message_in_app: boolean;
+  vibe_thread_message_email: boolean;
+  vibe_thread_message_push: boolean;
 
   group_similar: boolean;
   group_window_minutes: number;
