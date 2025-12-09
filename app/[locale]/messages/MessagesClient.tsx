@@ -2,10 +2,10 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { MessageCircle, Plus } from 'lucide-react';
+import { Check, CheckCheck, MessageCircle, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 
 import Navigation from '@/components/Navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -38,7 +38,16 @@ export default function MessagesClient() {
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  const conversations: ConversationWithDetails[] = conversationsData?.conversations || [];
+  const rawConversations: ConversationWithDetails[] = conversationsData?.conversations || [];
+
+  // Sort conversations by last_message_at (most recent first)
+  const conversations = useMemo(() => {
+    return [...rawConversations].sort((a, b) => {
+      const timeA = a.last_message_at ? new Date(a.last_message_at).getTime() : 0;
+      const timeB = b.last_message_at ? new Date(b.last_message_at).getTime() : 0;
+      return timeB - timeA; // Most recent first
+    });
+  }, [rawConversations]);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -322,19 +331,31 @@ export default function MessagesClient() {
                             <span className="italic">{t('messages.typing')}</span>
                           </div>
                         ) : lastMessage ? (
-                          <p
-                            className={cn(
-                              'truncate text-sm transition-colors',
-                              conversation.unread_count > 0
-                                ? 'font-medium text-foreground/90'
-                                : 'text-muted-foreground group-hover:text-foreground/70'
-                            )}
-                          >
+                          <div className="flex items-center gap-1.5">
+                            {/* Read status checkmarks for messages sent by current user */}
                             {lastMessage.sender_id === user.id && (
-                              <span className="text-metallic-blue-500">{t('messages.you')} </span>
+                              <span className="flex-shrink-0">
+                                {lastMessage.read_by_count > 0 ? (
+                                  <CheckCheck className="h-4 w-4 text-metallic-blue-500" />
+                                ) : (
+                                  <Check className="h-4 w-4 text-muted-foreground" />
+                                )}
+                              </span>
                             )}
-                            {getMessagePreview(lastMessage, 60)}
-                          </p>
+                            <p
+                              className={cn(
+                                'truncate text-sm transition-colors',
+                                conversation.unread_count > 0
+                                  ? 'font-medium text-foreground/90'
+                                  : 'text-muted-foreground group-hover:text-foreground/70'
+                              )}
+                            >
+                              {lastMessage.sender_id === user.id && (
+                                <span className="text-metallic-blue-500">{t('messages.you')} </span>
+                              )}
+                              {getMessagePreview(lastMessage, 60)}
+                            </p>
+                          </div>
                         ) : (
                           <p className="text-sm italic text-muted-foreground">
                             {t('messages.noMessagesInThread')}
