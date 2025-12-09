@@ -424,12 +424,89 @@ gh pr merge --squash --auto  # Auto-merge when checks pass
 
 The `--auto` flag queues merge for when checks pass. Don't wait manually.
 
-## Database
+## Database Migrations (CRITICAL)
 
-- Migrations: `supabase/migrations/` (numbered, immutable once pushed)
-- Never edit pushed migrations - create new ones
-- Apply: `pnpm db:migrate`
-- Check: `pnpm db:status`
+### Naming Convention (MANDATORY)
+
+All migrations MUST use timestamp format: `YYYYMMDDHHMMSS_descriptive_name.sql`
+
+```bash
+# ✅ CORRECT
+20251207143000_add_user_preferences.sql
+20251207150000_create_notifications_table.sql
+
+# ❌ WRONG - Never use these formats
+001_add_something.sql      # Numeric prefix
+023a_fix_something.sql     # Letter suffixes
+add_feature.sql            # No timestamp
+```
+
+**Why this matters:** Supabase sorts migrations lexicographically. Numeric prefixes like `023a_` sort AFTER `20251118...` causing ordering chaos and failed deployments.
+
+### Creating New Migrations
+
+```bash
+# Generate timestamp for new migration
+date +%Y%m%d%H%M%S  # e.g., 20251207143052
+
+# Create migration file
+touch supabase/migrations/20251207143052_your_migration_name.sql
+```
+
+### Migration Rules
+
+1. **Immutable once pushed** - Never edit migrations already in production
+2. **Idempotent when possible** - Use `IF NOT EXISTS`, `IF EXISTS` guards
+3. **One concern per migration** - Don't mix unrelated schema changes
+4. **Test locally first** - Run `supabase db reset` to verify migration chain
+
+### Keeping Local and DB in Sync
+
+**Check sync status:**
+
+```bash
+# List local migrations
+ls supabase/migrations/
+
+# List DB migrations (via Supabase MCP)
+# Use mcp__supabase__list_migrations tool
+```
+
+**If migrations are out of sync:**
+
+1. **Local has files not in DB** - Migrations weren't applied. Either:
+   - Apply them: `pnpm db:migrate`
+   - Or if already applied manually, record them:
+     ```sql
+     INSERT INTO supabase_migrations.schema_migrations (version, name, statements)
+     VALUES ('20251207143000', 'migration_name', '{}');
+     ```
+
+2. **DB has versions not matching local** - Versions were renamed. Update DB:
+
+   ```sql
+   UPDATE supabase_migrations.schema_migrations
+   SET version = 'new_version' WHERE version = 'old_version';
+   ```
+
+3. **Complete mismatch** - Run cleanup script: `bash scripts/cleanup-migrations.sh`
+
+### Migration Troubleshooting
+
+| Symptom                     | Cause                         | Fix                                  |
+| --------------------------- | ----------------------------- | ------------------------------------ |
+| "Migration already applied" | Version exists in DB          | Check if changes are actually needed |
+| "Migration not found"       | Local file missing or renamed | Verify filenames match DB versions   |
+| Migrations run out of order | Mixed naming conventions      | Rename all to timestamp format       |
+| Schema drift                | Manual DB changes             | Create migration to match or revert  |
+
+### Commands
+
+```bash
+pnpm db:migrate    # Push pending migrations to Supabase
+pnpm db:status     # Check migration status
+supabase db reset  # Reset local DB and replay all migrations
+```
 
 ## Key Files (Read These First)
 
@@ -446,6 +523,7 @@ The `--auto` flag queues merge for when checks pass. Don't wait manually.
 | `components/MicRecorder.tsx`                 | Audio capture UI                             |
 | `scripts/embed-all-docs.js`                  | CLI tool for batch documentation embedding   |
 | `scripts/migrate-cover-paths.ts`             | Migrate covers to standardized paths         |
+| `scripts/cleanup-migrations.sh`              | Fix migration naming/sync issues             |
 
 ## Environment Variables
 
