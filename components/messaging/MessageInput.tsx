@@ -786,25 +786,6 @@ export function MessageInput({
           </motion.div>
         ) : null}
       </div>
-
-      {/* Premium Instructions */}
-      {inputMode === 'text' && !textContent && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="flex items-center justify-center gap-2 px-4 pb-3 text-xs font-medium"
-        >
-          <span className="text-zinc-400 dark:text-zinc-500">Hold</span>
-          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-metallic-blue-500 to-metallic-blue-600">
-            <Mic size={12} className="text-white" />
-          </div>
-          <span className="text-zinc-400 dark:text-zinc-500">for voice,</span>
-          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-purple-600">
-            <Video size={12} className="text-white" />
-          </div>
-          <span className="text-zinc-400 dark:text-zinc-500">for video, or type</span>
-        </motion.div>
-      )}
     </div>
   );
 }
