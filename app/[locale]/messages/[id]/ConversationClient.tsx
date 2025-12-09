@@ -464,7 +464,8 @@ export default function ConversationClient() {
 
   // Calculate bottom padding for messages container
   // inputHeight already includes keyboard/safe-area offset from MessageInput
-  const messagesBottomPadding = inputHeight + 16;
+  // Using 32px buffer to ensure content isn't cut off during initial render race condition
+  const messagesBottomPadding = inputHeight + 32;
 
   return (
     <div className="flex h-dvh flex-col bg-gradient-to-br from-zinc-50 via-metallic-blue-50/20 to-zinc-100 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
