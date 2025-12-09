@@ -246,9 +246,16 @@ export default function VoiceCommentInput({
       });
 
       if (!commentResponse.ok) {
-        const error = await commentResponse.json();
-        console.error('Comment creation failed:', error);
-        throw new Error(error.details || error.error || 'Failed to submit comment');
+        const errorText = await commentResponse.text();
+        console.error('Comment creation failed - raw response:', errorText);
+        try {
+          const error = JSON.parse(errorText);
+          console.error('Comment creation failed - parsed:', error);
+          throw new Error(error.details || error.error || 'Failed to submit comment');
+        } catch (parseError) {
+          console.error('Failed to parse error response:', parseError);
+          throw new Error(`Server error: ${commentResponse.status}`);
+        }
       }
 
       toast.success(t('toasts.comments.voiceLive'));
