@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Mic, X, Video, RotateCcw } from 'lucide-react';
+import { Send, Mic, X, Video, RotateCcw, Play, Pause } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 
 import Waveform from '@/components/mic/Waveform';
@@ -40,6 +40,12 @@ export function MessageInput({
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isTypingRef = useRef(false);
+
+  // Voice preview playback state
+  const previewAudioRef = useRef<HTMLAudioElement>(null);
+  const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
+  const [previewCurrentTime, setPreviewCurrentTime] = useState(0);
+  const [previewDuration, setPreviewDuration] = useState(0);
 
   // Keyboard detection for mobile
   const { isKeyboardOpen, keyboardHeight } = useKeyboardHeight();
@@ -169,6 +175,58 @@ export function MessageInput({
     };
   }, [isRecording]);
 
+  // Voice preview audio event handlers
+  useEffect(() => {
+    const audio = previewAudioRef.current;
+    if (!audio) {
+      return;
+    }
+
+    const handleTimeUpdate = () => setPreviewCurrentTime(audio.currentTime);
+    const handleLoadedMetadata = () => {
+      if (audio.duration && isFinite(audio.duration)) {
+        setPreviewDuration(audio.duration);
+      }
+    };
+    const handleEnded = () => {
+      setIsPreviewPlaying(false);
+      setPreviewCurrentTime(0);
+    };
+    const handlePlay = () => setIsPreviewPlaying(true);
+    const handlePause = () => setIsPreviewPlaying(false);
+
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('play', handlePlay);
+    audio.addEventListener('pause', handlePause);
+
+    return () => {
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('play', handlePlay);
+      audio.removeEventListener('pause', handlePause);
+    };
+  }, [audioBlob]); // Re-run when audioBlob changes
+
+  // Handle preview play/pause
+  const handlePreviewPlayPause = useCallback(async () => {
+    const audio = previewAudioRef.current;
+    if (!audio) {
+      return;
+    }
+
+    if (isPreviewPlaying) {
+      audio.pause();
+    } else {
+      if (audio.currentTime >= audio.duration - 0.1) {
+        audio.currentTime = 0;
+      }
+      await audio.play();
+    }
+  }, [isPreviewPlaying]);
+
   // Format recording time (MM:SS)
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -272,6 +330,10 @@ export function MessageInput({
     handleStopVoiceRecording();
     resetAudioEngine();
     setInputMode('text');
+    // Reset preview state
+    setIsPreviewPlaying(false);
+    setPreviewCurrentTime(0);
+    setPreviewDuration(0);
   };
 
   // Start video recording mode
@@ -517,40 +579,164 @@ export function MessageInput({
             animate={{ opacity: 1, y: 0 }}
             className="space-y-4"
           >
-            {/* Premium Recording UI */}
-            <div className="dark:to-metallic-blue-950/30 relative overflow-hidden rounded-3xl border-2 border-metallic-blue-200/50 bg-gradient-to-br from-white/90 to-metallic-blue-50/30 p-4 shadow-lg backdrop-blur-sm dark:border-metallic-blue-800/50 dark:from-zinc-800/90">
-              {/* Animated gradient background */}
-              <motion.div
-                animate={{
-                  background: [
-                    'linear-gradient(45deg, rgba(30, 116, 255, 0.1) 0%, transparent 100%)',
-                    'linear-gradient(225deg, rgba(30, 116, 255, 0.1) 0%, transparent 100%)',
-                    'linear-gradient(45deg, rgba(30, 116, 255, 0.1) 0%, transparent 100%)',
-                  ],
-                }}
-                transition={{ duration: 3, repeat: Infinity }}
-                className="absolute inset-0"
-              />
+            {isRecording ? (
+              /* Recording UI - shown while actively recording */
+              <div className="dark:to-metallic-blue-950/30 relative overflow-hidden rounded-3xl border-2 border-metallic-blue-200/50 bg-gradient-to-br from-white/90 to-metallic-blue-50/30 p-4 shadow-lg backdrop-blur-sm dark:border-metallic-blue-800/50 dark:from-zinc-800/90">
+                {/* Animated gradient background */}
+                <motion.div
+                  animate={{
+                    background: [
+                      'linear-gradient(45deg, rgba(30, 116, 255, 0.1) 0%, transparent 100%)',
+                      'linear-gradient(225deg, rgba(30, 116, 255, 0.1) 0%, transparent 100%)',
+                      'linear-gradient(45deg, rgba(30, 116, 255, 0.1) 0%, transparent 100%)',
+                    ],
+                  }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                  className="absolute inset-0"
+                />
 
-              <div className="relative flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  {/* Pulsing red dot */}
-                  <motion.div
-                    animate={{ scale: [1, 1.3, 1], opacity: [1, 0.6, 1] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                    className="relative flex h-4 w-4 items-center justify-center"
-                  >
-                    <div className="absolute inset-0 rounded-full bg-red-500 opacity-30 blur-sm" />
-                    <div className="relative h-3 w-3 rounded-full bg-red-500" />
-                  </motion.div>
+                <div className="relative flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {/* Pulsing red dot */}
+                    <motion.div
+                      animate={{ scale: [1, 1.3, 1], opacity: [1, 0.6, 1] }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                      className="relative flex h-4 w-4 items-center justify-center"
+                    >
+                      <div className="absolute inset-0 rounded-full bg-red-500 opacity-30 blur-sm" />
+                      <div className="relative h-3 w-3 rounded-full bg-red-500" />
+                    </motion.div>
 
-                  {/* Timer with gradient */}
-                  <span className="bg-gradient-to-r from-metallic-blue-600 to-metallic-blue-500 bg-clip-text font-mono text-lg font-bold text-transparent dark:from-metallic-blue-400 dark:to-metallic-blue-300">
-                    {formatTime(recordingTime)}
-                  </span>
+                    {/* Timer with gradient */}
+                    <span className="bg-gradient-to-r from-metallic-blue-600 to-metallic-blue-500 bg-clip-text font-mono text-lg font-bold text-transparent dark:from-metallic-blue-400 dark:to-metallic-blue-300">
+                      {formatTime(recordingTime)}
+                    </span>
+                  </div>
+
+                  <div className="flex gap-2">
+                    {/* Cancel button */}
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={handleCancelRecording}
+                      className="rounded-full px-4 py-2 text-sm font-semibold text-zinc-600 transition-all hover:bg-zinc-200/50 dark:text-zinc-400 dark:hover:bg-zinc-700/50"
+                    >
+                      Cancel
+                    </motion.button>
+
+                    {/* Stop button */}
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={handleStopVoiceRecording}
+                      className="group relative overflow-hidden rounded-full bg-gradient-to-br from-metallic-blue-500 to-metallic-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-md shadow-metallic-blue-500/40 transition-all hover:shadow-lg hover:shadow-metallic-blue-500/50"
+                    >
+                      <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+                      <span className="relative">Stop</span>
+                    </motion.button>
+                  </div>
                 </div>
 
-                <div className="flex gap-2">
+                {/* Waveform during recording */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="mt-4 overflow-hidden rounded-2xl border border-metallic-blue-200/30 bg-white/50 p-3 backdrop-blur-sm dark:border-metallic-blue-800/30 dark:bg-zinc-900/50"
+                >
+                  <Waveform levels={audioLevels} isActive variant="recording" />
+                </motion.div>
+              </div>
+            ) : audioBlob ? (
+              /* Preview UI - shown after recording stops, before sending */
+              <div className="relative overflow-hidden rounded-3xl border-2 border-emerald-200/50 bg-gradient-to-br from-white/90 to-emerald-50/30 p-4 shadow-lg backdrop-blur-sm dark:border-emerald-800/50 dark:from-zinc-800/90 dark:to-emerald-950/30">
+                {/* Hidden audio element for preview playback */}
+                <audio
+                  ref={previewAudioRef}
+                  src={URL.createObjectURL(audioBlob)}
+                  preload="metadata"
+                />
+
+                {/* Preview player row */}
+                <div className="flex items-center gap-3">
+                  {/* Play/Pause button */}
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handlePreviewPlayPause}
+                    className="group relative flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/40 transition-all hover:shadow-xl hover:shadow-emerald-500/50"
+                  >
+                    {isPreviewPlaying && (
+                      <motion.div
+                        animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                        className="absolute inset-0 rounded-full bg-white"
+                      />
+                    )}
+                    <motion.div
+                      animate={isPreviewPlaying ? { scale: [1, 1.1, 1] } : {}}
+                      transition={{ duration: 0.8, repeat: Infinity }}
+                      className="relative"
+                    >
+                      {isPreviewPlaying ? (
+                        <Pause size={20} fill="currentColor" />
+                      ) : (
+                        <Play size={20} fill="currentColor" className="ml-0.5" />
+                      )}
+                    </motion.div>
+                  </motion.button>
+
+                  {/* Progress bar */}
+                  <div className="min-w-0 flex-1">
+                    <div className="relative flex h-10 items-center">
+                      <div className="absolute inset-0 h-1.5 rounded-full bg-emerald-500/20 shadow-inner" />
+                      <motion.div
+                        className="absolute h-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400 shadow-sm shadow-emerald-500/50"
+                        initial={{ width: 0 }}
+                        animate={{
+                          width: `${previewDuration > 0 ? (previewCurrentTime / previewDuration) * 100 : 0}%`,
+                        }}
+                        transition={{ duration: 0.1 }}
+                      />
+                      {previewCurrentTime > 0 && (
+                        <motion.div
+                          className="absolute -ml-2"
+                          style={{
+                            left: `${previewDuration > 0 ? (previewCurrentTime / previewDuration) * 100 : 0}%`,
+                          }}
+                        >
+                          <div className="h-4 w-4 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50" />
+                        </motion.div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Duration */}
+                  <div className="min-w-[45px] text-right font-mono text-xs font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+                    {isPreviewPlaying || previewCurrentTime > 0
+                      ? formatTime(Math.floor(previewCurrentTime))
+                      : formatTime(Math.floor(previewDuration || duration))}
+                  </div>
+                </div>
+
+                {/* Action buttons */}
+                <div className="mt-4 flex items-center justify-end gap-2">
+                  {/* Re-record button */}
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      resetAudioEngine();
+                      setPreviewCurrentTime(0);
+                      setPreviewDuration(0);
+                      setIsPreviewPlaying(false);
+                      handleStartVoiceRecording();
+                    }}
+                    className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-zinc-600 transition-all hover:bg-zinc-200/50 dark:text-zinc-400 dark:hover:bg-zinc-700/50"
+                  >
+                    <RotateCcw size={16} />
+                    Re-record
+                  </motion.button>
+
                   {/* Cancel button */}
                   <motion.button
                     whileHover={{ scale: 1.05 }}
@@ -561,56 +747,36 @@ export function MessageInput({
                     Cancel
                   </motion.button>
 
-                  {/* Stop & Send buttons */}
-                  {isRecording ? (
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={handleStopVoiceRecording}
-                      className="group relative overflow-hidden rounded-full bg-gradient-to-br from-metallic-blue-500 to-metallic-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-md shadow-metallic-blue-500/40 transition-all hover:shadow-lg hover:shadow-metallic-blue-500/50"
-                    >
-                      <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
-                      <span className="relative">Stop</span>
-                    </motion.button>
-                  ) : audioBlob ? (
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={handleSendVoiceMessage}
-                      disabled={isSending}
-                      className="group relative overflow-hidden rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 px-5 py-2 text-sm font-semibold text-white shadow-md shadow-emerald-500/40 transition-all hover:shadow-lg hover:shadow-emerald-500/50 disabled:opacity-50"
-                    >
-                      <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
-                      <span className="relative flex items-center gap-2">
-                        {isSending ? (
-                          <>
-                            <motion.div
-                              animate={{ rotate: 360 }}
-                              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                              className="h-3 w-3 rounded-full border-2 border-white/30 border-t-white"
-                            />
-                            Sending...
-                          </>
-                        ) : (
-                          'Send'
-                        )}
-                      </span>
-                    </motion.button>
-                  ) : null}
+                  {/* Send button */}
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleSendVoiceMessage}
+                    disabled={isSending}
+                    className="group relative overflow-hidden rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 px-5 py-2 text-sm font-semibold text-white shadow-md shadow-emerald-500/40 transition-all hover:shadow-lg hover:shadow-emerald-500/50 disabled:opacity-50"
+                  >
+                    <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+                    <span className="relative flex items-center gap-2">
+                      {isSending ? (
+                        <>
+                          <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                            className="h-3 w-3 rounded-full border-2 border-white/30 border-t-white"
+                          />
+                          Sending...
+                        </>
+                      ) : (
+                        <>
+                          <Send size={16} />
+                          Send
+                        </>
+                      )}
+                    </span>
+                  </motion.button>
                 </div>
               </div>
-            </div>
-
-            {/* Premium Waveform with glass container */}
-            {isRecording && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="overflow-hidden rounded-3xl border border-metallic-blue-200/30 bg-white/50 p-4 backdrop-blur-sm dark:border-metallic-blue-800/30 dark:bg-zinc-900/50"
-              >
-                <Waveform levels={audioLevels} isActive variant="recording" />
-              </motion.div>
-            )}
+            ) : null}
           </motion.div>
         ) : inputMode === 'video' ? (
           <motion.div
