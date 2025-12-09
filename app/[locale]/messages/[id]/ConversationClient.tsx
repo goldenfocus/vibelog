@@ -9,7 +9,9 @@ import { MessageInput } from '@/components/messaging/MessageInput';
 import { ImmersiveHeader } from '@/components/mobile/ImmersiveHeader';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useBottomNav } from '@/components/providers/BottomNavProvider';
+import { useKeyboardHeight } from '@/hooks/useKeyboardHeight';
 import { useSafeArea } from '@/hooks/useSafeArea';
+import { MESSAGE_INPUT } from '@/lib/mobile/constants';
 import { createClient } from '@/lib/supabase';
 import type { ConversationWithDetails, MessageWithDetails } from '@/types/messaging';
 
@@ -36,6 +38,11 @@ export default function ConversationClient() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+  const [inputHeight, setInputHeight] = useState<number>(MESSAGE_INPUT.BASE_HEIGHT);
+
+  // Keyboard detection for auto-scroll on keyboard open
+  const { isKeyboardOpen } = useKeyboardHeight();
+  const { bottom: safeAreaBottom } = useSafeArea();
 
   // Hide bottom nav on mount, show on unmount (immersive mode)
   useEffect(() => {
@@ -146,6 +153,17 @@ export default function ConversationClient() {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages, shouldAutoScroll]);
+
+  // Auto-scroll when keyboard opens (ensures latest messages stay visible)
+  useEffect(() => {
+    if (isKeyboardOpen && shouldAutoScroll && messagesEndRef.current) {
+      // Small delay to let keyboard animation complete
+      const timeout = setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+      return () => clearTimeout(timeout);
+    }
+  }, [isKeyboardOpen, shouldAutoScroll]);
 
   // Track which messages we've already marked as read to avoid duplicate API calls
   const markedAsReadRef = useRef<Set<string>>(new Set());
@@ -441,8 +459,12 @@ export default function ConversationClient() {
     : otherUser?.display_name || 'Unknown User';
   const avatarUrl = isGroup ? conversation?.avatar_url : otherUser?.avatar_url;
 
+  // Calculate bottom padding for messages container
+  // This ensures messages aren't hidden behind the fixed input
+  const messagesBottomPadding = inputHeight + safeAreaBottom + 16;
+
   return (
-    <div className="flex h-screen flex-col bg-gradient-to-br from-zinc-50 via-metallic-blue-50/20 to-zinc-100 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
+    <div className="flex h-dvh flex-col bg-gradient-to-br from-zinc-50 via-metallic-blue-50/20 to-zinc-100 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
       {/* Immersive Header - compact, no bottom nav on this page */}
       <ImmersiveHeader
         onBack={() => router.push('/messages')}
@@ -455,11 +477,12 @@ export default function ConversationClient() {
       {/* Spacer for fixed header */}
       <div style={{ height: `calc(56px + ${top}px)` }} className="flex-shrink-0" />
 
-      {/* Messages */}
+      {/* Messages - with dynamic bottom padding for fixed input */}
       <div
         ref={messagesContainerRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto px-4 py-6 sm:px-6"
+        className="flex-1 overflow-y-auto px-4 pt-6 sm:px-6"
+        style={{ paddingBottom: messagesBottomPadding }}
       >
         {loading ? (
           <div className="flex items-center justify-center py-20">
@@ -563,16 +586,15 @@ export default function ConversationClient() {
         )}
       </div>
 
-      {/* Message Input */}
-      <div className="flex-shrink-0">
-        <MessageInput
-          conversationId={conversationId}
-          onSendMessage={handleSendMessage}
-          onTyping={handleTyping}
-          replyTo={replyTo}
-          onClearReply={() => setReplyTo(null)}
-        />
-      </div>
+      {/* Message Input - now fixed positioned, no wrapper needed */}
+      <MessageInput
+        conversationId={conversationId}
+        onSendMessage={handleSendMessage}
+        onTyping={handleTyping}
+        replyTo={replyTo}
+        onClearReply={() => setReplyTo(null)}
+        onHeightChange={setInputHeight}
+      />
     </div>
   );
 }

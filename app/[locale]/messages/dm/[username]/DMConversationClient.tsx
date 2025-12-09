@@ -8,6 +8,9 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { MessageBubble } from '@/components/messaging/MessageBubble';
 import { MessageInput } from '@/components/messaging/MessageInput';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useKeyboardHeight } from '@/hooks/useKeyboardHeight';
+import { useSafeArea } from '@/hooks/useSafeArea';
+import { MESSAGE_INPUT } from '@/lib/mobile/constants';
 import { createClient } from '@/lib/supabase';
 import type { ConversationWithDetails, MessageWithDetails } from '@/types/messaging';
 
@@ -33,6 +36,11 @@ export default function DMConversationClient() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+  const [inputHeight, setInputHeight] = useState<number>(MESSAGE_INPUT.BASE_HEIGHT);
+
+  // Keyboard detection for auto-scroll on keyboard open
+  const { isKeyboardOpen } = useKeyboardHeight();
+  const { bottom: safeAreaBottom } = useSafeArea();
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -147,6 +155,17 @@ export default function DMConversationClient() {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages, shouldAutoScroll]);
+
+  // Auto-scroll when keyboard opens (ensures latest messages stay visible)
+  useEffect(() => {
+    if (isKeyboardOpen && shouldAutoScroll && messagesEndRef.current) {
+      // Small delay to let keyboard animation complete
+      const timeout = setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+      return () => clearTimeout(timeout);
+    }
+  }, [isKeyboardOpen, shouldAutoScroll]);
 
   // Track which messages we've already marked as read to avoid duplicate API calls
   const markedAsReadRef = useRef<Set<string>>(new Set());
@@ -419,8 +438,12 @@ export default function DMConversationClient() {
   const displayName = otherUser?.display_name || otherUser?.username || 'Unknown User';
   const avatarUrl = otherUser?.avatar_url;
 
+  // Calculate bottom padding for messages container
+  // This ensures messages aren't hidden behind the fixed input
+  const messagesBottomPadding = inputHeight + safeAreaBottom + 16;
+
   return (
-    <div className="flex h-screen flex-col bg-gradient-to-br from-zinc-50 via-metallic-blue-50/20 to-zinc-100 pt-16 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
+    <div className="flex h-dvh flex-col bg-gradient-to-br from-zinc-50 via-metallic-blue-50/20 to-zinc-100 pt-16 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
       {/* Premium Header with Gradient */}
       <div className="relative flex-shrink-0 border-b border-metallic-blue-200/20 bg-white/80 backdrop-blur-xl dark:border-metallic-blue-800/20 dark:bg-zinc-900/80">
         <div className="absolute inset-0 bg-gradient-to-r from-metallic-blue-500/5 via-transparent to-metallic-blue-500/5" />
@@ -510,11 +533,12 @@ export default function DMConversationClient() {
         </div>
       </div>
 
-      {/* Messages */}
+      {/* Messages - with dynamic bottom padding for fixed input */}
       <div
         ref={messagesContainerRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto px-4 py-6 sm:px-6"
+        className="flex-1 overflow-y-auto px-4 pt-6 sm:px-6"
+        style={{ paddingBottom: messagesBottomPadding }}
       >
         {loading ? (
           <div className="flex items-center justify-center py-20">
@@ -611,18 +635,17 @@ export default function DMConversationClient() {
         )}
       </div>
 
-      {/* Message Input */}
-      <div className="flex-shrink-0">
-        {conversationId && (
-          <MessageInput
-            conversationId={conversationId}
-            onSendMessage={handleSendMessage}
-            onTyping={handleTyping}
-            replyTo={replyTo}
-            onClearReply={() => setReplyTo(null)}
-          />
-        )}
-      </div>
+      {/* Message Input - now fixed positioned, no wrapper needed */}
+      {conversationId && (
+        <MessageInput
+          conversationId={conversationId}
+          onSendMessage={handleSendMessage}
+          onTyping={handleTyping}
+          replyTo={replyTo}
+          onClearReply={() => setReplyTo(null)}
+          onHeightChange={setInputHeight}
+        />
+      )}
     </div>
   );
 }

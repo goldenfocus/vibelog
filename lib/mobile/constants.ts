@@ -137,6 +137,34 @@ export const AUDIO_PLAYER = {
   FULL_HEIGHT: 400,
 } as const;
 
+// Keyboard Detection (for mobile messaging UX)
+export const KEYBOARD = {
+  // Minimum height difference (px) to consider keyboard "open"
+  // Avoids false positives from browser chrome changes
+  DETECTION_THRESHOLD: 150,
+
+  // Animation duration for input repositioning (ms)
+  ANIMATION_DURATION: 250,
+
+  // Padding between keyboard top and input bottom
+  PADDING_ABOVE_KEYBOARD: 0,
+} as const;
+
+// Message Input Heights (for dynamic padding calculations)
+export const MESSAGE_INPUT = {
+  // Base height - text input only
+  BASE_HEIGHT: 72,
+
+  // With reply indicator showing
+  WITH_REPLY_HEIGHT: 120,
+
+  // Voice recording mode height
+  VOICE_RECORDING_HEIGHT: 180,
+
+  // Video preview mode height
+  VIDEO_PREVIEW_HEIGHT: 400,
+} as const;
+
 // Type exports for type safety
 export type TouchTargetSize = (typeof TOUCH_TARGETS)[keyof typeof TOUCH_TARGETS];
 export type HapticPattern = (typeof HAPTIC_PATTERNS)[keyof typeof HAPTIC_PATTERNS];

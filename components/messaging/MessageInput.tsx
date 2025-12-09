@@ -2,11 +2,14 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Mic, X, Video, RotateCcw } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 
 import Waveform from '@/components/mic/Waveform';
 import { useAudioEngine } from '@/hooks/useAudioEngine';
+import { useKeyboardHeight } from '@/hooks/useKeyboardHeight';
+import { useSafeArea } from '@/hooks/useSafeArea';
 import { useVideoCapture } from '@/hooks/useVideoCapture';
+import { KEYBOARD, MESSAGE_INPUT, Z_INDEX } from '@/lib/mobile/constants';
 import { cn } from '@/lib/utils';
 import { SendMessageRequest } from '@/types/messaging';
 
@@ -16,6 +19,8 @@ interface MessageInputProps {
   onTyping?: (isTyping: boolean) => void;
   replyTo?: { id: string; content: string; sender: string } | null;
   onClearReply?: () => void;
+  /** Callback when input height changes (for parent padding adjustments) */
+  onHeightChange?: (height: number) => void;
 }
 
 export function MessageInput({
@@ -23,6 +28,7 @@ export function MessageInput({
   onTyping,
   replyTo,
   onClearReply,
+  onHeightChange,
 }: MessageInputProps) {
   const [inputMode, setInputMode] = useState<'text' | 'voice' | 'video'>('text');
   const [textContent, setTextContent] = useState('');
@@ -30,9 +36,39 @@ export function MessageInput({
   const [recordingTime, setRecordingTime] = useState(0);
   const [isSending, setIsSending] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isTypingRef = useRef(false);
+
+  // Keyboard detection for mobile
+  const { isKeyboardOpen, keyboardHeight } = useKeyboardHeight();
+  const { bottom: safeAreaBottom } = useSafeArea();
+
+  // Calculate bottom offset - keyboard takes priority over safe area
+  const bottomOffset = isKeyboardOpen
+    ? keyboardHeight + KEYBOARD.PADDING_ABOVE_KEYBOARD
+    : safeAreaBottom;
+
+  // Calculate current input height for parent padding
+  const getCurrentHeight = useCallback(() => {
+    if (inputMode === 'video') {
+      return MESSAGE_INPUT.VIDEO_PREVIEW_HEIGHT;
+    }
+    if (inputMode === 'voice') {
+      return MESSAGE_INPUT.VOICE_RECORDING_HEIGHT;
+    }
+    if (replyTo) {
+      return MESSAGE_INPUT.WITH_REPLY_HEIGHT;
+    }
+    return MESSAGE_INPUT.BASE_HEIGHT;
+  }, [inputMode, replyTo]);
+
+  // Report height changes to parent
+  useEffect(() => {
+    const height = getCurrentHeight();
+    onHeightChange?.(height + safeAreaBottom);
+  }, [getCurrentHeight, onHeightChange, safeAreaBottom]);
 
   // Audio engine integration
   const {
@@ -294,7 +330,15 @@ export function MessageInput({
   };
 
   return (
-    <div className="border-t border-metallic-blue-200/30 bg-gradient-to-b from-white/95 to-white backdrop-blur-xl dark:border-metallic-blue-800/30 dark:from-zinc-900/95 dark:to-zinc-900">
+    <div
+      ref={containerRef}
+      className="fixed inset-x-0 border-t border-metallic-blue-200/30 bg-gradient-to-b from-white/95 to-white backdrop-blur-xl dark:border-metallic-blue-800/30 dark:from-zinc-900/95 dark:to-zinc-900"
+      style={{
+        bottom: bottomOffset,
+        zIndex: Z_INDEX.BOTTOM_NAV,
+        transition: `bottom ${KEYBOARD.ANIMATION_DURATION}ms ease-out`,
+      }}
+    >
       {/* Premium Reply indicator */}
       <AnimatePresence>
         {replyTo && (

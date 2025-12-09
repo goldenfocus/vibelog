@@ -14,6 +14,7 @@ const inter = Inter({
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  viewportFit: 'cover', // Critical for safe area detection on iOS
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
