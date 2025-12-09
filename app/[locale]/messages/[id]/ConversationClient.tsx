@@ -480,8 +480,15 @@ export default function ConversationClient() {
         onBack={() => router.push('/messages')}
         avatar={avatarUrl}
         title={displayName}
-        subtitle={conversation?.is_typing ? 'typing...' : undefined}
+        subtitle={
+          conversation?.is_typing
+            ? 'typing...'
+            : otherUser?.username
+              ? `@${otherUser.username}`
+              : undefined
+        }
         isTyping={conversation?.is_typing}
+        profileUrl={otherUser?.username ? `/@${otherUser.username}` : undefined}
       />
 
       {/* Spacer for fixed header */}
