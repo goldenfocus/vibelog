@@ -23,6 +23,7 @@ interface Creator {
   total_views: number;
   total_shares: number;
   created_at: string;
+  last_sign_in_at: string | null;
   subscription_tier: string;
   totalLikes?: number; // Total likes from all vibelogs
   vibelogs?: Vibelog[]; // Latest vibelogs for enhanced search
@@ -59,6 +60,7 @@ export default function PeoplePage() {
           total_views,
           total_shares,
           created_at,
+          last_sign_in_at,
           subscription_tier
         `
         )
@@ -248,6 +250,7 @@ export default function PeoplePage() {
                   totalLikes={creator.totalLikes || 0}
                   totalRemixes={0} // TODO: Add remixes when implemented
                   joinedDate={creator.created_at}
+                  lastActivityDate={creator.last_sign_in_at}
                   subscriptionTier={creator.subscription_tier}
                   index={index}
                 />

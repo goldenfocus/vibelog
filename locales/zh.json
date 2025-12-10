@@ -473,6 +473,14 @@
         "days": "{{count}} 天前",
         "months": "{{count}} 个月前",
         "years": "{{count}} 年前"
+      },
+      "lastActive": {
+        "label": "活跃于 {{time}}",
+        "today": "今天",
+        "days": "{{count}} 天前",
+        "weeks": "{{count}} 周前",
+        "months": "{{count}} 个月前",
+        "years": "{{count}} 年前"
       }
     },
     "vibes": {
