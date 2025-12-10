@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 
+import { generateAboutPageSchema } from '@/lib/seo/breadcrumb-schema';
 import { generateCanonicalUrl, generateHreflangLinks, type Locale } from '@/lib/seo/hreflang';
 
 interface AboutLayoutProps {
@@ -45,6 +46,18 @@ export async function generateMetadata({ params }: AboutLayoutProps): Promise<Me
   };
 }
 
-export default function AboutLayout({ children }: AboutLayoutProps) {
-  return children;
+export default async function AboutLayout({ children, params }: AboutLayoutProps) {
+  const { locale } = await params;
+  const aboutSchema = generateAboutPageSchema(locale);
+
+  return (
+    <>
+      {/* AboutPage + BreadcrumbList schema */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(aboutSchema) }}
+      />
+      {children}
+    </>
+  );
 }

@@ -498,15 +498,31 @@ function generateProfileSchema(profile: ProfileData, vibelogCount: number) {
         },
       },
     },
-    // Publisher info
+    // Link to global Organization via @id
     publisher: {
-      '@type': 'Organization',
-      name: 'VibeLog',
-      url: 'https://vibelog.io',
-      logo: {
-        '@type': 'ImageObject',
-        url: 'https://vibelog.io/og-image.png',
-      },
+      '@id': 'https://vibelog.io/#organization',
+    },
+    // Part of the main website
+    isPartOf: {
+      '@id': 'https://vibelog.io/#website',
+    },
+    // Breadcrumb navigation
+    breadcrumb: {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: 'Home',
+          item: 'https://vibelog.io',
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: displayName,
+          item: profileUrl,
+        },
+      ],
     },
   };
 
