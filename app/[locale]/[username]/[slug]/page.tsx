@@ -12,6 +12,10 @@ import VibelogEditButton from '@/components/VibelogEditButton';
 import { formatFullDate } from '@/lib/date-utils';
 import { extractLocaleFromPath, isLocaleSupported } from '@/lib/seo/hreflang';
 import { generateVibelogMetadata } from '@/lib/seo/metadata';
+import {
+  generateVibelogBreadcrumbs,
+  generateVibelogSchema,
+} from '@/lib/seo/vibelog-schema';
 import { createServerSupabaseClient } from '@/lib/supabase';
 import {
   getTranslatedContent,
@@ -598,102 +602,57 @@ export default async function VibelogPage({ params }: PageProps) {
         )}
       </aside>
 
-      {/* Structured data for SEO (JSON-LD) */}
+      {/* Structured data for SEO - Article schema with embedded media
+          See lib/seo/vibelog-schema.ts for schema architecture */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'BlogPosting',
-            headline: displayVibelog.title,
-            image: vibelog.cover_image_url || 'https://vibelog.io/og-image.png',
-            datePublished: vibelog.published_at,
-            dateModified: vibelog.published_at,
-            inLanguage: translatedContent.language,
-            author: {
-              '@type': 'Person',
-              name: vibelog.author.display_name || username,
-              url: `https://vibelog.io/@${vibelog.author.username}`,
-            },
-            publisher: {
-              '@type': 'Organization',
-              name: 'VibeLog',
-              logo: {
-                '@type': 'ImageObject',
-                url: 'https://vibelog.io/logo.png',
+          __html: JSON.stringify(
+            generateVibelogSchema({
+              vibelog: {
+                id: vibelog.id,
+                title: displayVibelog.title,
+                slug: vibelog.slug,
+                content: displayVibelog.content,
+                teaser: displayVibelog.teaser,
+                transcript: vibelog.transcript,
+                audio_url: vibelog.audio_url,
+                ai_audio_url: vibelog.ai_audio_url,
+                video_url: vibelog.video_url,
+                cover_image_url: vibelog.cover_image_url,
+                published_at: vibelog.published_at,
+                created_at: vibelog.created_at,
+                read_time: vibelog.read_time,
+                word_count: vibelog.word_count,
+                tags: vibelog.tags,
+                like_count: vibelog.like_count,
+                share_count: vibelog.share_count,
+                view_count: vibelog.view_count,
+                seo_title: vibelog.seo_title,
+                seo_description: vibelog.seo_description,
               },
-            },
-            description:
-              displayVibelog.teaser ||
-              displayVibelog.content
-                .split('\n\n')
-                .find(p => p.trim() && !p.startsWith('#'))
-                ?.substring(0, 160) ||
-              '',
-            mainEntityOfPage: {
-              '@type': 'WebPage',
-              '@id': `https://vibelog.io/${locale}/@${vibelog.author.username}/${slug}`,
-            },
-            wordCount: vibelog.word_count,
-            keywords: vibelog.tags?.join(', '),
-            // Audio/video metadata if available
-            ...(vibelog.audio_url && {
-              audio: {
-                '@type': 'AudioObject',
-                contentUrl: vibelog.audio_url,
-                name: `Original recording: ${vibelog.title}`,
+              author: {
+                username: vibelog.author.username,
+                display_name: vibelog.author.display_name,
+                avatar_url: vibelog.author.avatar_url,
               },
-            }),
-            ...(vibelog.video_url && {
-              video: {
-                '@type': 'VideoObject',
-                contentUrl: vibelog.video_url,
-                name: `Video: ${vibelog.title}`,
-                thumbnailUrl: vibelog.cover_image_url,
-              },
-            }),
-            // Link to original recording page
-            ...(vibelog.audio_url || vibelog.video_url
-              ? {
-                  hasPart: {
-                    '@type': 'WebPage',
-                    name: 'Original Recording',
-                    url: `https://vibelog.io/@${vibelog.author.username}/${slug}/original`,
-                  },
-                }
-              : {}),
-          }),
+              locale: translatedContent.language,
+            })
+          ),
         }}
       />
 
-      {/* BreadcrumbList for better SEO */}
+      {/* BreadcrumbList for navigation hierarchy */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'BreadcrumbList',
-            itemListElement: [
-              {
-                '@type': 'ListItem',
-                position: 1,
-                name: 'Home',
-                item: 'https://vibelog.io',
-              },
-              {
-                '@type': 'ListItem',
-                position: 2,
-                name: vibelog.author.display_name,
-                item: `https://vibelog.io/@${vibelog.author.username}`,
-              },
-              {
-                '@type': 'ListItem',
-                position: 3,
-                name: vibelog.title,
-                item: `https://vibelog.io/@${vibelog.author.username}/${slug}`,
-              },
-            ],
-          }),
+          __html: JSON.stringify(
+            generateVibelogBreadcrumbs(
+              { title: vibelog.title, slug: vibelog.slug },
+              { username: vibelog.author.username, display_name: vibelog.author.display_name },
+              locale
+            )
+          ),
         }}
       />
     </div>
