@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import Comments from '@/components/comments/Comments';
+import { MusicVibelogPlayer } from '@/components/music';
 import Navigation from '@/components/Navigation';
 import PublicVibelogContent from '@/components/PublicVibelogContent';
 import RelatedVibelogs from '@/components/RelatedVibelogs';
@@ -12,10 +13,7 @@ import VibelogEditButton from '@/components/VibelogEditButton';
 import { formatFullDate } from '@/lib/date-utils';
 import { extractLocaleFromPath, isLocaleSupported } from '@/lib/seo/hreflang';
 import { generateVibelogMetadata } from '@/lib/seo/metadata';
-import {
-  generateVibelogBreadcrumbs,
-  generateVibelogSchema,
-} from '@/lib/seo/vibelog-schema';
+import { generateVibelogBreadcrumbs, generateVibelogSchema } from '@/lib/seo/vibelog-schema';
 import { createServerSupabaseClient } from '@/lib/supabase';
 import {
   getTranslatedContent,
@@ -88,6 +86,7 @@ async function getVibelog(username: string, slug: string) {
         ai_audio_url,
         cover_image_url,
         video_url,
+        media_type,
         created_at,
         published_at,
         view_count,
@@ -267,6 +266,7 @@ async function getVibelog(username: string, slug: string) {
         ai_audio_url,
         cover_image_url,
         video_url,
+        media_type,
         created_at,
         published_at,
         view_count,
@@ -408,33 +408,54 @@ export default async function VibelogPage({ params }: PageProps) {
       <main className="mx-auto max-w-4xl px-4 pb-28 pt-8 sm:px-6 lg:px-8 lg:pb-8">
         {/* Vibelog article */}
         <article className="rounded-2xl border border-border/50 bg-gradient-to-br from-background via-background to-background/50 p-6 sm:p-8">
-          {/* Video Player (if available) - shown above cover image with autoplay */}
-          {vibelog.video_url && (
-            <div className="mb-8 overflow-hidden rounded-xl">
-              <video
-                controls
-                playsInline
-                className="w-full rounded-lg"
-                preload="metadata"
-                poster={vibelog.cover_image_url || undefined}
-              >
-                <source src={vibelog.video_url} type="video/webm" />
-                <source src={vibelog.video_url} type="video/mp4" />
-                Your browser does not support the video element.
-              </video>
-            </div>
-          )}
-
-          {/* Cover Image (only if no video) */}
-          {!vibelog.video_url && vibelog.cover_image_url && (
-            <div className="mb-8 overflow-hidden rounded-xl">
-              <img
-                src={vibelog.cover_image_url}
-                alt={displayVibelog.title}
-                className="h-auto w-full object-cover"
+          {/* Immersive Music Player (for music vibelogs) */}
+          {(vibelog.media_type === 'music' || vibelog.media_type === 'music_video') && (
+            <div className="mb-8">
+              <MusicVibelogPlayer
+                title={displayVibelog.title}
+                audioUrl={vibelog.audio_url}
+                videoUrl={vibelog.video_url}
+                coverImageUrl={vibelog.cover_image_url}
+                mediaType={vibelog.media_type}
+                content={displayVibelog.content}
+                transcript={vibelog.transcript}
+                authorName={vibelog.author.display_name}
               />
             </div>
           )}
+
+          {/* Video Player (if available, for non-music vibelogs) - shown above cover image with autoplay */}
+          {vibelog.video_url &&
+            vibelog.media_type !== 'music' &&
+            vibelog.media_type !== 'music_video' && (
+              <div className="mb-8 overflow-hidden rounded-xl">
+                <video
+                  controls
+                  playsInline
+                  className="w-full rounded-lg"
+                  preload="metadata"
+                  poster={vibelog.cover_image_url || undefined}
+                >
+                  <source src={vibelog.video_url} type="video/webm" />
+                  <source src={vibelog.video_url} type="video/mp4" />
+                  Your browser does not support the video element.
+                </video>
+              </div>
+            )}
+
+          {/* Cover Image (only if no video and not a music vibelog) */}
+          {!vibelog.video_url &&
+            vibelog.cover_image_url &&
+            vibelog.media_type !== 'music' &&
+            vibelog.media_type !== 'music_video' && (
+              <div className="mb-8 overflow-hidden rounded-xl">
+                <img
+                  src={vibelog.cover_image_url}
+                  alt={displayVibelog.title}
+                  className="h-auto w-full object-cover"
+                />
+              </div>
+            )}
 
           {/* Title */}
           <h1 className="mb-6 bg-gradient-electric bg-clip-text text-3xl font-bold leading-tight text-transparent sm:text-4xl lg:text-5xl">

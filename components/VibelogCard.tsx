@@ -1,6 +1,6 @@
 'use client';
 
-import { Clock, User } from 'lucide-react';
+import { Clock, User, Music } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { memo, useEffect, useMemo, useState } from 'react';
@@ -31,6 +31,7 @@ interface Vibelog {
   cover_image_url: string | null;
   audio_url?: string | null; // Original audio recording
   video_url?: string | null; // User-captured or uploaded video
+  media_type?: 'voice' | 'music' | 'music_video' | null; // Type of media content
   created_at: string;
   published_at: string;
   view_count: number;
@@ -285,6 +286,13 @@ const VibelogCard = memo(function VibelogCard({
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             className="object-cover"
           />
+          {/* Music badge */}
+          {(vibelog.media_type === 'music' || vibelog.media_type === 'music_video') && (
+            <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-black/60 px-2 py-1 text-xs font-medium text-white backdrop-blur-sm">
+              <Music className="h-3 w-3" />
+              <span>{vibelog.media_type === 'music_video' ? 'Video' : 'Music'}</span>
+            </div>
+          )}
         </div>
       )}
 
