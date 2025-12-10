@@ -242,7 +242,7 @@ export function BottomNav({ className, alwaysVisible = false, onCreateClick }: B
                   />
                   {/* Badge for unread count */}
                   {item.badge > 0 && (
-                    <div className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm">
+                    <div className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-electric text-[10px] font-bold text-white shadow-lg shadow-electric/40 duration-200 animate-in zoom-in-50">
                       {item.badge > 9 ? '9+' : item.badge}
                     </div>
                   )}
@@ -314,7 +314,7 @@ export function BottomNav({ className, alwaysVisible = false, onCreateClick }: B
                 />
                 {/* Badge for unread count */}
                 {item.badge > 0 && (
-                  <div className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm">
+                  <div className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-electric text-[10px] font-bold text-white shadow-lg shadow-electric/40 duration-200 animate-in zoom-in-50">
                     {item.badge > 9 ? '9+' : item.badge}
                   </div>
                 )}
