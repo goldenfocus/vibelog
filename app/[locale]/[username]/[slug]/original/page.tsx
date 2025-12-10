@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import Navigation from '@/components/Navigation';
+import { generateOriginalRecordingBreadcrumbs } from '@/lib/seo/breadcrumb-schema';
 import { formatFullDate } from '@/lib/date-utils';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
@@ -400,6 +401,7 @@ export default async function OriginalPage({ params }: PageProps) {
           __html: JSON.stringify({
             '@context': 'https://schema.org',
             '@type': 'AudioObject',
+            '@id': `${canonicalUrl}#audio`,
             name: `Original Recording: ${vibelog.title}`,
             description:
               vibelog.transcript?.substring(0, 300) ||
@@ -408,58 +410,36 @@ export default async function OriginalPage({ params }: PageProps) {
             encodingFormat: vibelog.video_url ? 'video/webm' : 'audio/webm',
             transcript: vibelog.transcript,
             datePublished: vibelog.published_at,
+            uploadDate: vibelog.published_at,
             author: {
-              '@type': 'Person',
-              name: vibelog.author.display_name,
-              url: `https://vibelog.io/@${vibelog.author.username}`,
+              '@id': `https://vibelog.io/@${vibelog.author.username}#person`,
             },
             isPartOf: {
-              '@type': 'BlogPosting',
+              '@type': 'Article',
+              '@id': vibelogUrl,
               headline: vibelog.title,
-              url: vibelogUrl,
             },
             mainEntityOfPage: {
               '@type': 'WebPage',
               '@id': canonicalUrl,
+              isPartOf: { '@id': 'https://vibelog.io/#website' },
             },
           }),
         }}
       />
 
-      {/* Additional BreadcrumbList for SEO */}
+      {/* BreadcrumbList for navigation hierarchy */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'BreadcrumbList',
-            itemListElement: [
-              {
-                '@type': 'ListItem',
-                position: 1,
-                name: 'Home',
-                item: 'https://vibelog.io',
-              },
-              {
-                '@type': 'ListItem',
-                position: 2,
-                name: vibelog.author.display_name,
-                item: `https://vibelog.io/@${vibelog.author.username}`,
-              },
-              {
-                '@type': 'ListItem',
-                position: 3,
-                name: vibelog.title,
-                item: vibelogUrl,
-              },
-              {
-                '@type': 'ListItem',
-                position: 4,
-                name: 'Original Recording',
-                item: canonicalUrl,
-              },
-            ],
-          }),
+          __html: JSON.stringify(
+            generateOriginalRecordingBreadcrumbs({
+              username: vibelog.author.username,
+              displayName: vibelog.author.display_name,
+              slug,
+              title: vibelog.title,
+            })
+          ),
         }}
       />
     </div>
