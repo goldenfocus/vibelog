@@ -51,8 +51,8 @@ export function MusicUploadZone({ onSuccess, onCancel }: MusicUploadZoneProps) {
   const [musicPreview, setMusicPreview] = useState<string | null>(null);
   const [isVideo, setIsVideo] = useState(false);
 
-  // Cover image state
-  const [coverFile, setCoverFile] = useState<File | null>(null);
+  // Cover image state (TODO: Add cover upload support - currently not sent to server)
+  const [_coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
 
   // Title override
@@ -164,74 +164,82 @@ export function MusicUploadZone({ onSuccess, onCancel }: MusicUploadZoneProps) {
         isVideo,
       });
 
-      // Create FormData
-      const formData = new FormData();
-      formData.append('file', musicFile);
-
-      if (coverFile) {
-        formData.append('coverImage', coverFile);
-      }
-
-      if (title.trim()) {
-        formData.append('title', title.trim());
-      }
-
-      // Upload with progress tracking
-      const xhr = new XMLHttpRequest();
-
-      xhr.upload.addEventListener('progress', e => {
-        if (e.lengthComputable) {
-          const progress = Math.round((e.loaded / e.total) * 100);
-          setUploadProgress(progress);
-
-          // Switch to processing status at 100%
-          if (progress === 100) {
-            setStatus('processing');
-            setProcessingStep('Transcribing audio...');
-
-            // Simulate processing steps for user feedback
-            setTimeout(() => setProcessingStep('Generating content...'), 3000);
-            setTimeout(() => setProcessingStep('Creating cover art...'), 8000);
-            setTimeout(() => setProcessingStep('Publishing...'), 15000);
-          }
-        }
+      // Step 1: Get presigned URL for direct upload to Supabase Storage
+      // This bypasses Vercel's 4.5MB API route limit
+      const presignResponse = await fetch('/api/storage/upload-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileType: musicFile.type,
+          fileSize: musicFile.size,
+          sessionId: `music-${Date.now()}`,
+        }),
       });
 
-      // Handle completion
-      const response = await new Promise<{
-        success: boolean;
-        vibelogId?: string;
-        publicUrl?: string;
-        message?: string;
-        error?: string;
-      }>((resolve, reject) => {
+      if (!presignResponse.ok) {
+        const err = await presignResponse.json();
+        throw new Error(err.error || 'Failed to get upload URL');
+      }
+
+      const { uploadUrl, storagePath } = await presignResponse.json();
+      console.log('[MusicUploadZone] Got presigned URL, uploading to storage...');
+
+      // Step 2: Upload directly to Supabase Storage with progress tracking
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+
+        xhr.upload.addEventListener('progress', e => {
+          if (e.lengthComputable) {
+            const progress = Math.round((e.loaded / e.total) * 100);
+            setUploadProgress(progress);
+          }
+        });
+
         xhr.addEventListener('load', () => {
-          try {
-            const data = JSON.parse(xhr.responseText);
-            if (xhr.status === 200 && data.success) {
-              resolve(data);
-            } else {
-              reject(
-                new Error(data.message || data.error || `Upload failed with status ${xhr.status}`)
-              );
-            }
-          } catch {
-            reject(new Error('Invalid response from server'));
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve();
+          } else {
+            reject(new Error(`Storage upload failed: ${xhr.status}`));
           }
         });
 
-        xhr.addEventListener('error', () => {
-          reject(new Error('Network error during upload'));
-        });
+        xhr.addEventListener('error', () => reject(new Error('Storage upload failed')));
+        xhr.addEventListener('timeout', () => reject(new Error('Storage upload timed out')));
 
-        xhr.addEventListener('timeout', () => {
-          reject(new Error('Upload timed out. Please try again.'));
-        });
-
-        xhr.open('POST', '/api/vibelog/upload-music');
-        xhr.timeout = 300000; // 5 minute timeout
-        xhr.send(formData);
+        xhr.open('PUT', uploadUrl);
+        xhr.setRequestHeader('Content-Type', musicFile.type);
+        xhr.timeout = 300000; // 5 minutes
+        xhr.send(musicFile);
       });
+
+      console.log('[MusicUploadZone] Storage upload complete, processing...');
+
+      // Step 3: Switch to processing status
+      setStatus('processing');
+      setProcessingStep('Transcribing audio...');
+
+      // Simulate processing steps for user feedback
+      setTimeout(() => setProcessingStep('Generating content...'), 3000);
+      setTimeout(() => setProcessingStep('Creating cover art...'), 8000);
+      setTimeout(() => setProcessingStep('Publishing...'), 15000);
+
+      // Step 4: Call the music API with storage path (small JSON payload)
+      const processResponse = await fetch('/api/vibelog/upload-music', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          storagePath,
+          mimeType: musicFile.type,
+          title: title.trim() || undefined,
+        }),
+      });
+
+      if (!processResponse.ok) {
+        const err = await processResponse.json();
+        throw new Error(err.message || err.error || 'Processing failed');
+      }
+
+      const response = await processResponse.json();
 
       console.log('[MusicUploadZone] Upload successful:', response);
 
