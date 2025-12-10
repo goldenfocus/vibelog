@@ -279,8 +279,8 @@ export default function MessagesClient() {
                           transition={{ type: 'spring', stiffness: 500, damping: 15 }}
                           className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center"
                         >
-                          <div className="absolute inset-0 animate-pulse rounded-full bg-red-500 opacity-50 blur-sm" />
-                          <div className="relative flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-red-500 to-red-600 text-xs font-bold text-white shadow-lg">
+                          <div className="absolute inset-0 animate-pulse rounded-full bg-electric opacity-50 blur-sm" />
+                          <div className="relative flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-electric to-metallic-blue-600 text-xs font-bold text-white shadow-lg shadow-electric/40">
                             {conversation.unread_count > 9 ? '9+' : conversation.unread_count}
                           </div>
                         </motion.div>

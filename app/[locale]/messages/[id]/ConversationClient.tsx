@@ -152,10 +152,23 @@ export default function ConversationClient() {
     fetchMessages();
   }, [user, conversationId, fetchMessages]);
 
+  // Track if this is the initial load for instant scroll (no animation)
+  const isInitialLoadRef = useRef(true);
+
   // Auto-scroll to bottom on new messages
   useEffect(() => {
-    if (shouldAutoScroll && messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (shouldAutoScroll && messagesEndRef.current && messages.length > 0) {
+      // Use instant scroll on initial load (no animation), smooth after
+      const behavior = isInitialLoadRef.current ? 'instant' : 'smooth';
+      // Small delay to ensure DOM is fully rendered
+      const timeout = setTimeout(
+        () => {
+          messagesEndRef.current?.scrollIntoView({ behavior });
+          isInitialLoadRef.current = false;
+        },
+        isInitialLoadRef.current ? 50 : 0
+      );
+      return () => clearTimeout(timeout);
     }
   }, [messages, shouldAutoScroll]);
 
