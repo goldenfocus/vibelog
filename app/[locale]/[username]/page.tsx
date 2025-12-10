@@ -1,4 +1,4 @@
-import { Calendar, Eye, FileText, Users } from 'lucide-react';
+import { Calendar, Clock, Eye, FileText, Users } from 'lucide-react';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
@@ -9,7 +9,7 @@ import { ProfileActions } from '@/components/profile/ProfileActions';
 import { ProfileVibelogsWrapper } from '@/components/profile/ProfileVibelogsWrapper';
 import { SocialLinks } from '@/components/profile/SocialLinks';
 import { ZoomableImage } from '@/components/profile/ZoomableImage';
-import { formatMonthYear } from '@/lib/date-utils';
+import { formatMonthYear, formatRelativeTime } from '@/lib/date-utils';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
 // Channel data type for when fetching from channels table
@@ -70,6 +70,7 @@ interface ProfileData {
   total_shares: number;
   subscriber_count?: number;
   created_at: string;
+  last_sign_in_at?: string | null;
   is_public: boolean;
   is_channel?: boolean; // New: indicates if this is a channel vs legacy profile
   channel_id?: string; // New: the channel ID for fetching vibelogs
@@ -218,6 +219,7 @@ async function getProfile(username: string): Promise<ProfileData | null> {
       total_views,
       total_shares,
       created_at,
+      last_sign_in_at,
       is_public
     `
     )
@@ -407,15 +409,33 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 // Build sameAs array for Person schema (social profile links)
 function buildSameAsLinks(profile: ProfileData): string[] {
   const links: string[] = [];
-  if (profile.twitter_url) links.push(profile.twitter_url);
-  if (profile.instagram_url) links.push(profile.instagram_url);
-  if (profile.youtube_url) links.push(profile.youtube_url);
-  if (profile.tiktok_url) links.push(profile.tiktok_url);
-  if (profile.linkedin_url) links.push(profile.linkedin_url);
-  if (profile.github_url) links.push(profile.github_url);
-  if (profile.facebook_url) links.push(profile.facebook_url);
-  if (profile.threads_url) links.push(profile.threads_url);
-  if (profile.website_url) links.push(profile.website_url);
+  if (profile.twitter_url) {
+    links.push(profile.twitter_url);
+  }
+  if (profile.instagram_url) {
+    links.push(profile.instagram_url);
+  }
+  if (profile.youtube_url) {
+    links.push(profile.youtube_url);
+  }
+  if (profile.tiktok_url) {
+    links.push(profile.tiktok_url);
+  }
+  if (profile.linkedin_url) {
+    links.push(profile.linkedin_url);
+  }
+  if (profile.github_url) {
+    links.push(profile.github_url);
+  }
+  if (profile.facebook_url) {
+    links.push(profile.facebook_url);
+  }
+  if (profile.threads_url) {
+    links.push(profile.threads_url);
+  }
+  if (profile.website_url) {
+    links.push(profile.website_url);
+  }
   return links;
 }
 
@@ -677,6 +697,14 @@ export default async function ProfilePage({ params }: PageProps) {
                           {profile.is_channel ? 'Created' : 'Joined'} {joinDate}
                         </span>
                       </div>
+                      {profile.last_sign_in_at && !profile.is_channel && (
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-electric" />
+                          <span className="text-muted-foreground">
+                            Active {formatRelativeTime(profile.last_sign_in_at)}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Social Links */}
