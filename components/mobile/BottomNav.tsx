@@ -118,11 +118,11 @@ export function BottomNav({ className, alwaysVisible = false, onCreateClick }: B
   // Order: People (community/followers), then Messages (far right for thumb access)
   const authNavItems: NavItem[] = [
     {
-      href: `/${locale}/dashboard`,
+      href: `/${locale}/people`,
       icon: Users,
       label: '', // No label - icon only
       ariaLabel: 'People',
-      activePattern: new RegExp(`^/${locale}/dashboard`),
+      activePattern: new RegExp(`^/${locale}/people`),
     },
     {
       href: `/${locale}/messages`,
