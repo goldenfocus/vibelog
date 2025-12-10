@@ -178,6 +178,26 @@ export async function GET() {
       sender: m.sender_id ? sendersMap.get(m.sender_id) || null : null,
     }));
 
+    // Get read receipts for last messages
+    const messageIdsForReads = lastMessages.map(m => m.id);
+    const messageReadsMap = new Map<string, { count: number; readers: string[] }>();
+    if (messageIdsForReads.length > 0) {
+      const { data: readsData } = await supabase
+        .from('message_reads')
+        .select('message_id, user_id')
+        .in('message_id', messageIdsForReads);
+
+      if (readsData) {
+        // Group reads by message_id
+        for (const read of readsData) {
+          const existing = messageReadsMap.get(read.message_id) || { count: 0, readers: [] };
+          existing.readers.push(read.user_id);
+          existing.count = existing.readers.length;
+          messageReadsMap.set(read.message_id, existing);
+        }
+      }
+    }
+
     // Get unread counts
     const { data: unreadCounts } = await supabase.rpc('get_unread_count', {
       p_user_id: user.id,
@@ -232,6 +252,13 @@ export async function GET() {
       const otherUser =
         conversation.type === 'dm' ? participants.find(pf => pf.id !== user.id) : undefined;
 
+      // Calculate read status for last message
+      const messageReads = lastMessage ? messageReadsMap.get(lastMessage.id) : null;
+      // Exclude sender from read count - only count reads from OTHER users
+      const readByOthers = messageReads
+        ? messageReads.readers.filter(r => r !== lastMessage?.sender_id)
+        : [];
+
       return {
         ...conversation,
         participants,
@@ -239,8 +266,8 @@ export async function GET() {
           ? ({
               ...(lastMessage as any),
               reads: [],
-              is_read: false,
-              read_by_count: 0,
+              is_read: messageReads?.readers.includes(user.id) || false,
+              read_by_count: readByOthers.length,
             } as any)
           : null,
         unread_count: Number(unreadCount),
