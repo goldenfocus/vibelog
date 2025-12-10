@@ -140,7 +140,7 @@ export default function Home() {
                 isAwakening && 'opacity-0'
               )}
             >
-              Speak or write your first vibe and watch your world come alive.
+              Speak → Share → Vibe
             </p>
 
             {/* THE PORTAL */}
