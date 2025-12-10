@@ -475,6 +475,14 @@
         "days": "{{count}} days ago",
         "months": "{{count}} months ago",
         "years": "{{count}} years ago"
+      },
+      "lastActive": {
+        "label": "Active {{time}}",
+        "today": "today",
+        "days": "{{count}}d ago",
+        "weeks": "{{count}}w ago",
+        "months": "{{count}}mo ago",
+        "years": "{{count}}y ago"
       }
     },
     "vibes": {

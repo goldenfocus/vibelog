@@ -473,6 +473,14 @@
         "days": "{{count}} jours",
         "months": "{{count}} mois",
         "years": "{{count}} ans"
+      },
+      "lastActive": {
+        "label": "Actif {{time}}",
+        "today": "aujourd'hui",
+        "days": "il y a {{count}}j",
+        "weeks": "il y a {{count}}sem",
+        "months": "il y a {{count}}m",
+        "years": "il y a {{count}}a"
       }
     },
     "vibes": {

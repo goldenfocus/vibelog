@@ -399,6 +399,14 @@
         "days": "hace {{count}} días",
         "months": "hace {{count}} meses",
         "years": "hace {{count}} años"
+      },
+      "lastActive": {
+        "label": "Activo {{time}}",
+        "today": "hoy",
+        "days": "hace {{count}}d",
+        "weeks": "hace {{count}}sem",
+        "months": "hace {{count}}m",
+        "years": "hace {{count}}a"
       }
     },
     "vibes": {

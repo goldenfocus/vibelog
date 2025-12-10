@@ -1,6 +1,6 @@
 'use client';
 
-import { User, Eye, Heart, Zap, Calendar, Crown } from 'lucide-react';
+import { User, Eye, Heart, Zap, Calendar, Crown, Clock } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { memo, useState } from 'react';
@@ -16,6 +16,7 @@ interface CreatorCardProps {
   totalLikes: number;
   totalRemixes: number;
   joinedDate: string;
+  lastActivityDate?: string | null;
   subscriptionTier?: string;
   index?: number; // For stagger animation
 }
@@ -30,6 +31,7 @@ const CreatorCard = memo(function CreatorCard({
   totalLikes,
   totalRemixes,
   joinedDate,
+  lastActivityDate,
   subscriptionTier = 'free',
   index = 0,
 }: CreatorCardProps) {
@@ -49,6 +51,27 @@ const CreatorCard = memo(function CreatorCard({
           ? t('pages.people.joined.months', { count: Math.floor(daysSinceJoined / 30) })
           : t('pages.people.joined.years', { count: Math.floor(daysSinceJoined / 365) });
   const joinedText = t('pages.people.joined.label', { time: relativeJoined });
+
+  // Calculate last activity relative time
+  const lastActiveText = (() => {
+    if (!lastActivityDate) {
+      return null;
+    }
+    const daysSinceActive = Math.floor(
+      (Date.now() - new Date(lastActivityDate).getTime()) / (1000 * 60 * 60 * 24)
+    );
+    const relativeActive =
+      daysSinceActive < 1
+        ? t('pages.people.lastActive.today')
+        : daysSinceActive < 7
+          ? t('pages.people.lastActive.days', { count: daysSinceActive })
+          : daysSinceActive < 30
+            ? t('pages.people.lastActive.weeks', { count: Math.floor(daysSinceActive / 7) })
+            : daysSinceActive < 365
+              ? t('pages.people.lastActive.months', { count: Math.floor(daysSinceActive / 30) })
+              : t('pages.people.lastActive.years', { count: Math.floor(daysSinceActive / 365) });
+    return t('pages.people.lastActive.label', { time: relativeActive });
+  })();
 
   // Determine if this is a top creator (high engagement)
   const engagementScore = totalVibelogs * 10 + totalViews + totalLikes * 5 + totalRemixes * 3;
@@ -136,10 +159,18 @@ const CreatorCard = memo(function CreatorCard({
           />
         </div>
 
-        {/* Joined Date */}
-        <div className="flex items-center gap-2 border-t border-border/30 pt-4 text-xs text-muted-foreground">
-          <Calendar className="h-3 w-3" />
-          <span>{joinedText}</span>
+        {/* Joined Date & Last Active */}
+        <div className="flex flex-col gap-1 border-t border-border/30 pt-4 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <Calendar className="h-3 w-3" />
+            <span>{joinedText}</span>
+          </div>
+          {lastActiveText && (
+            <div className="flex items-center gap-2">
+              <Clock className="h-3 w-3" />
+              <span>{lastActiveText}</span>
+            </div>
+          )}
         </div>
       </div>
 

@@ -473,6 +473,14 @@
         "days": "{{count}} ngày trước",
         "months": "{{count}} tháng trước",
         "years": "{{count}} năm trước"
+      },
+      "lastActive": {
+        "label": "Hoạt động {{time}}",
+        "today": "hôm nay",
+        "days": "{{count}} ngày trước",
+        "weeks": "{{count}} tuần trước",
+        "months": "{{count}} tháng trước",
+        "years": "{{count}} năm trước"
       }
     },
     "vibes": {
