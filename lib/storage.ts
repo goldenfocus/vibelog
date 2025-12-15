@@ -140,20 +140,31 @@ export function getVibelogPublicUrl(storagePath: string): string {
  */
 export function getExtensionFromMimeType(mimeType: string): string {
   // Normalize by stripping codecs parameter (e.g., "audio/webm; codecs=opus" -> "audio/webm")
-  const normalizedMimeType = mimeType.split(';')[0].trim();
+  const normalizedMimeType = mimeType.split(';')[0].trim().toLowerCase();
 
   const map: Record<string, string> = {
+    // Audio types
     'audio/webm': 'webm',
     'audio/wav': 'wav',
+    'audio/wave': 'wav',
+    'audio/x-wav': 'wav',
     'audio/mpeg': 'mp3',
+    'audio/mp3': 'mp3',
     'audio/mp4': 'm4a',
+    'audio/aac': 'aac',
     'audio/ogg': 'ogg',
+    'audio/flac': 'flac',
+    // Video types
     'video/webm': 'webm',
     'video/mp4': 'mp4',
     'video/quicktime': 'mov',
+    'video/x-msvideo': 'avi',
+    'video/mpeg': 'mpeg',
+    // Image types
     'image/jpeg': 'jpg',
     'image/png': 'png',
     'image/webp': 'webp',
+    'image/gif': 'gif',
   };
 
   return map[normalizedMimeType] || 'webm';
@@ -163,17 +174,22 @@ export function getExtensionFromMimeType(mimeType: string): string {
  * Get file category from mime type
  */
 export function getCategoryFromMimeType(mimeType: string): FileCategory {
-  if (mimeType.startsWith('audio/')) {
+  // Normalize by stripping codecs parameter
+  const normalizedMimeType = mimeType.split(';')[0].trim().toLowerCase();
+
+  if (normalizedMimeType.startsWith('audio/')) {
     return FileCategory.AUDIO;
   }
-  if (mimeType.startsWith('video/')) {
+  if (normalizedMimeType.startsWith('video/')) {
     return FileCategory.VIDEO;
   }
-  if (mimeType.startsWith('image/')) {
+  if (normalizedMimeType.startsWith('image/')) {
     return FileCategory.IMAGE;
   }
 
-  throw new Error(`Unsupported mime type: ${mimeType}`);
+  // Default to audio for music uploads
+  console.warn(`Unknown mime type: ${mimeType}, defaulting to AUDIO`);
+  return FileCategory.AUDIO;
 }
 
 /**
