@@ -1,6 +1,6 @@
 'use client';
 
-import { Mic, Video } from 'lucide-react';
+import { Mic, Video, Music } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, Suspense, useCallback } from 'react';
 
@@ -8,6 +8,7 @@ import { VideoCreator } from '@/components/creation/VideoCreator';
 import HomeCommunityShowcase from '@/components/home/HomeCommunityShowcase';
 import { Portal } from '@/components/home/Portal';
 import MicRecorder from '@/components/MicRecorder';
+import { MusicUploadZone } from '@/components/music';
 import Navigation from '@/components/Navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useI18n } from '@/components/providers/I18nProvider';
@@ -35,7 +36,7 @@ export default function Home() {
   const isLoggedIn = Boolean(user);
 
   const [remixContent, setRemixContent] = useState<string | null>(null);
-  const [creationMode, setCreationMode] = useState<'audio' | 'video'>('audio');
+  const [creationMode, setCreationMode] = useState<'audio' | 'video' | 'music'>('audio');
   const [refreshFeed, setRefreshFeed] = useState<(() => void) | null>(null);
   const [mounted, setMounted] = useState(false);
   const [isAwakening, setIsAwakening] = useState(false);
@@ -195,6 +196,7 @@ export default function Home() {
                 {[
                   { mode: 'audio' as const, Icon: Mic, label: t('home.modes.audio') },
                   { mode: 'video' as const, Icon: Video, label: t('home.modes.video') },
+                  { mode: 'music' as const, Icon: Music, label: 'Music' },
                 ].map(({ mode, Icon }) => (
                   <button
                     key={mode}
@@ -224,6 +226,14 @@ export default function Home() {
                 <MicRecorder remixContent={remixContent} onSaveSuccess={handleSaveSuccess} />
               )}
               {creationMode === 'video' && isLoggedIn && <VideoCreator />}
+              {creationMode === 'music' && isLoggedIn && (
+                <MusicUploadZone
+                  onSuccess={() => {
+                    handleSaveSuccess();
+                  }}
+                  onCancel={() => setCreationMode('audio')}
+                />
+              )}
             </div>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { config } from '@/lib/config';
+import { SUPPORTED_AUDIO_TYPES, SUPPORTED_VIDEO_TYPES } from '@/lib/music-storage';
 import {
   generateStoragePath,
   getPresignedUploadUrl,
@@ -57,14 +58,18 @@ export async function POST(request: NextRequest) {
 
     // Validate file type (normalize by stripping codecs parameter)
     const normalizedFileType = fileType.split(';')[0].trim();
+
+    // Include all supported music types from music-storage + config audio types
     const allowedTypes = [
       ...config.files.audio.allowedTypes,
-      'video/webm',
-      'video/mp4',
-      'video/quicktime',
+      ...SUPPORTED_AUDIO_TYPES,
+      ...SUPPORTED_VIDEO_TYPES,
     ].map(type => type.split(';')[0].trim());
 
-    if (!allowedTypes.includes(normalizedFileType)) {
+    // Deduplicate
+    const uniqueAllowedTypes = [...new Set(allowedTypes)];
+
+    if (!uniqueAllowedTypes.includes(normalizedFileType)) {
       return NextResponse.json(
         { error: 'Unsupported file type', fileType: normalizedFileType },
         { status: 415 }
