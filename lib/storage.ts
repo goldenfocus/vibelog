@@ -17,6 +17,7 @@ export enum FileCategory {
   AUDIO = 'audio',
   VIDEO = 'video',
   IMAGE = 'image',
+  TEXT = 'text',
 }
 
 function publicUrl(path: string): string {
@@ -165,6 +166,20 @@ export function getExtensionFromMimeType(mimeType: string): string {
     'image/png': 'png',
     'image/webp': 'webp',
     'image/gif': 'gif',
+    // Text types
+    'text/plain': 'txt',
+    'text/markdown': 'md',
+    'text/x-markdown': 'md',
+    'text/csv': 'csv',
+    'text/html': 'html',
+    'text/xml': 'xml',
+    'application/xml': 'xml',
+    'text/yaml': 'yaml',
+    'application/x-yaml': 'yaml',
+    'application/yaml': 'yaml',
+    'application/json': 'json',
+    'application/rtf': 'rtf',
+    'text/rtf': 'rtf',
   };
 
   return map[normalizedMimeType] || 'webm';
@@ -185,6 +200,21 @@ export function getCategoryFromMimeType(mimeType: string): FileCategory {
   }
   if (normalizedMimeType.startsWith('image/')) {
     return FileCategory.IMAGE;
+  }
+  if (normalizedMimeType.startsWith('text/')) {
+    return FileCategory.TEXT;
+  }
+  // Text-based application types
+  if (
+    [
+      'application/json',
+      'application/xml',
+      'application/rtf',
+      'application/yaml',
+      'application/x-yaml',
+    ].includes(normalizedMimeType)
+  ) {
+    return FileCategory.TEXT;
   }
 
   // Default to audio for music uploads

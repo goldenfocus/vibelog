@@ -59,11 +59,29 @@ export async function POST(request: NextRequest) {
     // Validate file type (normalize by stripping codecs parameter)
     const normalizedFileType = fileType.split(';')[0].trim();
 
-    // Include all supported music types from music-storage + config audio types
+    // Text MIME types for text/document file uploads
+    const SUPPORTED_TEXT_TYPES = [
+      'text/plain',
+      'text/markdown',
+      'text/x-markdown',
+      'text/csv',
+      'text/html',
+      'text/xml',
+      'text/yaml',
+      'text/rtf',
+      'application/json',
+      'application/xml',
+      'application/rtf',
+      'application/yaml',
+      'application/x-yaml',
+    ];
+
+    // Include all supported types: audio, video, and text
     const allowedTypes = [
       ...config.files.audio.allowedTypes,
       ...SUPPORTED_AUDIO_TYPES,
       ...SUPPORTED_VIDEO_TYPES,
+      ...SUPPORTED_TEXT_TYPES,
     ].map(type => type.split(';')[0].trim());
 
     // Deduplicate
