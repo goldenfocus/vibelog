@@ -7,8 +7,8 @@ import { useState, useEffect, Suspense, useCallback } from 'react';
 import { VideoCreator } from '@/components/creation/VideoCreator';
 import HomeCommunityShowcase from '@/components/home/HomeCommunityShowcase';
 import { Portal } from '@/components/home/Portal';
+import { MediaUploadZone } from '@/components/media';
 import MicRecorder from '@/components/MicRecorder';
-import { MusicUploadZone } from '@/components/music';
 import Navigation from '@/components/Navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useI18n } from '@/components/providers/I18nProvider';
@@ -30,10 +30,34 @@ function RemixHandler({ onRemixContent }: { onRemixContent: (content: string | n
 }
 
 export default function Home() {
-  const { t, isLoading } = useI18n();
+  const { t, isLoading, locale } = useI18n();
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const isLoggedIn = Boolean(user);
+
+  // #region agent log
+  // Debug: Log translation state to verify hypotheses
+  useEffect(() => {
+    fetch('http://127.0.0.1:7242/ingest/f4483eb0-cedb-4874-a476-130070d1c030', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        location: 'app/[locale]/page.tsx:Home',
+        message: 'Translation debug info',
+        data: {
+          locale,
+          isLoading,
+          testTranslation: t('common.loading'),
+          heroTitleKey: t('home.hero.title'),
+          heroSubtitleKey: t('home.hero.subtitle'),
+        },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        hypothesisId: 'A,B,C',
+      }),
+    }).catch(() => {});
+  }, [locale, isLoading, t]);
+  // #endregion
 
   const [remixContent, setRemixContent] = useState<string | null>(null);
   const [creationMode, setCreationMode] = useState<'audio' | 'video' | 'music'>('audio');
@@ -227,7 +251,7 @@ export default function Home() {
               )}
               {creationMode === 'video' && isLoggedIn && <VideoCreator />}
               {creationMode === 'music' && isLoggedIn && (
-                <MusicUploadZone
+                <MediaUploadZone
                   onSuccess={() => {
                     handleSaveSuccess();
                   }}

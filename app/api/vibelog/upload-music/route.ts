@@ -34,24 +34,48 @@ export const runtime = 'nodejs';
 export const maxDuration = 300; // 5 minutes for full processing pipeline
 
 /**
- * Music Upload API
+ * Media Upload API
  *
- * Handles the complete pipeline for music vibelogs:
- * 1. Upload music file (MP3, WAV, MP4, etc.)
- * 2. Transcribe with Whisper (extracts lyrics/vocals)
+ * Handles the complete pipeline for media vibelogs:
+ * 1. Upload media file (audio, video, or text)
+ * 2. Process content:
+ *    - Audio/Video: Transcribe with Whisper
+ *    - Text: Read file content directly (skip transcription)
  * 3. Generate title/content with GPT-4o
  * 4. Generate cover image with DALL-E (if not provided)
  * 5. Save as vibelog with media_type
  * 6. Translate to 6 languages
  *
  * Input: FormData with:
- * - file: Music file (audio or video)
+ * - file: Media file (audio, video, or text)
  * - coverImage?: Optional cover image file
  * - title?: Optional title override
  * - storagePath?: If file already uploaded via presigned URL
  */
+// Text/Document MIME types - these skip Whisper transcription and read content directly
+const TEXT_MIME_TYPES = [
+  'text/plain',
+  'text/markdown',
+  'text/x-markdown',
+  'text/csv',
+  'text/html',
+  'text/xml',
+  'text/yaml',
+  'text/rtf',
+  'application/json',
+  'application/xml',
+  'application/rtf',
+  'application/yaml',
+  'application/x-yaml',
+];
+
+function isTextFile(mimeType: string): boolean {
+  const normalized = mimeType.split(';')[0].trim().toLowerCase();
+  return TEXT_MIME_TYPES.includes(normalized);
+}
+
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  console.log('🎵 [MUSIC-UPLOAD] Starting music upload process...');
+  console.log('🎵 [MEDIA-UPLOAD] Starting media upload process...');
 
   try {
     // === STEP 0: CIRCUIT BREAKER ===
@@ -118,18 +142,24 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     let musicUrl: string;
     let musicStoragePath: string;
 
+    const isText = isTextFile(mimeType);
+
     if (storagePath) {
       // File already uploaded via presigned URL
-      console.log('📥 [MUSIC-UPLOAD] Using pre-uploaded file:', storagePath);
+      console.log(
+        '📥 [MEDIA-UPLOAD] Using pre-uploaded file:',
+        storagePath,
+        isText ? '(text)' : ''
+      );
       musicUrl = getVibelogPublicUrl(storagePath);
       musicStoragePath = storagePath;
     } else if (musicFile) {
-      // Validate file
-      if (!isValidMusicType(musicFile.type)) {
+      // Validate file - accept both music files and text files
+      if (!isValidMusicType(musicFile.type) && !isTextFile(musicFile.type)) {
         return NextResponse.json(
           {
             error: 'Invalid file type',
-            message: 'Supported formats: MP3, WAV, M4A, OGG, FLAC, MP4, MOV, WebM',
+            message: 'Supported formats: MP3, WAV, M4A, OGG, FLAC, MP4, MOV, WebM, TXT, MD',
           },
           { status: 400 }
         );
@@ -174,61 +204,91 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     console.log('✅ [MUSIC-UPLOAD] Music file ready:', musicUrl);
 
-    // === STEP 5: TRANSCRIBE WITH WHISPER ===
-    console.log('🎤 [MUSIC-UPLOAD] Transcribing audio...');
-
+    // === STEP 5: GET CONTENT (Transcribe audio/video OR read text file) ===
     let transcription = '';
     let detectedLanguage = 'en';
 
-    try {
-      // Download file for transcription
-      const blob = await downloadFromStorage(musicStoragePath);
-      const fileExt = mimeType.includes('mp4') ? 'mp4' : mimeType.includes('mp3') ? 'mp3' : 'webm';
-      const audioFile = new File([blob], `music.${fileExt}`, { type: mimeType });
+    if (isText) {
+      // TEXT FILE: Read content directly - no transcription needed
+      console.log('📄 [MEDIA-UPLOAD] Reading text file content...');
 
-      // Check for real API key
-      if (config.ai.openai.apiKey && config.ai.openai.apiKey !== 'dummy_key') {
-        const openai = new OpenAI({
-          apiKey: config.ai.openai.apiKey,
-          timeout: 120_000,
-        });
+      try {
+        const blob = await downloadFromStorage(musicStoragePath);
+        const textContent = await blob.text();
+        transcription = textContent.trim();
+        console.log('✅ [MEDIA-UPLOAD] Text content read:', transcription.length, 'chars');
 
-        const response = await openai.audio.transcriptions.create({
-          file: audioFile,
-          model: 'whisper-1',
-          response_format: 'verbose_json',
-        });
-
-        transcription = response.text || '';
-        detectedLanguage = response.language || 'en';
-
-        // Track cost
-        const durationMinutes = (response.duration || 60) / 60;
-        const cost = calculateWhisperCost(durationMinutes);
-        await trackAICost(userId, 'whisper', cost, {
-          endpoint: '/api/vibelog/upload-music',
-          duration_minutes: durationMinutes,
-        });
-
-        console.log('✅ [MUSIC-UPLOAD] Transcription complete:', transcription.length, 'chars');
-      } else {
-        console.log('🧪 [MUSIC-UPLOAD] Mock transcription (no API key)');
-        transcription = 'This is a test transcription for development.';
+        // Basic language detection from content (could be enhanced)
+        // For now, default to English - GPT will handle multilingual content well
+      } catch (readError) {
+        console.error('⚠️ [MEDIA-UPLOAD] Failed to read text file:', readError);
+        return NextResponse.json(
+          {
+            error: 'Failed to read text file',
+            message: 'Could not process the uploaded text file.',
+          },
+          { status: 500 }
+        );
       }
-    } catch (transcribeError) {
-      console.error('⚠️ [MUSIC-UPLOAD] Transcription failed:', transcribeError);
-      // Continue without transcription - user can still have a music vibelog
-      transcription = '';
+    } else {
+      // AUDIO/VIDEO: Transcribe with Whisper
+      console.log('🎤 [MEDIA-UPLOAD] Transcribing audio...');
+
+      try {
+        // Download file for transcription
+        const blob = await downloadFromStorage(musicStoragePath);
+        const fileExt = mimeType.includes('mp4')
+          ? 'mp4'
+          : mimeType.includes('mp3')
+            ? 'mp3'
+            : 'webm';
+        const audioFile = new File([blob], `music.${fileExt}`, { type: mimeType });
+
+        // Check for real API key
+        if (config.ai.openai.apiKey && config.ai.openai.apiKey !== 'dummy_key') {
+          const openai = new OpenAI({
+            apiKey: config.ai.openai.apiKey,
+            timeout: 120_000,
+          });
+
+          const response = await openai.audio.transcriptions.create({
+            file: audioFile,
+            model: 'whisper-1',
+            response_format: 'verbose_json',
+          });
+
+          transcription = response.text || '';
+          detectedLanguage = response.language || 'en';
+
+          // Track cost
+          const durationMinutes = (response.duration || 60) / 60;
+          const cost = calculateWhisperCost(durationMinutes);
+          await trackAICost(userId, 'whisper', cost, {
+            endpoint: '/api/vibelog/upload-music',
+            duration_minutes: durationMinutes,
+          });
+
+          console.log('✅ [MEDIA-UPLOAD] Transcription complete:', transcription.length, 'chars');
+        } else {
+          console.log('🧪 [MEDIA-UPLOAD] Mock transcription (no API key)');
+          transcription = 'This is a test transcription for development.';
+        }
+      } catch (transcribeError) {
+        console.error('⚠️ [MEDIA-UPLOAD] Transcription failed:', transcribeError);
+        // Continue without transcription - user can still have a music vibelog
+        transcription = '';
+      }
     }
 
     // === STEP 6: GENERATE CONTENT WITH GPT-4O ===
-    console.log('📝 [MUSIC-UPLOAD] Generating content...');
+    console.log('📝 [MEDIA-UPLOAD] Generating content...');
 
     let title = titleOverride || '';
     let teaser = '';
     let content = '';
     const isVideo = isMusicVideo(mimeType);
-    const mediaTypeValue = getMediaType(mimeType);
+    // For text files, set media_type to 'text' (will be stored as null media_type for standard vibelog)
+    const mediaTypeValue = isText ? null : getMediaType(mimeType);
 
     try {
       if (config.ai.openai.apiKey && config.ai.openai.apiKey !== 'dummy_key') {
@@ -249,12 +309,28 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
         const inputTokens = estimateTokens(transcription) + 500;
 
-        const completion = await openai.chat.completions.create({
-          model: config.ai.openai.model,
-          messages: [
-            {
-              role: 'system',
-              content: `You are a music journalist writing about a ${isVideo ? 'music video' : 'song'}. Write in ${languageName}.
+        // Different prompts for text vs audio/video
+        const systemPrompt = isText
+          ? `You are a creative writer enhancing and structuring user-provided text. Write in ${languageName}.
+
+CONTEXT: This is a text file upload. Transform it into a polished vibelog post.
+
+CRITICAL:
+- Preserve the original meaning and intent
+- Enhance clarity, structure, and flow
+- Add engaging formatting if appropriate
+- Keep the author's voice
+
+OUTPUT FORMAT:
+---TITLE---
+[Engaging title based on content, 40-60 chars]
+---TEASER---
+[2-3 sentence hook summarizing the content, 150-250 chars]
+---CONTENT---
+# [Title]
+
+[Enhanced, well-structured version of the original content with proper formatting, paragraphs, and markdown where appropriate]`
+          : `You are a music journalist writing about a ${isVideo ? 'music video' : 'song'}. Write in ${languageName}.
 
 CONTEXT: This is a music upload. The transcription contains lyrics or vocal content from the track.
 
@@ -275,14 +351,19 @@ OUTPUT FORMAT:
 [3-5 paragraphs about the music: mood, themes, lyrical analysis, artistic style]
 
 ## Lyrics
-[If transcription has lyrics, include them formatted nicely. If no clear lyrics, skip this section]`,
-            },
-            {
-              role: 'user',
-              content: transcription
-                ? `Here are the ${isVideo ? 'vocals/audio' : 'lyrics'} from the music:\n\n"${transcription}"`
-                : `This is a ${isVideo ? 'music video' : 'music track'} upload. No transcription available - create a generic music vibelog description.`,
-            },
+[If transcription has lyrics, include them formatted nicely. If no clear lyrics, skip this section]`;
+
+        const userPrompt = isText
+          ? `Here is the text content to enhance and publish as a vibelog:\n\n"${transcription}"`
+          : transcription
+            ? `Here are the ${isVideo ? 'vocals/audio' : 'lyrics'} from the music:\n\n"${transcription}"`
+            : `This is a ${isVideo ? 'music video' : 'music track'} upload. No transcription available - create a generic music vibelog description.`;
+
+        const completion = await openai.chat.completions.create({
+          model: config.ai.openai.model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
           ],
           temperature: 0.7,
           max_tokens: 2000,
@@ -304,22 +385,28 @@ OUTPUT FORMAT:
         const teaserMatch = rawContent.match(/---TEASER---\s*([\s\S]*?)---CONTENT---/);
         const contentMatch = rawContent.match(/---CONTENT---\s*([\s\S]*?)$/);
 
-        title = titleOverride || (titleMatch ? titleMatch[1].trim() : 'Untitled Track');
+        const defaultTitle = isText ? 'Untitled Post' : 'Untitled Track';
+        title = titleOverride || (titleMatch ? titleMatch[1].trim() : defaultTitle);
         teaser = teaserMatch ? teaserMatch[1].trim() : '';
         content = contentMatch ? contentMatch[1].trim() : rawContent;
 
-        console.log('✅ [MUSIC-UPLOAD] Content generated:', title);
+        console.log('✅ [MEDIA-UPLOAD] Content generated:', title);
       } else {
         // Mock for development
-        title = titleOverride || 'Test Music Track';
-        teaser = 'This is a test music vibelog created during development.';
-        content = `# ${title}\n\nA beautiful piece of music that speaks to the soul.\n\n## About\n\nThis track showcases artistic expression through sound.`;
+        const defaultTitle = isText ? 'Test Text Post' : 'Test Music Track';
+        title = titleOverride || defaultTitle;
+        teaser = isText
+          ? 'This is a test text vibelog created during development.'
+          : 'This is a test music vibelog created during development.';
+        content = isText
+          ? `# ${title}\n\n${transcription || 'Text content.'}`
+          : `# ${title}\n\nA beautiful piece of music that speaks to the soul.\n\n## About\n\nThis track showcases artistic expression through sound.`;
       }
     } catch (genError) {
-      console.error('⚠️ [MUSIC-UPLOAD] Content generation failed:', genError);
-      title = titleOverride || 'Music Upload';
-      teaser = 'A new music release.';
-      content = `# ${title}\n\n${transcription || 'Music content.'}`;
+      console.error('⚠️ [MEDIA-UPLOAD] Content generation failed:', genError);
+      title = titleOverride || (isText ? 'Text Upload' : 'Music Upload');
+      teaser = isText ? 'A new text post.' : 'A new music release.';
+      content = `# ${title}\n\n${transcription || (isText ? 'Text content.' : 'Music content.')}`;
     }
 
     // === STEP 7: GENERATE OR UPLOAD COVER IMAGE ===
@@ -347,8 +434,10 @@ OUTPUT FORMAT:
           timeout: 60_000,
         });
 
-        // Generate album-art style prompt
-        const coverPrompt = `Album cover art for a song titled "${title}". ${teaser}. Style: Modern album artwork, cinematic, atmospheric, professional music release cover. No text or words in the image.`;
+        // Generate cover prompt based on content type
+        const coverPrompt = isText
+          ? `Blog post cover image for an article titled "${title}". ${teaser}. Style: Modern, clean, editorial illustration. Abstract or metaphorical representation. Professional and engaging. No text or words in the image.`
+          : `Album cover art for a song titled "${title}". ${teaser}. Style: Modern album artwork, cinematic, atmospheric, professional music release cover. No text or words in the image.`;
 
         const response = await openai.images.generate({
           model: 'dall-e-3',
@@ -388,12 +477,14 @@ OUTPUT FORMAT:
       content: teaser,
       fullContent: content,
       transcription: transcription,
-      audioData: !isVideo
-        ? {
-            url: musicUrl,
-            duration: 0, // TODO: Extract duration from file
-          }
-        : undefined,
+      // Only include audio data for audio files (not video or text)
+      audioData:
+        !isVideo && !isText
+          ? {
+              url: musicUrl,
+              duration: 0, // TODO: Extract duration from file
+            }
+          : undefined,
       coverImage: coverImageUrl
         ? {
             url: coverImageUrl,
@@ -410,12 +501,13 @@ OUTPUT FORMAT:
 
     const { data: normalizedData, warnings } = await normalizeVibelogData(vibelogRequest, userId);
 
-    // Add music-specific fields
+    // Add media-specific fields (only for audio/video, not text)
     const musicVibelogData = {
       ...normalizedData,
       media_type: mediaTypeValue,
       video_url: isVideo ? musicUrl : null,
-      audio_url: !isVideo ? musicUrl : normalizedData.audio_url,
+      // For text uploads, don't store the text file as audio_url
+      audio_url: !isVideo && !isText ? musicUrl : normalizedData.audio_url,
     };
 
     // Create the vibelog
@@ -450,13 +542,20 @@ OUTPUT FORMAT:
     const username = user.user_metadata?.username || user.email?.split('@')[0] || 'user';
     const publicUrl = result.slug ? `/@${username}/${result.slug}` : `/v/${result.vibelogId}`;
 
+    // Determine success message based on content type
+    const successMessage = isText
+      ? 'Text post published successfully!'
+      : isVideo
+        ? 'Music video published successfully!'
+        : 'Music track published successfully!';
+
     return NextResponse.json({
       success: true,
       vibelogId: result.vibelogId,
       slug: result.slug,
       publicUrl,
       mediaType: mediaTypeValue,
-      message: `${isVideo ? 'Music video' : 'Music track'} published successfully!`,
+      message: successMessage,
       warnings: warnings.length > 0 ? warnings : undefined,
     });
   } catch (error) {

@@ -56,8 +56,8 @@ export async function POST(request: NextRequest) {
     // Normalize file type
     const normalizedFileType = file.type.split(';')[0].trim();
 
-    // Validate file type (audio, images, and videos)
-    // Include all supported music types from music-storage + config + images
+    // Validate file type (audio, images, videos, and text)
+    // Include all supported types from music-storage + config + images + text
     const allowedTypes = [
       ...config.files.audio.allowedTypes,
       ...SUPPORTED_AUDIO_TYPES,
@@ -67,6 +67,19 @@ export async function POST(request: NextRequest) {
       'image/png',
       'image/gif',
       'image/webp',
+      'text/plain',
+      'text/markdown',
+      'text/x-markdown',
+      'text/csv',
+      'text/html',
+      'text/xml',
+      'text/yaml',
+      'text/rtf',
+      'application/json',
+      'application/xml',
+      'application/rtf',
+      'application/yaml',
+      'application/x-yaml',
     ].map(type => type.split(';')[0].trim());
 
     // Deduplicate

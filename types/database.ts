@@ -67,6 +67,9 @@ export interface Vibelog {
   video_source?: 'captured' | 'uploaded' | null; // Source: camera or file upload
   video_uploaded_at?: string | null; // When user uploaded/captured
 
+  // Media type for music/video uploads
+  media_type?: 'audio' | 'video' | null; // Type of uploaded media (null for standard voice vibelogs)
+
   // Timestamps
   created_at: string;
   published_at: string;
