@@ -10,7 +10,7 @@ import { normalizeVibeLog } from '@/lib/normalize-vibelog';
 import { rateLimit, tooManyResponse } from '@/lib/rateLimit';
 import { downloadFromStorage, deleteFromStorage } from '@/lib/storage';
 import { createServerSupabaseClient } from '@/lib/supabase';
-import { whisperLanguageToISO } from '@/lib/translation';
+import { whisperLanguageToISO } from '@/lib/whisper-language';
 
 // Use Node.js runtime for better performance with larger payloads
 export const runtime = 'nodejs';

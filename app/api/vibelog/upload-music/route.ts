@@ -29,7 +29,7 @@ import {
 import { downloadFromStorage, getVibelogPublicUrl } from '@/lib/storage';
 import { createServerSupabaseClient } from '@/lib/supabase';
 import { createServerAdminClient } from '@/lib/supabaseAdmin';
-import { whisperLanguageToISO } from '@/lib/translation';
+import { whisperLanguageToISO } from '@/lib/whisper-language';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300; // 5 minutes for full processing pipeline
