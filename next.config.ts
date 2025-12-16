@@ -68,7 +68,9 @@ const nextConfig: NextConfig = {
       "img-src 'self' data: blob: https:",
       "font-src 'self' data: https://fonts.googleapis.com https://fonts.gstatic.com https://r2cdn.perplexity.ai",
       // API egress targets (include wss:// for Supabase Realtime WebSocket and Pusher fallback)
-      "connect-src 'self' https://api.openai.com https://*.supabase.co https://*.supabase.in wss://*.supabase.co wss://*.supabase.in wss://*.pusher.com https://vercel.live",
+      // Vercel: vercel.live (toolbar), vercel-insights.com (analytics), va.vercel-scripts.com (scripts)
+      // PostHog: app.posthog.com, *.posthog.com (analytics)
+      "connect-src 'self' https://api.openai.com https://*.supabase.co https://*.supabase.in wss://*.supabase.co wss://*.supabase.in wss://*.pusher.com https://vercel.live https://*.vercel.live https://vitals.vercel-insights.com https://va.vercel-scripts.com https://app.posthog.com https://*.posthog.com",
       "media-src 'self' data: blob: https://*.supabase.co https://*.supabase.in",
       "object-src 'none'",
       "form-action 'self'",
