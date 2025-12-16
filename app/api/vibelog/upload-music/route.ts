@@ -29,6 +29,7 @@ import {
 import { downloadFromStorage, getVibelogPublicUrl } from '@/lib/storage';
 import { createServerSupabaseClient } from '@/lib/supabase';
 import { createServerAdminClient } from '@/lib/supabaseAdmin';
+import { whisperLanguageToISO } from '@/lib/translation';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300; // 5 minutes for full processing pipeline
@@ -258,7 +259,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           });
 
           transcription = response.text || '';
-          detectedLanguage = response.language || 'en';
+          // Whisper returns full language names (e.g., "english") in verbose_json,
+          // but we need ISO 639-1 codes (e.g., "en") for the database constraint
+          detectedLanguage = whisperLanguageToISO(response.language);
 
           // Track cost
           const durationMinutes = (response.duration || 60) / 60;

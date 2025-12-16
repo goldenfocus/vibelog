@@ -10,6 +10,7 @@ import { normalizeVibeLog } from '@/lib/normalize-vibelog';
 import { rateLimit, tooManyResponse } from '@/lib/rateLimit';
 import { downloadFromStorage, deleteFromStorage } from '@/lib/storage';
 import { createServerSupabaseClient } from '@/lib/supabase';
+import { whisperLanguageToISO } from '@/lib/translation';
 
 // Use Node.js runtime for better performance with larger payloads
 export const runtime = 'nodejs';
@@ -276,7 +277,9 @@ export async function POST(request: NextRequest) {
     });
 
     // Extract language metadata from verbose response
-    const detectedLanguage = transcription.language || 'en'; // ISO 639-1 code
+    // Whisper returns full language names (e.g., "english") in verbose_json,
+    // but we need ISO 639-1 codes (e.g., "en") for the database constraint
+    const detectedLanguage = whisperLanguageToISO(transcription.language);
     // Normalize "vibelog" variations (Whisper often mishears it)
     const transcriptionText = normalizeVibeLog(transcription.text);
     const actualDuration = transcription.duration || estimatedDurationSeconds;
