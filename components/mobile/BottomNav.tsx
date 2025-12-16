@@ -275,7 +275,7 @@ export function BottomNav({ className, alwaysVisible = false, onCreateClick }: B
           // Regular nav link
           return (
             <Link
-              key={item.href}
+              key={item.ariaLabel}
               href={item.href}
               onClick={() => handleNavClick(item)}
               className={cn(
