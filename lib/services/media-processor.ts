@@ -37,6 +37,7 @@ import {
   normalizeMimeType,
   formatBytes,
   WHISPER_CONSTRAINTS,
+  type ValidationResult,
 } from '@/lib/media';
 import { withProcessingContext } from '@/lib/media/processing-context';
 import { normalizeVibeLog } from '@/lib/normalize-vibelog';
