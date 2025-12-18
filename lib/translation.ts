@@ -34,6 +34,9 @@ export const LANGUAGE_FULL_NAMES: Record<SupportedLanguage, string> = {
   zh: 'Chinese Simplified (简体中文)',
 };
 
+// Re-export from dedicated module for backwards compatibility
+export { whisperLanguageToISO } from '@/lib/whisper-language';
+
 // Translation result for a single language
 export interface TranslatedContent {
   title: string;

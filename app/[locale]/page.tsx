@@ -1,12 +1,13 @@
 'use client';
 
-import { Mic, Video } from 'lucide-react';
+import { Mic, Video, Music } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, Suspense, useCallback } from 'react';
 
 import { VideoCreator } from '@/components/creation/VideoCreator';
 import HomeCommunityShowcase from '@/components/home/HomeCommunityShowcase';
 import { Portal } from '@/components/home/Portal';
+import { MediaUploadZone } from '@/components/media';
 import MicRecorder from '@/components/MicRecorder';
 import Navigation from '@/components/Navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -29,13 +30,37 @@ function RemixHandler({ onRemixContent }: { onRemixContent: (content: string | n
 }
 
 export default function Home() {
-  const { t, isLoading } = useI18n();
+  const { t, isLoading, locale } = useI18n();
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const isLoggedIn = Boolean(user);
 
+  // #region agent log
+  // Debug: Log translation state to verify hypotheses
+  useEffect(() => {
+    fetch('http://127.0.0.1:7242/ingest/f4483eb0-cedb-4874-a476-130070d1c030', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        location: 'app/[locale]/page.tsx:Home',
+        message: 'Translation debug info',
+        data: {
+          locale,
+          isLoading,
+          testTranslation: t('common.loading'),
+          heroTitleKey: t('home.hero.title'),
+          heroSubtitleKey: t('home.hero.subtitle'),
+        },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        hypothesisId: 'A,B,C',
+      }),
+    }).catch(() => {});
+  }, [locale, isLoading, t]);
+  // #endregion
+
   const [remixContent, setRemixContent] = useState<string | null>(null);
-  const [creationMode, setCreationMode] = useState<'audio' | 'video'>('audio');
+  const [creationMode, setCreationMode] = useState<'audio' | 'video' | 'music'>('audio');
   const [refreshFeed, setRefreshFeed] = useState<(() => void) | null>(null);
   const [mounted, setMounted] = useState(false);
   const [isAwakening, setIsAwakening] = useState(false);
@@ -195,6 +220,7 @@ export default function Home() {
                 {[
                   { mode: 'audio' as const, Icon: Mic, label: t('home.modes.audio') },
                   { mode: 'video' as const, Icon: Video, label: t('home.modes.video') },
+                  { mode: 'music' as const, Icon: Music, label: 'Music' },
                 ].map(({ mode, Icon }) => (
                   <button
                     key={mode}
@@ -224,6 +250,14 @@ export default function Home() {
                 <MicRecorder remixContent={remixContent} onSaveSuccess={handleSaveSuccess} />
               )}
               {creationMode === 'video' && isLoggedIn && <VideoCreator />}
+              {creationMode === 'music' && isLoggedIn && (
+                <MediaUploadZone
+                  onSuccess={() => {
+                    handleSaveSuccess();
+                  }}
+                  onCancel={() => setCreationMode('audio')}
+                />
+              )}
             </div>
           </div>
         </div>

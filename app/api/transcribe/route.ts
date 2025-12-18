@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import OpenAI from 'openai';
 
-import { getCachedResponse, setCachedResponse } from '@/lib/ai-cache';
-import { trackAICost, calculateWhisperCost, isDailyLimitExceeded } from '@/lib/ai-cost-tracker';
-// import { checkAndBlockBots } from '@/lib/botid-check'; // DISABLED: Blocking legit users
+import { isDailyLimitExceeded } from '@/lib/ai-cost-tracker';
 import { config } from '@/lib/config';
 import { isDev } from '@/lib/env';
-import { normalizeVibeLog } from '@/lib/normalize-vibelog';
+import { validateMediaFile, formatBytes } from '@/lib/media';
 import { rateLimit, tooManyResponse } from '@/lib/rateLimit';
-import { downloadFromStorage, deleteFromStorage } from '@/lib/storage';
+import {
+  processVoiceRecording,
+  processStorageMedia,
+  MediaProcessorErrorCodes,
+} from '@/lib/services/media-processor';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
 // Use Node.js runtime for better performance with larger payloads
@@ -17,12 +18,6 @@ export const maxDuration = 60; // 60 seconds for transcription
 
 export async function POST(request: NextRequest) {
   try {
-    // 🛡️ BOT PROTECTION: DISABLED - was blocking legitimate users
-    // const botCheck = await checkAndBlockBots();
-    // if (botCheck) {
-    //   return botCheck;
-    // }
-
     // 🛡️ CIRCUIT BREAKER: Check if daily cost limit exceeded
     if (await isDailyLimitExceeded()) {
       return NextResponse.json(
@@ -38,12 +33,13 @@ export async function POST(request: NextRequest) {
     // Rate limit per user if logged in; otherwise per IP
     const supa = await createServerSupabaseClient();
     const { data: auth } = await supa.auth.getUser();
-    const userId = auth?.user?.id;
+    const userId = auth?.user?.id || null;
 
     // Use rate limits from config (AGGRESSIVE LIMITS for cost protection)
     const limits = config.rateLimits.transcription;
     const opts = userId ? limits.authenticated : limits.anonymous;
     const rl = await rateLimit(request, 'transcribe', opts, userId || undefined);
+
     if (!rl.success) {
       // Custom response for anonymous users to encourage signup
       if (!userId) {
@@ -75,308 +71,194 @@ export async function POST(request: NextRequest) {
 
     // Support two methods: direct upload (formData) and storage path (JSON)
     const contentType = request.headers.get('content-type') || '';
-    let audioFile: File;
-    let storagePath: string | null = null;
 
+    // ==========================================================================
+    // Method 1: Storage Path (JSON body) - for large files
+    // ==========================================================================
     if (contentType.includes('application/json')) {
-      // NEW WAY: Download from storage (supports unlimited file sizes!)
       const body = await request.json();
-      storagePath = body.storagePath;
+      const storagePath = body.storagePath;
 
       if (!storagePath) {
         return NextResponse.json({ error: 'Missing storagePath in request body' }, { status: 400 });
       }
 
-      console.log('📥 Downloading media from storage:', storagePath);
+      if (isDev) {
+        console.log('📥 Processing media from storage:', storagePath);
+      }
 
-      try {
-        // Download file from Supabase Storage
-        const blob = await downloadFromStorage(storagePath);
+      // Use the unified media processor
+      const result = await processStorageMedia({
+        storagePath,
+        userId,
+        deleteAfterProcessing: true, // Clean up after transcription
+      });
 
-        // Detect if it's video or audio from blob type
-        const isVideo = blob.type?.startsWith('video/');
-        const fileExt = isVideo
-          ? blob.type.includes('mp4')
-            ? 'mp4'
-            : blob.type.includes('quicktime')
-              ? 'mov'
-              : 'webm'
-          : 'webm';
+      if (!result.success) {
+        return mapErrorToResponse(result.error!);
+      }
 
-        // Convert blob to File
-        audioFile = new File([blob], `recording.${fileExt}`, {
-          type: blob.type || 'audio/webm',
-        });
-
-        console.log('✅ Downloaded:', audioFile.size, 'bytes', isVideo ? '(video)' : '(audio)');
-      } catch (storageError) {
-        console.error('Storage download failed:', storageError);
-        return NextResponse.json(
-          {
-            error: 'Failed to download media from storage',
-            message: storageError instanceof Error ? storageError.message : 'Unknown error',
-          },
-          { status: 500 }
+      if (isDev) {
+        console.log(
+          '✅ Transcription completed:',
+          result.data!.transcription.substring(0, 100) + '...'
         );
-      }
-    } else {
-      // OLD WAY: Direct formData upload (4MB limit, kept for backwards compatibility)
-      const formData = await request.formData();
-      // Accept both 'audio' and 'video' form field names
-      const file = (formData.get('audio') || formData.get('video')) as File;
-
-      if (!file) {
-        return NextResponse.json({ error: 'No audio or video file provided' }, { status: 400 });
+        console.log('🌐 Detected language:', result.data!.detectedLanguage);
+        if (result.metadata.cost) {
+          console.log(`💰 Cost: $${result.metadata.cost.toFixed(4)}`);
+        }
       }
 
-      audioFile = file;
+      return NextResponse.json({
+        transcription: result.data!.transcription,
+        detectedLanguage: result.data!.detectedLanguage,
+        success: true,
+      });
+    }
 
-      // Validate file type - support both audio and video
-      const fileType = (audioFile.type || '').split(';')[0].trim();
-      const ALLOWED_TYPES = [
-        // Audio formats
-        'audio/webm',
-        'audio/wav',
-        'audio/mpeg',
-        'audio/mp4',
-        'audio/mp3',
-        'audio/ogg',
-        // Video formats (Whisper API supports these)
-        'video/webm',
-        'video/mp4',
-        'video/quicktime', // .mov
-        'video/mpeg',
-      ];
+    // ==========================================================================
+    // Method 2: Direct Upload (FormData) - for small files
+    // ==========================================================================
+    const formData = await request.formData();
+    const file = (formData.get('audio') || formData.get('video')) as File;
 
-      if (!ALLOWED_TYPES.includes(fileType)) {
+    if (!file) {
+      return NextResponse.json({ error: 'No audio or video file provided' }, { status: 400 });
+    }
+
+    // Validate the file using the new validation layer
+    const validation = await validateMediaFile(file, file.type, {
+      validateContent: true, // Check magic numbers
+      forWhisper: true, // Apply Whisper-specific constraints
+    });
+
+    if (!validation.valid) {
+      // Map validation errors to appropriate HTTP status codes
+      const isTypeError = validation.errors.some(
+        e => e.includes('not allowed') || e.includes('not supported')
+      );
+      const isSizeError = validation.errors.some(
+        e => e.includes('too large') || e.includes('too small')
+      );
+
+      if (isTypeError) {
         return NextResponse.json(
           {
             error: 'Unsupported media format',
-            details: `Supported formats: WebM, MP4, MOV, WAV, MP3. You uploaded: ${fileType}`,
+            details: `Supported formats: WebM, MP4, MOV, WAV, MP3. ${validation.errors.join('; ')}`,
           },
           { status: 415 }
         );
       }
 
-      // Use file constraints from config (only for direct uploads)
-      const isVideo = fileType.startsWith('video/');
-      const { maxSize: AUDIO_MAX_SIZE, minSize: MIN_SIZE_BYTES } = config.files.audio;
-
-      // Whisper API has a 25MB limit for all files
-      const WHISPER_MAX_SIZE = 25 * 1024 * 1024; // 25MB
-      const MAX_SIZE_BYTES = isVideo
-        ? Math.min(WHISPER_MAX_SIZE, 25 * 1024 * 1024) // 25MB for video
-        : AUDIO_MAX_SIZE; // Use config limit for audio
-
-      // Check for empty or too small files
-      if (audioFile.size === 0) {
-        return NextResponse.json(
-          { error: `${isVideo ? 'Video' : 'Audio'} file is empty. Please try recording again.` },
-          { status: 400 }
-        );
-      }
-
-      // Check for minimum file size to avoid corrupted recordings
-      if (audioFile.size < MIN_SIZE_BYTES) {
+      if (isSizeError) {
+        const isVideo = file.type?.startsWith('video/');
         return NextResponse.json(
           {
-            error: `${isVideo ? 'Video' : 'Audio'} file is too small or corrupted. Please try recording again with longer ${isVideo ? 'video' : 'audio'}.`,
+            error: `${isVideo ? 'Video' : 'Audio'} file size issue`,
+            details: validation.errors.join('; '),
           },
-          { status: 400 }
+          { status: isSizeError && validation.errors[0].includes('large') ? 413 : 400 }
         );
       }
 
-      if (audioFile.size > MAX_SIZE_BYTES) {
-        return NextResponse.json(
-          {
-            error: `${isVideo ? 'Video' : 'Audio'} file too large`,
-            details: `Maximum size is ${MAX_SIZE_BYTES / (1024 * 1024)}MB. Your file is ${(audioFile.size / (1024 * 1024)).toFixed(1)}MB`,
-          },
-          { status: 413 }
-        );
-      }
+      return NextResponse.json(
+        {
+          error: 'Invalid media file',
+          details: validation.errors.join('; '),
+        },
+        { status: 400 }
+      );
     }
 
-    // Detect if it's a video or audio file
-    const isVideo = audioFile.type?.startsWith('video/');
+    // Log validation warnings (content type mismatches, etc.)
+    if (validation.warnings.length > 0 && isDev) {
+      console.warn('⚠️ Validation warnings:', validation.warnings);
+    }
+
+    if (isDev) {
+      const isVideo = file.type?.startsWith('video/');
+      console.log(
+        `${isVideo ? '🎥' : '🎤'} Transcribing ${isVideo ? 'video' : 'audio'}:`,
+        formatBytes(file.size),
+        file.type
+      );
+    }
+
+    // Process the file using the unified media processor
+    const result = await processVoiceRecording({
+      file,
+      mimeType: validation.normalized.mimeType,
+      userId,
+      skipContentValidation: true, // Already validated above
+    });
+
+    if (!result.success) {
+      return mapErrorToResponse(result.error!);
+    }
 
     if (isDev) {
       console.log(
-        `${isVideo ? '🎥' : '🎤'} Transcribing ${isVideo ? 'video' : 'audio'}:`,
-        audioFile.size,
-        'bytes',
-        audioFile.type,
-        storagePath ? `(from storage: ${storagePath})` : '(direct upload)'
+        '✅ Transcription completed:',
+        result.data!.transcription.substring(0, 100) + '...'
       );
+      console.log('🌐 Detected language:', result.data!.detectedLanguage);
+      console.log(`⏱️ Processing time: ${result.metadata.processingTime}ms`);
+      if (result.metadata.cached) {
+        console.log('💾 Result was cached');
+      } else if (result.metadata.cost) {
+        console.log(`💰 Cost: $${result.metadata.cost.toFixed(4)}`);
+      }
     }
 
-    // 🔍 CACHE CHECK: Check if we already transcribed this audio
-    const audioBuffer = await audioFile.arrayBuffer();
-    const cachedResult = await getCachedResponse('transcription', Buffer.from(audioBuffer));
-
-    if (cachedResult) {
-      console.log('💾 Cache hit! Returning cached transcription (saved API call)');
-
-      // Track cache hit (no cost)
-      await trackAICost(userId || null, 'whisper', 0, {
-        endpoint: '/api/transcribe',
-        cache_hit: true,
-        file_size: audioFile.size,
-      });
-
-      return NextResponse.json(cachedResult);
-    }
-
-    // Check if we have a real API key, otherwise return mock response for testing
-    if (
-      !config.ai.openai.apiKey ||
-      config.ai.openai.apiKey === 'dummy_key' ||
-      config.ai.openai.apiKey === 'your_openai_api_key_here'
-    ) {
-      console.warn('🧪 Using mock transcription for development/testing');
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API delay
-      return NextResponse.json({
-        transcription:
-          "Today I want to share some thoughts about the future of voice technology and how it's changing the way we create content. Speaking is our most natural form of communication and I believe we're moving toward a world where your voice becomes your pen.",
-        detectedLanguage: 'en',
-        success: true,
-      });
-    }
-
-    // Initialize OpenAI client only when we have a real API key
-    const openai = new OpenAI({
-      apiKey: config.ai.openai.apiKey,
-      timeout: 60_000,
-    });
-
-    // Convert File to format OpenAI expects
-    // Detect proper file extension based on type
-    const fileType = audioFile.type || '';
-    const fileExt = isVideo
-      ? fileType.includes('mp4')
-        ? 'mp4'
-        : fileType.includes('quicktime')
-          ? 'mov'
-          : 'webm'
-      : 'webm';
-
-    const whisperFile = new File([audioFile], `recording.${fileExt}`, {
-      type: audioFile.type || 'audio/webm',
-    });
-
-    // Calculate duration (rough estimate: 1 byte ≈ 0.0001 seconds for compressed audio)
-    const estimatedDurationSeconds = Math.ceil(audioFile.size / 10000); // Very rough estimate
-
-    // Use verbose_json to get language detection metadata
-    const transcription = await openai.audio.transcriptions.create({
-      file: whisperFile,
-      model: config.ai.openai.whisperModel,
-      // Remove language parameter to enable auto-detection
-      response_format: 'verbose_json',
-    });
-
-    // Extract language metadata from verbose response
-    const detectedLanguage = transcription.language || 'en'; // ISO 639-1 code
-    // Normalize "vibelog" variations (Whisper often mishears it)
-    const transcriptionText = normalizeVibeLog(transcription.text);
-    const actualDuration = transcription.duration || estimatedDurationSeconds;
-
-    // 💰 COST TRACKING: Track this API call
-    const cost = calculateWhisperCost(actualDuration);
-    const { allowed } = await trackAICost(userId || null, 'whisper', cost, {
-      endpoint: '/api/transcribe',
-      cache_hit: false,
-      duration_seconds: actualDuration,
-      file_size: audioFile.size,
-      detected_language: detectedLanguage,
-    });
-
-    if (!allowed) {
-      // Circuit breaker triggered mid-request
-      return NextResponse.json(
-        {
-          error: 'Daily cost limit exceeded',
-          message:
-            'AI services have reached their daily cost limit. Your transcription was completed but the service is now paused. Try again tomorrow.',
-        },
-        { status: 503 }
-      );
-    }
-
-    if (isDev) {
-      console.log('✅ Transcription completed:', transcriptionText.substring(0, 100) + '...');
-      console.log('🌐 Detected language:', detectedLanguage);
-      console.log(`💰 Cost: $${cost.toFixed(4)} (${actualDuration.toFixed(1)}s audio)`);
-    }
-
-    const result = {
-      transcription: transcriptionText,
-      detectedLanguage, // ISO 639-1 code (e.g., "fr", "en", "es")
+    return NextResponse.json({
+      transcription: result.data!.transcription,
+      detectedLanguage: result.data!.detectedLanguage,
       success: true,
-    };
-
-    // 💾 CACHE STORE: Save result for future requests
-    await setCachedResponse('transcription', Buffer.from(audioBuffer), result);
-
-    // Clean up storage file after successful transcription
-    if (storagePath) {
-      console.log('🧹 Cleaning up storage file:', storagePath);
-      // Fire and forget - don't wait for deletion
-      deleteFromStorage(storagePath).catch(err =>
-        console.warn('Failed to delete storage file:', err)
-      );
-    }
-
-    return NextResponse.json(result);
+    });
   } catch (error) {
-    // Always log detailed error in production for debugging
     console.error('Transcription error:', error);
 
-    // Provide more detailed error information
-    let errorMessage = 'Failed to transcribe audio';
-    let statusCode = 500;
-    let errorDetails = '';
-
-    if (error instanceof Error) {
-      errorDetails = error.message;
-
-      // Handle specific OpenAI API errors
-      if (error.message.includes('Unsupported file type')) {
-        errorMessage = 'Audio format not supported. Please try a different recording format.';
-        statusCode = 415;
-      } else if (error.message.includes('File size too large')) {
-        errorMessage = 'Audio file is too large. Please record a shorter clip.';
-        statusCode = 413;
-      } else if (
-        error.message.includes('Invalid API key') ||
-        error.message.includes('invalid_api_key')
-      ) {
-        errorMessage = 'API configuration error. OpenAI API key is invalid or missing.';
-        statusCode = 401;
-      } else if (
-        error.message.includes('insufficient_quota') ||
-        error.message.includes('exceeded')
-      ) {
-        errorMessage = 'OpenAI API quota exceeded. Please check your billing settings.';
-        statusCode = 402;
-      }
-
-      // Always log detailed error for debugging
-      console.error('[TRANSCRIPTION ERROR]', {
-        message: error.message,
-        name: error.name,
-        hasApiKey: !!config.ai.openai.apiKey,
-        apiKeyPrefix: config.ai.openai.apiKey?.substring(0, 10) + '...',
-      });
-    }
-
-    // Include details in response for debugging (remove in production if needed)
     return NextResponse.json(
       {
-        error: errorMessage,
-        details: errorDetails || 'Unknown error',
+        error: 'Failed to transcribe audio',
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
-      { status: statusCode }
+      { status: 500 }
     );
   }
+}
+
+/**
+ * Map media processor errors to HTTP responses
+ */
+function mapErrorToResponse(error: {
+  code: string;
+  message: string;
+  details?: string;
+}): NextResponse {
+  const statusMap: Record<string, number> = {
+    [MediaProcessorErrorCodes.VALIDATION_FAILED]: 400,
+    [MediaProcessorErrorCodes.FILE_TOO_LARGE]: 413,
+    [MediaProcessorErrorCodes.FILE_TOO_SMALL]: 400,
+    [MediaProcessorErrorCodes.UNSUPPORTED_TYPE]: 415,
+    [MediaProcessorErrorCodes.CONTENT_MISMATCH]: 400,
+    [MediaProcessorErrorCodes.STORAGE_ERROR]: 500,
+    [MediaProcessorErrorCodes.TRANSCRIPTION_ERROR]: 500,
+    [MediaProcessorErrorCodes.DAILY_LIMIT_EXCEEDED]: 503,
+    [MediaProcessorErrorCodes.API_KEY_INVALID]: 401,
+    [MediaProcessorErrorCodes.TIMEOUT]: 504,
+    [MediaProcessorErrorCodes.UNKNOWN_ERROR]: 500,
+  };
+
+  const status = statusMap[error.code] || 500;
+
+  return NextResponse.json(
+    {
+      error: error.message,
+      details: error.details,
+      code: error.code,
+    },
+    { status }
+  );
 }

@@ -10,6 +10,7 @@ import { ReactQueryProvider } from '@/components/providers/ReactQueryProvider';
 import { Toaster as Sonner } from '@/components/ui/sonner';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { UploadJobsIndicator } from '@/components/upload-jobs';
 import { VibeBrainWidget } from '@/components/vibe-brain/VibeBrainWidget';
 import { getGlobalSchemas } from '@/lib/seo/global-schema';
 import {
@@ -138,6 +139,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
               <VibeBrainWidget />
               <Toaster />
               <Sonner />
+              <UploadJobsIndicator />
             </BottomNavProvider>
           </I18nProvider>
         </TooltipProvider>
