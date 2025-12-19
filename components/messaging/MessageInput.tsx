@@ -178,7 +178,8 @@ export function MessageInput({
 
   // Create stable blob URL when audioBlob changes
   useEffect(() => {
-    if (audioBlob) {
+    // Only create blob URL if audioBlob exists and has actual content
+    if (audioBlob && audioBlob.size > 0) {
       const url = URL.createObjectURL(audioBlob);
       setPreviewBlobUrl(url);
       // Clean up on unmount or when audioBlob changes
@@ -267,7 +268,9 @@ export function MessageInput({
 
   // Send voice message
   const handleSendVoiceMessage = async () => {
-    if (!audioBlob) {
+    // Validate audio blob exists and has content
+    if (!audioBlob || audioBlob.size === 0) {
+      console.warn('Cannot send empty audio message');
       return;
     }
 
