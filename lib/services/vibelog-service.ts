@@ -253,13 +253,58 @@ export async function createVibelog(
 ) {
   console.log('📝 [CREATE-VIBELOG] Inserting with user_id:', userId);
 
-  const { data: directResult, error: directError } = await supabase
-    .from('vibelogs')
-    .insert([data])
-    .select('id')
-    .single();
+  let retries = 0;
+  const maxRetries = 3;
+  let insertData = { ...data };
 
-  if (directError) {
+  while (retries < maxRetries) {
+    const { data: directResult, error: directError } = await supabase
+      .from('vibelogs')
+      .insert([insertData])
+      .select('id')
+      .single();
+
+    // Success!
+    if (!directError) {
+      const vibelogId = directResult.id;
+      let finalSlug = insertData.public_slug;
+
+      if (userId) {
+        finalSlug = generateUserSlug(insertData.title, vibelogId);
+        await supabase.from('vibelogs').update({ slug: finalSlug }).eq('id', vibelogId);
+      }
+
+      return {
+        vibelogId,
+        slug: finalSlug,
+        isAnonymous: !userId,
+      };
+    }
+
+    // Check if it's a duplicate slug error
+    if (directError.code === '23505' && directError.message?.includes('public_slug')) {
+      retries++;
+      console.warn(
+        `⚠️ [CREATE-VIBELOG] Slug collision detected (attempt ${retries}/${maxRetries})`
+      );
+
+      // Generate a new slug with additional randomness
+      const randomSuffix = Math.random().toString(36).substring(2, 8);
+      const timestamp = Date.now();
+      insertData = {
+        ...insertData,
+        public_slug: insertData.public_slug
+          ? `${insertData.public_slug}-${randomSuffix}`
+          : `vibelog-${timestamp}-${randomSuffix}`,
+        slug: insertData.slug
+          ? `${insertData.slug}-${randomSuffix}`
+          : `vibelog-${timestamp}-${randomSuffix}`,
+      };
+
+      continue; // Retry with new slug
+    }
+
+    // Different error - throw it
     console.error('❌ [CREATE-VIBELOG] Insert failed:', {
       code: directError.code,
       message: directError.message,
@@ -269,19 +314,8 @@ export async function createVibelog(
     throw new Error(`Database insert failed: ${directError.message}`);
   }
 
-  const vibelogId = directResult.id;
-  let finalSlug = data.public_slug;
-
-  if (userId) {
-    finalSlug = generateUserSlug(data.title, vibelogId);
-    await supabase.from('vibelogs').update({ slug: finalSlug }).eq('id', vibelogId);
-  }
-
-  return {
-    vibelogId,
-    slug: finalSlug,
-    isAnonymous: !userId,
-  };
+  // Max retries exceeded
+  throw new Error('Failed to create vibelog: slug collision persisted after retries');
 }
 
 export async function handleAsyncTasks(

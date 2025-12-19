@@ -74,7 +74,7 @@ export default function Home() {
   // Callback for after vibelog is saved - redirect to community page
   const handleSaveSuccess = useCallback(() => {
     // Refresh the feed if available
-    if (refreshFeed) {
+    if (refreshFeed && typeof refreshFeed === 'function') {
       refreshFeed();
     }
     // Redirect to community page to see their vibelog
@@ -253,7 +253,10 @@ export default function Home() {
               {creationMode === 'music' && isLoggedIn && (
                 <MediaUploadZone
                   onSuccess={() => {
-                    handleSaveSuccess();
+                    // MediaUploadZone handles its own navigation, just refresh the feed
+                    if (refreshFeed && typeof refreshFeed === 'function') {
+                      refreshFeed();
+                    }
                   }}
                   onCancel={() => setCreationMode('audio')}
                 />

@@ -5,8 +5,8 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://example.sup
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'mock-key';
 
 // Client-side Supabase client with Brave-compatible settings
-export const createClient = () =>
-  createBrowserClient(supabaseUrl, supabaseAnonKey, {
+export function createClient() {
+  return createBrowserClient(supabaseUrl, supabaseAnonKey, {
     global: {
       headers: {
         Accept: 'application/json',
@@ -19,6 +19,7 @@ export const createClient = () =>
       path: '/',
     },
   });
+}
 
 // Server-side Supabase client
 export const createServerSupabaseClient = async () => {
