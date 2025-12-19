@@ -52,8 +52,11 @@ export function VoiceMessagePlayer({
 
     const handlePlay = () => setIsPlaying(true);
     const handlePause = () => setIsPlaying(false);
-    const handleError = (e: Event) => {
-      console.error('Audio error:', e, 'Audio URL:', audioUrl);
+    const handleError = () => {
+      // Only log error once, not every time user tries to play
+      if (audio.error) {
+        console.warn('Audio unavailable:', audioUrl, 'Error code:', audio.error.code);
+      }
       setIsPlaying(false);
     };
     const handleCanPlay = () => {
@@ -100,6 +103,12 @@ export function VoiceMessagePlayer({
       if (isPlaying) {
         audio.pause();
       } else {
+        // Check if audio has a valid source before trying to play
+        if (!audio.src || audio.error) {
+          console.warn('Audio source unavailable or has error, skipping playback');
+          return;
+        }
+
         // Reset to start if at the end (handle NaN/Infinity duration gracefully)
         const dur = audio.duration;
         if (isFinite(dur) && dur > 0 && audio.currentTime >= dur - 0.1) {
@@ -109,12 +118,14 @@ export function VoiceMessagePlayer({
       }
     } catch (error) {
       console.error('Audio playback error:', error);
-      // Try to recover by resetting
-      audio.currentTime = 0;
-      try {
-        await audio.play();
-      } catch (retryError) {
-        console.error('Audio retry failed:', retryError);
+      // Only retry if it's not a source error
+      if (error instanceof Error && !error.message.includes('no supported sources')) {
+        audio.currentTime = 0;
+        try {
+          await audio.play();
+        } catch (retryError) {
+          console.error('Audio retry failed:', retryError);
+        }
       }
     }
   }, [isPlaying]);

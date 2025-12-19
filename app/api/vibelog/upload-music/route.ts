@@ -541,8 +541,15 @@ OUTPUT FORMAT:
 
     console.log('✅ [MUSIC-UPLOAD] Vibelog created:', result.vibelogId);
 
-    // Build public URL
-    const username = user.user_metadata?.username || user.email?.split('@')[0] || 'user';
+    // Build public URL - fetch actual username from profiles
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('username')
+      .eq('id', userId)
+      .single();
+
+    const username =
+      profile?.username || user.user_metadata?.username || user.email?.split('@')[0] || 'user';
     const publicUrl = result.slug ? `/@${username}/${result.slug}` : `/v/${result.vibelogId}`;
 
     // Determine success message based on content type
