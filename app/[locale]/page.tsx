@@ -122,7 +122,7 @@ export default function Home() {
         <Navigation />
       </div>
 
-      <main className="relative flex min-h-screen flex-col items-center overflow-hidden px-4">
+      <main className="relative flex min-h-screen flex-col items-center px-4">
         {/* Cinematic Universe Background Effects */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div
@@ -197,10 +197,10 @@ export default function Home() {
           {/* Creation State (Awakened) */}
           <div
             className={cn(
-              'absolute inset-0 flex flex-col items-center pt-24 transition-all delay-300 duration-1000',
+              'flex w-full flex-col items-center transition-all delay-300 duration-1000',
               showCreator
                 ? 'translate-y-0 opacity-100'
-                : 'pointer-events-none translate-y-20 opacity-0'
+                : 'pointer-events-none absolute translate-y-20 opacity-0'
             )}
           >
             {/* Back button to return to portal state */}

@@ -1,7 +1,7 @@
 'use client';
 
 import { Check, X } from 'lucide-react';
-import React from 'react';
+import React, { useEffect } from 'react';
 
 interface VibelogEditModalProps {
   isVisible: boolean;
@@ -18,6 +18,16 @@ export default function VibelogEditModal({
   onSave,
   onCancel,
 }: VibelogEditModalProps) {
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (isVisible) {
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isVisible]);
+
   if (!isVisible) {
     return null;
   }
@@ -44,11 +54,11 @@ export default function VibelogEditModal({
             </button>
           </div>
         </div>
-        <div className="flex-1 overflow-hidden">
+        <div className="min-h-0 flex-1 overflow-y-auto">
           <textarea
             value={editedContent}
             onChange={e => onContentChange(e.target.value)}
-            className="h-full w-full resize-none rounded-xl border border-border/30 bg-background/50 p-4 text-foreground placeholder-muted-foreground backdrop-blur-sm transition-colors focus:border-electric focus:outline-none focus:ring-2 focus:ring-electric/20"
+            className="min-h-[300px] w-full resize-none rounded-xl border border-border/30 bg-background/50 p-4 text-foreground placeholder-muted-foreground backdrop-blur-sm transition-colors focus:border-electric focus:outline-none focus:ring-2 focus:ring-electric/20"
             placeholder="Edit your vibelog content..."
             autoFocus
           />
