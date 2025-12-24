@@ -1,6 +1,6 @@
 'use client';
 
-import { LogOut, Loader2, Settings, Shield, MessageCircle, Radio } from 'lucide-react';
+import { LogOut, Loader2, Settings, Shield, MessageCircle, Radio, Info } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 
@@ -142,6 +142,15 @@ export function AccountSheet({
         >
           <Settings className="h-5 w-5" />
           {t('navigation.profileSettings')}
+        </Link>
+
+        <Link
+          href="/about"
+          className="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium text-foreground transition-colors hover:bg-muted/50 active:bg-muted/70"
+          onClick={() => onOpenChange(false)}
+        >
+          <Info className="h-5 w-5" />
+          {t('navigation.about')}
         </Link>
 
         {isAdmin && (

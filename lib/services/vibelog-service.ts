@@ -149,8 +149,8 @@ export async function normalizeVibelogData(
     tags: extractBasicTags(title, fullContent),
     // NOTE: seo_title, seo_description removed - columns don't exist in vibelogs table
     is_public: requestBody.isPublic !== false, // Default to true unless explicitly set to false
-    is_published: requestBody.isPublished !== false, // Default to true unless explicitly set to false
-    published_at: new Date().toISOString(),
+    is_published: requestBody.isPublished === true, // Default to false (draft) unless explicitly set to true
+    published_at: requestBody.isPublished === true ? new Date().toISOString() : null,
     view_count: 0,
     share_count: 0,
     like_count: 0,

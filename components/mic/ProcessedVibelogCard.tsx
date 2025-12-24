@@ -15,6 +15,7 @@ interface ProcessedVibelogCardProps {
   onReadMore: () => void;
   onCopy: () => void;
   onShare: () => void;
+  onPublish?: () => Promise<void>;
   onEditTeaser: () => void;
   onEditFull: () => void;
   onUpgradePrompt: (message: string, benefits: string[]) => void;
@@ -33,6 +34,7 @@ export function ProcessedVibelogCard({
   onReadMore,
   onCopy,
   onShare,
+  onPublish,
   onEditTeaser,
   onEditFull,
   onUpgradePrompt,
@@ -54,6 +56,7 @@ export function ProcessedVibelogCard({
           onCopy={onCopy}
           onEdit={onEditTeaser}
           onShare={onShare}
+          onPublish={onPublish}
           onUpgradePrompt={onUpgradePrompt}
         />
       </div>
