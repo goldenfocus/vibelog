@@ -1,6 +1,6 @@
 'use client';
 
-import { Copy, Share, Edit, X, LogIn } from 'lucide-react';
+import { Copy, Share, Edit, X, LogIn, Send } from 'lucide-react';
 import React, { useState } from 'react';
 
 import ExportButton from '@/components/ExportButton';
@@ -17,6 +17,7 @@ export interface PublishActionsProps {
   onCopy: (content: string) => Promise<void> | void;
   onEdit: () => void;
   onShare: () => void;
+  onPublish?: () => Promise<void>;
   onUpgradePrompt?: (message: string, benefits: string[]) => void;
   onExport?: (format: ExportFormat) => void;
   className?: string;
@@ -88,6 +89,7 @@ export default function PublishActions({
   onCopy,
   onEdit,
   onShare,
+  onPublish,
   onUpgradePrompt: _onUpgradePrompt,
   onExport,
   className = '',
@@ -95,6 +97,7 @@ export default function PublishActions({
   const DEBUG_MODE = process.env.NODE_ENV !== 'production';
   const { t } = useI18n();
   const [showEditPopup, setShowEditPopup] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
 
   // TTS preview removed - use only original audio
 
@@ -116,10 +119,42 @@ export default function PublishActions({
     }
   };
 
+  const handlePublishClick = async () => {
+    if (!onPublish) {
+      return;
+    }
+
+    setIsPublishing(true);
+    try {
+      await onPublish();
+    } catch (error) {
+      if (DEBUG_MODE) {
+        console.error('Publish failed', error);
+      }
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
   const closeEditPopup = () => setShowEditPopup(false);
 
   return (
     <>
+      {/* Prominent Publish Button */}
+      {onPublish && isLoggedIn && (
+        <div className="mb-4 flex justify-center">
+          <button
+            onClick={handlePublishClick}
+            disabled={isPublishing}
+            className="flex items-center gap-3 rounded-2xl bg-gradient-electric px-8 py-4 font-semibold text-white transition-all duration-200 hover:scale-105 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            data-testid="publish-button"
+          >
+            <Send className="h-5 w-5" />
+            {isPublishing ? 'Publishing...' : 'Publish to Community'}
+          </button>
+        </div>
+      )}
+
       <div
         className={`flex justify-center gap-2 sm:gap-3 ${className}`}
         data-testid="publish-actions"

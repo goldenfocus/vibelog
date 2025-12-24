@@ -1,7 +1,7 @@
 'use client';
 
 import { Mic, Video, Music } from 'lucide-react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useState, useEffect, Suspense, useCallback } from 'react';
 
 import { VideoCreator } from '@/components/creation/VideoCreator';
@@ -30,34 +30,9 @@ function RemixHandler({ onRemixContent }: { onRemixContent: (content: string | n
 }
 
 export default function Home() {
-  const { t, isLoading, locale } = useI18n();
+  const { t, isLoading } = useI18n();
   const { user, loading: authLoading } = useAuth();
-  const router = useRouter();
   const isLoggedIn = Boolean(user);
-
-  // #region agent log
-  // Debug: Log translation state to verify hypotheses
-  useEffect(() => {
-    fetch('http://127.0.0.1:7242/ingest/f4483eb0-cedb-4874-a476-130070d1c030', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        location: 'app/[locale]/page.tsx:Home',
-        message: 'Translation debug info',
-        data: {
-          locale,
-          isLoading,
-          testTranslation: t('common.loading'),
-          heroTitleKey: t('home.hero.title'),
-          heroSubtitleKey: t('home.hero.subtitle'),
-        },
-        timestamp: Date.now(),
-        sessionId: 'debug-session',
-        hypothesisId: 'A,B,C',
-      }),
-    }).catch(() => {});
-  }, [locale, isLoading, t]);
-  // #endregion
 
   const [remixContent, setRemixContent] = useState<string | null>(null);
   const [creationMode, setCreationMode] = useState<'audio' | 'video' | 'music'>('audio');
@@ -71,15 +46,15 @@ export default function Home() {
     setMounted(true);
   }, []);
 
-  // Callback for after vibelog is saved - redirect to community page
+  // Callback for after vibelog is saved - just refresh feed, don't redirect
   const handleSaveSuccess = useCallback(() => {
     // Refresh the feed if available
     if (refreshFeed && typeof refreshFeed === 'function') {
       refreshFeed();
     }
-    // Redirect to community page to see their vibelog
-    router.push('/community');
-  }, [refreshFeed, router]);
+    // Don't redirect here - user needs to review and manually publish first
+    // Redirect only happens in the publish handler (MicRecorder.tsx)
+  }, [refreshFeed]);
 
   const handlePortalClick = () => {
     setIsAwakening(true);

@@ -74,25 +74,6 @@ export default function About() {
             <h1 className="mb-6 text-4xl font-bold sm:text-5xl">{t('pages.about.title')}</h1>
           </div>
 
-          {/* Founder Video Placeholder */}
-          <div className="mb-16 text-center">
-            <div className="mb-6 rounded-2xl border border-border/20 bg-card p-8">
-              <div className="flex aspect-video items-center justify-center rounded-xl bg-muted">
-                <div className="text-center">
-                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-electric">
-                    <span className="text-2xl">▶️</span>
-                  </div>
-                  <p className="text-muted-foreground">
-                    {t('pages.about.founderVideo.placeholder')}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {t('pages.about.founderVideo.subtitle')}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* The Problem */}
           <section className="mb-16">
             <h2 className="mb-6 text-3xl font-bold">{t('pages.about.problem.title')}</h2>

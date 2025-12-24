@@ -267,6 +267,8 @@ export function useBulletproofSave() {
           channelId: data.channelId,
           sessionId,
           isTeaser: data.isTeaser,
+          isPublished: data.isPublished, // Pass through publish status (defaults to false if not provided)
+          isPublic: data.isPublic, // Pass through public status
           metadata: {
             ...data.metadata,
             attempt: attempt,

@@ -41,6 +41,7 @@ const nextConfig: NextConfig = {
         hostname: '*.googleusercontent.com',
       },
     ],
+    qualities: [50, 75, 85, 90, 95, 100],
   },
   turbopack: {
     rules: {
