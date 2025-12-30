@@ -125,6 +125,19 @@ export default function ToneSettings({ disabled = false }: ToneSettingsProps) {
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen]);
 
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   const handleToneChange = async (newTone: WritingTone) => {
     await setTone(newTone);
   };
@@ -147,16 +160,19 @@ export default function ToneSettings({ disabled = false }: ToneSettingsProps) {
       {isOpen && (
         <>
           {/* Backdrop - both mobile and desktop */}
-          <div className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm" />
+          <div
+            className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm"
+            onClick={() => setIsOpen(false)}
+          />
 
           {/* Panel */}
           <div
             ref={panelRef}
             className={[
               // Mobile: Full screen modal (no inset, no rounded corners, fills viewport)
-              'fixed inset-0 z-50 flex flex-col bg-card',
+              'fixed inset-0 z-50 flex flex-col overflow-hidden bg-card',
               // Desktop: Centered fixed modal (easier to access, no clipping)
-              'sm:inset-auto sm:left-1/2 sm:top-1/2 sm:max-h-[80vh] sm:w-96 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:overflow-y-auto sm:rounded-lg sm:shadow-2xl',
+              'sm:inset-auto sm:left-1/2 sm:top-1/2 sm:max-h-[80vh] sm:w-96 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-lg sm:shadow-2xl',
               // Animation
               'animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2',
               // Border (desktop only)
