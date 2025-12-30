@@ -153,18 +153,18 @@ export default function ToneSettings({ disabled = false }: ToneSettingsProps) {
           <div
             ref={panelRef}
             className={[
-              // Mobile: Full screen modal
-              'fixed inset-4 z-50 rounded-lg bg-card shadow-2xl',
+              // Mobile: Full screen modal (no inset, no rounded corners, fills viewport)
+              'fixed inset-0 z-50 flex flex-col bg-card',
               // Desktop: Centered fixed modal (easier to access, no clipping)
-              'sm:fixed sm:inset-auto sm:left-1/2 sm:top-1/2 sm:max-h-[80vh] sm:w-96 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:overflow-y-auto',
+              'sm:inset-auto sm:left-1/2 sm:top-1/2 sm:max-h-[80vh] sm:w-96 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:overflow-y-auto sm:rounded-lg sm:shadow-2xl',
               // Animation
               'animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2',
-              // Border
-              'border border-border',
+              // Border (desktop only)
+              'sm:border sm:border-border',
             ].join(' ')}
           >
-            {/* Header */}
-            <div className="flex items-center justify-between border-b border-border p-4">
+            {/* Header - fixed on mobile */}
+            <div className="flex shrink-0 items-center justify-between border-b border-border p-4">
               <h3 className="text-lg font-semibold">Content Settings</h3>
               <button
                 onClick={() => setIsOpen(false)}
@@ -175,8 +175,8 @@ export default function ToneSettings({ disabled = false }: ToneSettingsProps) {
               </button>
             </div>
 
-            {/* Content */}
-            <div className="space-y-4 p-4">
+            {/* Content - scrollable on mobile */}
+            <div className="flex-1 space-y-4 overflow-y-auto p-4">
               {/* Tone Selector */}
               <div>
                 <label className="mb-3 block text-sm font-medium">Writing Tone</label>
@@ -210,8 +210,8 @@ export default function ToneSettings({ disabled = false }: ToneSettingsProps) {
               </div>
             </div>
 
-            {/* Footer note */}
-            <div className="border-t border-border bg-muted/50 p-3 text-xs text-muted-foreground">
+            {/* Footer note - fixed on mobile */}
+            <div className="shrink-0 border-t border-border bg-muted/50 p-3 text-xs text-muted-foreground">
               These settings apply to this vibelog. Change defaults in settings.
             </div>
           </div>
