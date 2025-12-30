@@ -17,6 +17,7 @@ export default function Pricing() {
       description: t('pages.pricing.plans.casual.description'),
       price: t('pages.pricing.plans.casual.price'),
       yearlyPrice: t('pages.pricing.plans.casual.price'),
+      yearlyTotal: null,
       features: t('pages.pricing.plans.casual.features'),
       cta: t('pages.pricing.plans.casual.cta'),
       popular: false,
@@ -26,6 +27,7 @@ export default function Pricing() {
       description: t('pages.pricing.plans.influencer.description'),
       price: t('pages.pricing.plans.influencer.price'),
       yearlyPrice: t('pages.pricing.plans.influencer.yearlyPrice'),
+      yearlyTotal: '$99',
       features: t('pages.pricing.plans.influencer.features'),
       cta: t('pages.pricing.plans.influencer.cta'),
       popular: true,
@@ -35,6 +37,7 @@ export default function Pricing() {
       description: t('pages.pricing.plans.agency.description'),
       price: t('pages.pricing.plans.agency.price'),
       yearlyPrice: t('pages.pricing.plans.agency.yearlyPrice'),
+      yearlyTotal: '$690',
       features: t('pages.pricing.plans.agency.features'),
       cta: t('pages.pricing.plans.agency.cta'),
       popular: false,
@@ -120,26 +123,21 @@ export default function Pricing() {
                       {(() => {
                         if (plan.price === t('pages.pricing.plans.casual.price')) {
                           return plan.price; // Free plan
-                        } else if (plan.name === t('pages.pricing.plans.influencer.name')) {
-                          return isYearly ? '$9' : '$12';
-                        } else if (plan.name === t('pages.pricing.plans.agency.name')) {
-                          return isYearly ? '$60' : '$99';
                         }
                         return isYearly ? plan.yearlyPrice : plan.price;
                       })()}
                     </span>
                     {plan.price !== t('pages.pricing.plans.casual.price') && (
-                      <span className="text-muted-foreground">{isYearly ? '/mo' : '/month'}</span>
+                      <span className="text-muted-foreground">/mo</span>
                     )}
-                    {isYearly && plan.price !== t('pages.pricing.plans.casual.price') && (
-                      <div className="mt-2 text-sm text-muted-foreground">
-                        <div>billed yearly</div>
-                        <div className="mt-1">
-                          {plan.name === t('pages.pricing.plans.influencer.name') && '$99/year'}
-                          {plan.name === t('pages.pricing.plans.agency.name') && '$690/year'}
+                    {isYearly &&
+                      plan.price !== t('pages.pricing.plans.casual.price') &&
+                      plan.yearlyTotal && (
+                        <div className="mt-2 text-sm text-muted-foreground">
+                          <div>billed yearly</div>
+                          <div className="mt-1">{plan.yearlyTotal}/year</div>
                         </div>
-                      </div>
-                    )}
+                      )}
                   </div>
 
                   <Button
