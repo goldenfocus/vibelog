@@ -146,17 +146,17 @@ export default function ToneSettings({ disabled = false }: ToneSettingsProps) {
       {/* Settings Panel */}
       {isOpen && (
         <>
-          {/* Mobile backdrop */}
-          <div className="fixed inset-0 z-40 bg-background/90 backdrop-blur-xl sm:hidden" />
+          {/* Backdrop - both mobile and desktop */}
+          <div className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm" />
 
           {/* Panel */}
           <div
             ref={panelRef}
             className={[
               // Mobile: Full screen modal
-              'fixed inset-4 z-50 rounded-lg bg-card shadow-2xl sm:absolute sm:inset-auto',
-              // Desktop: Floating panel positioned above/left of button
-              'sm:bottom-full sm:right-0 sm:mb-2 sm:w-80',
+              'fixed inset-4 z-50 rounded-lg bg-card shadow-2xl',
+              // Desktop: Centered fixed modal (easier to access, no clipping)
+              'sm:fixed sm:inset-auto sm:left-1/2 sm:top-1/2 sm:max-h-[80vh] sm:w-96 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:overflow-y-auto',
               // Animation
               'animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2',
               // Border
