@@ -125,6 +125,33 @@ export default function ToneSettings({ disabled = false }: ToneSettingsProps) {
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen]);
 
+  // Prevent body scroll and horizontal overflow when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      // Lock both vertical and horizontal scroll
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+      // Prevent any overflow on mobile
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.height = '100%';
+    } else {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.height = '';
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.height = '';
+    };
+  }, [isOpen]);
+
   const handleToneChange = async (newTone: WritingTone) => {
     await setTone(newTone);
   };
@@ -146,25 +173,29 @@ export default function ToneSettings({ disabled = false }: ToneSettingsProps) {
       {/* Settings Panel */}
       {isOpen && (
         <>
-          {/* Mobile backdrop */}
-          <div className="fixed inset-0 z-40 bg-background/90 backdrop-blur-xl sm:hidden" />
+          {/* Backdrop - both mobile and desktop */}
+          <div
+            className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm"
+            onClick={() => setIsOpen(false)}
+          />
 
           {/* Panel */}
           <div
             ref={panelRef}
             className={[
-              // Mobile: Full screen modal
-              'fixed inset-4 z-50 rounded-lg bg-card shadow-2xl sm:absolute sm:inset-auto',
-              // Desktop: Floating panel positioned above/left of button
-              'sm:bottom-full sm:right-0 sm:mb-2 sm:w-80',
+              // Mobile: Full screen modal (no inset, no rounded corners, fills viewport)
+              'fixed inset-0 z-50 flex flex-col overflow-hidden bg-card',
+              // Desktop: Centered fixed modal (easier to access, no clipping)
+              'sm:inset-auto sm:left-1/2 sm:top-1/2 sm:max-h-[80vh] sm:w-96 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-lg sm:shadow-2xl',
               // Animation
               'animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2',
-              // Border
-              'border border-border',
+              // Border (desktop only)
+              'sm:border sm:border-border',
             ].join(' ')}
+            style={{ touchAction: 'pan-y' }}
           >
-            {/* Header */}
-            <div className="flex items-center justify-between border-b border-border p-4">
+            {/* Header - fixed on mobile */}
+            <div className="flex shrink-0 items-center justify-between border-b border-border p-4">
               <h3 className="text-lg font-semibold">Content Settings</h3>
               <button
                 onClick={() => setIsOpen(false)}
@@ -175,8 +206,8 @@ export default function ToneSettings({ disabled = false }: ToneSettingsProps) {
               </button>
             </div>
 
-            {/* Content */}
-            <div className="space-y-4 p-4">
+            {/* Content - scrollable on mobile */}
+            <div className="flex-1 space-y-4 overflow-y-auto p-4">
               {/* Tone Selector */}
               <div>
                 <label className="mb-3 block text-sm font-medium">Writing Tone</label>
@@ -210,8 +241,8 @@ export default function ToneSettings({ disabled = false }: ToneSettingsProps) {
               </div>
             </div>
 
-            {/* Footer note */}
-            <div className="border-t border-border bg-muted/50 p-3 text-xs text-muted-foreground">
+            {/* Footer note - fixed on mobile */}
+            <div className="shrink-0 border-t border-border bg-muted/50 p-3 text-xs text-muted-foreground">
               These settings apply to this vibelog. Change defaults in settings.
             </div>
           </div>
