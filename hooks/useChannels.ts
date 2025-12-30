@@ -38,10 +38,12 @@ export function useChannels(userId?: string): UseChannelsReturn {
 
   // Fetch user's channels
   const fetchChannels = useCallback(async () => {
+    // Don't fetch if no userId - avoids unnecessary 401 errors in console
     if (!userId) {
       setChannels([]);
       setDefaultChannelId(null);
       setSelectedChannelId(null);
+      setIsLoading(false);
       return;
     }
 
