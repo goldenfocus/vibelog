@@ -125,16 +125,30 @@ export default function ToneSettings({ disabled = false }: ToneSettingsProps) {
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen]);
 
-  // Prevent body scroll when modal is open
+  // Prevent body scroll and horizontal overflow when modal is open
   useEffect(() => {
     if (isOpen) {
+      // Lock both vertical and horizontal scroll
       document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+      // Prevent any overflow on mobile
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.height = '100%';
     } else {
       document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.height = '';
     }
 
     return () => {
       document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.height = '';
     };
   }, [isOpen]);
 
@@ -178,6 +192,7 @@ export default function ToneSettings({ disabled = false }: ToneSettingsProps) {
               // Border (desktop only)
               'sm:border sm:border-border',
             ].join(' ')}
+            style={{ touchAction: 'pan-y' }}
           >
             {/* Header - fixed on mobile */}
             <div className="flex shrink-0 items-center justify-between border-b border-border p-4">
