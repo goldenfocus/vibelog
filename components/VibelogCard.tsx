@@ -51,6 +51,7 @@ interface VibelogCardProps {
   vibelog: Vibelog;
   onRemix?: (content: string) => void;
   onDeleteSuccess?: (vibelogId: string) => void;
+  priority?: boolean; // For LCP optimization - set true for first card
 }
 
 // Memoized to prevent unnecessary re-renders in lists
@@ -58,6 +59,7 @@ const VibelogCard = memo(function VibelogCard({
   vibelog,
   onRemix,
   onDeleteSuccess,
+  priority = false,
 }: VibelogCardProps) {
   const router = useRouter();
   const { user } = useAuth(); // Check if user is logged in
@@ -285,6 +287,7 @@ const VibelogCard = memo(function VibelogCard({
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             className="object-cover"
+            priority={priority}
           />
           {/* Music badge */}
           {(vibelog.media_type === 'music' || vibelog.media_type === 'music_video') && (

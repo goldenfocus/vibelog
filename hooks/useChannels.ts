@@ -38,10 +38,12 @@ export function useChannels(userId?: string): UseChannelsReturn {
 
   // Fetch user's channels
   const fetchChannels = useCallback(async () => {
+    // Don't fetch if no userId - avoids unnecessary 401 errors in console
     if (!userId) {
       setChannels([]);
       setDefaultChannelId(null);
       setSelectedChannelId(null);
+      setIsLoading(false);
       return;
     }
 
@@ -78,16 +80,19 @@ export function useChannels(userId?: string): UseChannelsReturn {
       setDefaultChannelId(data.default_channel_id);
 
       // Auto-select default channel if none selected
-      if (!selectedChannelId && data.default_channel_id) {
-        setSelectedChannelId(data.default_channel_id);
-      }
+      setSelectedChannelId(prevSelected => {
+        if (!prevSelected && data.default_channel_id) {
+          return data.default_channel_id;
+        }
+        return prevSelected;
+      });
     } catch (err) {
       console.error('[useChannels] Error fetching channels:', err);
       setError(err instanceof Error ? err.message : 'Failed to load channels');
     } finally {
       setIsLoading(false);
     }
-  }, [userId, selectedChannelId]);
+  }, [userId]);
 
   // Fetch channels on mount and when userId changes
   useEffect(() => {

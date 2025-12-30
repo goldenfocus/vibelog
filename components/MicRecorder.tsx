@@ -119,18 +119,6 @@ export default function MicRecorder({ remixContent, onSaveSuccess }: MicRecorder
     return { title, body };
   }, [displayContent]);
 
-  // Debug logging
-  if (showCompletedUI && process.env.NODE_ENV !== 'production') {
-    console.log('🔍 [MICRECORDER] Content Debug:', {
-      isTeaserContent,
-      showingFullContent,
-      shouldShowReadMore,
-      teaserLength: vibelogContent.length,
-      fullLength: fullVibelogContent.length,
-      areDifferent: fullVibelogContent !== vibelogContent,
-    });
-  }
-
   return (
     <div className="w-full">
       {/* Channel selector - show for logged in users with channels */}
@@ -218,6 +206,47 @@ export default function MicRecorder({ remixContent, onSaveSuccess }: MicRecorder
             onShare={() => {
               void handleShare(displayContent);
             }}
+            onPublish={
+              vibelogId
+                ? async () => {
+                    console.log('🚀 [PUBLISH] Button clicked, vibelogId:', vibelogId);
+                    try {
+                      console.log('📤 [PUBLISH] Sending publish request...');
+                      const response = await fetch('/api/vibelog/publish', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ vibelogId }),
+                      });
+
+                      console.log('📥 [PUBLISH] Response status:', response.status);
+
+                      if (!response.ok) {
+                        const data = await response.json();
+                        console.error('❌ [PUBLISH] Error:', data);
+                        throw new Error(data.error || 'Failed to publish');
+                      }
+
+                      const result = await response.json();
+                      console.log('✅ [PUBLISH] Success:', result);
+
+                      toast.visible = true;
+                      toast.message =
+                        t('components.micRecorder.publishSuccess') || 'Published successfully!';
+
+                      // Redirect to community page after a short delay
+                      console.log('🔄 [PUBLISH] Redirecting to community in 1.5s...');
+                      setTimeout(() => {
+                        console.log('➡️ [PUBLISH] Redirecting now...');
+                        window.location.href = '/community';
+                      }, 1500);
+                    } catch (error) {
+                      console.error('💥 [PUBLISH] Exception:', error);
+                      toast.visible = true;
+                      toast.message = error instanceof Error ? error.message : 'Failed to publish';
+                    }
+                  }
+                : undefined
+            }
             onEditTeaser={beginEdit}
             onEditFull={beginEditFull}
             onUpgradePrompt={(message, benefits) =>
