@@ -40,7 +40,6 @@ export default function Navigation() {
   const navLinks = useMemo(
     () => [
       { href: `/${locale}/faq`, label: t('navigation.faq') },
-      { href: `/${locale}/pricing`, label: t('navigation.pricing') },
       { href: `/${locale}/community`, label: t('navigation.community') },
       { href: `/${locale}/people`, label: t('navigation.people') },
     ],

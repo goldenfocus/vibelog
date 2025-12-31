@@ -342,7 +342,7 @@
           "name": "Influencer",
           "description": "For serious content creators",
           "price": "$12",
-          "yearlyPrice": "$99",
+          "yearlyPrice": "$9",
           "cta": "Start Free Trial",
           "popular": "Most Popular",
           "features": [
@@ -362,7 +362,7 @@
           "name": "Marketing Agency",
           "description": "For teams and businesses",
           "price": "$99",
-          "yearlyPrice": "$690",
+          "yearlyPrice": "$60",
           "cta": "Contact Sales",
           "features": [
             "Everything in Influencer",
