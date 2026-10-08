@@ -171,14 +171,19 @@ export async function getTrendingVibelogs(limit: number = 5): Promise<TrendingVi
 
   // Get reaction counts
   const vibelogIds = vibelogs.map(v => v.id);
-  const { data: reactions } = await supabase
-    .from('vibelog_reactions')
-    .select('vibelog_id')
-    .in('vibelog_id', vibelogIds);
+  const { data: reactions, error: reactionsError } = await supabase
+    .from('reactions')
+    .select('reactable_id')
+    .eq('reactable_type', 'vibelog')
+    .in('reactable_id', vibelogIds);
+
+  if (reactionsError) {
+    console.error('[VIBE BRAIN] Failed to get reaction counts:', reactionsError);
+  }
 
   const reactionCountMap = new Map<string, number>();
   for (const r of reactions || []) {
-    reactionCountMap.set(r.vibelog_id, (reactionCountMap.get(r.vibelog_id) || 0) + 1);
+    reactionCountMap.set(r.reactable_id, (reactionCountMap.get(r.reactable_id) || 0) + 1);
   }
 
   return vibelogs.map(v => {
