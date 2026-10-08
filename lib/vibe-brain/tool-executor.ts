@@ -95,14 +95,19 @@ async function searchVibelogs(
 
   // Get reaction counts
   const vibelogIds = vibelogs.map(v => v.id);
-  const { data: reactions } = await supabase
+  const { data: reactions, error: reactionsError } = await supabase
     .from('reactions')
-    .select('vibelog_id')
-    .in('vibelog_id', vibelogIds);
+    .select('reactable_id')
+    .eq('reactable_type', 'vibelog')
+    .in('reactable_id', vibelogIds);
+
+  if (reactionsError) {
+    console.error('[TOOL] searchVibelogs reactions error:', reactionsError);
+  }
 
   const reactionCountMap = new Map<string, number>();
   for (const r of reactions || []) {
-    reactionCountMap.set(r.vibelog_id, (reactionCountMap.get(r.vibelog_id) || 0) + 1);
+    reactionCountMap.set(r.reactable_id, (reactionCountMap.get(r.reactable_id) || 0) + 1);
   }
 
   // Get comment counts
@@ -159,10 +164,15 @@ async function getVibelog(id: string): Promise<VibelogResult | null> {
   }
 
   // Get counts
-  const { count: reactionCount } = await supabase
+  const { count: reactionCount, error: reactionsError } = await supabase
     .from('reactions')
     .select('*', { count: 'exact', head: true })
-    .eq('vibelog_id', id);
+    .eq('reactable_type', 'vibelog')
+    .eq('reactable_id', id);
+
+  if (reactionsError) {
+    console.error('[TOOL] getVibelog reactions error:', reactionsError);
+  }
 
   const { count: commentCount } = await supabase
     .from('comments')
@@ -255,14 +265,19 @@ async function getUserVibelogs(username: string, limit: number): Promise<Vibelog
 
   // Get reaction/comment counts
   const vibelogIds = vibelogs.map(v => v.id);
-  const { data: reactions } = await supabase
+  const { data: reactions, error: reactionsError } = await supabase
     .from('reactions')
-    .select('vibelog_id')
-    .in('vibelog_id', vibelogIds);
+    .select('reactable_id')
+    .eq('reactable_type', 'vibelog')
+    .in('reactable_id', vibelogIds);
+
+  if (reactionsError) {
+    console.error('[TOOL] getUserVibelogs reactions error:', reactionsError);
+  }
 
   const reactionCountMap = new Map<string, number>();
   for (const r of reactions || []) {
-    reactionCountMap.set(r.vibelog_id, (reactionCountMap.get(r.vibelog_id) || 0) + 1);
+    reactionCountMap.set(r.reactable_id, (reactionCountMap.get(r.reactable_id) || 0) + 1);
   }
 
   const { data: comments } = await supabase
@@ -327,14 +342,19 @@ async function getLatestVibelogs(limit: number): Promise<VibelogResult[]> {
 
   // Get reaction counts
   const vibelogIds = vibelogs.map(v => v.id);
-  const { data: reactions } = await supabase
+  const { data: reactions, error: reactionsError } = await supabase
     .from('reactions')
-    .select('vibelog_id')
-    .in('vibelog_id', vibelogIds);
+    .select('reactable_id')
+    .eq('reactable_type', 'vibelog')
+    .in('reactable_id', vibelogIds);
+
+  if (reactionsError) {
+    console.error('[TOOL] getLatestVibelogs reactions error:', reactionsError);
+  }
 
   const reactionCountMap = new Map<string, number>();
   for (const r of reactions || []) {
-    reactionCountMap.set(r.vibelog_id, (reactionCountMap.get(r.vibelog_id) || 0) + 1);
+    reactionCountMap.set(r.reactable_id, (reactionCountMap.get(r.reactable_id) || 0) + 1);
   }
 
   const { data: comments } = await supabase
