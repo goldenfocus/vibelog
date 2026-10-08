@@ -225,6 +225,31 @@ Audio Recording → /api/transcribe → OpenAI Whisper
                 → /api/vibelog/generate-ai-audio → TTS (optional)
 ```
 
+## Vibe Brain (AI Assistant / RAG)
+
+Endpoints: `app/api/vibe-brain/{chat,conversations,suggestions}/` (chat: `chat/route.ts`).
+
+```
+User message → embed (text-embedding-3-small, 1536d)
+             → pgvector: search_content_embeddings + user memories
+             → sub-agent detection → GPT-4o + tool calling (prompt/settings from vibe_brain_config)
+             → extract new memories → user_memories
+             → response + sources
+```
+
+| File                                  | Purpose                                     |
+| ------------------------------------- | ------------------------------------------- |
+| `lib/vibe-brain/rag-engine.ts`        | Main chat loop with tool calling            |
+| `lib/vibe-brain/embedding-service.ts` | Embeddings + vector search                   |
+| `lib/vibe-brain/memory-service.ts`    | User memory extraction                      |
+| `lib/vibe-brain/platform-queries.ts`  | Data fetching for tools                     |
+| `lib/vibe-brain/tools.ts`             | Tool definitions (`VIBE_BRAIN_TOOLS`)       |
+| `lib/vibe-brain/tool-executor.ts`     | Tool execution                              |
+| `lib/vibe-brain/knowledge-base.ts`    | Documentation embedding & search            |
+| `lib/vibe-brain/sub-agents.ts`        | Query-type routing (discovery, analyst, …)  |
+
+Tools: `searchVibelogs`, `getVibelog`, `searchUsers`, `getUserVibelogs`, `getLatestVibelogs`, `getTopCreators`, `getPlatformStats`, `getVibelogComments`, `getRecentComments`, `getNewMembers`.
+
 ## Code Patterns
 
 ### API Routes
@@ -423,6 +448,30 @@ gh pr merge --squash --auto  # Auto-merge when checks pass
 ```
 
 The `--auto` flag queues merge for when checks pass. Don't wait manually.
+
+## Key Tables
+
+Baseline in `supabase/schema.sql` (`profiles`, `vibelogs`, `tts_cache`), everything since in `supabase/migrations/` (57 files). pgvector enabled.
+
+```
+profiles (users)
+  ├─→ vibelogs (1:many)
+  │     └─→ comments (1:many, threaded via parent_comment_id)
+  ├─→ reactions (polymorphic: reactable_type + reactable_id → vibelog, comment, chat_message, …)
+  └─→ notifications (1:many)
+
+AI / RAG (Vibe Brain)
+  content_embeddings          # VECTOR(1536); content_type: vibelog | comment | profile | documentation
+  user_memories               # learned per-user facts, VECTOR(1536)
+  vibe_brain_conversations → vibe_brain_messages
+  vibe_brain_config           # key/value JSONB (system_prompt, model_settings, …)
+
+AI cost + caching
+  ai_usage_log                # per-call cost (lib/ai-cost-tracker.ts)
+  ai_daily_costs              # daily totals → circuit breaker
+  ai_cache                    # AI response cache
+  tts_cache                   # TTS audio cache
+```
 
 ## Database Migrations (CRITICAL)
 
